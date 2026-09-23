@@ -344,6 +344,7 @@ export const zhDrama = {
     pollFailed: '轮询失败',
     genTimeout: '生成超时，请稍后刷新',
     addFailed: '加集失败',
+    needCreativeOrSummary: '请先填写本集创意或摘要，再生成剧本正文',
     creativeTooShort: '本集原始创意至少 {n} 字',
     bodyBeforeBrief: '剧本内容需满 {n} 字后再补齐创意与摘要',
     regenTitle: '重新生成整集',

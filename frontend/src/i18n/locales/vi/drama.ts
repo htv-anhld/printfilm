@@ -344,6 +344,7 @@ export const viDrama = {
     pollFailed: 'Kiểm tra trạng thái thất bại',
     genTimeout: 'Tạo quá thời gian, vui lòng tải lại sau',
     addFailed: 'Thêm tập thất bại',
+    needCreativeOrSummary: 'Hãy điền ý tưởng hoặc tóm tắt của tập trước khi tạo kịch bản',
     creativeTooShort: 'Ý tưởng của tập cần ít nhất {n} ký tự',
     bodyBeforeBrief: 'Kịch bản cần đủ {n} ký tự trước khi bổ sung ý tưởng và tóm tắt',
     regenTitle: 'Tạo lại cả tập',
