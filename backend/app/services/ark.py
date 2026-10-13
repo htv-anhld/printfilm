@@ -1061,8 +1061,11 @@ class ArkGateway:
         on_tokenfree = uses_tokenfree_image(base_url=base, channel_id=channel_id)
         chosen = tokenfree_working_image_model(upstream_model) if on_tokenfree else upstream_model
         if on_tokenfree and "gpt-image" in chosen.lower():
-            # Kie / gpt-image 实际按 1K·2K 档；3K/4K 钳到 2K，与计费一致
-            if str(resolved_size or "").strip().upper() in {"3K", "4K"}:
+            # Kie / gpt-image 实际按 1K·2K 档；画幅靠 aspect_ratio 自然语言约束。
+            # 无 aspect_ratio 时保留 WxH，避免把唯一画幅信号压成「清晰度2K」。
+            raw_size = str(resolved_size or "").strip()
+            upper = raw_size.upper()
+            if upper in {"3K", "4K"}:
                 resolved_size = "2K"
         if on_tokenfree and tokenfree_uses_responses_api(chosen):
             if chosen != (upstream_model or "").strip():
@@ -1072,6 +1075,7 @@ class ArkGateway:
                 model=chosen,
                 prompt=full_prompt,
                 size=str(resolved_size or ""),
+                aspect_ratio=str(aspect_ratio or ""),
                 ref_urls=subject_refs,
                 style_ref_urls=style_refs,
             )
