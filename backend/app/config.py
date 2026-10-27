@@ -23,9 +23,9 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://printfilm:change-me-strong-db-password@127.0.0.1:15432/printfilm"
     database_url_sync: str = "postgresql+psycopg2://printfilm:change-me-strong-db-password@127.0.0.1:15432/printfilm"
-    # Postgres 连接池（统一任务平台 / API 共用）
-    db_pool_size: int = 5
-    db_max_overflow: int = 5
+    # 每个 API 进程与任务平台共用；默认最多 70，PG 上限 100 时保留 30 给其他连接。
+    db_pool_size: int = 50
+    db_max_overflow: int = 20
     db_pool_recycle_sec: int = 1800
     db_pool_timeout_sec: int = 30
     redis_url: str = "redis://127.0.0.1:6379/0"

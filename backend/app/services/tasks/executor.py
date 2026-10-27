@@ -111,8 +111,10 @@ async def execute_task_run(task_id: int) -> None:
                     if not task:
                         return
                     handler = get_task_handler(task.domain, task.task_type)
-                    result = await handler.executor(task) if handler else {"ok": False, "error": "missing_handler"}
-                    # 重新加载（含 selectinload steps）；勿 refresh，会卸掉关系再触发懒加载。
+                # handler 自己管理会话；先释放本读事务，避免等上游/信号量时长期占用连接池
+                result = await handler.executor(task) if handler else {"ok": False, "error": "missing_handler"}
+                async with AsyncSessionLocal() as db:
+                    # 新会话才能看到 handler 已提交的取消/上游状态；重新加载（含 selectinload steps），勿 refresh。
                     task = await get_task_for_runtime(db, task_id)
                     if not task:
                         return

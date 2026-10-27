@@ -35,8 +35,13 @@ Postgres / Redis 端口均映射为 `0.0.0.0`（便于本机直连调试）。�
 DATABASE_URL=postgresql+asyncpg://printfilm:<密码>@127.0.0.1:5432/printfilm
 DATABASE_URL_SYNC=postgresql+psycopg2://printfilm:<密码>@127.0.0.1:5432/printfilm
 REDIS_URL=redis://127.0.0.1:6379/0
-USE_CELERY=true
+TASK_RUNTIME_MAX_CONCURRENCY=4
+TASK_USER_MAX_CONCURRENCY=4
+DB_POOL_SIZE=50
+DB_MAX_OVERFLOW=20
 ```
+
+连接池按需建立连接，每个 API 进程最多使用 `50 + 20 = 70` 条；PostgreSQL `max_connections=100` 时保留 30 条给其他应用、迁移、调试和管理连接。增加进程或实例时，各自有独立连接池，须按所有进程的最大连接数之和重新核对数据库预算。修改连接池环境变量后，宿主服务重启 API；Docker 部署重建 API 容器以重新加载环境变量。连接池扩容仍需配合长任务在等待上游前释放数据库事务。
 
 需本机已安装：Python 3.12、FFmpeg（PATH）、Node.js。
 
