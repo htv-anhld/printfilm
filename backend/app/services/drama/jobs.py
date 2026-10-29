@@ -1734,6 +1734,8 @@ async def run_asset_image_job(
             from app.services.exc_format import format_exception_message
 
             err_text = format_exception_message(exc, fallback=_("生图失败"), limit=500)
+            # flush 失败后 Session 不可继续查询；先回滚未提交交付再记录状态
+            await db.rollback()
             if asset_id:
                 asset = await db.get(DramaAsset, asset_id)
                 if asset:
@@ -1860,6 +1862,8 @@ async def run_asset_video_job(
             from app.services.exc_format import format_exception_message
 
             err_text = format_exception_message(exc, fallback=_("生视频失败"), limit=500)
+            # flush 失败后 Session 不可继续查询；先回滚未提交交付再记录状态
+            await db.rollback()
             asset = await db.get(DramaAsset, asset_id)
             if asset:
                 params = dict(asset.params or {})

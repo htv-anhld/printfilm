@@ -11,6 +11,7 @@
 - 钱包单位：**分（fen）**。
 - 充值：易支付 [pay.gitcc.com](https://pay.gitcc.com/)，支付宝 `alipay` / 微信 `wxpay`。
 - **所有 AI 调用**均关联 `task_run_id`（单次聊天/API/工具调用创建轻量 TaskRun）。
+- 钱包余额写入使用 PostgreSQL `FOR NO KEY UPDATE` 行锁，保持扣款互斥，同时允许 `usage_events` 对用户主键的外键校验，避免与画布资产、任务状态写入形成循环等待。资产生图/视频落库失败后先回滚，再记录原始异常和失败状态。
 
 ## 公式
 
