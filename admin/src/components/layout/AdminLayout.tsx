@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   Bug,
+  KeyRound,
   Clapperboard,
   FileVideo,
   Film,
@@ -28,6 +29,7 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { useI18n, type TFunction } from "@/i18n";
 import { clearAuth, getCachedUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { ChangePasswordDialog } from "@/components/admin/ChangePasswordDialog";
 
 type NavItem = {
   to: string;
@@ -128,6 +130,8 @@ export function AdminLayout() {
    * collapsed sidebar collapsed state
    */
   const [collapsed, setCollapsed] = useState(false);
+  // passwordOpen 修改登录密码弹窗
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   // Logout and return to login
   function handleLogout() {
@@ -226,12 +230,22 @@ export function AdminLayout() {
             >
               <Maximize2 className="h-4 w-4" />
             </button>
+            <button
+              type="button"
+              className="admin-icon-btn"
+              title={t("layout.changePassword")}
+              aria-label={t("layout.changePassword")}
+              onClick={() => setPasswordOpen(true)}
+            >
+              <KeyRound className="h-4 w-4" />
+            </button>
           </div>
         </header>
         <main className="admin-content">
           <Outlet />
         </main>
       </div>
+      {passwordOpen && <ChangePasswordDialog email={user?.email} onClose={() => setPasswordOpen(false)} />}
     </div>
   );
 }
