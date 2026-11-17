@@ -14,6 +14,7 @@ export const viUsers = {
     todayCalls: "Hôm nay {n} lượt",
     totalCalls: "Tổng lượt gọi",
   },
+  resetPassword: "Đặt lại mật khẩu",
   fields: {
     accountId: "ID tài khoản",
     email: "Email",

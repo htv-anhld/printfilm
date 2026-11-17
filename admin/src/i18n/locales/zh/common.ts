@@ -87,6 +87,9 @@ export const zhCommon = {
   layout: {
     changePassword: "修改登录密码",
     password: {
+      resetTitle: "重置用户密码",
+      resetSuccess: "已重置 {email} 的登录密码",
+      resetConfirm: "确认重置",
       title: "修改登录密码",
       current: "当前密码",
       new: "新密码",

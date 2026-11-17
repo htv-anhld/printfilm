@@ -87,6 +87,9 @@ export const viCommon = {
   layout: {
     changePassword: "Đổi mật khẩu đăng nhập",
     password: {
+      resetTitle: "Đặt lại mật khẩu người dùng",
+      resetSuccess: "Đã đặt lại mật khẩu đăng nhập của {email}",
+      resetConfirm: "Xác nhận đặt lại",
       title: "Đổi mật khẩu đăng nhập",
       current: "Mật khẩu hiện tại",
       new: "Mật khẩu mới",

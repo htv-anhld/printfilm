@@ -87,6 +87,9 @@ export const enCommon = {
   layout: {
     changePassword: "Change login password",
     password: {
+      resetTitle: "Reset user password",
+      resetSuccess: "Reset the login password of {email}",
+      resetConfirm: "Confirm reset",
       title: "Change login password",
       current: "Current password",
       new: "New password",

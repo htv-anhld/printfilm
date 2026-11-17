@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, SecretStr, field_validator
 
 from app.i18n import SUPPORTED_LOCALES, normalize_locale
 from app.schemas_common import PageMeta
@@ -528,6 +528,10 @@ class AdminUserOut(BaseModel):
 class AdminUserListOut(BaseModel):
     items: list[AdminUserOut]
     meta: PageMeta
+
+
+class AdminUserPasswordReset(BaseModel):
+    new_password: SecretStr
 
 
 class AdminUserPatch(BaseModel):

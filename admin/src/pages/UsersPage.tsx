@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, type AdminStats, type AdminUserRow, type PageMeta } from "@/api/client";
 import { AdminField } from "@/components/admin/AdminField";
+import { ChangePasswordDialog } from "@/components/admin/ChangePasswordDialog";
 import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
 import { AdminListStats } from "@/components/admin/AdminListStats";
 import { AdminModal } from "@/components/admin/AdminModal";
@@ -34,6 +35,7 @@ export function UsersPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<AdminUserRow | null>(null);
+  const [resetTarget, setResetTarget] = useState<AdminUserRow | null>(null);
   const [detailUser, setDetailUser] = useState<AdminUserRow | null>(null);
   const [form, setForm] = useState({
     role: "user",
@@ -169,7 +171,7 @@ export function UsersPage() {
               <TableHead>{t("users.fields.frozen")}</TableHead>
               <TableHead>{t("users.fields.role")}</TableHead>
               <TableHead>{t("users.fields.createdAt")}</TableHead>
-              <TableHead className="w-[140px]">{t("common.actions")}</TableHead>
+              <TableHead className="w-[220px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -202,6 +204,7 @@ export function UsersPage() {
                     <Button size="sm" variant="ghost" onClick={() => openEdit(u)}>
                       {t("common.edit")}
                     </Button>
+                    {u.role === "user" && <Button size="sm" variant="ghost" onClick={() => setResetTarget(u)}>{t("users.resetPassword")}</Button>}
                   </div>
                 </TableCell>
               </TableRow>
@@ -230,6 +233,7 @@ export function UsersPage() {
         )}
       </div>
 
+      {resetTarget && <ChangePasswordDialog resetUserId={resetTarget.id} email={resetTarget.email} onClose={() => setResetTarget(null)} />}
       <UserDetailDrawer
         userId={userDetail.id}
         open={userDetail.isOpen}
