@@ -106,8 +106,9 @@ def consume_reset_token(redis_client: Any, token: str) -> int:
 
 
 def build_reset_link(token: str) -> str:
-    # 用户端 Auth 页：?mode=reset&token=...
-    base = str(get_settings().public_base_url or "").rstrip("/")
+    # 用户端 Auth 页：?mode=reset&token=...（/auth 在用户端站点，不是 API 的 public_base_url）
+    s = get_settings()
+    base = str(getattr(s, "app_public_url", "") or s.public_base_url or "").rstrip("/")
     return f"{base}/auth?mode=reset&token={token}"
 
 

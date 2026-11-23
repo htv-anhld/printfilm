@@ -233,6 +233,15 @@ export const enSettings = {
     quotaInfo: "Remaining {quota} quota ≈ {remainYuan} ({remainUsd} · {rate} CNY/USD); used {used} ≈ {usedYuan}. Console {console}",
   },
   site: {
+    auth: {
+      title: "Sign-in",
+      desc: "Email verification stops throwaway accounts from farming free credits; Google sign-in reduces sign-up drop-off.",
+      verify: "Require email verification",
+      verifyHint: "Only takes effect when SMTP is configured (Payments tab). Sign-up credits are granted after verification",
+      appUrl: "User app URL",
+      redirect: "Google redirect URI",
+      redirectHint: "Leave empty to use {url}. Must match exactly in Google Cloud Console → Credentials → Authorized redirect URIs",
+    },
     saved: "Site settings saved",
     statusTitle: "Site tools status",
     publicUrl: "Public URL",

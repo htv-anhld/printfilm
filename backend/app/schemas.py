@@ -34,6 +34,21 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    # 注册后是否需要先验证邮箱（前端据此展示验证码输入）
+    email_verification_required: bool = False
+
+
+class VerifyEmailCodeRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=12)
+
+
+class VerifyEmailTokenRequest(BaseModel):
+    token: str = Field(min_length=8, max_length=256)
+
+
+class GoogleExchangeRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=2048)
+    state: str = Field(min_length=8, max_length=1024)
 
 
 class UserOut(BaseModel):
@@ -47,6 +62,8 @@ class UserOut(BaseModel):
     role: str = "user"
     avatar_url: str = ""
     phone: str = ""
+    email_verified: bool = True
+    sub_credit_fen: int = 0
 
     model_config = {"from_attributes": True}
 

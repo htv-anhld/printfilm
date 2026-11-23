@@ -5,6 +5,8 @@ import {
   SettingsStatusBar,
   SettingsTabShell,
 } from "@/components/settings/SettingsPanel";
+import { useState } from "react";
+import { AuthSettingsSection } from "@/components/settings/AuthSettingsSection";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
 import { useI18n } from "@/i18n";
 
@@ -12,6 +14,9 @@ import { useI18n } from "@/i18n";
 export function SiteSettingsPanel() {
   const { t } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();
+  /* Google client secret 本地编辑态（留空不修改） */
+  const [googleSecret, setGoogleSecret] = useState("");
+  const [clearGoogleSecret, setClearGoogleSecret] = useState(false);
 
   async function handleSave() {
     if (!form) return;
@@ -20,9 +25,17 @@ export function SiteSettingsPanel() {
         public_base_url: form.public_base_url,
         ffmpeg_path: form.ffmpeg_path,
         ffprobe_path: form.ffprobe_path,
+        app_public_url: form.app_public_url ?? "",
+        email_verification_required: form.email_verification_required ?? true,
+        google_client_id: form.google_client_id ?? "",
+        google_client_secret: googleSecret.trim() || undefined,
+        clear_google_client_secret: clearGoogleSecret,
+        google_redirect_uri: form.google_redirect_uri ?? "",
       },
       t("settings.site.saved"),
     );
+    setGoogleSecret("");
+    setClearGoogleSecret(false);
   }
 
   if (loading || !form) {
@@ -63,6 +76,20 @@ export function SiteSettingsPanel() {
       />
 
       <div className="settings-routing-grid">
+        <AuthSettingsSection
+          form={form}
+          secret={googleSecret}
+          clearSecret={clearGoogleSecret}
+          onSecret={(v) => {
+            setGoogleSecret(v);
+            setClearGoogleSecret(false);
+          }}
+          onClearSecret={() => {
+            setGoogleSecret("");
+            setClearGoogleSecret(true);
+          }}
+          patchField={patchField}
+        />
         <SettingsPanel
           className="settings-panel--compact"
           title={t("settings.site.panel1Title")}

@@ -34,6 +34,21 @@ EN: dict[str, str] = {
     "当前没有订阅": "You don't have a subscription",
     "已经是该套餐": "You are already on this plan",
     "当前没有可管理的订阅": "There is no subscription to manage",
+    # ── 邮箱验证 / Google 登录 ──
+    "欢迎注册 PRINTFILM。您的邮箱验证码是：": "Welcome to PRINTFILM. Your email verification code is:",
+    "也可以在 30 分钟内打开以下链接完成验证：": "Or open this link within 30 minutes to verify:",
+    "PRINTFILM 邮箱验证": "Verify your PRINTFILM email",
+    "验证码已过期，请重新发送": "The code has expired. Please request a new one",
+    "尝试次数过多，请重新发送验证码": "Too many attempts. Please request a new code",
+    "验证码不正确": "Incorrect code",
+    "验证链接无效或已过期": "The verification link is invalid or has expired",
+    "登录状态无效，请重新登录": "Invalid sign-in state. Please sign in again",
+    "登录已超时，请重新登录": "Sign-in timed out. Please sign in again",
+    "未配置 Google 登录": "Google sign-in is not configured",
+    "Google 登录失败，请重试": "Google sign-in failed. Please try again",
+    "连接 Google 失败，请稍后重试": "Could not reach Google. Please try again later",
+    "该 Google 账号的邮箱未验证": "This Google account's email is not verified",
+    "该邮箱已绑定其它 Google 账号": "This email is already linked to another Google account",
 }
 
 VI: dict[str, str] = {
@@ -67,4 +82,19 @@ VI: dict[str, str] = {
     "当前没有订阅": "Bạn chưa có thuê bao",
     "已经是该套餐": "Bạn đang dùng gói này rồi",
     "当前没有可管理的订阅": "Không có thuê bao nào để quản lý",
+    # ── 邮箱验证 / Google 登录 ──
+    "欢迎注册 PRINTFILM。您的邮箱验证码是：": "Chào mừng bạn đến với PRINTFILM. Mã xác minh email của bạn là:",
+    "也可以在 30 分钟内打开以下链接完成验证：": "Hoặc mở liên kết sau trong vòng 30 phút để xác minh:",
+    "PRINTFILM 邮箱验证": "Xác minh email PRINTFILM",
+    "验证码已过期，请重新发送": "Mã đã hết hạn, vui lòng gửi lại",
+    "尝试次数过多，请重新发送验证码": "Nhập sai quá nhiều lần, vui lòng gửi lại mã",
+    "验证码不正确": "Mã không đúng",
+    "验证链接无效或已过期": "Liên kết xác minh không hợp lệ hoặc đã hết hạn",
+    "登录状态无效，请重新登录": "Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại",
+    "登录已超时，请重新登录": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
+    "未配置 Google 登录": "Chưa cấu hình đăng nhập bằng Google",
+    "Google 登录失败，请重试": "Đăng nhập Google thất bại, vui lòng thử lại",
+    "连接 Google 失败，请稍后重试": "Không kết nối được Google, vui lòng thử lại sau",
+    "该 Google 账号的邮箱未验证": "Email của tài khoản Google này chưa được xác minh",
+    "该邮箱已绑定其它 Google 账号": "Email này đã liên kết với một tài khoản Google khác",
 }

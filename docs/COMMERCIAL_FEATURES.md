@@ -161,3 +161,31 @@ thuê bao, Creem, dẫn sang chính sách hoàn tiền). Bản gốc ghi "tính 
 hoàn tiền (14 ngày cho gói credit; 7 ngày và ≤ 20% mức dùng cho thuê bao đầu tiên) là **đề xuất mặc
 định**, không phải con số Dravelio công bố; hãy chỉnh theo chính sách thật của bạn. Hiện việc hoàn
 tiền vẫn làm thủ công trên dashboard Creem, còn hệ thống tự thu hồi credit qua webhook `refund.created`.
+
+## 6. Xác minh email và đăng nhập Google
+
+**Xác minh email** (`services/email_verification.py`): sau khi đăng ký hệ thống gửi **mã 6 số
+kèm link**, cả hai hiệu lực 30 phút, tối đa 5 lần nhập sai, gửi lại cách nhau 60 giây; Redis chỉ
+lưu hash. **Credit tặng khi đăng ký chỉ cấp sau khi xác minh**, đây là hàng rào chống tài khoản rác.
+
+- Chỉ bắt buộc khi `EMAIL_VERIFICATION_REQUIRED=true` **và SMTP đã cấu hình**. Thiếu SMTP thì đăng
+  ký được coi là đã xác minh ngay (giống hành vi cũ), vì người dùng không thể nhận mã.
+- User cũ được đánh dấu đã xác minh và đã nhận credit tặng (patch schema), để không ai bị cấp lại.
+- API: `POST /auth/verify-email-code`, `POST /auth/verify-email` (link, trả về token đăng nhập),
+  `POST /auth/resend-verification`, `GET /auth/providers`.
+- Frontend: bước nhập mã sau khi đăng ký, `/auth?mode=verify&token=…` tự xác minh, banner nhắc
+  xác minh trên mọi trang.
+
+**Đăng nhập Google** (`services/google_oauth.py`): luồng authorization code phía server.
+
+1. Tạo OAuth client loại *Web application* trong Google Cloud Console
+2. Authorized redirect URI: `{APP_PUBLIC_URL}/auth/google/callback` (hoặc `GOOGLE_REDIRECT_URI`)
+3. Điền `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (env hoặc Admin → Trang web → Đăng nhập)
+
+`state` được ký HMAC bằng `SECRET_KEY`, chứa `next` và hạn 10 phút (không cần lưu phía server);
+`next` chỉ nhận đường dẫn nội bộ để chống open redirect. `id_token` được kiểm tra qua Google
+tokeninfo (`aud`, `iss`, `exp`, `email_verified`). Nếu email trùng tài khoản mật khẩu có sẵn thì
+**liên kết** vào tài khoản đó; email đã gắn với tài khoản Google khác thì từ chối.
+
+**Sửa lỗi có sẵn:** link đặt lại mật khẩu trước đây dùng `PUBLIC_BASE_URL` (địa chỉ API), nên
+trong email trỏ về `:8000/auth` và không mở được. Giờ dùng `APP_PUBLIC_URL`.

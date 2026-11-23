@@ -51,11 +51,22 @@ class User(Base):
     avatar_url: Mapped[str] = mapped_column(String(512), default="")
     # 联系手机，仅记录，不走短信验证
     phone: Mapped[str] = mapped_column(String(32), default="")
+    # 邮箱验证时间；None = 未验证（存量用户在补列时视为已验证）
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # 是否已发放注册赠金（开启邮箱验证后改为验证时发放）
+    signup_grant_given: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Google 账号 sub（OAuth 登录绑定）
+    google_sub: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
     # 用户消费里程碑告警：上次已提醒的累计扣费档位（分）
     billing_alert_last_milestone_fen: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     projects: Mapped[list["Project"]] = relationship(back_populates="owner")
+
+    @property
+    def email_verified(self) -> bool:
+        """邮箱是否已验证（UserOut 序列化用）。"""
+        return self.email_verified_at is not None
 
 
 class BillingAlertNotification(Base):

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useI18n } from '../../i18n'
 import { GITHUB_REPO_URL } from '../../lib/siteLinks'
+import EmailVerifyBanner from './EmailVerifyBanner'
 import SiteNav, { type NavActive } from './SiteNav'
 
 type Props = {
@@ -19,6 +20,7 @@ export default function AppShell({ children, active, wide, flush, hideFooter }: 
   return (
     <div className="pf-shell">
       <SiteNav active={active} />
+      <EmailVerifyBanner />
       <main className={['pf-shell-main', wide ? 'wide' : '', flush ? 'flush' : ''].filter(Boolean).join(' ')}>
         {children}
       </main>

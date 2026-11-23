@@ -233,6 +233,15 @@ export const viSettings = {
     quotaInfo: "Còn {quota} quota ≈ {remainYuan} ({remainUsd} · {rate} CNY/USD); đã dùng {used} ≈ {usedYuan}. Bảng điều khiển {console}",
   },
   site: {
+    auth: {
+      title: "Đăng nhập",
+      desc: "Xác minh email chống tài khoản rác ăn credit tặng; đăng nhập Google giúp giảm bỏ cuộc ở bước đăng ký.",
+      verify: "Bắt buộc xác minh email",
+      verifyHint: "Chỉ có tác dụng khi SMTP đã cấu hình (tab Thanh toán). Credit tặng khi đăng ký chỉ cấp sau khi xác minh",
+      appUrl: "Địa chỉ trang người dùng",
+      redirect: "URL chuyển hướng Google",
+      redirectHint: "Để trống sẽ dùng {url}. Phải khai báo y hệt trong Google Cloud Console → Credentials → Authorized redirect URIs",
+    },
     saved: "Đã lưu cấu hình trang",
     statusTitle: "Trạng thái công cụ trang",
     publicUrl: "Địa chỉ công khai",

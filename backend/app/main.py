@@ -218,6 +218,17 @@ async def _apply_schema_patches() -> None:
         if "capability" not in uecols:
             await conn.execute(text("ALTER TABLE usage_events ADD COLUMN capability VARCHAR(16)"))
 
+        # 邮箱验证 / Google 登录：存量用户视为已验证、赠金已发
+        if "email_verified_at" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMPTZ"))
+            await conn.execute(text("UPDATE users SET email_verified_at = COALESCE(created_at, now())"))
+        if "signup_grant_given" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN signup_grant_given BOOLEAN DEFAULT FALSE"))
+            await conn.execute(text("UPDATE users SET signup_grant_given = TRUE"))
+        if "google_sub" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN google_sub VARCHAR(64)"))
+            await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users (google_sub)"))
+
         # 订阅月额度
         if "sub_credit_fen" not in ucols:
             await conn.execute(text("ALTER TABLE users ADD COLUMN sub_credit_fen INTEGER DEFAULT 0"))

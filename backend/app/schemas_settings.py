@@ -104,6 +104,11 @@ class AdminModelSettingsOut(BaseModel):
     creem_sku_products: str = ""
     creem_plan_products: str = ""
     app_public_url: str = ""
+    email_verification_required: bool = True
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+    has_google_client_secret: bool = False
     has_creem_api_key: bool = False
     has_creem_webhook_secret: bool = False
 
@@ -241,6 +246,11 @@ class AdminModelSettingsPatch(BaseModel):
     creem_sku_products: str | None = None
     creem_plan_products: str | None = None
     app_public_url: str | None = None
+    email_verification_required: bool | None = None
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    clear_google_client_secret: bool = False
+    google_redirect_uri: str | None = None
 
     billing_enabled: bool | None = None
     billing_currency: Literal["USD", "CNY"] | None = None
@@ -364,6 +374,10 @@ def model_config_field_names() -> tuple[str, ...]:
         "creem_sku_products",
         "creem_plan_products",
         "app_public_url",
+        "email_verification_required",
+        "google_client_id",
+        "google_client_secret",
+        "google_redirect_uri",
         "billing_enabled",
         "billing_currency",
         "billing_markup",
@@ -416,6 +430,7 @@ SECRET_FIELD_FLAGS: dict[str, str] = {
     "epay_key": "has_epay_key",
     "creem_api_key": "has_creem_api_key",
     "creem_webhook_secret": "has_creem_webhook_secret",
+    "google_client_secret": "has_google_client_secret",
     "smtp_password": "has_smtp_password",
 }
 

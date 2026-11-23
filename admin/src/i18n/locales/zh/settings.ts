@@ -233,6 +233,15 @@ export const zhSettings = {
     quotaInfo: "剩余 {quota} quota ≈ {remainYuan}（{remainUsd} · {rate} CNY/USD）；已用 {used} ≈ {usedYuan}。控制台 {console}",
   },
   site: {
+    auth: {
+      title: "登录方式",
+      desc: "邮箱验证防止批量注册薅赠金；Google 登录降低注册流失。",
+      verify: "强制邮箱验证",
+      verifyHint: "需先在「支付」页配置 SMTP 才生效；注册赠金在验证后发放",
+      appUrl: "用户端站点地址",
+      redirect: "Google 回调地址",
+      redirectHint: "留空使用 {url}。须与 Google Cloud Console → 凭据 → 已获授权的重定向 URI 完全一致",
+    },
     saved: "站点配置已保存",
     statusTitle: "站点工具状态",
     publicUrl: "公网地址",

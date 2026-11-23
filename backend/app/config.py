@@ -174,6 +174,13 @@ class Settings(BaseSettings):
     public_base_url: str = "http://127.0.0.1:8000"
     # 用户端站点地址（支付完成跳回、邮件链接）；生产填正式域名
     app_public_url: str = "http://localhost:5173"
+
+    # 邮箱验证：SMTP 可用时注册须验证邮箱，注册赠金在验证后才发放（防批量注册薅羊毛）
+    email_verification_required: bool = True
+    # Google 登录（OAuth 2.0 Web 客户端）；回调页默认 {APP_PUBLIC_URL}/auth/google/callback
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
 

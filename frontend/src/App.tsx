@@ -4,6 +4,7 @@ import BillingAlertHost from './components/billing/BillingAlertHost'
 import { DramaGenQueuePanel } from './components/drama/DramaGenQueuePanel'
 import WeChatGroupFab from './components/layout/WeChatGroupFab'
 import AuthPage from './pages/AuthPage'
+import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
 import MethodPage from './pages/MethodPage'
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/method" element={<MethodPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/tools/:toolId" element={<ToolDetailPage />} />

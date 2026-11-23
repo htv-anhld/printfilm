@@ -210,6 +210,8 @@ export type User = {
   plan?: string
   avatar_url?: string
   phone?: string
+  email_verified?: boolean
+  sub_credit_fen?: number
 }
 
 export type BillingSku = {
@@ -369,7 +371,7 @@ export const api = {
     return `${API_BASE}${path}${q}`
   },
   register(email: string, password: string, nickname: string) {
-    return request<{ access_token: string }>('/api/auth/register', {
+    return request<{ access_token: string; email_verification_required?: boolean }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, nickname }),
     })
@@ -394,6 +396,33 @@ export const api = {
   },
   me() {
     return request<User>('/api/auth/me')
+  },
+  authProviders() {
+    return request<{ google: boolean; email_verification: boolean }>('/api/auth/providers')
+  },
+  resendVerification() {
+    return request<{ ok: boolean; sent?: boolean; cooldown?: number; verified?: boolean }>(
+      '/api/auth/resend-verification',
+      { method: 'POST' },
+    )
+  },
+  verifyEmailCode(code: string) {
+    return request<User>('/api/auth/verify-email-code', { method: 'POST', body: JSON.stringify({ code }) })
+  },
+  verifyEmailToken(token: string) {
+    return request<{ access_token: string }>('/api/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    })
+  },
+  googleStart(next: string) {
+    return request<{ url: string }>(`/api/auth/google/start?next=${encodeURIComponent(next)}`)
+  },
+  googleExchange(code: string, state: string) {
+    return request<{ access_token: string; next: string; created: boolean }>('/api/auth/google/exchange', {
+      method: 'POST',
+      body: JSON.stringify({ code, state }),
+    })
   },
   updateProfile(body: { nickname: string; email: string; phone: string }) {
     return request<User>('/api/auth/me', {
