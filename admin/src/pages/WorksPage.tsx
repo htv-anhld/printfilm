@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PageHeader } from "@/components/ui/page";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
 import { auditStatusLabel, visibilityLabel } from "@/lib/statusLabels";
+import { formatDateTime, useI18n } from "@/i18n";
 
 type ListRes = { items: AdminWork[]; meta: PageMeta };
 
@@ -28,6 +29,7 @@ function coverSrc(url: string | null | undefined): string {
 
 // 作品审核：搜索、预览与只读详情
 export function WorksPage() {
+  const { t } = useI18n();
   const [auditStatus, setAuditStatus] = useState("");
   const [visibility, setVisibility] = useState("");
   const [q, setQ] = useState("");
@@ -46,7 +48,7 @@ export function WorksPage() {
       if (userId) params.set("user_id", String(userId));
       setData(await api<ListRes>(`/api/admin/works?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : t("common.loadFailed"));
     }
   }
 
@@ -64,10 +66,10 @@ export function WorksPage() {
   async function patchWork(id: number, body: { visibility?: string; audit_status?: string }) {
     try {
       await api(`/api/admin/works/${id}`, { method: "PATCH", body: JSON.stringify(body) });
-      toast.success("已更新");
+      toast.success(t("common.updated"));
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "更新失败");
+      toast.error(err instanceof Error ? err.message : t("common.updateFailed"));
     }
   }
 
@@ -78,12 +80,12 @@ export function WorksPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader description="调整可见性与审核状态" />
+      <PageHeader description={t("works.desc")} />
       <AdminFilterBar>
         <AdminSearchInput
           value={q}
           onChange={setQ}
-          placeholder="搜索标题"
+          placeholder={t("works.searchPlaceholder")}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               setPage(1);
@@ -93,16 +95,16 @@ export function WorksPage() {
         />
         <AdminUserSearchSelect value={userId} onChange={(id) => setUserId(id)} />
         <Select value={auditStatus} onChange={(e) => setAuditStatus(e.target.value)}>
-          <option value="">全部审核</option>
-          <option value="pending">待审核</option>
-          <option value="passed">已通过</option>
-          <option value="rejected">已拒绝</option>
+          <option value="">{t("works.allAudit")}</option>
+          <option value="pending">{t("labels.auditStatus.pending")}</option>
+          <option value="passed">{t("labels.auditStatus.passed")}</option>
+          <option value="rejected">{t("labels.auditStatus.rejected")}</option>
         </Select>
         <Select value={visibility} onChange={(e) => setVisibility(e.target.value)}>
-          <option value="">全部可见性</option>
-          <option value="public">公开</option>
-          <option value="private">私密</option>
-          <option value="unlisted">不公开列出</option>
+          <option value="">{t("works.allVisibility")}</option>
+          <option value="public">{t("labels.visibility.public")}</option>
+          <option value="private">{t("labels.visibility.private")}</option>
+          <option value="unlisted">{t("labels.visibility.unlisted")}</option>
         </Select>
         <Button
           size="sm"
@@ -113,21 +115,21 @@ export function WorksPage() {
             void load(1);
           }}
         >
-          筛选
+          {t("common.filter")}
         </Button>
       </AdminFilterBar>
       <div className="rounded-lg border bg-background">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>封面</TableHead>
+              <TableHead>{t("projects.cover")}</TableHead>
               <TableHead>ID</TableHead>
-              <TableHead>标题</TableHead>
-              <TableHead>用户</TableHead>
-              <TableHead>可见性</TableHead>
-              <TableHead>审核</TableHead>
-              <TableHead>发布时间</TableHead>
-              <TableHead>操作</TableHead>
+              <TableHead>{t("projects.cols.title")}</TableHead>
+              <TableHead>{t("orders.cols.user")}</TableHead>
+              <TableHead>{t("works.visibility")}</TableHead>
+              <TableHead>{t("works.audit")}</TableHead>
+              <TableHead>{t("works.publishedAt")}</TableHead>
+              <TableHead>{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -168,22 +170,22 @@ export function WorksPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {new Date(w.published_at).toLocaleString()}
+                  {formatDateTime(w.published_at)}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => openWork(w)}>
-                      详情
+                      {t("common.details")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => void patchWork(w.id, { audit_status: "passed" })}>
-                      通过
+                      {t("works.approve")}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => void patchWork(w.id, { audit_status: "rejected" })}
                     >
-                      拒绝
+                      {t("works.reject")}
                     </Button>
                     <Button
                       size="sm"
@@ -194,7 +196,7 @@ export function WorksPage() {
                         })
                       }
                     >
-                      {w.visibility === "public" ? "设私密" : "设公开"}
+                      {w.visibility === "public" ? t("works.setPrivate") : t("works.setPublic")}
                     </Button>
                   </div>
                 </TableCell>
@@ -221,13 +223,13 @@ export function WorksPage() {
           }
         }}
         size="lg"
-        title={detail?.title ?? "作品详情"}
-        subtitle={detail ? `作品 #${detail.id}` : undefined}
+        title={detail?.title ?? t("works.detailTitle")}
+        subtitle={detail ? t("works.workId", { id: detail.id }) : undefined}
       >
         {detail ? (
           <>
             {(detail.cover_url || detail.video_url) ? (
-              <AdminDetailSection title="媒体预览">
+              <AdminDetailSection title={t("projects.mediaPreview")}>
                 <div className="admin-detail-media">
                   {detail.cover_url ? (
                     <img src={coverSrc(detail.cover_url)} alt={detail.title} />
@@ -238,11 +240,11 @@ export function WorksPage() {
                 </div>
               </AdminDetailSection>
             ) : null}
-            <AdminDetailSection title="基本信息">
+            <AdminDetailSection title={t("users.detail.tabInfo")}>
               <AdminDetailMeta
                 items={[
                   {
-                    label: "用户",
+                    label: t("orders.cols.user"),
                     value: (
                       <AdminEntityLink
                         kind="user"
@@ -252,18 +254,18 @@ export function WorksPage() {
                     ),
                   },
                   {
-                    label: "关联项目",
+                    label: t("works.relatedProject"),
                     value: detail.project_id ? (
                       <AdminEntityLink kind="project" id={detail.project_id} />
                     ) : (
                       "—"
                     ),
                   },
-                  { label: "可见性", value: visibilityLabel(detail.visibility) },
-                  { label: "审核", value: auditStatusLabel(detail.audit_status) },
+                  { label: t("works.visibility"), value: visibilityLabel(detail.visibility) },
+                  { label: t("works.audit"), value: auditStatusLabel(detail.audit_status) },
                   {
-                    label: "发布时间",
-                    value: new Date(detail.published_at).toLocaleString(),
+                    label: t("works.publishedAt"),
+                    value: formatDateTime(detail.published_at),
                     full: true,
                   },
                 ]}
@@ -272,7 +274,7 @@ export function WorksPage() {
             {detail.video_url ? (
               <Button size="sm" variant="outline" asChild>
                 <a href={detail.video_url} target="_blank" rel="noreferrer">
-                  新窗口打开视频
+                  {t("works.openVideo")}
                 </a>
               </Button>
             ) : null}

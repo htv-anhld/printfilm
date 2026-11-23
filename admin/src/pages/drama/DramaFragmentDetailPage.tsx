@@ -10,9 +10,11 @@ import {
 import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { Button } from "@/components/ui/button";
 import { formatDramaGenerationStatus } from "@/lib/dramaLabels";
+import { tr, useI18n } from "@/i18n";
 
 /** 漫剧分镜详情 */
 export function DramaFragmentDetailPage() {
+  const { t } = useI18n();
   const { fragmentId } = useParams<{ fragmentId: string }>();
   const navigate = useNavigate();
   const [detail, setDetail] = useState<AdminDramaFragment | null>(null);
@@ -28,14 +30,14 @@ export function DramaFragmentDetailPage() {
     void api<AdminDramaFragment>(`/api/admin/drama-fragments/${id}`)
       .then(setDetail)
       .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "加载失败");
+        toast.error(err instanceof Error ? err.message : tr("common.loadFailed"));
         navigate("/drama-fragments", { replace: true });
       })
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
   if (loading && !detail) {
-    return <div className="admin-detail-page-loading">加载中…</div>;
+    return <div className="admin-detail-page-loading">{t("common.loading")}</div>;
   }
   if (!detail) return null;
 
@@ -45,25 +47,25 @@ export function DramaFragmentDetailPage() {
         <Button variant="ghost" size="sm" className="admin-detail-back" asChild>
           <Link to="/drama-fragments">
             <ArrowLeft className="h-4 w-4" />
-            返回分镜列表
+            {t("drama.fragmentDetail.back")}
           </Link>
         </Button>
         <div className="admin-detail-page-heading">
-          <h2 className="admin-detail-page-title">分镜 #{detail.id}</h2>
+          <h2 className="admin-detail-page-title">{t("drama.fragmentDetail.title", { id: detail.id })}</h2>
           <p className="admin-detail-page-sub">
-            分集 {detail.episode_name ?? detail.episode_id} ·{" "}
+            {t("drama.fragmentDetail.episode", { name: detail.episode_name ?? detail.episode_id })} ·{" "}
             <AdminEntityLink kind="drama" id={detail.project_id} label={detail.project_title ?? undefined} />
           </p>
         </div>
         <div className="admin-detail-page-actions">
           <Button size="sm" variant="outline" asChild>
-            <Link to={`/drama-episodes/${detail.episode_id}`}>打开分集</Link>
+            <Link to={`/drama-episodes/${detail.episode_id}`}>{t("drama.fragmentDetail.openEpisode")}</Link>
           </Button>
         </div>
       </div>
 
       {(detail.cover || detail.video) ? (
-        <AdminDetailSection title="媒体预览">
+        <AdminDetailSection title={t("projects.mediaPreview")}>
           <div className="admin-detail-media">
             {detail.video ? (
               <video src={detail.video} controls className="max-w-full" />
@@ -74,36 +76,36 @@ export function DramaFragmentDetailPage() {
         </AdminDetailSection>
       ) : null}
 
-      <AdminDetailSection title="基本信息">
+      <AdminDetailSection title={t("users.detail.tabInfo")}>
         <AdminDetailMeta
           items={[
-            { label: "序号", value: detail.sort_order },
+            { label: t("drama.fields.order"), value: detail.sort_order },
             {
-              label: "分集",
+              label: t("tasks.detail.episode"),
               value: (
                 <Link to={`/drama-episodes/${detail.episode_id}`} className="admin-link">
-                  {detail.episode_name ?? `分集#${detail.episode_id}`}
+                  {detail.episode_name ?? t("tasks.episodeRef", { id: detail.episode_id })}
                 </Link>
               ),
             },
             {
-              label: "项目",
+              label: t("orders.cols.project"),
               value: <AdminEntityLink kind="drama" id={detail.project_id} label={detail.project_title ?? undefined} />,
             },
-            { label: "时长", value: detail.duration_sec != null ? `${detail.duration_sec}s` : "—" },
-            { label: "生成状态", value: formatDramaGenerationStatus(detail.generation_status) },
-            { label: "资产引用数", value: detail.asset_ref_count },
-            { label: "剧本文本", value: detail.content || "—", full: true },
+            { label: t("projects.fields.duration"), value: detail.duration_sec != null ? `${detail.duration_sec}s` : "—" },
+            { label: t("drama.fields.generationStatus"), value: formatDramaGenerationStatus(detail.generation_status) },
+            { label: t("drama.fields.assetRefCount"), value: detail.asset_ref_count },
+            { label: t("drama.fields.scriptText"), value: detail.content || "—", full: true },
           ]}
         />
       </AdminDetailSection>
 
       {(detail.asset_ids ?? []).length > 0 ? (
-        <AdminDetailSection title="关联资产">
+        <AdminDetailSection title={t("drama.fragmentDetail.relatedAssets")}>
           <div className="flex flex-wrap gap-2">
             {(detail.asset_ids ?? []).map((assetId) => (
               <Button key={assetId} size="sm" variant="outline" asChild>
-                <Link to={`/drama-assets/${assetId}`}>资产 #{assetId}</Link>
+                <Link to={`/drama-assets/${assetId}`}>{t("drama.assetRef", { id: assetId })}</Link>
               </Button>
             ))}
           </div>
@@ -111,7 +113,7 @@ export function DramaFragmentDetailPage() {
       ) : null}
 
       {detail.params ? (
-        <AdminDetailSection title="参数 JSON">
+        <AdminDetailSection title={t("drama.paramsJson")}>
           <pre className="admin-json-preview">{JSON.stringify(detail.params, null, 2)}</pre>
         </AdminDetailSection>
       ) : null}

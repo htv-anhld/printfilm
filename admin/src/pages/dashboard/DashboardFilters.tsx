@@ -1,5 +1,6 @@
 import { AdminChipFilter } from "@/components/admin/AdminChipFilter";
 import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
+import { tr } from "@/i18n";
 
 /** 仪表盘筛选维度 */
 export type DashboardDays = "1" | "7" | "14" | "30";
@@ -30,39 +31,39 @@ export const PROJECTS_DASHBOARD_FILTERS: DashboardFilterState = {
 };
 
 const DAY_OPTIONS = [
-  { value: "1", label: "今日" },
-  { value: "7", label: "近 7 日" },
-  { value: "14", label: "近 14 日" },
-  { value: "30", label: "近 30 日" },
+  { value: "1", get label() { return tr("dashboard.today"); } },
+  { value: "7", get label() { return tr("common.lastNDays", { n: 7 }); } },
+  { value: "14", get label() { return tr("common.lastNDays", { n: 14 }); } },
+  { value: "30", get label() { return tr("common.lastNDays", { n: 30 }); } },
 ];
 
 /** 图表 / 区块标题用的时间范围文案 */
 export function dashboardRangeLabel(days: DashboardDays): string {
-  if (days === "1") return "今日";
-  return `近 ${days} 日`;
+  if (days === "1") return tr("dashboard.today");
+  return tr("common.lastNDays", { n: days });
 }
 
 const DOMAIN_OPTIONS = [
-  { value: "all", label: "全部领域" },
-  { value: "drama", label: "漫剧" },
-  { value: "kepu", label: "AI短视频" },
-  { value: "api", label: "开放 API" },
-  { value: "tools", label: "工具" },
-  { value: "studio", label: "工作室" },
+  { value: "all", get label() { return tr("orders.usage.allDomains"); } },
+  { value: "drama", get label() { return tr("dashboard.domain.drama"); } },
+  { value: "kepu", get label() { return tr("dashboard.domain.kepu"); } },
+  { value: "api", get label() { return tr("dashboard.domain.api"); } },
+  { value: "tools", get label() { return tr("dashboard.domain.tools"); } },
+  { value: "studio", get label() { return tr("dashboard.domain.studio"); } },
 ];
 
 const CAPABILITY_OPTIONS = [
-  { value: "all", label: "全部能力" },
+  { value: "all", get label() { return tr("orders.usage.allCapabilities"); } },
   { value: "llm", label: "LLM" },
-  { value: "image", label: "生图" },
-  { value: "video", label: "视频" },
-  { value: "tts", label: "配音" },
+  { value: "image", get label() { return tr("dashboard.cap.image"); } },
+  { value: "video", get label() { return tr("dashboard.cap.video"); } },
+  { value: "tts", get label() { return tr("dashboard.cap.tts"); } },
 ];
 
 const METRIC_OPTIONS = [
-  { value: "charge", label: "扣费" },
-  { value: "cost", label: "成本" },
-  { value: "calls", label: "调用" },
+  { value: "charge", get label() { return tr("dashboard.metric.charge"); } },
+  { value: "cost", get label() { return tr("dashboard.metric.cost"); } },
+  { value: "calls", get label() { return tr("dashboard.metric.calls"); } },
 ];
 
 type DashboardFiltersProps = {
@@ -77,28 +78,28 @@ export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
   return (
     <AdminFilterBar className="admin-dashboard-filters">
       <AdminChipFilter
-        label="时间维度"
+        label={tr("dashboard.filters.days")}
         value={value.days}
         options={DAY_OPTIONS}
         onChange={(days) => patch({ days: days as DashboardDays })}
         className="admin-chip-filter--segment"
       />
       <AdminChipFilter
-        label="业务领域"
+        label={tr("dashboard.filters.domain")}
         value={value.domain}
         options={DOMAIN_OPTIONS}
         onChange={(domain) => patch({ domain: domain as DashboardDomain })}
         className="admin-chip-filter--segment"
       />
       <AdminChipFilter
-        label="能力类型"
+        label={tr("dashboard.filters.capability")}
         value={value.capability}
         options={CAPABILITY_OPTIONS}
         onChange={(capability) => patch({ capability: capability as DashboardCapability })}
         className="admin-chip-filter--segment"
       />
       <AdminChipFilter
-        label="统计指标"
+        label={tr("dashboard.filters.metric")}
         value={value.metric}
         options={METRIC_OPTIONS}
         onChange={(metric) => patch({ metric: metric as DashboardMetric })}

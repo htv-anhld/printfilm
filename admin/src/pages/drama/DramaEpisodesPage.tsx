@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { formatDateTime, useI18n } from "@/i18n";
 
 type ListRes = { items: AdminDramaEpisode[]; meta: PageMeta };
 
 /** 全站漫剧分集列表 */
 export function DramaEpisodesPage() {
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const initialProjectId = searchParams.get("project_id");
 
@@ -32,7 +34,7 @@ export function DramaEpisodesPage() {
       if (projectId.trim()) params.set("project_id", projectId.trim());
       setData(await api<ListRes>(`/api/admin/drama-episodes?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : t("common.loadFailed"));
     }
   }
 
@@ -43,11 +45,11 @@ export function DramaEpisodesPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader description="全站漫剧分集：按项目与用户筛选，可进入分镜明细" />
+      <PageHeader description={t("drama.episodes.desc")} />
       <AdminFilterBar>
-        <Input placeholder="集名 / 项目标题" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input placeholder={t("drama.episodes.searchPlaceholder")} value={q} onChange={(e) => setQ(e.target.value)} />
         <AdminUserSearchSelect value={userId} onChange={setUserId} />
-        <Input placeholder="项目 ID" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
+        <Input placeholder={t("drama.fields.projectId")} value={projectId} onChange={(e) => setProjectId(e.target.value)} />
         <Button
           size="sm"
           variant="secondary"
@@ -57,7 +59,7 @@ export function DramaEpisodesPage() {
             void load(1);
           }}
         >
-          筛选
+          {t("common.filter")}
         </Button>
       </AdminFilterBar>
 
@@ -66,12 +68,12 @@ export function DramaEpisodesPage() {
           <thead>
             <tr>
               <th>ID</th>
-              <th>名称</th>
-              <th>项目</th>
-              <th>用户</th>
-              <th>分镜数</th>
-              <th>分镜计划</th>
-              <th>更新时间</th>
+              <th>{t("templates.editor.name")}</th>
+              <th>{t("orders.cols.project")}</th>
+              <th>{t("orders.cols.user")}</th>
+              <th>{t("drama.fields.fragmentCount")}</th>
+              <th>{t("drama.fields.fragmentPlan")}</th>
+              <th>{t("drama.fields.updatedAt")}</th>
               <th></th>
             </tr>
           </thead>
@@ -93,11 +95,11 @@ export function DramaEpisodesPage() {
                 <td>{row.fragment_count}</td>
                 <td className="text-xs text-[var(--admin-muted)]">{row.fragment_plan_status || "—"}</td>
                 <td className="text-xs text-[var(--admin-muted)]">
-                  {row.updated_at ? new Date(row.updated_at).toLocaleString() : "—"}
+                  {formatDateTime(row.updated_at)}
                 </td>
                 <td>
                   <Button size="sm" variant="outline" asChild>
-                    <Link to={`/drama-episodes/${row.id}`}>查看</Link>
+                    <Link to={`/drama-episodes/${row.id}`}>{t("common.view")}</Link>
                   </Button>
                 </td>
               </tr>
@@ -105,7 +107,7 @@ export function DramaEpisodesPage() {
             {(data?.items.length ?? 0) === 0 ? (
               <tr>
                 <td colSpan={8} className="!text-center text-[var(--admin-muted)]">
-                  暂无分集
+                  {t("drama.noEpisodes")}
                 </td>
               </tr>
             ) : null}

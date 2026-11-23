@@ -1,0 +1,17 @@
+export const viWorks = {
+  desc: "Điều chỉnh chế độ hiển thị và trạng thái duyệt",
+  searchPlaceholder: "Tìm theo tiêu đề",
+  allAudit: "Tất cả trạng thái duyệt",
+  allVisibility: "Tất cả chế độ hiển thị",
+  visibility: "Hiển thị",
+  audit: "Duyệt",
+  publishedAt: "Thời gian đăng",
+  approve: "Duyệt",
+  reject: "Từ chối",
+  setPrivate: "Đặt riêng tư",
+  setPublic: "Đặt công khai",
+  detailTitle: "Chi tiết tác phẩm",
+  workId: "Tác phẩm #{id}",
+  relatedProject: "Dự án liên quan",
+  openVideo: "Mở video trong cửa sổ mới",
+};

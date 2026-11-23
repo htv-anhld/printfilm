@@ -24,7 +24,7 @@
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
   --font-display: "Anybody", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -318,7 +318,7 @@
     radial-gradient(ellipse 90% 60% at 100% 0%, rgba(61, 154, 114, 0.06), transparent 55%),
     var(--admin-bg);
   color: var(--admin-text);
-  font-family: "Figtree", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: "Be Vietnam Pro", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 .admin-app.is-collapsed {
