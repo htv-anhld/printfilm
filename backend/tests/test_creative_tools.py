@@ -120,3 +120,21 @@ def test_video_estimate_accepts_chip_duration():
     assert _payload_duration({"duration": 8}) == 8.0
     assert _payload_duration({"duration": "abc"}) == 5.0
     assert _payload_duration({}) == 5.0
+
+
+def test_seedance_billing_tokens_accepts_chip_duration():
+    """工具页 t2v 轮询结算时 duration 是 "5s"，不能 500。"""
+    from app.services.drama.billing_util import seedance_video_billing_tokens
+
+    assert seedance_video_billing_tokens("5s") == seedance_video_billing_tokens(5)
+    assert seedance_video_billing_tokens("10秒") == seedance_video_billing_tokens(10)
+    assert seedance_video_billing_tokens(None) == seedance_video_billing_tokens(8)
+
+
+def test_parse_duration_seconds():
+    from app.services.billing.estimates import parse_duration_seconds
+
+    assert parse_duration_seconds("5s") == 5.0
+    assert parse_duration_seconds("abc", 8.0) == 8.0
+    assert parse_duration_seconds(12) == 12.0
+    assert parse_duration_seconds("", 3.0) == 3.0

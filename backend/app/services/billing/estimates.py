@@ -154,14 +154,19 @@ def estimate_phase_fen(project: Project, phase: str, settings: Settings | None =
     return _estimate_assets_fen(project, s)
 
 
-def _payload_duration(payload: dict) -> float:
-    """时长参数可能是数字或前端芯片值 "5s" / "10秒"；解析失败按 5 秒。"""
-    raw = str(payload.get("duration") or "5").strip().lower()
+def parse_duration_seconds(value: object, default: float = 5.0) -> float:
+    """时长可能是数字或前端芯片值 "5s" / "10秒"；解析失败返回 default。"""
+    raw = str(value if value is not None and value != "" else default).strip().lower()
     digits = "".join(ch for ch in raw if ch.isdigit() or ch == ".")
     try:
-        return float(digits) if digits else 5.0
+        return float(digits) if digits else float(default)
     except ValueError:
-        return 5.0
+        return float(default)
+
+
+def _payload_duration(payload: dict) -> float:
+    """任务 payload 里的时长（秒）。"""
+    return parse_duration_seconds(payload.get("duration"), 5.0)
 
 
 async def estimate_task_fen(db: AsyncSession, task: TaskRun, settings: Settings | None = None) -> int:

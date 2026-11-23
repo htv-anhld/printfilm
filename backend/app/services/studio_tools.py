@@ -355,11 +355,15 @@ async def execute_image_tool_run(run_id: int) -> dict:
             await db.commit()
             return {"ok": True, "run_id": run_id, "urls": urls, "billing_task_id": billing_task.id}
         except Exception as exc:  # noqa: BLE001
-            row.status = "failed"
-            row.error = str(exc)[:512]
-            await db.commit()
             logger.exception("execute_image_tool_run failed run_id=%s", run_id)
-            return {"ok": False, "run_id": run_id, "error": row.error}
+            # 事务可能已中止（死锁 / SQL 错误），必须先回滚，否则写 failed 也会失败、行永远卡在 running
+            await db.rollback()
+            failed = await db.get(ToolRun, run_id)
+            if failed is not None:
+                failed.status = "failed"
+                failed.error = str(exc)[:512]
+                await db.commit()
+            return {"ok": False, "run_id": run_id, "error": str(exc)[:512]}
 
 
 # 轮询工具生图任务状态。

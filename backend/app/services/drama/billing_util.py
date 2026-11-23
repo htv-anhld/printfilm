@@ -18,9 +18,12 @@ if TYPE_CHECKING:
 
 
 # 按分镜时长估算 Seedance 视频 token（与科普 pipeline 一致）
-def seedance_video_billing_tokens(duration_sec: int | float | None) -> int:
+def seedance_video_billing_tokens(duration_sec: int | float | str | None) -> int:
+    from app.services.billing.estimates import parse_duration_seconds
+
     settings = get_settings()
-    dur = max(float(duration_sec or 8), 2.0)
+    # 工具页时长可能是 "5s" 字符串
+    dur = max(parse_duration_seconds(duration_sec, 8.0), 2.0)
     return int(dur * settings.billing_est_seedance_tokens_per_sec)
 
 
