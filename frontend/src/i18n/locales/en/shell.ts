@@ -80,6 +80,8 @@ export const enShell = {
   footer: {
     terms: 'Terms',
     privacy: 'Privacy',
+    refund: 'Refunds',
+    acceptableUse: 'Acceptable use',
     contact: 'Contact',
     help: 'Help',
     github: 'GitHub',

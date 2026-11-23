@@ -80,6 +80,8 @@ export const viShell = {
   footer: {
     terms: 'Điều khoản sử dụng',
     privacy: 'Chính sách quyền riêng tư',
+    refund: 'Hoàn tiền',
+    acceptableUse: 'Chính sách sử dụng',
     contact: 'Liên hệ',
     help: 'Trung tâm trợ giúp',
     github: 'GitHub',

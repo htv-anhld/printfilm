@@ -10,7 +10,7 @@ import MethodPage from './pages/MethodPage'
 import ToolsPage from './pages/ToolsPage'
 import ToolDetailPage from './pages/ToolDetailPage'
 import HelpPage from './pages/HelpPage'
-import { PrivacyPage, TermsPage } from './pages/LegalDocPage'
+import { AcceptableUsePage, PrivacyPage, RefundPage, TermsPage } from './pages/LegalDocPage'
 import ContactPage from './pages/ContactPage'
 import SettingsPage from './pages/SettingsPage'
 import PricingPage from './pages/PricingPage'
@@ -44,6 +44,8 @@ export default function App() {
         <Route path="/help" element={<HelpPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/refund" element={<RefundPage />} />
+        <Route path="/acceptable-use" element={<AcceptableUsePage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/pricing" element={<PricingPage />} />

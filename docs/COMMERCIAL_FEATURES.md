@@ -146,3 +146,18 @@ dùng `TASK_USER_MAX_CONCURRENCY`. Lưu ý vẫn bị chặn bởi giới hạn 
 **Bẫy:** Nút "huỷ" trong app là **huỷ ngay** (credit tháng mất luôn). Huỷ vào cuối kỳ thì người
 dùng làm trong cổng khách hàng Creem (nút "Quản lý thuê bao"), vì tài liệu REST của Creem chưa
 mô tả tham số huỷ cuối kỳ.
+
+## 5. Trang pháp lý: hoàn tiền và chính sách sử dụng
+
+Cổng thanh toán (Creem/Paddle) **không duyệt** nếu site thiếu chính sách hoàn tiền và chính sách
+sử dụng. Đã thêm `/refund` và `/acceptable-use` (ba ngôn ngữ, nội dung ở
+`frontend/src/lib/legalPolicies.ts`), có liên kết ở footer và cuối mỗi trang pháp lý.
+
+Khi đơn vị tiền là USD, mục 4 (tính phí) của `/terms` được thay bằng điều khoản thương mại (credit,
+thuê bao, Creem, dẫn sang chính sách hoàn tiền). Bản gốc ghi "tính theo giá vốn, không cộng thêm, chỉ
+支付宝/微信, không có thuê bao", không còn đúng với bản thương mại.
+
+**Cần làm trước khi mở bán:** nhờ luật sư xem lại cả bốn văn bản. Các con số trong chính sách
+hoàn tiền (14 ngày cho gói credit; 7 ngày và ≤ 20% mức dùng cho thuê bao đầu tiên) là **đề xuất mặc
+định**, không phải con số Dravelio công bố; hãy chỉnh theo chính sách thật của bạn. Hiện việc hoàn
+tiền vẫn làm thủ công trên dashboard Creem, còn hệ thống tự thu hồi credit qua webhook `refund.created`.

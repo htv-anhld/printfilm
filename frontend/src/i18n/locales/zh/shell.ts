@@ -80,6 +80,8 @@ export const zhShell = {
   footer: {
     terms: '用户协议',
     privacy: '隐私政策',
+    refund: '退款政策',
+    acceptableUse: '可接受使用',
     contact: '联系我们',
     help: '帮助中心',
     github: 'GitHub',
