@@ -233,6 +233,16 @@ export const viSettings = {
     quotaInfo: "Còn {quota} quota ≈ {remainYuan} ({remainUsd} · {rate} CNY/USD); đã dùng {used} ≈ {usedYuan}. Bảng điều khiển {console}",
   },
   site: {
+    voice: {
+      title: "Giọng đọc (ElevenLabs)",
+      desc: "Giọng tiếng Việt chất lượng cao. Lỗi hoặc chưa cấu hình thì tự quay về giọng edge-tts cùng ngôn ngữ.",
+      model: "Mô hình",
+      modelHint: "eleven_flash_v2_5 hỗ trợ tiếng Việt; eleven_multilingual_v2 KHÔNG hỗ trợ tiếng Việt",
+      price: "Giá vốn (USD / 1.000 ký tự)",
+      priceHint: "Dùng để tính tiền người dùng (nhân thêm hệ số giá bán). Xem gói ElevenLabs bạn đang dùng",
+      map: "Nâng cấp giọng có sẵn",
+      mapHint: "edge_voice:elevenlabs_voice_id. Project đang dùng giọng edge tiếng Việt sẽ tự chuyển sang ElevenLabs",
+    },
     auth: {
       title: "Đăng nhập",
       desc: "Xác minh email chống tài khoản rác ăn credit tặng; đăng nhập Google giúp giảm bỏ cuộc ở bước đăng ký.",

@@ -634,6 +634,10 @@ export type AdminModelSettings = {
   google_client_id?: string;
   google_redirect_uri?: string;
   has_google_client_secret?: boolean;
+  elevenlabs_model?: string;
+  elevenlabs_voice_map?: string;
+  elevenlabs_usd_per_1k_chars?: number;
+  has_elevenlabs_api_key?: boolean;
   app_public_url?: string;
   has_creem_api_key?: boolean;
   has_creem_webhook_secret?: boolean;

@@ -55,6 +55,14 @@ class Settings(BaseSettings):
     volc_tts_resource_id: str = "seed-tts-2.0"
     volc_tts_speaker: str = "zh_female_cancan_uranus_bigtts"
     volc_tts_url: str = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
+    # ElevenLabs（越南语等多语种高质量配音）；音色在 speaker 里写成 el:<voice_id>
+    elevenlabs_api_key: str = ""
+    # eleven_flash_v2_5 支持越南语（vi）；eleven_multilingual_v2 不支持
+    elevenlabs_model: str = "eleven_flash_v2_5"
+    # 把 edge 音色升级为 ElevenLabs："vi-VN-HoaiMyNeural:<voice_id>,vi-VN-NamMinhNeural:<voice_id>"
+    elevenlabs_voice_map: str = ""
+    # 上游成本（美元 / 千字符），用于计费
+    elevenlabs_usd_per_1k_chars: float = 0.1
     # 新版控制台 API Key（与 app_id/access_key 二选一，优先 api_key）
     volc_tts_api_key: str = ""
     # 音色设计：控制台购买的 S_ 槽位，逗号分隔；配了且鉴权齐全则漫剧走 voice_design

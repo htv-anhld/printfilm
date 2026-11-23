@@ -233,6 +233,16 @@ export const enSettings = {
     quotaInfo: "Remaining {quota} quota ≈ {remainYuan} ({remainUsd} · {rate} CNY/USD); used {used} ≈ {usedYuan}. Console {console}",
   },
   site: {
+    voice: {
+      title: "Voice (ElevenLabs)",
+      desc: "High-quality Vietnamese voices. Falls back to an edge-tts voice in the same language on error or when not configured.",
+      model: "Model",
+      modelHint: "eleven_flash_v2_5 supports Vietnamese; eleven_multilingual_v2 does NOT",
+      price: "Cost (USD per 1,000 chars)",
+      priceHint: "Used for user billing (times the price multiplier). Check your ElevenLabs plan",
+      map: "Upgrade built-in voices",
+      mapHint: "edge_voice:elevenlabs_voice_id. Projects on the Vietnamese edge voices switch to ElevenLabs automatically",
+    },
     auth: {
       title: "Sign-in",
       desc: "Email verification stops throwaway accounts from farming free credits; Google sign-in reduces sign-up drop-off.",

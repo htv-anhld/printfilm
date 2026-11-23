@@ -109,6 +109,11 @@ class AdminModelSettingsOut(BaseModel):
     google_client_secret: str = ""
     google_redirect_uri: str = ""
     has_google_client_secret: bool = False
+    elevenlabs_api_key: str = ""
+    elevenlabs_model: str = "eleven_flash_v2_5"
+    elevenlabs_voice_map: str = ""
+    elevenlabs_usd_per_1k_chars: float = 0.1
+    has_elevenlabs_api_key: bool = False
     has_creem_api_key: bool = False
     has_creem_webhook_secret: bool = False
 
@@ -251,6 +256,11 @@ class AdminModelSettingsPatch(BaseModel):
     google_client_secret: str | None = None
     clear_google_client_secret: bool = False
     google_redirect_uri: str | None = None
+    elevenlabs_api_key: str | None = None
+    clear_elevenlabs_api_key: bool = False
+    elevenlabs_model: str | None = None
+    elevenlabs_voice_map: str | None = None
+    elevenlabs_usd_per_1k_chars: float | None = Field(default=None, ge=0, le=10)
 
     billing_enabled: bool | None = None
     billing_currency: Literal["USD", "CNY"] | None = None
@@ -378,6 +388,10 @@ def model_config_field_names() -> tuple[str, ...]:
         "google_client_id",
         "google_client_secret",
         "google_redirect_uri",
+        "elevenlabs_api_key",
+        "elevenlabs_model",
+        "elevenlabs_voice_map",
+        "elevenlabs_usd_per_1k_chars",
         "billing_enabled",
         "billing_currency",
         "billing_markup",
@@ -431,6 +445,7 @@ SECRET_FIELD_FLAGS: dict[str, str] = {
     "creem_api_key": "has_creem_api_key",
     "creem_webhook_secret": "has_creem_webhook_secret",
     "google_client_secret": "has_google_client_secret",
+    "elevenlabs_api_key": "has_elevenlabs_api_key",
     "smtp_password": "has_smtp_password",
 }
 

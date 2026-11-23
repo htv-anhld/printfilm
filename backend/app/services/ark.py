@@ -486,6 +486,18 @@ class ImageResult:
     upstream_cost_fen: int | None = None
 
 
+_VI_CHARS = re.compile(r"[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]", re.IGNORECASE)
+
+
+def _tts_language_code(text: str) -> str | None:
+    """配音语言（ISO 639-1）：越南语有专属变音字母；纯拉丁文本按英语；其它交给模型自动识别。"""
+    if _VI_CHARS.search(text or ""):
+        return "vi"
+    if latin_text(text or ""):
+        return "en"
+    return None
+
+
 class ArkGateway:
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings_override = settings
@@ -1996,6 +2008,14 @@ class ArkGateway:
             or "zh_female_cancan_uranus_bigtts"
         )
         clean = (text or "").strip() or _("这一幕。")
+        from app.services import elevenlabs
+
+        # 已配置 ElevenLabs 时，映射过的 edge 越南语 / 英语音色自动升级
+        speaker = elevenlabs.upgrade_speaker(speaker)
+        el_speaker = speaker if elevenlabs.is_elevenlabs_voice(speaker) else ""
+        if el_speaker:
+            # ElevenLabs 失败（或 mock）时回落到同语言、同性别的 edge 音色，不回落到中文豆包
+            speaker = elevenlabs.fallback_edge_voice(el_speaker)
         # vi-VN-* / en-US-* 等微软 neural 音色：豆包 openspeech 不认，直接走 edge-tts
         edge_speaker = is_edge_voice(speaker)
 
@@ -2023,6 +2043,16 @@ class ArkGateway:
 
         audio_model = self._resolved_audio_model()
         on_tokenfree = uses_tokenfree_audio(base_url=self.settings.ark_base_url or "")
+
+        if el_speaker:
+            try:
+                if await elevenlabs.synthesize(clean, el_speaker, dest, language_code=_tts_language_code(clean)):
+                    url = await _accept_if_audible("elevenlabs")
+                    if url:
+                        logger.info("TTS elevenlabs ok shot=%s speaker=%s", shot_no, el_speaker)
+                        return url
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("elevenlabs TTS failed: %s", exc)
 
         if edge_speaker:
             try:

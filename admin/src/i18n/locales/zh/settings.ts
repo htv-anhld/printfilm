@@ -233,6 +233,16 @@ export const zhSettings = {
     quotaInfo: "剩余 {quota} quota ≈ {remainYuan}（{remainUsd} · {rate} CNY/USD）；已用 {used} ≈ {usedYuan}。控制台 {console}",
   },
   site: {
+    voice: {
+      title: "配音（ElevenLabs）",
+      desc: "高质量越南语音色；出错或未配置时自动回落到同语言的 edge-tts 音色。",
+      model: "模型",
+      modelHint: "eleven_flash_v2_5 支持越南语；eleven_multilingual_v2 不支持",
+      price: "成本（美元 / 千字符）",
+      priceHint: "用于用户计费（再乘加价倍率），请对照你的 ElevenLabs 套餐",
+      map: "升级内置音色",
+      mapHint: "edge_voice:elevenlabs_voice_id，使用越南语 edge 音色的项目自动改用 ElevenLabs",
+    },
     auth: {
       title: "登录方式",
       desc: "邮箱验证防止批量注册薅赠金；Google 登录降低注册流失。",

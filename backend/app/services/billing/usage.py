@@ -33,6 +33,14 @@ async def record_line(
 ) -> UsageEvent:
     s = get_settings()
     tid = task_run_id if task_run_id is not None else get_current_task_run_id()
+    if billing_key == "tts" and raw is None:
+        # ElevenLabs 按字符的真实成本（ark.tts 合成后留下）优先于 token 估算
+        from app.services.elevenlabs import pop_tts_cost_hint
+
+        hint = pop_tts_cost_hint()
+        if hint:
+            raw = {"usage": {"cost_fen": int(hint)}, "provider": "elevenlabs"}
+            provider = "elevenlabs"
     total = int(tokens) or (int(prompt_tokens) + int(completion_tokens))
     if total <= 0:
         if billing_key == "llm_chat":

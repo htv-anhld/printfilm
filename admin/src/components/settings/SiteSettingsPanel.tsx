@@ -7,6 +7,7 @@ import {
 } from "@/components/settings/SettingsPanel";
 import { useState } from "react";
 import { AuthSettingsSection } from "@/components/settings/AuthSettingsSection";
+import { VoiceSettingsSection } from "@/components/settings/VoiceSettingsSection";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
 import { useI18n } from "@/i18n";
 
@@ -17,6 +18,9 @@ export function SiteSettingsPanel() {
   /* Google client secret 本地编辑态（留空不修改） */
   const [googleSecret, setGoogleSecret] = useState("");
   const [clearGoogleSecret, setClearGoogleSecret] = useState(false);
+  /* ElevenLabs Key 本地编辑态 */
+  const [elevenKey, setElevenKey] = useState("");
+  const [clearElevenKey, setClearElevenKey] = useState(false);
 
   async function handleSave() {
     if (!form) return;
@@ -31,11 +35,18 @@ export function SiteSettingsPanel() {
         google_client_secret: googleSecret.trim() || undefined,
         clear_google_client_secret: clearGoogleSecret,
         google_redirect_uri: form.google_redirect_uri ?? "",
+        elevenlabs_api_key: elevenKey.trim() || undefined,
+        clear_elevenlabs_api_key: clearElevenKey,
+        elevenlabs_model: form.elevenlabs_model ?? "eleven_flash_v2_5",
+        elevenlabs_voice_map: form.elevenlabs_voice_map ?? "",
+        elevenlabs_usd_per_1k_chars: form.elevenlabs_usd_per_1k_chars ?? 0.1,
       },
       t("settings.site.saved"),
     );
     setGoogleSecret("");
     setClearGoogleSecret(false);
+    setElevenKey("");
+    setClearElevenKey(false);
   }
 
   if (loading || !form) {
@@ -87,6 +98,20 @@ export function SiteSettingsPanel() {
           onClearSecret={() => {
             setGoogleSecret("");
             setClearGoogleSecret(true);
+          }}
+          patchField={patchField}
+        />
+        <VoiceSettingsSection
+          form={form}
+          secret={elevenKey}
+          clearSecret={clearElevenKey}
+          onSecret={(v) => {
+            setElevenKey(v);
+            setClearElevenKey(false);
+          }}
+          onClearSecret={() => {
+            setElevenKey("");
+            setClearElevenKey(true);
           }}
           patchField={patchField}
         />

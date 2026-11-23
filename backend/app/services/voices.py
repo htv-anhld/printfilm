@@ -215,6 +215,29 @@ def list_voices() -> list[dict[str, Any]]:
     return out
 
 
+async def list_voices_all() -> list[dict[str, Any]]:
+    """内置音色 + ElevenLabs 账号音色（已配置 Key 时）；同语言排序规则同 list_voices。"""
+    from app.services import elevenlabs
+
+    out = list_voices()
+    for item in out:
+        item.setdefault("provider", "edge" if is_edge_voice(str(item.get("speaker") or "")) else "doubao")
+    extra = await elevenlabs.list_voices()
+    loc = normalize_locale(get_locale())
+    merged = out + extra
+    if loc != "zh":
+        # 当前语言优先，其中 ElevenLabs（质量更高）排在 edge 前
+        merged.sort(key=lambda p: (0 if p.get("locale") == loc else 1, 0 if p.get("provider") == "elevenlabs" else 1))
+    return merged
+
+
+async def vietnamese_voices() -> list[dict[str, Any]]:
+    """越南语音色（对齐 Dravelio /drama/voices/vietnamese）：ElevenLabs 优先，edge 兜底。"""
+    voices = [v for v in await list_voices_all() if v.get("locale") == "vi"]
+    voices.sort(key=lambda p: 0 if p.get("provider") == "elevenlabs" else 1)
+    return voices
+
+
 def infer_speaker_gender(speaker: str) -> str | None:
     """openspeech speaker id → female | male（勿用子串 male，zh_female_* 会误判）。"""
     s = (speaker or "").strip().lower()

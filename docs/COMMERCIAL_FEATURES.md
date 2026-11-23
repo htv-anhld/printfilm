@@ -210,3 +210,27 @@ trong email trỏ về `:8000/auth` và không mở được. Giờ dùng `APP_P
 (chỉ ở build production, tối đa 20 lỗi mỗi lần tải trang, không gửi trùng). Backend giới hạn 30 lần/phút
 mỗi IP, gom lỗi theo fingerprint (bỏ số dòng/hash bundle) và đếm số lần.
 Admin → Hệ thống → **Lỗi phía client** để xem.
+
+## 8. Giọng tiếng Việt và ElevenLabs
+
+Trước đây giọng tiếng Việt chỉ có edge-tts (Hoài My / Nam Minh), chất lượng không đủ để bán.
+
+**Cấu hình** (env hoặc Admin → Trang web → Giọng đọc):
+
+| Khoá | Ghi chú |
+|---|---|
+| `ELEVENLABS_API_KEY` | |
+| `ELEVENLABS_MODEL` | Mặc định `eleven_flash_v2_5`, **có tiếng Việt**. `eleven_multilingual_v2` **không có** tiếng Việt |
+| `ELEVENLABS_VOICE_MAP` | `vi-VN-HoaiMyNeural:<voice_id>,vi-VN-NamMinhNeural:<voice_id>`: project đang dùng giọng edge tiếng Việt **tự động chuyển** sang ElevenLabs |
+| `ELEVENLABS_USD_PER_1K_CHARS` | Giá vốn để tính tiền; tra theo gói ElevenLabs bạn mua |
+
+**Cách hoạt động:** speaker có dạng `el:<voice_id>`. `ark.tts` thử ElevenLabs trước, kèm
+`language_code` tự nhận diện (có chữ có dấu tiếng Việt → `vi`, chữ Latin không dấu → `en`). Lỗi thì
+chuyển sang giọng edge **cùng ngôn ngữ và giới tính**, không rơi về giọng tiếng Trung.
+
+**Tính tiền:** sau mỗi lần đọc, chi phí thật theo số ký tự được ghi vào ContextVar; `record_line(tts)`
+dùng con số này thay cho ước tính token (vốn chỉ khoảng 1 cent mỗi lần, quá thấp). Nếu TTS chạy trong
+`asyncio.gather`/task riêng thì ContextVar không truyền ngược lên, khi đó vẫn tính theo ước tính cũ.
+
+**API:** `GET /api/voices` (gồm giọng trong tài khoản ElevenLabs, cache 10 phút),
+`GET /api/drama/voices/vietnamese`.
