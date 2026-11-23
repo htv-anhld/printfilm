@@ -67,11 +67,31 @@ PLANS: list[dict[str, Any]] = [
 
 INTERVALS = ("month", "year")
 
+# 团队席位套餐：按席位计价（Creem units = 席位数），额度 = TEAM_CREDITS_PER_SEAT × 席位，发给 owner 再分配
+TEAM_PLAN: dict[str, Any] = {
+    "id": "team",
+    "name": "Team",
+    "kind": "team",
+    "credits_per_month": 0,
+    "max_concurrent": 8,
+    "rank": 10,
+}
+
 
 def plan_by_id(plan_id: str | None) -> dict[str, Any] | None:
-    """按 ID 找套餐。"""
+    """按 ID 找套餐（含团队席位套餐）。"""
     pid = (plan_id or "").strip().lower()
+    if pid == TEAM_PLAN["id"]:
+        return TEAM_PLAN
     return next((plan for plan in PLANS if plan["id"] == pid), None)
+
+
+def plan_credits(plan: dict[str, Any], seats: int = 1, settings: Settings | None = None) -> int:
+    """一个计费月的额度：个人套餐取固定值；团队套餐 = 每席位额度 × 席位数。"""
+    if plan.get("kind") == "team":
+        s = settings or get_settings()
+        return max(1, int(seats)) * int(getattr(s, "team_credits_per_seat", 2000) or 0)
+    return int(plan["credits_per_month"])
 
 
 def plan_product_map(settings: Settings | None = None) -> dict[str, str]:

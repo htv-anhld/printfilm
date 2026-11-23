@@ -113,6 +113,8 @@ export const zhCommon = {
       dramaFragments: "分镜管理",
       templates: "模板管理",
       queues: "任务中心",
+      subscriptions: "订阅",
+      teams: "团队",
       errorReports: "前端错误",
       settings: "系统设置",
     },

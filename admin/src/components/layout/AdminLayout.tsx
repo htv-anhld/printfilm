@@ -14,9 +14,11 @@ import {
   Maximize2,
   Menu,
   Receipt,
+  Repeat,
   Settings,
   Shapes,
   Users,
+  UsersRound,
   Wallet,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
@@ -48,6 +50,8 @@ const navGroups: NavGroup[] = [
       { to: "/users", labelKey: "layout.nav.users", icon: Users },
       { to: "/orders", labelKey: "layout.nav.orders", icon: Receipt },
       { to: "/finance", labelKey: "layout.nav.finance", icon: Wallet },
+      { to: "/subscriptions", labelKey: "layout.nav.subscriptions", icon: Repeat },
+      { to: "/teams", labelKey: "layout.nav.teams", icon: UsersRound },
       { to: "/projects", labelKey: "layout.nav.projects", icon: Clapperboard },
       { to: "/works", labelKey: "layout.nav.works", icon: FileVideo },
     ],
@@ -92,6 +96,8 @@ const titleKeys: Record<string, string> = {
   "/settings": "layout.nav.settings",
   "/queues": "layout.nav.queues",
   "/error-reports": "layout.nav.errorReports",
+  "/subscriptions": "layout.nav.subscriptions",
+  "/teams": "layout.nav.teams",
 };
 
 function resolveTitle(pathname: string, t: TFunction): string {

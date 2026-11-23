@@ -20,6 +20,7 @@ import { TemplatesPage } from "@/pages/TemplatesPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { WorksPage } from "@/pages/WorksPage";
 import { ErrorReportsPage } from "@/pages/ErrorReportsPage";
+import { SubscriptionsPage, TeamsPage } from "@/pages/CommercePages";
 
 // Guard: require JWT + admin role
 function RequireAdmin() {
@@ -56,6 +57,8 @@ export default function App() {
           <Route path="queues" element={<QueuesPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="error-reports" element={<ErrorReportsPage />} />
+          <Route path="subscriptions" element={<SubscriptionsPage />} />
+          <Route path="teams" element={<TeamsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -29,6 +29,7 @@ from app.services.subscriptions.plans import (
     INTERVALS,
     LIVE_STATUSES,
     plan_by_id,
+    plan_credits,
     plan_from_product,
     product_for,
 )
@@ -90,12 +91,13 @@ def _aware(dt: datetime | None) -> datetime | None:
 # ── 查询 ─────────────────────────────────────────────────
 
 
-async def live_subscription(db: AsyncSession, user_id: int) -> Subscription | None:
-    """用户当前有效订阅（最新一条）。"""
+async def live_subscription(db: AsyncSession, user_id: int, *, team_id: int | None = None) -> Subscription | None:
+    """当前有效订阅（最新一条）：team_id 为空查个人订阅，否则查该团队的席位订阅。"""
+    team_clause = Subscription.team_id.is_(None) if team_id is None else Subscription.team_id == int(team_id)
     return (
         await db.execute(
             select(Subscription)
-            .where(Subscription.user_id == int(user_id), Subscription.status.in_(LIVE_STATUSES))
+            .where(Subscription.user_id == int(user_id), Subscription.status.in_(LIVE_STATUSES), team_clause)
             .order_by(Subscription.id.desc())
             .limit(1)
         )
@@ -270,7 +272,11 @@ async def upsert_from_creem(
     sub.plan_id = plan["id"]
     sub.interval = interval if interval in INTERVALS else "month"
     sub.status = status
-    sub.credits_per_period = int(plan["credits_per_month"])
+    sub.seats = _seats_of(obj, meta, existing)
+    team_meta = str(meta.get("team_id") or "")
+    if team_meta.isdigit():
+        sub.team_id = int(team_meta)
+    sub.credits_per_period = plan_credits(plan, sub.seats)
     sub.max_concurrent = int(plan["max_concurrent"])
     sub.provider_customer_id = id_of(obj.get("customer")) or sub.provider_customer_id
     sub.current_period_start = _parse_dt(obj.get("current_period_start_date")) or sub.current_period_start
@@ -279,6 +285,8 @@ async def upsert_from_creem(
     db.add(sub)
     await db.flush()
 
+    if sub.team_id:
+        await _sync_team_seats(db, sub, live=status in LIVE_STATUSES)
     if status in LIVE_STATUSES:
         user.plan = sub.plan_id
         # 期中升级：本计费月已发过额度时补发差额
@@ -288,6 +296,34 @@ async def upsert_from_creem(
         await end_benefits(db, sub)
     await db.flush()
     return sub
+
+
+def _seats_of(obj: dict[str, Any], meta: dict[str, Any], existing: Subscription | None) -> int:
+    """席位数：订阅 items[0].units > 对象 units > metadata.seats > 已有值 > 1。"""
+    items = obj.get("items") if isinstance(obj.get("items"), list) else []
+    for value in (
+        (items[0] or {}).get("units") if items else None,
+        obj.get("units"),
+        meta.get("seats"),
+        existing.seats if existing else None,
+    ):
+        try:
+            if value is not None and int(value) >= 1:
+                return int(value)
+        except (TypeError, ValueError):
+            continue
+    return 1
+
+
+async def _sync_team_seats(db: AsyncSession, sub: Subscription, *, live: bool) -> None:
+    """团队席位订阅变化时同步 teams.seats（结束后回到免费席位上限）。"""
+    from app.models_commerce import Team
+
+    team = await db.get(Team, int(sub.team_id))
+    if team is None:
+        return
+    free = int(get_settings().team_free_seats or 1)
+    team.seats = max(free, int(sub.seats)) if live else free
 
 
 async def grant_for_now(db: AsyncSession, sub: Subscription, *, now: datetime | None = None) -> bool:

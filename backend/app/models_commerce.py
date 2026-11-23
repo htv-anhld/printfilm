@@ -48,6 +48,9 @@ class Subscription(Base):
     provider_customer_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     credits_per_period: Mapped[int] = mapped_column(Integer, default=0)
     max_concurrent: Mapped[int] = mapped_column(Integer, default=0)
+    # 团队席位订阅：席位数（Creem units）与所属团队；个人订阅 seats=1、team_id 为空
+    seats: Mapped[int] = mapped_column(Integer, default=1)
+    team_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     current_period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # 下次发放月额度的时间（年付按月推进；月付等续费事件）
@@ -92,3 +95,49 @@ class ClientErrorReport(Base):
     count: Mapped[int] = mapped_column(Integer, default=1)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class Team(Base):
+    """团队：成员共用席位，owner 购买席位订阅并把额度分配给成员。"""
+
+    __tablename__ = "teams"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(64))
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # 已购席位（含 owner）；无订阅时为免费上限
+    seats: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class TeamMember(Base):
+    """团队成员；(team_id, user_id) 唯一。"""
+
+    __tablename__ = "team_members"
+    __table_args__ = (UniqueConstraint("team_id", "user_id", name="uq_team_members_team_user"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # owner | admin | member
+    role: Mapped[str] = mapped_column(String(16), default="member")
+    # 累计分配给该成员的额度（只做展示与对账）
+    allocated_fen: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class TeamInvite(Base):
+    """团队邀请：邮件链接里的 token 只存哈希，7 天有效，一次性。"""
+
+    __tablename__ = "team_invites"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(255), index=True)
+    role: Mapped[str] = mapped_column(String(16), default="member")
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    invited_by: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    accepted_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

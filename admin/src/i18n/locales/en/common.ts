@@ -113,6 +113,8 @@ export const enCommon = {
       dramaFragments: "Storyboards",
       templates: "Templates",
       queues: "Task center",
+      subscriptions: "Subscriptions",
+      teams: "Teams",
       errorReports: "Client errors",
       settings: "System settings",
     },

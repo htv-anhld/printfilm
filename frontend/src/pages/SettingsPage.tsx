@@ -15,6 +15,7 @@ import { STATUS_CN } from '../lib/status'
 import SettingsToolRunsPanel from './SettingsToolRunsPanel'
 import { formatDateTime, useI18n, type Locale } from '../i18n'
 import { formatMajor, useBillingConfig } from '../lib/money'
+import TeamPanel from './settings/TeamPanel'
 
 type SettingsTab =
   | 'account'
@@ -47,7 +48,7 @@ const SIDE_ITEMS: { id: SettingsTab; soon?: boolean; group?: 'work' | 'account' 
   { id: 'tools', group: 'work' },
   { id: 'assets', group: 'work' },
   { id: 'subscription', group: 'account' },
-  { id: 'team', soon: true, group: 'account' },
+  { id: 'team', group: 'account' },
   { id: 'api', group: 'account' },
   { id: 'notify', soon: true, group: 'account' },
   { id: 'security', group: 'account' },
@@ -321,7 +322,9 @@ export default function SettingsPage() {
 
           {tab === 'api' ? <ApiKeysPanel /> : null}
 
-          {tab === 'team' || tab === 'notify' ? (
+          {tab === 'team' ? <TeamPanel /> : null}
+
+          {tab === 'notify' ? (
             <section className="pf-settings-card">
               <h1>{t(`settings.tabs.${tab}`)}</h1>
               <p className="pf-muted">{t('settings.soonModule')}</p>

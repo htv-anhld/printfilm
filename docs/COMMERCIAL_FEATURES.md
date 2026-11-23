@@ -234,3 +234,29 @@ dùng con số này thay cho ước tính token (vốn chỉ khoảng 1 cent m�
 
 **API:** `GET /api/voices` (gồm giọng trong tài khoản ElevenLabs, cache 10 phút),
 `GET /api/drama/voices/vietnamese`.
+
+## 9. Nhóm và ghế
+
+**Mô hình:** không làm ví chung. Freeze/settle vẫn tính trên ví từng người; quản trị nhóm
+**phân bổ / thu hồi** credit giữa ví mình và ví thành viên (ledger `team_allocate` / `team_reclaim`).
+Thu hồi không vượt quá số đã phân bổ và số dư hiện có của thành viên.
+
+**Ghế = `units` của Creem:** tạo trên Creem một sản phẩm thuê bao **giá theo ghế**, khai báo
+`team_month:prod_x,team_year:prod_y` trong `CREEM_PLAN_PRODUCTS`. Mỗi tháng chủ nhóm nhận
+`TEAM_CREDITS_PER_SEAT × số ghế` vào credit tháng (hết hạn cuối kỳ như gói cá nhân) để phân bổ.
+Nhóm chưa mua ghế được dùng `TEAM_FREE_SEATS` ghế (gồm cả chủ nhóm). Thuê bao nhóm tách biệt
+với thuê bao cá nhân, nên một người có thể có cả hai.
+
+**Vai trò:** `owner` (đổi vai trò, mua ghế), `admin` (mời, xoá thành viên, phân bổ),
+`member`. Không xoá được owner; admin không xoá được admin khác.
+
+**Lời mời:** gửi link qua email (SMTP), hạn 7 ngày, dùng một lần, token chỉ lưu dạng hash. **Phải
+đăng nhập đúng email được mời** mới chấp nhận được, để link bị chuyển tiếp không chiếm mất ghế.
+Lời mời đang chờ cũng tính là đã dùng ghế. API trả lại link để admin tự gửi khi chưa có SMTP.
+
+**API:** `GET/POST /api/teams`, `GET/PATCH /api/teams/{id}`, `/invites`, `/members/{uid}`
+(PATCH vai trò, DELETE), `/members/{uid}/{allocate,reclaim}`, `/seats/checkout`,
+`GET /api/teams/invites/preview`, `POST /api/teams/invites/accept`.
+
+**Giao diện:** tab Nhóm trong Cài đặt, trang `/teams/invite?token=…`, admin có thêm trang **Thuê bao**
+và **Nhóm**.

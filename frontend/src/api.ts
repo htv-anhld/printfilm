@@ -214,6 +214,32 @@ export type User = {
   sub_credit_fen?: number
 }
 
+export type TeamRole = 'owner' | 'admin' | 'member'
+
+export type TeamSummary = { id: number; name: string; role: TeamRole; seats: number; members: number; owner_id: number }
+
+export type TeamMemberRow = {
+  user_id: number
+  email: string
+  nickname: string
+  role: TeamRole
+  joined_at?: string | null
+  balance_fen?: number
+  allocated_fen?: number
+  month_charge_fen?: number
+}
+
+export type TeamDetail = {
+  id: number
+  name: string
+  seats: number
+  owner_id: number
+  my_role: TeamRole
+  members: TeamMemberRow[]
+  invites: { id: number; email: string; role: TeamRole; expires_at: string; expired: boolean }[]
+  credits_per_seat: number
+}
+
 export type BillingSku = {
   id: string
   name: string
@@ -716,6 +742,62 @@ export const api = {
   },
   subscriptionCancel() {
     return request<MySubscription>('/api/billing/subscriptions/cancel', { method: 'POST' })
+  },
+  myTeams() {
+    return request<{ items: TeamSummary[] }>('/api/teams')
+  },
+  createTeam(name: string) {
+    return request<TeamDetail>('/api/teams', { method: 'POST', body: JSON.stringify({ name }) })
+  },
+  team(id: number) {
+    return request<TeamDetail>(`/api/teams/${id}`)
+  },
+  inviteTeamMember(id: number, email: string, role: 'admin' | 'member') {
+    return request<{ id: number; email: string; link: string }>(`/api/teams/${id}/invites`, {
+      method: 'POST',
+      body: JSON.stringify({ email, role }),
+    })
+  },
+  revokeTeamInvite(id: number, inviteId: number) {
+    return request<{ ok: boolean }>(`/api/teams/${id}/invites/${inviteId}`, { method: 'DELETE' })
+  },
+  setTeamRole(id: number, userId: number, role: 'admin' | 'member') {
+    return request<{ ok: boolean }>(`/api/teams/${id}/members/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    })
+  },
+  removeTeamMember(id: number, userId: number) {
+    return request<{ ok: boolean }>(`/api/teams/${id}/members/${userId}`, { method: 'DELETE' })
+  },
+  allocateTeamCredits(id: number, userId: number, amount_fen: number) {
+    return request<{ giver_balance_fen: number; member_balance_fen: number }>(
+      `/api/teams/${id}/members/${userId}/allocate`,
+      { method: 'POST', body: JSON.stringify({ amount_fen }) },
+    )
+  },
+  reclaimTeamCredits(id: number, userId: number, amount_fen: number) {
+    return request<{ reclaimed_fen: number; member_balance_fen: number }>(
+      `/api/teams/${id}/members/${userId}/reclaim`,
+      { method: 'POST', body: JSON.stringify({ amount_fen }) },
+    )
+  },
+  teamSeatsCheckout(id: number, seats: number, interval: PlanInterval) {
+    return request<{ checkout_url: string }>(`/api/teams/${id}/seats/checkout`, {
+      method: 'POST',
+      body: JSON.stringify({ seats, interval }),
+    })
+  },
+  previewTeamInvite(token: string) {
+    return request<{ team_name: string; inviter: string; email: string; role: TeamRole; expires_at: string }>(
+      `/api/teams/invites/preview?token=${encodeURIComponent(token)}`,
+    )
+  },
+  acceptTeamInvite(token: string) {
+    return request<{ ok: boolean; team_id: number; team_name: string }>('/api/teams/invites/accept', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    })
   },
   billingConfig() {
     return request<BillingConfig>('/api/billing/config')

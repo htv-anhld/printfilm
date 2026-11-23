@@ -176,6 +176,9 @@ class Settings(BaseSettings):
     # 一次性 credit 包：一个 Creem 产品 + custom_price（美分）；或逐包映射 "credits_900:prod_x,credits_3900:prod_y"
     creem_credit_product_id: str = ""
     creem_sku_products: str = ""
+    # 团队：每个席位每月发放的额度（美分）；未订阅团队的免费席位上限（含 owner）
+    team_credits_per_seat: int = 2000
+    team_free_seats: int = 3
     # 订阅产品：plan_interval:prod，如 "starter_month:prod_a,starter_year:prod_b,pro_month:prod_c"
     creem_plan_products: str = ""
 
