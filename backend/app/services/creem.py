@@ -78,7 +78,8 @@ async def _request(method: str, path: str, *, json: dict[str, Any] | None = None
             resp = await client.request(
                 method,
                 url,
-                headers={"x-api-key": key, "Content-Type": "application/json"},
+                # 显式 UA：Creem 前置 Cloudflare 会拦部分默认客户端 UA（如 Python-urllib 返回 error 1010）
+                headers={"x-api-key": key, "Content-Type": "application/json", "User-Agent": "printfilm-api/1.0"},
                 json=json,
             )
     except httpx.HTTPError as exc:
