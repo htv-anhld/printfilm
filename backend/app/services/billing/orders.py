@@ -64,6 +64,17 @@ async def mark_order_paid(
         ref_id=order.out_trade_no,
         note=note if not bonus else f"{note} +first_topup_bonus:{bonus}",
     )
+    # 推荐人佣金（被推荐用户归因期内的实付；同一订单只计一次）
+    from app.services.partners import record_commission
+
+    await record_commission(
+        db,
+        user_id=int(order.user_id),
+        paid_fen=int(order.amount_fen or 0),
+        source_type="order",
+        source_id=order.out_trade_no,
+        alt_refs=[order.provider_ref or "", trade_no or ""],
+    )
     logger.info(
         "order paid order=%s user=%s credit=%s bonus=%s provider=%s",
         order.out_trade_no,

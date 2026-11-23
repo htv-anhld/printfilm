@@ -12,6 +12,7 @@ from app.api.admin import (
     error_reports,
     ledger,
     orders,
+    partners,
     projects,
     queues,
     settings,
@@ -41,3 +42,4 @@ router.include_router(drama_episodes.router)
 router.include_router(drama_fragments.router)
 router.include_router(error_reports.router)
 router.include_router(commerce.router)
+router.include_router(partners.router)

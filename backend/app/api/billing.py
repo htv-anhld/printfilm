@@ -572,7 +572,7 @@ def _register_optional_creem_handlers() -> None:
     """挂载其它模块的 Creem 事件处理（订阅等）；模块不存在时跳过。"""
     import importlib
 
-    for name in ("app.services.payments.subscriptions",):
+    for name in ("app.services.payments.subscriptions", "app.services.payments.partner_hooks"):
         try:
             importlib.import_module(name)
         except ModuleNotFoundError:

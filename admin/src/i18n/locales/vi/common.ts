@@ -115,6 +115,8 @@ export const viCommon = {
       queues: "Trung tâm tác vụ",
       subscriptions: "Thuê bao",
       teams: "Nhóm",
+      partners: "Đối tác",
+      partnerSubmissions: "Nội dung đối tác",
       errorReports: "Lỗi phía client",
       settings: "Cài đặt hệ thống",
     },

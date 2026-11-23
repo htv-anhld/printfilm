@@ -82,6 +82,7 @@ export const viShell = {
     privacy: 'Chính sách quyền riêng tư',
     refund: 'Hoàn tiền',
     acceptableUse: 'Chính sách sử dụng',
+    partners: 'Đối tác',
     contact: 'Liên hệ',
     help: 'Trung tâm trợ giúp',
     github: 'GitHub',

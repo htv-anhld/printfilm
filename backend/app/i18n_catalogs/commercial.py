@@ -77,6 +77,16 @@ EN: dict[str, str] = {
     "席位数无效": "Invalid number of seats",
     "席位数不能少于当前成员数": "Seats can't be fewer than current members",
     "该团队已有席位订阅，请在「管理订阅」中调整席位": "This team already has a seat subscription. Change seats in “Manage subscription”",
+    # ── 合作伙伴 ──
+    "生成推广码失败，请重试": "Could not generate a referral code. Please try again",
+    "你还不是合作伙伴": "You are not a partner yet",
+    "暂无可兑换的佣金": "No commission available to redeem",
+    "请填写有效的链接": "Please enter a valid link",
+    "待审核的提交过多，请等待审核": "Too many submissions are pending review. Please wait",
+    "状态无效": "Invalid status",
+    "合作伙伴不存在": "Partner not found",
+    "提交不存在": "Submission not found",
+    "该提交已审核": "This submission was already reviewed",
 }
 
 VI: dict[str, str] = {
@@ -153,4 +163,14 @@ VI: dict[str, str] = {
     "席位数无效": "Số ghế không hợp lệ",
     "席位数不能少于当前成员数": "Số ghế không được ít hơn số thành viên hiện có",
     "该团队已有席位订阅，请在「管理订阅」中调整席位": "Nhóm này đã có thuê bao ghế, hãy đổi số ghế trong “Quản lý thuê bao”",
+    # ── 合作伙伴 ──
+    "生成推广码失败，请重试": "Không tạo được mã giới thiệu, vui lòng thử lại",
+    "你还不是合作伙伴": "Bạn chưa là đối tác",
+    "暂无可兑换的佣金": "Chưa có hoa hồng nào để quy đổi",
+    "请填写有效的链接": "Vui lòng nhập liên kết hợp lệ",
+    "待审核的提交过多，请等待审核": "Có quá nhiều nội dung đang chờ duyệt, vui lòng đợi",
+    "状态无效": "Trạng thái không hợp lệ",
+    "合作伙伴不存在": "Đối tác không tồn tại",
+    "提交不存在": "Nội dung không tồn tại",
+    "该提交已审核": "Nội dung này đã được duyệt",
 }

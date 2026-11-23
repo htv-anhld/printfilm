@@ -82,6 +82,7 @@ export const enShell = {
     privacy: 'Privacy',
     refund: 'Refunds',
     acceptableUse: 'Acceptable use',
+    partners: 'Partners',
     contact: 'Contact',
     help: 'Help',
     github: 'GitHub',

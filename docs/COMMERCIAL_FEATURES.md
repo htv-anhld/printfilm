@@ -260,3 +260,28 @@ Lời mời đang chờ cũng tính là đã dùng ghế. API trả lại link �
 
 **Giao diện:** tab Nhóm trong Cài đặt, trang `/teams/invite?token=…`, admin có thêm trang **Thuê bao**
 và **Nhóm**.
+
+## 10. Chương trình đối tác (affiliate)
+
+**Luồng:** người dùng đăng ký tại `/partners` → admin duyệt (đặt tỷ lệ riêng nếu cần) →
+đối tác nhận link `https://<app>/?ref=CODE`.
+
+**Gắn người giới thiệu:** frontend lưu `?ref=` 60 ngày, gửi kèm khi đăng ký (email lẫn Google, chỉ
+áp dụng tài khoản mới) → `users.referred_by_partner_id`. Không tự giới thiệu chính mình được.
+
+**Hoa hồng** = `PARTNER_COMMISSION_RATE` × **số tiền thật đã thanh toán** của người được giới thiệu,
+trong `PARTNER_COMMISSION_MONTHS` tháng đầu kể từ khi họ đăng ký:
+
+| Nguồn | Thời điểm tính | Mã nguồn (unique) |
+|---|---|---|
+| Gói credit | `mark_order_paid` (cả 易支付 lẫn Creem) | `out_trade_no` |
+| Thuê bao | `checkout.completed` và `subscription.paid` | **transaction id** của Creem: lần thanh toán đầu nhận cả hai event nhưng chỉ tính một lần |
+
+Trạng thái: `held` (giữ `PARTNER_HOLD_DAYS` ngày, nên ≥ cửa sổ hoàn tiền) → `available` →
+`redeemed` (đối tác tự đổi sang credit) hoặc `paid` (admin chuyển khoản rồi bấm "Đã chuyển khoản").
+**`refund.created` tự đổi sang `reversed`**; nếu đối tác đã đổi khoản đó sang credit thì trừ lại khỏi ví họ.
+
+**Nội dung quảng bá:** đối tác gửi link video/bài viết; admin duyệt kèm số credit thưởng (chỉ cộng một lần).
+
+**API:** `/api/partner-program/{me,apply,dashboard,redeem,submissions}`; admin `/api/admin/partners`,
+`/partners/{id}/review`, `/partners/{id}/mark-paid`, `/partner-submissions`, `/partner-submissions/{id}/review`.

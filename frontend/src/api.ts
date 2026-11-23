@@ -214,6 +214,41 @@ export type User = {
   sub_credit_fen?: number
 }
 
+export type PartnerInfo = {
+  status: 'none' | 'pending' | 'approved' | 'rejected' | 'suspended'
+  ref_code?: string | null
+  ref_link?: string | null
+  commission_rate?: number
+  channel?: string
+  website?: string
+  audience?: string
+  note?: string
+  review_note?: string
+}
+
+export type PartnerDashboard = {
+  partner: PartnerInfo
+  signups: number
+  paying_users: number
+  held_fen: number
+  available_fen: number
+  redeemed_fen: number
+  reversed_fen: number
+  hold_days: number
+  recent: { id: number; source_type: string; paid_fen: number; commission_fen: number; status: string; available_at: string; created_at?: string | null }[]
+}
+
+export type PartnerSubmission = {
+  id: number
+  url: string
+  platform: string
+  note: string
+  status: 'pending' | 'approved' | 'rejected'
+  reward_fen: number
+  review_note: string
+  created_at?: string | null
+}
+
 export type TeamRole = 'owner' | 'admin' | 'member'
 
 export type TeamSummary = { id: number; name: string; role: TeamRole; seats: number; members: number; owner_id: number }
@@ -396,10 +431,10 @@ export const api = {
     const q = cacheBust != null && cacheBust !== '' ? `?v=${encodeURIComponent(String(cacheBust))}` : ''
     return `${API_BASE}${path}${q}`
   },
-  register(email: string, password: string, nickname: string) {
+  register(email: string, password: string, nickname: string, ref?: string) {
     return request<{ access_token: string; email_verification_required?: boolean }>('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, nickname }),
+      body: JSON.stringify({ email, password, nickname, ref }),
     })
   },
   login(email: string, password: string) {
@@ -444,11 +479,29 @@ export const api = {
   googleStart(next: string) {
     return request<{ url: string }>(`/api/auth/google/start?next=${encodeURIComponent(next)}`)
   },
-  googleExchange(code: string, state: string) {
+  googleExchange(code: string, state: string, ref?: string) {
     return request<{ access_token: string; next: string; created: boolean }>('/api/auth/google/exchange', {
       method: 'POST',
-      body: JSON.stringify({ code, state }),
+      body: JSON.stringify({ code, state, ref }),
     })
+  },
+  partnerMe() {
+    return request<PartnerInfo>('/api/partner-program/me')
+  },
+  partnerApply(body: { channel: string; website: string; audience: string; note: string }) {
+    return request<PartnerInfo>('/api/partner-program/apply', { method: 'POST', body: JSON.stringify(body) })
+  },
+  partnerDashboard() {
+    return request<PartnerDashboard>('/api/partner-program/dashboard')
+  },
+  partnerRedeem() {
+    return request<{ ok: boolean; redeemed_fen: number }>('/api/partner-program/redeem', { method: 'POST' })
+  },
+  partnerSubmissions() {
+    return request<{ items: PartnerSubmission[] }>('/api/partner-program/submissions')
+  },
+  partnerSubmit(body: { url: string; platform: string; note: string }) {
+    return request<PartnerSubmission>('/api/partner-program/submissions', { method: 'POST', body: JSON.stringify(body) })
   },
   updateProfile(body: { nickname: string; email: string; phone: string }) {
     return request<User>('/api/auth/me', {

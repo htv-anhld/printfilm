@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import BrandMark from '../components/BrandMark'
 import { useI18n } from '../i18n'
+import { referralCode } from '../lib/referral'
 
 /** Google 授权回调：把 code + state 交给后端换 token，然后回到原页面 */
 export default function GoogleCallbackPage() {
@@ -23,7 +24,7 @@ export default function GoogleCallbackPage() {
       return
     }
     api
-      .googleExchange(code, state)
+      .googleExchange(code, state, referralCode())
       .then((res) => {
         localStorage.setItem('token', res.access_token)
         nav(res.next || '/', { replace: true })

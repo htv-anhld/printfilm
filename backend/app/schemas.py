@@ -24,6 +24,8 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=6, max_length=64)
     # 为空时由注册接口按请求语言填默认昵称
     nickname: str | None = Field(default=None, max_length=64)
+    # 合作伙伴推广码（?ref=）
+    ref: str | None = Field(default=None, max_length=32)
 
 
 class LoginRequest(BaseModel):
@@ -49,6 +51,7 @@ class VerifyEmailTokenRequest(BaseModel):
 class GoogleExchangeRequest(BaseModel):
     code: str = Field(min_length=4, max_length=2048)
     state: str = Field(min_length=8, max_length=1024)
+    ref: str | None = Field(default=None, max_length=32)
 
 
 class UserOut(BaseModel):

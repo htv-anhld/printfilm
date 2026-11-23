@@ -115,6 +115,8 @@ export const zhCommon = {
       queues: "任务中心",
       subscriptions: "订阅",
       teams: "团队",
+      partners: "合作伙伴",
+      partnerSubmissions: "推广内容",
       errorReports: "前端错误",
       settings: "系统设置",
     },

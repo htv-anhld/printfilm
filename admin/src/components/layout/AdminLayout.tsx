@@ -6,12 +6,14 @@ import {
   Clapperboard,
   FileVideo,
   Film,
+  Handshake,
   Image,
   Layers,
   LayoutDashboard,
   ListVideo,
   LogOut,
   Maximize2,
+  Megaphone,
   Menu,
   Receipt,
   Repeat,
@@ -52,6 +54,8 @@ const navGroups: NavGroup[] = [
       { to: "/finance", labelKey: "layout.nav.finance", icon: Wallet },
       { to: "/subscriptions", labelKey: "layout.nav.subscriptions", icon: Repeat },
       { to: "/teams", labelKey: "layout.nav.teams", icon: UsersRound },
+      { to: "/partners", labelKey: "layout.nav.partners", icon: Handshake },
+      { to: "/partner-submissions", labelKey: "layout.nav.partnerSubmissions", icon: Megaphone },
       { to: "/projects", labelKey: "layout.nav.projects", icon: Clapperboard },
       { to: "/works", labelKey: "layout.nav.works", icon: FileVideo },
     ],
@@ -98,6 +102,8 @@ const titleKeys: Record<string, string> = {
   "/error-reports": "layout.nav.errorReports",
   "/subscriptions": "layout.nav.subscriptions",
   "/teams": "layout.nav.teams",
+  "/partners": "layout.nav.partners",
+  "/partner-submissions": "layout.nav.partnerSubmissions",
 };
 
 function resolveTitle(pathname: string, t: TFunction): string {

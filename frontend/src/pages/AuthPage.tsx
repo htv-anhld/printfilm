@@ -5,6 +5,7 @@ import { api } from '../api'
 import BrandMark from '../components/BrandMark'
 import LanguageSwitch from '../components/layout/LanguageSwitch'
 import { useI18n } from '../i18n'
+import { referralCode } from '../lib/referral'
 import { isValidAuthPassword, isValidEmailInput } from '../lib/validateAuthForm'
 
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset' | 'verify'
@@ -207,7 +208,7 @@ export default function AuthPage() {
       const res =
         mode === 'login'
           ? await api.login(trimmedEmail, password)
-          : await api.register(trimmedEmail, password, nickname.trim())
+          : await api.register(trimmedEmail, password, nickname.trim(), referralCode())
       localStorage.setItem('token', res.access_token)
       if ('email_verification_required' in res && res.email_verification_required) {
         // 注册后先验证邮箱（赠送额度在验证后到账）

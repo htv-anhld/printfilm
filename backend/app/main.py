@@ -13,6 +13,7 @@ from app.api.v1 import router as v1_router
 from app.api.admin import router as admin_router
 from app.api import error_reports as error_reports_api
 from app.api import teams as teams_api
+from app.api import partners as partners_api
 from app.api.drama import router as drama_router
 from app.config import get_settings
 from app.database import AsyncSessionLocal, engine, init_db
@@ -103,6 +104,7 @@ app.include_router(v1_router, prefix="/api")
 app.include_router(drama_router, prefix="/api")
 app.include_router(error_reports_api.router, prefix="/api")
 app.include_router(teams_api.router, prefix="/api")
+app.include_router(partners_api.router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 
 
@@ -232,6 +234,10 @@ async def _apply_schema_patches() -> None:
         if "google_sub" not in ucols:
             await conn.execute(text("ALTER TABLE users ADD COLUMN google_sub VARCHAR(64)"))
             await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users (google_sub)"))
+
+        if "referred_by_partner_id" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN referred_by_partner_id INTEGER"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_referred_by_partner_id ON users (referred_by_partner_id)"))
 
         # 订阅月额度
         if "sub_credit_fen" not in ucols:

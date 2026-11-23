@@ -115,6 +115,8 @@ export const enCommon = {
       queues: "Task center",
       subscriptions: "Subscriptions",
       teams: "Teams",
+      partners: "Partners",
+      partnerSubmissions: "Partner content",
       errorReports: "Client errors",
       settings: "System settings",
     },

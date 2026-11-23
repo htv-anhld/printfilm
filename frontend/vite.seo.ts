@@ -9,7 +9,7 @@ import type { Plugin } from 'vite'
  */
 
 // 可被收录的公开页面
-const PUBLIC_PATHS = ['/', '/pricing', '/method', '/templates', '/tools', '/help', '/terms', '/privacy', '/refund', '/acceptable-use', '/contact']
+const PUBLIC_PATHS = ['/', '/pricing', '/method', '/templates', '/tools', '/help', '/terms', '/privacy', '/refund', '/acceptable-use', '/contact', '/partners']
 
 // 登录后应用页：不收录。注意不能写 /assets：那是 Vite 的 JS/CSS 产物目录，挡掉后爬虫无法渲染
 const DISALLOW = ['/studio', '/drama', '/wallet', '/settings', '/history', '/auth', '/api/']

@@ -31,6 +31,7 @@ export default function AppShell({ children, active, wide, flush, hideFooter }: 
             <Link to="/privacy">{t('footer.privacy')}</Link>
             <Link to="/refund">{t('footer.refund')}</Link>
             <Link to="/acceptable-use">{t('footer.acceptableUse')}</Link>
+            <Link to="/partners">{t('footer.partners')}</Link>
             <Link to="/contact">{t('footer.contact')}</Link>
             <Link to="/help">{t('footer.help')}</Link>
             <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer">

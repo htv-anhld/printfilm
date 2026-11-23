@@ -7464,3 +7464,60 @@ button.pf-shot-editable:disabled {
   max-width: 560px;
   margin: 3rem auto;
 }
+
+/* ── 合作伙伴计划 ── */
+.pf-partners {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 2rem 16px 3rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.pf-partners-hero h1 {
+  margin: 0 0 0.5rem;
+}
+
+.pf-partners-hero ul {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.pf-partners-form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 560px;
+}
+
+.pf-partners-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.pf-partners-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.pf-partners-stats div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--pf-line);
+  border-radius: 12px;
+}
+
+.pf-partners-stats span {
+  color: var(--pf-muted);
+  font-size: 0.8rem;
+}
+
+.pf-partners-stats strong {
+  font-size: 1.25rem;
+}

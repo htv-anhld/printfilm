@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -140,4 +140,67 @@ class TeamInvite(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     accepted_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PartnerAccount(Base):
+    """合作伙伴（推广）账号：申请 → 审核 → 获得推广码与佣金。"""
+
+    __tablename__ = "partner_accounts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True)
+    # pending | approved | rejected | suspended
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    ref_code: Mapped[str] = mapped_column(String(24), unique=True, index=True)
+    # 佣金比例（0~1）；空则用全站默认
+    commission_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    channel: Mapped[str] = mapped_column(String(64), default="")
+    website: Mapped[str] = mapped_column(String(512), default="")
+    audience: Mapped[str] = mapped_column(String(64), default="")
+    note: Mapped[str] = mapped_column(String(1000), default="")
+    review_note: Mapped[str] = mapped_column(String(512), default="")
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PartnerCommission(Base):
+    """一笔佣金：来源支付（订单 / 订阅扣款）唯一；先 held，冷静期后 available，退款则 reversed。"""
+
+    __tablename__ = "partner_commissions"
+    __table_args__ = (UniqueConstraint("source_type", "source_id", name="uq_partner_commissions_source"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    partner_id: Mapped[int] = mapped_column(ForeignKey("partner_accounts.id", ondelete="CASCADE"), index=True)
+    referred_user_id: Mapped[int] = mapped_column(Integer, index=True)
+    # order | subscription
+    source_type: Mapped[str] = mapped_column(String(16))
+    source_id: Mapped[str] = mapped_column(String(128))
+    # 退款匹配用的其它单号（Creem order / transaction id），逗号分隔
+    alt_refs: Mapped[str] = mapped_column(String(512), default="")
+    paid_fen: Mapped[int] = mapped_column(Integer)
+    rate: Mapped[float] = mapped_column(Float)
+    commission_fen: Mapped[int] = mapped_column(Integer)
+    # held | available | redeemed | paid | reversed
+    status: Mapped[str] = mapped_column(String(16), default="held", index=True)
+    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PartnerSubmission(Base):
+    """合作伙伴提交的推广内容（视频 / 文章链接），审核通过可获 credit 奖励。"""
+
+    __tablename__ = "partner_submissions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    partner_id: Mapped[int] = mapped_column(ForeignKey("partner_accounts.id", ondelete="CASCADE"), index=True)
+    url: Mapped[str] = mapped_column(String(1000))
+    platform: Mapped[str] = mapped_column(String(32), default="")
+    note: Mapped[str] = mapped_column(String(1000), default="")
+    # pending | approved | rejected
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    reward_fen: Mapped[int] = mapped_column(Integer, default=0)
+    review_note: Mapped[str] = mapped_column(String(512), default="")
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

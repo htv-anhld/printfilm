@@ -55,6 +55,8 @@ class User(Base):
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # 是否已发放注册赠金（开启邮箱验证后改为验证时发放）
     signup_grant_given: Mapped[bool] = mapped_column(Boolean, default=False)
+    # 推广归因：注册时带的合作伙伴（partner_accounts.id）
+    referred_by_partner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     # Google 账号 sub（OAuth 登录绑定）
     google_sub: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
     # 用户消费里程碑告警：上次已提醒的累计扣费档位（分）

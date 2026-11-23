@@ -176,6 +176,12 @@ class Settings(BaseSettings):
     # 一次性 credit 包：一个 Creem 产品 + custom_price（美分）；或逐包映射 "credits_900:prod_x,credits_3900:prod_y"
     creem_credit_product_id: str = ""
     creem_sku_products: str = ""
+    # 合作伙伴：默认佣金比例、归因有效月数（注册后多少个月内的付款计佣）、冷静期天数（覆盖退款窗口）
+    partner_commission_rate: float = 0.2
+    partner_commission_months: int = 12
+    partner_hold_days: int = 30
+    # 申请后自动通过（否则需管理员审核）
+    partner_auto_approve: bool = False
     # 团队：每个席位每月发放的额度（美分）；未订阅团队的免费席位上限（含 owner）
     team_credits_per_seat: int = 2000
     team_free_seats: int = 3

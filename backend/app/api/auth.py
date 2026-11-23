@@ -60,6 +60,9 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
     )
     db.add(user)
     await db.flush()
+    from app.services.partners import attribute_signup
+
+    await attribute_signup(db, user, body.ref)
     must_verify = verification_active()
     if not must_verify:
         # 未启用邮箱验证（无 SMTP 或关闭）：注册即视为已验证并发赠金（开源版行为）
@@ -278,6 +281,10 @@ async def google_exchange(body: GoogleExchangeRequest, db: AsyncSession = Depend
         next_path = verify_state(body.state)
         profile = await exchange_code(body.code)
         user, created = await login_or_create(db, profile)
+        if created:
+            from app.services.partners import attribute_signup
+
+            await attribute_signup(db, user, body.ref)
     except GoogleOAuthError as exc:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc

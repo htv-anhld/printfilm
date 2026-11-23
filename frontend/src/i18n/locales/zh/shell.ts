@@ -82,6 +82,7 @@ export const zhShell = {
     privacy: '隐私政策',
     refund: '退款政策',
     acceptableUse: '可接受使用',
+    partners: '合作伙伴',
     contact: '联系我们',
     help: '帮助中心',
     github: 'GitHub',
