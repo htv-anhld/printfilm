@@ -36,15 +36,47 @@ import {
   dramaAssetImageGenButtonLabel,
   dramaAssetNeedsImageGeneration,
 } from '../../lib/dramaAssetImage'
+import { richText } from '../../components/drama/richText'
+import { tr, useI18n } from '../../i18n'
 
 type AssetTabKey = 'character' | 'scene' | 'prop' | 'voice'
 
-const ASSET_TABS: Array<{ key: AssetTabKey; label: string }> = [
-  { key: 'character', label: '角色' },
-  { key: 'scene', label: '场景' },
-  { key: 'prop', label: '道具' },
-  ...(DRAMA_VOICE_BINDING_ENABLED ? [{ key: 'voice' as const, label: '音色' }] : []),
-]
+// 文案随语言变化，需在渲染时调用
+function assetTabs(): Array<{ key: AssetTabKey; label: string }> {
+  return [
+    { key: 'character', label: tr('drama.common.character') },
+    { key: 'scene', label: tr('drama.common.scene') },
+    { key: 'prop', label: tr('drama.common.prop') },
+    ...(DRAMA_VOICE_BINDING_ENABLED ? [{ key: 'voice' as const, label: tr('drama.common.voice') }] : []),
+  ]
+}
+
+// 抽取结果说明（两处复用）
+function describeSeedResult(opts: {
+  created: number
+  refreshed: number
+  propsUpdated: number
+  llmErrors: string[]
+}): string {
+  const { created, refreshed, propsUpdated, llmErrors } = opts
+  const parts = [
+    tr('drama.assetsStep.partCreated', { n: created }),
+    tr('drama.assetsStep.partRefreshed', { n: refreshed }),
+  ]
+  if (propsUpdated > 0) parts.push(tr('drama.assetsStep.partProps', { n: propsUpdated }))
+  let detail = `${parts.join(tr('drama.assetsStep.partsSep'))}${tr('drama.assetsStep.partsEnd')}`
+  if (created === 0 && refreshed === 0 && llmErrors.length === 0) {
+    detail += tr('drama.assetsStep.nothingNew')
+  } else if (llmErrors.length > 0) {
+    const list = `${llmErrors.slice(0, 5).join('\n')}${
+      llmErrors.length > 5 ? tr('drama.assetsStep.llmFailedMore', { n: llmErrors.length }) : ''
+    }`
+    detail += tr('drama.assetsStep.llmFailedList', { list })
+  } else {
+    detail += tr('drama.assetsStep.verifyHint')
+  }
+  return detail
+}
 
 const PAGE_SIZE_DEFAULT = 12
 const PAGE_SIZE_OPTIONS = [12, 24, 36] as const
@@ -83,6 +115,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
    * pageSize 每页条数
    * genQueue 全局生图队列
    */
+  const { t } = useI18n()
   const [assets, setAssets] = useState<DramaAsset[]>([])
   const [tab, setTab] = useState<AssetTabKey>('character')
   const [loading, setLoading] = useState(true)
@@ -137,7 +170,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
           setAssets((prev) => (prev ?? []).map((a) => (a.id === next.id ? next : a)))
         })
       } catch (err) {
-        onError(err instanceof Error ? err.message : '资产加载失败')
+        onError(err instanceof Error ? err.message : tr('drama.assetsStep.loadFailed'))
         try {
           const list = normalizeAssetList(await dramaApi.listAssets(projectId, { libraryOnly: true }))
           setAssets(list)
@@ -203,9 +236,9 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     project?.params && typeof project.params === 'object'
       ? String(
           ((project.params as Record<string, unknown>).narrationVoiceAudio as Record<string, unknown> | undefined)?.label ||
-            '未设置',
+            t('drama.assetsStep.notSet'),
         )
-      : '未设置'
+      : t('drama.assetsStep.notSet')
   const filtered = assetList.filter((a) => {
     const t = (a.type || '').toLowerCase()
     if (tab === 'voice') return t === 'voice'
@@ -237,7 +270,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     try {
       await dramaApi.updateScript(projectId, { image_style_id: styleId })
     } catch (err) {
-      onError(err instanceof Error ? err.message : '保存风格失败')
+      onError(err instanceof Error ? err.message : t('drama.assetsStep.styleSaveFailed'))
     }
   }
 
@@ -253,7 +286,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       const message = err instanceof Error ? err.message : String(err || '')
       if (isBillingError(message)) return null
       if (await handleBillingError(err)) return null
-      onError(message || '余额校验失败')
+      onError(message || t('drama.assetsStep.balanceCheckFailed'))
       return null
     }
   }
@@ -271,7 +304,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     if (view.upstreamAccountBlocked || view.billingBlocked) {
       await alertDramaGenError(err)
     }
-    onError(view.message || message || '生图失败')
+    onError(view.message || message || t('drama.assetsStep.imageGenFailed'))
   }
 
   // 加入全局生图队列（不互相顶掉）
@@ -304,7 +337,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       (a) => needsImageGeneration(a) && !busyAssetIds.has(a.id),
     )
     if (targets.length === 0) {
-      onError('当前分类没有未生成的资产')
+      onError(t('drama.assetsStep.noPending'))
       return
     }
     const pre = await ensureImageGenBalance(targets.length)
@@ -313,11 +346,15 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     const totalYuan = pre.requested_total_yuan ?? pre.requested_total_fen / 100
     const balanceYuan = pre.balance_yuan ?? pre.balance_fen / 100
     const ok = await dialog.confirm({
-      title: '批量生成形象',
-      message:
-        `将为当前「${ASSET_TABS.find((t) => t.key === tab)?.label || '分类'}」下 ${targets.length} 个未出图资产开始生图（并行提交，不排队）。\n\n` +
-        `每张预扣约 ¥${unitYuan.toFixed(2)}，本次合计约 ¥${totalYuan.toFixed(2)}（当前余额 ¥${balanceYuan.toFixed(2)}；结束后按实际上游用量多退少补）。\n\n是否继续？`,
-      confirmText: '开始生成',
+      title: t('drama.assetsStep.batchImageTitle'),
+      message: t('drama.assetsStep.batchImageMessage', {
+        tab: assetTabs().find((item) => item.key === tab)?.label || t('drama.assetsStep.category'),
+        n: targets.length,
+        unit: unitYuan.toFixed(2),
+        total: totalYuan.toFixed(2),
+        balance: balanceYuan.toFixed(2),
+      }),
+      confirmText: t('drama.assetsStep.startGenerate'),
     })
     if (!ok) return
     setBatchBusy(true)
@@ -373,7 +410,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       handleVoiceBound(character)
       handleVoiceCreated(voice)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '音色生成失败')
+      onError(err instanceof Error ? err.message : t('drama.assetsStep.voiceGenFailed'))
     } finally {
       setCharacterVoiceBusyIds((prev) => {
         const next = new Set(prev)
@@ -387,9 +424,9 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
   async function batchGenerateCharacterVoices() {
     if (batchVoiceBusy || selectedCharacterAssets.length === 0) return
     const ok = await dialog.confirm({
-      title: '批量生成音色',
-      message: `将为选中的 ${selectedCharacterAssets.length} 个角色分别 AI 生成音色并绑定，是否继续？`,
-      confirmText: '开始生成',
+      title: t('drama.assetsStep.batchVoiceTitle'),
+      message: t('drama.assetsStep.batchVoiceMessage', { n: selectedCharacterAssets.length }),
+      confirmText: t('drama.assetsStep.startGenerate'),
     })
     if (!ok) return
     setBatchVoiceBusy(true)
@@ -413,7 +450,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     setBatchVoiceBusy(false)
     setSelectedCharacterIds([])
     if (failCount > 0) {
-      onError(`${failCount} 个角色音色生成失败`)
+      onError(t('drama.assetsStep.batchVoiceFailed', { n: failCount }))
     }
   }
 
@@ -426,11 +463,11 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     )
     if (dup) {
       const ok = await dialog.confirm({
-        title: '可能重复',
-        message: `当前项目已有同名「${source.name}」资产，仍要导入一份副本吗？`,
-        confirmText: '仍要导入',
+        title: t('drama.assetsStep.dupTitle'),
+        message: t('drama.assetsStep.dupMessage', { name: source.name || '' }),
+        confirmText: t('drama.assetsStep.dupConfirm'),
       })
-      if (!ok) throw new Error('已取消')
+      if (!ok) throw new Error(t('drama.assetsStep.cancelled'))
     }
     const created = await importGlobalAssetToProject(projectId, source)
     setAssets((prev) => [...(prev ?? []), created])
@@ -439,10 +476,10 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
   // 新增音色资产
   async function handleAddVoice() {
     const name = await dialog.prompt({
-      title: '新增音色',
-      message: '输入音色名称',
-      placeholder: '例如：大禹-沉稳男声',
-      confirmText: '创建',
+      title: t('drama.assetsStep.addVoiceTitle'),
+      message: t('drama.assetsStep.addVoiceMessage'),
+      placeholder: t('drama.voiceBind.voiceNamePlaceholder'),
+      confirmText: t('drama.assetsStep.create'),
     })
     if (!name?.trim()) return
     try {
@@ -456,7 +493,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       setAssets((prev) => [...(prev ?? []), created])
       setVoicePromptDrafts((prev) => ({ ...prev, [created.id]: '' }))
     } catch (err) {
-      onError(err instanceof Error ? err.message : '创建音色失败')
+      onError(err instanceof Error ? err.message : t('drama.assetsStep.createVoiceFailed'))
     }
   }
 
@@ -471,7 +508,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
   async function handleSynthVoice(asset: DramaAsset) {
     const prompt = (voicePromptDrafts[asset.id] ?? readVoicePrompt(asset)).trim()
     if (!prompt) {
-      onError('请先填写音色描述')
+      onError(t('drama.assetsStep.fillVoicePrompt'))
       return
     }
     setVoiceSynthBusyId(asset.id)
@@ -484,7 +521,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       })
       setAssets((prev) => (prev ?? []).map((a) => (a.id === asset.id ? result.asset : a)))
     } catch (err) {
-      onError(err instanceof Error ? err.message : '音色合成失败')
+      onError(err instanceof Error ? err.message : t('drama.voiceBind.synthFailed'))
     } finally {
       setVoiceSynthBusyId(null)
     }
@@ -493,27 +530,27 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
   // 删除音色资产
   async function handleDeleteVoice(asset: DramaAsset) {
     const ok = await dialog.confirm({
-      title: '删除音色',
-      message: `确定删除音色「${asset.name || '未命名'}」？`,
+      title: t('drama.assetsStep.deleteVoiceTitle'),
+      message: t('drama.assetsStep.deleteVoiceMessage', { name: asset.name || t('drama.assetLibrary.unnamed') }),
       tone: 'danger',
-      confirmText: '删除',
+      confirmText: t('drama.common.delete'),
     })
     if (!ok) return
     try {
       await dramaApi.deleteAsset(asset.id)
       setAssets((prev) => (prev ?? []).filter((a) => a.id !== asset.id))
     } catch (err) {
-      onError(err instanceof Error ? err.message : '删除失败')
+      onError(err instanceof Error ? err.message : t('drama.common.deleteFailed'))
     }
   }
 
   // 新增角色
   async function handleAddCharacter() {
     const name = await dialog.prompt({
-      title: '新增角色',
-      message: '输入角色名称',
-      placeholder: '例如：大禹',
-      confirmText: '创建',
+      title: t('drama.assetsStep.addCharacterTitle'),
+      message: t('drama.assetsStep.addCharacterMessage'),
+      placeholder: t('drama.assetsStep.addCharacterPlaceholder'),
+      confirmText: t('drama.assetsStep.create'),
     })
     if (!name?.trim()) return
     try {
@@ -526,28 +563,28 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       })
       setAssets((prev) => [...(prev ?? []), created])
     } catch (err) {
-      onError(err instanceof Error ? err.message : '创建角色失败')
+      onError(err instanceof Error ? err.message : t('drama.assetsStep.createCharacterFailed'))
     }
   }
 
   // 删除角色
   async function handleDeleteCharacter(asset: DramaAsset) {
     const ok = await dialog.confirm({
-      title: '删除角色',
-      message: `确定删除角色「${asset.name || '未命名'}」？此操作不可恢复。`,
+      title: t('drama.assetDetail.deleteCharacter'),
+      message: t('drama.assetsStep.deleteCharacterMessage', { name: asset.name || t('drama.assetLibrary.unnamed') }),
       tone: 'danger',
-      confirmText: '删除',
+      confirmText: t('drama.common.delete'),
     })
     if (!ok) return
     if (busyAssetIds.has(asset.id)) {
-      onError('该角色正在生图中，请稍后再删')
+      onError(t('drama.assetsStep.characterBusy'))
       return
     }
     try {
       await dramaApi.deleteAsset(asset.id)
       setAssets((prev) => (prev ?? []).filter((a) => a.id !== asset.id))
     } catch (err) {
-      onError(err instanceof Error ? err.message : '删除失败')
+      onError(err instanceof Error ? err.message : t('drama.common.deleteFailed'))
     }
   }
 
@@ -555,10 +592,9 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
   async function handleReseedAssets() {
     if (reseedBusy || batchBusy) return
     const ok = await dialog.confirm({
-      title: '重新抽取资产',
-      message:
-        '将按最新剧本摘要补全新角色/场景，并用 AI 为全部角色、场景、道具重新生成完整生图提示词。已有图片/音色绑定不会删除，但重新生图时会使用新提示词。是否继续？',
-      confirmText: '开始抽取',
+      title: t('drama.assetsStep.reseedTitle'),
+      message: t('drama.assetsStep.reseedMessage'),
+      confirmText: t('drama.assetsStep.reseedConfirm'),
       tone: 'danger',
     })
     if (!ok) return
@@ -591,23 +627,14 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
           ? (params.assets_seed_llm_errors as string[])
           : []
         const failed = seedStatus === 'failed'
-        const parts = [`新建 ${created} 项`, `AI 刷新提示词 ${refreshed} 项`]
-        if (propsUpdated > 0) {
-          parts.push(`更新道具 ${propsUpdated} 项`)
-        }
-        let detail = failed
-          ? String(params.assets_seed_error || '抽取失败')
-          : `${parts.join('，')}。`
-        if (!failed && created === 0 && refreshed === 0 && llmErrors.length === 0) {
-          detail +=
-            '角色/场景若已存在则不会重复新建；本次也没有刷新到提示词。请确认剧本摘要与分集正文已生成后重试。'
-        } else if (!failed && llmErrors.length > 0) {
-          detail += `\n\n以下资产 AI 刷新失败：\n${llmErrors.slice(0, 5).join('\n')}${llmErrors.length > 5 ? `\n…共 ${llmErrors.length} 项` : ''}`
-        } else if (!failed) {
-          detail += '可在画布查看 prompt 或点击「生成形象」验证。'
-        }
+        const detail = failed
+          ? String(params.assets_seed_error || t('drama.assetsStep.extractFailed'))
+          : describeSeedResult({ created, refreshed, propsUpdated, llmErrors })
         await dialog.alert({
-          title: failed || llmErrors.length > 0 ? '抽取完成（部分失败）' : '抽取完成',
+          title:
+            failed || llmErrors.length > 0
+              ? t('drama.assetsStep.extractPartial')
+              : t('drama.assetsStep.extractDone'),
           message: detail,
           tone: failed || llmErrors.length > 0 ? 'danger' : 'success',
         })
@@ -618,26 +645,14 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       const refreshed = result.prompts_refreshed ?? 0
       const propsUpdated = result.props_updated ?? 0
       const llmErrors = Array.isArray(result.llm_errors) ? result.llm_errors : []
-      const parts = [`新建 ${created} 项`, `AI 刷新提示词 ${refreshed} 项`]
-      if (propsUpdated > 0) {
-        parts.push(`更新道具 ${propsUpdated} 项`)
-      }
-      let detail = `${parts.join('，')}。`
-      if (created === 0 && refreshed === 0 && llmErrors.length === 0) {
-        detail +=
-          '角色/场景若已存在则不会重复新建；本次也没有刷新到提示词。请确认剧本摘要与分集正文已生成后重试。'
-      } else if (llmErrors.length > 0) {
-        detail += `\n\n以下资产 AI 刷新失败：\n${llmErrors.slice(0, 5).join('\n')}${llmErrors.length > 5 ? `\n…共 ${llmErrors.length} 项` : ''}`
-      } else {
-        detail += '可在画布查看 prompt 或点击「生成形象」验证。'
-      }
+      const detail = describeSeedResult({ created, refreshed, propsUpdated, llmErrors })
       await dialog.alert({
-        title: llmErrors.length > 0 ? '抽取完成（部分失败）' : '抽取完成',
+        title: llmErrors.length > 0 ? t('drama.assetsStep.extractPartial') : t('drama.assetsStep.extractDone'),
         message: detail,
         tone: llmErrors.length > 0 ? 'danger' : 'success',
       })
     } catch (err) {
-      onError(err instanceof Error ? err.message : '重新抽取失败')
+      onError(err instanceof Error ? err.message : t('drama.assetsStep.reseedFailed'))
     } finally {
       setReseedBusy(false)
     }
@@ -651,11 +666,12 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     )
     let queueLabel: string | null = null
     if (job) {
-      if (job.status === 'running') queueLabel = '生成中…'
+      if (job.status === 'running') queueLabel = t('drama.common.generating')
       else {
         const queuedOnly = genQueue.filter((j) => j.status === 'queued' || j.status === 'running')
         const pos = queuedOnly.findIndex((j) => j.id === job.id) + 1
-        queueLabel = pos > 0 ? (pos > 1 ? `排队 #${pos}` : '排队中…') : '排队中…'
+        queueLabel =
+          pos > 1 ? t('drama.assetsStep.queuePos', { n: pos }) : t('drama.assetsStep.queued')
       }
     }
     return dramaAssetImageGenButtonLabel(asset, queueLabel)
@@ -674,10 +690,13 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
             <Boxes size={22} strokeWidth={1.75} />
           </div>
           <div>
-            <h2>资产库</h2>
+            <h2>{t('drama.workspace.assetLibrary')}</h2>
             <p className="drama-step-hero-sub">
-              共 <strong>{assetList.length}</strong> 项资产 · 当前分类{' '}
-              <strong>{filtered.length}</strong> 项 · 待生图 <strong>{pending.length}</strong>
+              {richText(t('drama.assetsStep.heroSub'), {
+                total: <strong>{assetList.length}</strong>,
+                filtered: <strong>{filtered.length}</strong>,
+                pending: <strong>{pending.length}</strong>,
+              })}
             </p>
           </div>
         </div>
@@ -685,31 +704,31 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
 
       <div className="drama-assets-tips" role="note">
         <Sparkles size={15} strokeWidth={1.75} aria-hidden />
-        <span>随时管理角色、场景与道具。确认分集剧本时会自动抽取本集相关资产，出图可在此补做。</span>
+        <span>{t('drama.assetsStep.tips')}</span>
       </div>
 
       <div className="drama-assets-toolbar">
         <div className="drama-asset-tabs">
-          {ASSET_TABS.map((t) => (
+          {assetTabs().map((item) => (
             <button
-              key={t.key}
+              key={item.key}
               type="button"
-              className={tab === t.key ? 'active' : ''}
-              onClick={() => setTab(t.key)}
+              className={tab === item.key ? 'active' : ''}
+              onClick={() => setTab(item.key)}
             >
-              {t.label}
+              {item.label}
             </button>
           ))}
         </div>
         <div className="drama-actions">
           {tab === 'character' ? (
             <button type="button" className="pf-btn" onClick={() => void handleAddCharacter()}>
-              新增角色
+              {t('drama.assetsStep.addCharacterTitle')}
             </button>
           ) : null}
           {DRAMA_VOICE_BINDING_ENABLED && tab === 'voice' ? (
             <button type="button" className="pf-btn" onClick={() => void handleAddVoice()}>
-              新增音色
+              {t('drama.assetsStep.addVoiceTitle')}
             </button>
           ) : null}
           {DRAMA_VOICE_BINDING_ENABLED && tab !== 'voice' ? (
@@ -717,17 +736,17 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
               type="button"
               className="pf-btn"
               onClick={() => setNarratorVoiceOpen(true)}
-              title="全局旁白音色（用于所有镜头旁白 reference_audio 一致性）"
+              title={t('drama.assetsStep.narratorTitle')}
               disabled={!project}
             >
-              旁白音色：{narrationVoiceLabel}
+              {t('drama.assetsStep.narratorBtn', { label: narrationVoiceLabel })}
             </button>
           ) : null}
           <button type="button" className="pf-btn" onClick={() => setPickerOpen(true)}>
-            从资产库选择
+            {t('drama.assetsStep.pickFromLibrary')}
           </button>
           <Link className="pf-btn" to="/drama/assets">
-            浏览全部资产
+            {t('drama.assetsStep.browseAll')}
           </Link>
           <button
             type="button"
@@ -736,8 +755,8 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
             onClick={() => void handleReseedAssets()}
           >
             {reseedBusy
-              ? `AI 抽取中…（约 ${Math.max(imageAssetCount, 1)} 项，需 1–3 分钟）`
-              : '重新抽取资产'}
+              ? t('drama.assetsStep.extracting', { n: Math.max(imageAssetCount, 1) })
+              : t('drama.assetsStep.reseedTitle')}
           </button>
           {/* 一键生成未出图：暂时隐藏，恢复时去掉 && false */}
           {tab !== 'voice' && false ? (
@@ -748,15 +767,15 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
               onClick={() => void batchGenerate()}
               title={
                 pending.length > 0
-                  ? `仅生成当前分类下尚未出图的 ${pending.length} 项（最多同时 3 路）`
-                  : '当前分类没有未出图资产'
+                  ? t('drama.assetsStep.batchPendingTitle', { n: pending.length })
+                  : t('drama.assetsStep.batchNoneTitle')
               }
             >
               {batchBusy || queueBusy
-                ? `生成中 ${busyAssetIds.size}`
+                ? t('drama.assetsStep.generatingN', { n: busyAssetIds.size })
                 : pending.length > 0
-                  ? `一键生成未出图 (${pending.length})`
-                  : '一键生成未出图'}
+                  ? t('drama.assetsStep.batchPendingN', { n: pending.length })
+                  : t('drama.assetsStep.batchPending')}
             </button>
           ) : null}
 
@@ -766,15 +785,15 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
               className="pf-btn pf-btn-lime"
               disabled={batchBusy || batchVoiceBusy || selectedCharacterIds.length === 0}
               onClick={() => void batchGenerateCharacterVoices()}
-              title="按各角色人物设定分别生成音色并绑定"
+              title={t('drama.assetsStep.batchVoiceBtnTitle')}
             >
               {batchVoiceBusy
-                ? '批量生成中…'
-                : `批量生成音色（${selectedCharacterIds.length}）`}
+                ? t('drama.assetsStep.batchGenerating')
+                : t('drama.assetsStep.batchVoiceN', { n: selectedCharacterIds.length })}
             </button>
           ) : null}
           <Link className="pf-btn" to={`/drama/projects/${projectId}/canvas`}>
-            打开画布
+            {t('drama.assetsStep.openCanvas')}
           </Link>
         </div>
       </div>
@@ -790,11 +809,11 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
         </div>
       ) : null}
 
-      {loading ? <p className="drama-muted">正在从剧本抽取资产（含道具）…</p> : null}
+      {loading ? <p className="drama-muted">{t('drama.assetsStep.extractingLoading')}</p> : null}
 
       {!loading && filtered.length > 0 ? (
         <p className="drama-muted drama-assets-page-meta">
-          第 {safePage} / {pageCount} 页 · 本分类共 {filtered.length} 项
+          {t('drama.assetsStep.pageMeta', { page: safePage, pages: pageCount, n: filtered.length })}
         </p>
       ) : null}
 
@@ -819,7 +838,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                   const draft = (voicePromptDrafts[asset.id] ?? '').trim()
                   if (draft && draft !== readVoicePrompt(asset)) {
                     void persistVoicePrompt(asset, draft).catch((err) =>
-                      onError(err instanceof Error ? err.message : '保存失败'),
+                      onError(err instanceof Error ? err.message : t('drama.common.saveFailed')),
                     )
                   }
                 }}
@@ -852,10 +871,10 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                 <button
                   type="button"
                   className="drama-asset-thumb-btn"
-                  title="点击放大"
+                  title={t('drama.assetDetail.clickToZoom')}
                   onClick={(e) => {
                     e.stopPropagation()
-                    setLightbox({ src: mediaSrc, alt: asset.name || '预览' })
+                    setLightbox({ src: mediaSrc, alt: asset.name || t('drama.lightbox.alt') })
                   }}
                 >
                   <img key={mediaSrc} src={mediaSrc} alt={asset.name || ''} />
@@ -863,9 +882,11 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
               ) : (
                 <div className="drama-asset-placeholder">{asset.type || 'asset'}</div>
               )}
-              <h3>{asset.name || '未命名'}</h3>
+              <h3>{asset.name || t('drama.assetLibrary.unnamed')}</h3>
               <p>
-                {asset.type}
+                {['character', 'scene', 'prop'].includes((asset.type || '').toLowerCase())
+                  ? t(`drama.common.${(asset.type || '').toLowerCase()}`)
+                  : asset.type}
                 {isCharacter && voice ? ` · ${voice.label}` : ''}
               </p>
               <div
@@ -890,7 +911,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                         )
                       }}
                     />
-                    <span className="drama-muted">选中</span>
+                    <span className="drama-muted">{t('drama.assetsStep.select')}</span>
                   </label>
                 ) : null}
                 <button
@@ -921,7 +942,9 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                           }
                           onClick={() => void handleGenerateCharacterVoice(asset)}
                         >
-                          {characterVoiceBusyIds.has(asset.id) ? '生成中…' : '生成音色'}
+                          {characterVoiceBusyIds.has(asset.id)
+                            ? t('drama.common.generating')
+                            : t('drama.assetsStep.genVoice')}
                         </button>
                       )
                     ) : null}
@@ -931,7 +954,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                       disabled={busy || batchBusy || batchVoiceBusy}
                       onClick={() => void handleDeleteCharacter(asset)}
                     >
-                      删除
+                      {t('drama.common.delete')}
                     </button>
                   </>
                 ) : null}
@@ -940,7 +963,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
           )
         })}
       </div>
-      {!loading && filtered.length === 0 ? <p className="drama-muted">该分类暂无资产</p> : null}
+      {!loading && filtered.length === 0 ? <p className="drama-muted">{t('drama.assetLibrary.empty')}</p> : null}
 
       {!loading && filtered.length > 0 ? (
         <Pagination
@@ -954,7 +977,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
             setPage(1)
           }}
           onChange={setPage}
-          ariaLabel="资产库分页"
+          ariaLabel={t('drama.assetLibrary.paginationAria')}
           className="drama-assets-pagination"
         />
       ) : null}
@@ -1017,8 +1040,8 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
         onClose={() => setPickerOpen(false)}
         projectId={projectId}
         defaultTab={tab === 'voice' ? 'voice' : tab}
-        title="从资产库导入"
-        confirmLabel="导入到本项目"
+        title={t('drama.assetsStep.importTitle')}
+        confirmLabel={t('drama.assetsStep.importConfirm')}
         onPick={handleImportFromLibrary}
       />
     </div>

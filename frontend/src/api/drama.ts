@@ -1,4 +1,5 @@
 import { throwApiError } from '../lib/apiError'
+import { tr } from '../i18n'
 
 function defaultApiBase() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
@@ -59,7 +60,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throwApiError(res.status, err.detail, '请求失败')
+    throwApiError(res.status, err.detail, tr('common.requestFailed'))
   }
   return res.json()
 }
@@ -116,6 +117,9 @@ export type DramaTaskBrief = {
   updated_at?: string
 }
 
+/** 漫剧项目内容语言 */
+export type DramaContentLocale = 'zh' | 'en' | 'vi'
+
 export type DramaProject = {
   id: number
   user_id: number
@@ -129,6 +133,8 @@ export type DramaProject = {
   asset_count: number
   episode_count: number
   workflow?: 'script' | 'canvas'
+  /** 内容语言（AI 生成的剧本/台词/字幕等） */
+  content_locale?: DramaContentLocale
   usage?: DramaProjectUsageStats
   active_tasks?: DramaTaskBrief[]
 }
@@ -145,6 +151,8 @@ export type DramaProjectListItem = {
   cover_url?: string | null
   cover_pending?: boolean
   workflow?: 'script' | 'canvas'
+  /** 内容语言（AI 生成的剧本/台词/字幕等） */
+  content_locale?: DramaContentLocale
   usage?: DramaProjectUsageStats
   active_tasks?: DramaTaskBrief[]
 }
@@ -254,10 +262,19 @@ export const dramaApi = {
     episode_count?: number
     image_style_id?: string
     workflow?: 'script' | 'canvas'
+    content_locale?: DramaContentLocale
   }) =>
     request<DramaProject>('/api/drama/projects', { method: 'POST', body: JSON.stringify(body) }),
   getProject: (id: number) => request<DramaProject>(`/api/drama/projects/${id}`),
-  updateProject: (id: number, body: { title?: string; description?: string; params?: Record<string, unknown> | null }) =>
+  updateProject: (
+    id: number,
+    body: {
+      title?: string
+      description?: string
+      params?: Record<string, unknown> | null
+      content_locale?: DramaContentLocale
+    },
+  ) =>
     request<DramaProject>(`/api/drama/projects/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteProject: (id: number) =>
     request<{ ok: boolean }>(`/api/drama/projects/${id}`, { method: 'DELETE' }),
@@ -353,7 +370,7 @@ export const dramaApi = {
           : Array.isArray(detail)
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
             : res.statusText
-      throw new Error(message || '上传失败')
+      throw new Error(message || tr('common.uploadFailed'))
     }
     return res.json() as Promise<DramaAsset>
   },

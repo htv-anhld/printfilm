@@ -3,6 +3,8 @@
  * 常量与后端 seedance_segments 对齐（单段 3–12s，镜合计 ≤30s）
  */
 
+import { getActiveLocale, tr } from '../i18n'
+
 /** 单段时长下限（秒） */
 export const SEGMENT_DURATION_MIN = 3
 
@@ -21,8 +23,30 @@ export const SUBTITLE_CUE = '【字幕：后期叠旁白字幕，简体中文逐
 /** 与后端一致的旁白前缀（科普自然偏快；旧稿「慢速清晰」仍可识别） */
 export const NARRATION_PREFIX = '【旁白·自然语速·同步字幕】'
 
-/** 脚本编辑区 placeholder */
+/** 脚本编辑区 placeholder（中文静态版，兼容旧调用；随语言请用 segmentScriptPlaceholder()） */
 export const SEGMENT_SCRIPT_PLACEHOLDER = `${SUBTITLE_CUE}\n【BGM：后期混音 · 轻快专业，音量低于人声】\n@duration:4\n过肩工位操作画面…\n@duration:8\n${NARRATION_PREFIX}口播内容…`
+
+/** 越南语/英文内容的字幕 cue 与旁白前缀（与后端 seedance_segments 英文 cue 一致） */
+export const SUBTITLE_CUE_EN = '【Subtitles: added in post, narration captions synced line by line】'
+export const NARRATION_PREFIX_EN = '【Narration · natural pace · synced subtitles】'
+
+// 字幕 / BGM 等制作 cue 行（中英两种写法）
+function isCueLine(stripped: string): boolean {
+  return stripped.startsWith('【字幕') || stripped.startsWith('【Subtitles') || stripped.startsWith('【BGM')
+}
+
+// 脚本是否为英文 cue 体系（vi/en 项目）
+function usesEnglishCues(script: string): boolean {
+  return script.includes('【Subtitles') || script.includes('【Narration')
+}
+
+/** 脚本编辑区 placeholder（当前语言；中文界面用中文 cue，其余用英文 cue） */
+export function segmentScriptPlaceholder(): string {
+  const zh = getActiveLocale() === 'zh'
+  return `${zh ? SUBTITLE_CUE : SUBTITLE_CUE_EN}\n${tr('lib.segment.placeholderBgm')}\n@duration:4\n${tr(
+    'lib.segment.placeholderVisual',
+  )}\n@duration:8\n${zh ? NARRATION_PREFIX : NARRATION_PREFIX_EN}${tr('lib.segment.placeholderNarration')}`
+}
 
 const DURATION_TOKEN_PATTERN = /@duration:(\d+)/g
 
@@ -85,7 +109,10 @@ export function validateSegmentScriptDuration(content: string): {
       valid: false,
       total,
       durations,
-      message: `单个 @duration 需在 ${SEGMENT_DURATION_MIN}–${SEGMENT_DURATION_MAX} 秒之间`,
+      message: tr('lib.scriptValidate.segmentRange', {
+        min: SEGMENT_DURATION_MIN,
+        max: SEGMENT_DURATION_MAX,
+      }),
     }
   }
 
@@ -94,7 +121,7 @@ export function validateSegmentScriptDuration(content: string): {
       valid: false,
       total,
       durations,
-      message: `镜头时长合计不能超过 ${SHOT_DURATION_MAX} 秒（当前 ${total}s）`,
+      message: tr('lib.segment.totalOver', { max: SHOT_DURATION_MAX, total }),
     }
   }
 
@@ -125,7 +152,7 @@ export function parseSegmentScript(script: string | undefined | null): {
     .filter(Boolean)
 
   for (const line of lines) {
-    if (line.startsWith('【字幕') || line.startsWith('【BGM')) {
+    if (isCueLine(line)) {
       cues.push(line)
       continue
     }
@@ -145,12 +172,12 @@ export function parseSegmentScript(script: string | undefined | null): {
   return { cues, beats }
 }
 
-const NARRATION_LINE_PREFIX = /^【旁白[^】]*】/
+const NARRATION_LINE_PREFIX = /^【(?:旁白|Narration)[^】]*】/
 
 /** 脚本行是否为旁白口播（字幕 cue 含「旁白」二字但不算） */
 export function isNarrationScriptLine(line: string): boolean {
   const stripped = line.trim()
-  if (stripped.startsWith('【字幕') || stripped.startsWith('【BGM')) return false
+  if (isCueLine(stripped)) return false
   return NARRATION_LINE_PREFIX.test(stripped)
 }
 
@@ -168,7 +195,16 @@ export function narrationFromScript(script: string | undefined | null): string {
       if (text) parts.push(text)
     }
   }
-  return parts.join('')
+  return joinSpokenParts(parts)
+}
+
+// 拼接多段口播：中日文直接相连；拉丁文字（英文 / 越南语）段间补空格
+function joinSpokenParts(parts: string[]): string {
+  return parts.reduce((acc, part) => {
+    if (!acc) return part
+    const cjkBoundary = /[\u3000-\u9fff\uff00-\uffef]$/.test(acc) || /^[\u3000-\u9fff\uff00-\uffef]/.test(part)
+    return cjkBoundary ? acc + part : `${acc} ${part}`
+  }, '')
 }
 
 /** 从脚本提取首段画面（非旁白、非 cue） */
@@ -178,8 +214,7 @@ export function firstVisualFromScript(script: string | undefined | null): string
     if (
       !stripped ||
       stripped.startsWith('@duration:') ||
-      stripped.startsWith('【字幕') ||
-      stripped.startsWith('【BGM') ||
+      isCueLine(stripped) ||
       isNarrationScriptLine(stripped)
     ) {
       continue
@@ -207,7 +242,7 @@ export function replaceNarrationInScript(script: string, narration: string): str
   }
   if (text && !replaced) {
     out.push('@duration:6')
-    out.push(`${NARRATION_PREFIX}${text}`)
+    out.push(`${usesEnglishCues(script) ? NARRATION_PREFIX_EN : NARRATION_PREFIX}${text}`)
   }
   return out.join('\n').trim()
 }
@@ -222,7 +257,7 @@ export function replaceFirstVisualInScript(script: string, visual: string): stri
   let cueEnd = 0
   for (let i = 0; i < lines.length; i += 1) {
     const stripped = lines[i].trim()
-    if (stripped.startsWith('【字幕') || stripped.startsWith('【BGM') || !stripped) {
+    if (isCueLine(stripped) || !stripped) {
       cueEnd = i + 1
       continue
     }
@@ -234,8 +269,7 @@ export function replaceFirstVisualInScript(script: string, visual: string): stri
       !replaced &&
       stripped &&
       !stripped.startsWith('@duration:') &&
-      !stripped.startsWith('【字幕') &&
-      !stripped.startsWith('【BGM') &&
+      !isCueLine(stripped) &&
       !isNarrationScriptLine(stripped)
     ) {
       out.push(text)

@@ -1,6 +1,7 @@
 /** 画布提示词：contentEditable，@asset 显示为带小图的标签 */
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { resolveDramaMediaUrl } from '../../../../api/drama'
+import { tr } from '../../../../i18n'
 import {
   deleteAdjacentEditorChip,
   detectActiveMentionTrigger,
@@ -230,7 +231,7 @@ export function CanvasPromptEditor({
         className={`fc-generate-input fc-generate-editor nodrag nopan nowheel${empty ? ' is-empty' : ''}`}
         role="textbox"
         aria-multiline="true"
-        aria-label="生成提示词"
+        aria-label={tr('episode.canvas.promptAria')}
         contentEditable={!disabled}
         suppressContentEditableWarning
         data-placeholder={placeholder}

@@ -1,4 +1,5 @@
 import { throwApiError } from './lib/apiError'
+import { tr } from './i18n'
 
 function defaultApiBase() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
@@ -132,6 +133,9 @@ export function resolveVoiceId(raw: string, voices: VoicePreset[]): string {
   return hit ? hit.speaker || hit.id : id
 }
 
+/** 项目内容语言 */
+export type ContentLocale = 'zh' | 'en' | 'vi'
+
 export type Project = {
   id: number
   template_id: string
@@ -145,6 +149,8 @@ export type Project = {
   final_video_url: string | null
   resolution_mode: string
   pipeline_mode?: PipelineMode
+  /** 内容语言（AI 生成的标题/旁白/字幕等） */
+  content_locale?: ContentLocale
   output_ratio?: string
   voice_id?: string
   character_bible?: string
@@ -362,7 +368,7 @@ export const api = {
           : Array.isArray(detail)
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
             : res.statusText
-      throw new Error(message || '头像上传失败')
+      throw new Error(message || tr('settings.avatarFailed'))
     }
     return res.json() as Promise<User>
   },
@@ -381,6 +387,7 @@ export const api = {
     style_prompt?: string
     character_prompt?: string
     extra_prompt?: string
+    content_locale?: ContentLocale
   }) {
     return request<Project>('/api/projects', { method: 'POST', body: JSON.stringify(body) })
   },
@@ -431,7 +438,7 @@ export const api = {
           : Array.isArray(detail)
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
             : res.statusText
-      throw new Error(message || '封面上传失败')
+      throw new Error(message || tr('common.coverUploadFailed'))
     }
     return res.json() as Promise<Project>
   },
@@ -494,7 +501,7 @@ export const api = {
           : Array.isArray(detail)
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
             : res.statusText
-      throw new Error(message || '打包下载失败')
+      throw new Error(message || tr('common.zipFailed'))
     }
     const blob = await res.blob()
     const cd = res.headers.get('Content-Disposition') || ''
@@ -542,7 +549,7 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }))
       const detail = err.detail
-      throw new Error(typeof detail === 'string' ? detail : '画面上传失败')
+      throw new Error(typeof detail === 'string' ? detail : tr('common.imageUploadFailed'))
     }
     return res.json() as Promise<Project>
   },
@@ -567,10 +574,10 @@ export const api = {
   compose(projectId: number) {
     return request<Project>(`/api/projects/${projectId}/compose`, { method: 'POST' })
   },
-  expandContent(topic: string, mode: 'theme' | 'script' = 'theme') {
+  expandContent(topic: string, mode: 'theme' | 'script' = 'theme', contentLocale?: ContentLocale) {
     return request<{ title: string; content: string }>('/api/content/expand', {
       method: 'POST',
-      body: JSON.stringify({ topic, mode }),
+      body: JSON.stringify(contentLocale ? { topic, mode, content_locale: contentLocale } : { topic, mode }),
     })
   },
   publish(projectId: number) {

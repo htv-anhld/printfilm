@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react'
 import { Pencil } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
+import { tr, useI18n } from '../../i18n'
 
 export type OutlineSceneBlock = {
   /** 原始整段（含场头行），写回时原样拼接 */
@@ -9,6 +10,8 @@ export type OutlineSceneBlock = {
   label: string
   title: string
   body: string
+  /** 未识别到场头时整段作为一块 */
+  isFullText?: boolean
 }
 
 export type ScriptLineKind = 'meta' | 'action' | 'dialogue' | 'empty' | 'other'
@@ -45,6 +48,14 @@ const LINE_DURATION_MAX = 15
 const FRAGMENT_SOFT_MAX = 15
 const FRAGMENT_TOTAL_MAX = 15
 
+const SCENE_SPLIT_RE = /(?=^#{1,3}\s*(?:场|scene\b|cảnh\b))/imu
+const SCENE_HEAD_RE = /^#{1,3}\s*(?:场|scene\b|cảnh\b)/imu
+const SCENE_LABEL_RE = /^(?:场|scene|cảnh)\s*([^\s：:]+)/iu
+const SCENE_TITLE_STRIP_RE = /^(?:场|scene|cảnh)\s*[^\s：:]+[：:\s]*/iu
+const META_LATIN_RE = /^(?:(?:characters|cast|time|location|nhân vật|thời gian|địa điểm)\s*[:：]|(?:int|ext)\.)/iu
+const CAST_RE = /^(?:出场人物|characters|cast|nhân vật)\s*[：:]\s*(.+)$/iu
+const CJK_RE = /[\u4e00-\u9fff]/
+
 // 角色名稳定配色
 export function speakerColor(name: string): string {
   let h = 0
@@ -56,16 +67,17 @@ export function speakerColor(name: string): string {
 export function parseOutlineSceneBlocks(text: string): OutlineSceneBlock[] {
   const raw = (text || '').trim()
   if (!raw) return []
-  const parts = raw.split(/(?=^#{1,3}\s*场)/m).map((p) => p.trim()).filter(Boolean)
-  if (parts.length <= 1 && !/^#{1,3}\s*场/.test(raw)) {
-    return [{ raw, label: '全文', title: '', body: raw }]
+  // 场头兼容中文「场」与英/越文 Scene / Cảnh（内容语言非中文时）
+  const parts = raw.split(SCENE_SPLIT_RE).map((p) => p.trim()).filter(Boolean)
+  if (parts.length <= 1 && !SCENE_HEAD_RE.test(raw)) {
+    return [{ raw, label: tr('drama.outlinePreview.fullText'), title: '', body: raw, isFullText: true }]
   }
   return parts.map((part, index) => {
     const lines = part.split(/\r?\n/)
     const head = (lines[0] || '').replace(/^#+\s*/, '').trim()
-    const labelMatch = head.match(/^场\s*([^\s：:]+)/)
-    const label = labelMatch ? `场 ${labelMatch[1]}` : `场 ${index + 1}`
-    const title = head.replace(/^场\s*[^\s：:]+[：:\s]*/, '').trim()
+    const labelMatch = head.match(SCENE_LABEL_RE)
+    const label = tr('drama.outlinePreview.sceneLabel', { n: labelMatch ? labelMatch[1] : index + 1 })
+    const title = head.replace(SCENE_TITLE_STRIP_RE, '').trim()
     const body = lines.slice(1).join('\n').trim()
     return { raw: part, label, title, body }
   })
@@ -83,6 +95,7 @@ export function parseScriptLine(line: string): ParsedScriptLine {
   if (!trimmed) return { kind: 'empty', text }
   if (
     /^(出场人物|时间|地点|内外景)/.test(trimmed) ||
+    META_LATIN_RE.test(trimmed) ||
     /^[日夜早晚晨黄昏傍晚凌晨清晨午晚]\s*[内外]/.test(trimmed)
   ) {
     return { kind: 'meta', text: trimmed }
@@ -106,8 +119,12 @@ export function parseScriptLine(line: string): ParsedScriptLine {
   return { kind: 'other', text: trimmed }
 }
 
+// 文本「长度单位」：中文按字数；英/越文按词数折算（约 1 词 ≈ 1.6 个汉字的朗读时长）
 function compactLen(text: string): number {
-  return (text || '').replace(/\s+/g, '').length
+  const raw = text || ''
+  if (CJK_RE.test(raw)) return raw.replace(/\s+/g, '').length
+  const words = raw.trim().split(/\s+/).filter(Boolean).length
+  return Math.round(words * 1.6)
 }
 
 /** 单行粗估秒数（对齐后端 build_fragments 量级，供大纲预览） */
@@ -181,7 +198,7 @@ export function summarizeOutlineScene(body: string): OutlineSceneStats {
     if (line.kind === 'dialogue') dialogueCount += 1
     if (line.kind === 'action') actionCount += 1
     if (line.kind === 'meta') {
-      const castMatch = line.text.match(/^出场人物[：:]\s*(.+)$/)
+      const castMatch = line.text.match(CAST_RE)
       if (castMatch) cast = parseCastNames(castMatch[1])
       const locMatch = line.text.match(
         /^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?\s*(?:内|外|内外)\s+(.+)$/,
@@ -204,12 +221,12 @@ function formatClockDuration(sec: number): string {
   if (sec < 60) return `${sec}s`
   const m = Math.floor(sec / 60)
   const s = sec % 60
-  return s ? `${m}分${s}秒` : `${m}分钟`
+  return s ? tr('drama.outlinePreview.minSec', { m, s }) : tr('drama.outlinePreview.min', { m })
 }
 
 function formatEstimateDuration(sec: number): string {
-  if (sec <= 0) return '约 —'
-  return `约 ${formatClockDuration(sec)}`
+  if (sec <= 0) return tr('drama.outlinePreview.approx', { d: '—' })
+  return tr('drama.outlinePreview.approx', { d: formatClockDuration(sec) })
 }
 
 // 渲染解析后的剧本行
@@ -237,13 +254,15 @@ function ScriptLines({ text }: { text: string }) {
           )
         }
         if (line.kind === 'dialogue' && line.speaker) {
+          // 中文剧本用全角括号/冒号，其它语言用半角
+          const cjk = CJK_RE.test(line.text)
           return (
             <p key={i} className="drama-outline-script-dialogue">
               <span className="drama-outline-script-speaker" style={{ color: speakerColor(line.speaker) }}>
                 {line.speaker}
-                {line.paren ? `（${line.paren}）` : ''}
+                {line.paren ? (cjk ? `（${line.paren}）` : ` (${line.paren})`) : ''}
               </span>
-              <span className="drama-outline-script-colon">：</span>
+              <span className="drama-outline-script-colon">{cjk ? '：' : ': '}</span>
               <span>{line.dialogue}</span>
             </p>
           )
@@ -260,14 +279,15 @@ function ScriptLines({ text }: { text: string }) {
 
 /** 场次信息条：对白 / 动作 / 内外景 / 出场 */
 function SceneStatsBar({ stats }: { stats: OutlineSceneStats }) {
+  const { t } = useI18n()
   const items: string[] = []
-  if (stats.dialogueCount > 0) items.push(`${stats.dialogueCount} 句对白`)
-  if (stats.actionCount > 0) items.push(`${stats.actionCount} 段动作`)
+  if (stats.dialogueCount > 0) items.push(t('drama.outlinePreview.dialogues', { n: stats.dialogueCount }))
+  if (stats.actionCount > 0) items.push(t('drama.outlinePreview.actions', { n: stats.actionCount }))
   if (stats.location) items.push(stats.location)
-  if (stats.cast.length) items.push(stats.cast.slice(0, 6).join('、'))
+  if (stats.cast.length) items.push(stats.cast.slice(0, 6).join(t('drama.outlinePreview.listSep')))
   if (!items.length) return null
   return (
-    <div className="drama-outline-scene-stats" aria-label="本场解析信息">
+    <div className="drama-outline-scene-stats" aria-label={t('drama.outlinePreview.statsAria')}>
       {items.map((item) => (
         <span key={item} className="drama-outline-scene-stat">
           {item}
@@ -295,6 +315,7 @@ export function OutlineScriptPreview({
   shotStats,
   onSaveScenes,
 }: OutlineScriptPreviewProps) {
+  const { t } = useI18n()
   const blocks = useMemo(() => parseOutlineSceneBlocks(text), [text])
   const blockStats = useMemo(
     () => blocks.map((b) => summarizeOutlineScene(b.body)),
@@ -336,23 +357,30 @@ export function OutlineScriptPreview({
   const summaryBar =
     blocks.length > 0 ? (
       <div className="drama-outline-script-summary">
-        <span>{blocks[0].label === '全文' ? '1 段' : `${blocks.length} 场`}</span>
+        <span>
+          {blocks[0].isFullText
+            ? t('drama.outlinePreview.oneSegment')
+            : t('drama.outlinePreview.scenesCount', { n: blocks.length })}
+        </span>
         {hasShotDuration ? (
           <span>
-            {shotStats!.fragmentCount} 镜 · 合计 {formatClockDuration(displayTotalSec)}
+            {t('drama.outlinePreview.shotsTotal', {
+              n: shotStats!.fragmentCount,
+              d: formatClockDuration(displayTotalSec),
+            })}
           </span>
         ) : displayTotalSec > 0 ? (
-          <span>合计 {formatClockDuration(displayTotalSec)}</span>
+          <span>{t('drama.outlinePreview.total', { d: formatClockDuration(displayTotalSec) })}</span>
         ) : null}
         <span className="drama-outline-script-summary-hint">
           {hasShotDuration
-            ? '时长取自已切分镜头'
-            : '时长为解析估算，进分镜后以镜头为准'}
+            ? t('drama.outlinePreview.durationFromShots')
+            : t('drama.outlinePreview.durationEstimated')}
         </span>
       </div>
     ) : null
 
-  if (blocks.length === 1 && blocks[0].label === '全文') {
+  if (blocks.length === 1 && blocks[0].isFullText) {
     return (
       <div className="drama-outline-scene">
         {summaryBar}
@@ -365,7 +393,7 @@ export function OutlineScriptPreview({
               onClick={() => startEdit(0)}
             >
               <Pencil size={13} />
-              编辑本段
+              {t('drama.outlinePreview.editSection')}
             </button>
           ) : null}
         </div>
@@ -408,7 +436,7 @@ export function OutlineScriptPreview({
                 onClick={() => startEdit(i)}
               >
                 <Pencil size={13} />
-                编辑本场
+                {t('drama.outlinePreview.editScene')}
               </button>
             ) : null}
           </header>
@@ -445,6 +473,7 @@ function SceneEditBox({
   onCancel: () => void
   onSave: () => void
 }) {
+  const { t } = useI18n()
   return (
     <div className="drama-outline-scene-edit-box">
       <textarea
@@ -456,10 +485,10 @@ function SceneEditBox({
       />
       <div className="drama-ep-section-edit-actions">
         <button type="button" className="drama-btn-ghost" disabled={saving} onClick={onCancel}>
-          取消
+          {t('drama.common.cancel')}
         </button>
         <button type="button" className="drama-btn-primary" disabled={saving} onClick={onSave}>
-          {saving ? '保存中…' : '保存本段'}
+          {saving ? t('drama.common.saving') : t('drama.outlinePreview.saveSection')}
         </button>
       </div>
     </div>
@@ -481,7 +510,7 @@ export function OutlineScriptParseModal({
   return (
     <Modal open={open} onClose={onClose} title={title} size="xl" className="drama-outline-script-modal">
       <div className="drama-outline-script-modal-body">
-        <OutlineScriptPreview text={text} empty="暂无剧本内容" />
+        <OutlineScriptPreview text={text} empty={tr('drama.outlinePreview.emptyScript')} />
       </div>
     </Modal>
   )

@@ -101,6 +101,7 @@
   font-weight: 500;
   cursor: pointer;
   padding: 0.25rem 0.35rem;
+  white-space: nowrap;
 }
 
 .pf-nav-help-btn:hover {
@@ -4004,7 +4005,10 @@
   padding: 0.55rem 0.45rem;
   border-bottom: 1px solid var(--pf-line);
   background: #fafbfc;
-  white-space: nowrap;
+  /* 越南语/英文表头较长：允许换行，避免固定列宽下相互覆盖 */
+  white-space: normal;
+  overflow-wrap: break-word;
+  vertical-align: bottom;
 }
 
 .pf-shot-table tbody tr:nth-child(even) {
@@ -4024,7 +4028,7 @@
 
 /* ?????????? / ??????????????????? */
 .pf-shot-table .col-no {
-  width: 3rem;
+  width: 3.6rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--pf-ink);
@@ -4047,17 +4051,24 @@
 }
 
 .pf-shot-table .col-dur {
-  width: 4rem;
+  width: 4.8rem;
   white-space: nowrap;
 }
 
 .pf-shot-table .col-status {
-  width: 5.6rem;
+  width: 6.4rem;
   white-space: nowrap;
 }
 
 .pf-shot-table .col-ops {
   width: 8.4rem;
+}
+
+/* 列样式里的 nowrap 只作用于单元格正文，表头允许换行 */
+.pf-shot-table thead th.col-no,
+.pf-shot-table thead th.col-dur,
+.pf-shot-table thead th.col-status {
+  white-space: normal;
 }
 
 .pf-shot-thumb-btn {

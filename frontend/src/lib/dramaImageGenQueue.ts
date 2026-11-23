@@ -1,4 +1,5 @@
 /** 漫剧资产生图：提交后立刻轮询，成功后用新 URL 实时回显（不排队提交） */
+import { tr } from '../i18n'
 import { dramaApi, type DramaAsset } from '../api/drama'
 import type { ImageGenerationOptions } from './dramaGenerationOptions'
 import { syncImageJobToUnified } from './dramaGenQueue'
@@ -200,7 +201,7 @@ async function waitForAssetImage(
   while (Date.now() - started < POLL_TIMEOUT_MS) {
     const list = await dramaApi.listAssets(projectId)
     const latest = list.find((a) => a.id === assetId)
-    if (!latest) throw new Error('资产不存在')
+    if (!latest) throw new Error(tr('lib.genQueue.assetNotFound'))
 
     const status = readGenerationStatus(latest)
     const currentUrl = assetMediaUrl(latest)
@@ -219,7 +220,7 @@ async function waitForAssetImage(
     if (status === 'failed' || status === 'cancelled') {
       const gen = (latest.params || {}).generation as { error?: string } | undefined
       const raw = String(gen?.error || '').trim()
-      throw new Error(raw || (status === 'cancelled' ? '生图已取消' : '生图失败'))
+      throw new Error(raw || (status === 'cancelled' ? tr('lib.genQueue.imageCancelled') : tr('lib.genQueue.imageFailed')))
     }
 
     const urlChanged = Boolean(currentUrl) && currentUrl !== baselineUrl
@@ -236,7 +237,7 @@ async function waitForAssetImage(
     // 仍是旧图且未进入过 in-flight：继续等（POST 后状态可能尚未可见）
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
   }
-  throw new Error('生图超时，请刷新后重试')
+  throw new Error(tr('lib.genQueue.imageTimeout'))
 }
 
 const waitingPoll: InternalJob[] = []
@@ -266,7 +267,7 @@ async function pollJob(job: InternalJob) {
     emit()
     job.resolve(asset)
   } catch (err) {
-    const message = err instanceof Error ? err.message : '生图失败'
+    const message = err instanceof Error ? err.message : tr('lib.genQueue.imageFailed')
     job.status = 'failed'
     job.error = message
     job.finishedAt = Date.now()
@@ -322,7 +323,7 @@ async function submitJob(job: InternalJob) {
     waitingPoll.push(job)
     pumpPoll()
   } catch (err) {
-    const message = err instanceof Error ? err.message : '生图失败'
+    const message = err instanceof Error ? err.message : tr('lib.genQueue.imageFailed')
     job.status = 'failed'
     job.error = message
     job.finishedAt = Date.now()
@@ -370,7 +371,7 @@ export function enqueueDramaImageGen(input: EnqueueInput): Promise<DramaAsset> {
       id: makeJobId(),
       projectId: input.projectId,
       assetId: input.assetId,
-      assetName: (input.assetName || '').trim() || `资产 ${input.assetId}`,
+      assetName: (input.assetName || '').trim() || tr('lib.genQueue.assetTitle', { id: input.assetId }),
       assetType: input.assetType || 'character',
       prompt: input.prompt,
       options: input.options || {},

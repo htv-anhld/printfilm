@@ -1,4 +1,5 @@
 /** 画布节点媒体：识别可播放类型与下载文件名 */
+import { tr } from '../i18n'
 import { fetchMediaBlob, triggerBlobDownload } from './clientDownload'
 
 const VIDEO_EXT = /\.(mp4|webm|mov)(\?|#|$)/i
@@ -16,12 +17,12 @@ export function isAudioUrl(url: string) {
 
 /** 从展示名生成安全文件名主干 */
 export function sanitizeMediaBasename(label: string) {
-  const cleaned = (label || '未命名')
+  const cleaned = (label || tr('lib.media.untitled'))
     .replace(/[<>:"/\\|?*\x00-\x1f]+/g, '_')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 60)
-  return cleaned || '未命名'
+  return cleaned || tr('lib.media.untitled')
 }
 
 /** 从 URL 推断扩展名 */

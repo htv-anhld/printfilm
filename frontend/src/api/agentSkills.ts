@@ -1,6 +1,7 @@
 /** Agent Skill API：列表 / 上传 / 启用 / 删除 */
 
 import { getDramaApiBase } from './drama'
+import { tr } from '../i18n'
 
 /** 组装请求头；FormData 时不要强行 JSON */
 function authHeaders(json = true): HeadersInit {
@@ -20,7 +21,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     const detail = err.detail
-    throw new Error(typeof detail === 'string' ? detail : '请求失败')
+    throw new Error(typeof detail === 'string' ? detail : tr('common.requestFailed'))
   }
   return res.json()
 }
@@ -64,7 +65,7 @@ export async function uploadAgentSkillFile(file: File) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(typeof err.detail === 'string' ? err.detail : '上传失败')
+    throw new Error(typeof err.detail === 'string' ? err.detail : tr('common.uploadFailed'))
   }
   return res.json() as Promise<AgentSkill>
 }
@@ -87,8 +88,11 @@ export function optimizePromptWithSkills(body: {
   prompt: string
   skill_ids: number[]
   task?: 'video_prompt' | 'image_prompt' | 'shot_plan'
+  /** 漫剧项目 id：后端按该项目的内容语言改写 */
+  project_id?: number
 }) {
-  return request<{ prompt: string }>('/api/drama/skills/optimize', {
+  const query = body.project_id ? `?project_id=${body.project_id}` : ''
+  return request<{ prompt: string }>(`/api/drama/skills/optimize${query}`, {
     method: 'POST',
     body: JSON.stringify({
       prompt: body.prompt,

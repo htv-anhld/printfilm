@@ -1,5 +1,6 @@
 import { getActiveLocale } from '../i18n/detect'
 import { messages } from '../i18n/messages'
+import { tr } from '../i18n/translate'
 
 export const RUNNING = new Set([
   'SCRIPTING',
@@ -208,14 +209,17 @@ export function formatMmSs(seconds: number) {
 }
 
 /** 科普全链路步骤：建项 / 风格 / 分镜台共用 */
-export const KEPU_STEPS = [
-  { key: 'topic', label: '选题' },
-  { key: 'style', label: '风格' },
-  { key: 'confirm', label: '确认分镜' },
-  { key: 'assets', label: '画面与配音' },
-  { key: 'videos', label: '镜头视频' },
-  { key: 'compose', label: '合成预览' },
-]
+// label 用 getter：按当前界面语言取文案
+function kepuStep(key: string) {
+  return {
+    key,
+    get label() {
+      return tr(`kepuSteps.${key}`)
+    },
+  }
+}
+
+export const KEPU_STEPS = ['topic', 'style', 'confirm', 'assets', 'videos', 'compose'].map(kepuStep)
 
 export const CREATE_STEPS = KEPU_STEPS
 export const BOARD_STEPS = KEPU_STEPS
@@ -294,11 +298,11 @@ export function kepuPhaseHint(project: {
   shots?: Array<{ image_url?: string | null; audio_url?: string | null; video_url?: string | null }>
 }): string {
   if (isRunning(effectiveStatus(project))) {
-    return '生成进行中，可在右侧查看各阶段进度。'
+    return tr('kepuPhase.running')
   }
   const phase = kepuBillingPhase(project)
-  if (phase === 'script') return '先在风格页点「生成故事板」，本步只拆分镜脚本（预扣文字模型）。'
-  if (phase === 'assets') return '确认旁白与画面后开始生成：按镜头依次出图（后镜参考上一镜）+ 整片配音。'
-  if (phase === 'videos') return '画面与配音已齐。下一步按镜头依次出视频，后镜参考上一镜尾帧。'
-  return '素材已齐。拼接成片走后期合成（叠旁白字幕与配乐，扣费很少）。'
+  if (phase === 'script') return tr('kepuPhase.script')
+  if (phase === 'assets') return tr('kepuPhase.assets')
+  if (phase === 'videos') return tr('kepuPhase.videos')
+  return tr('kepuPhase.compose')
 }

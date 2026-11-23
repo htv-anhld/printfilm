@@ -13,6 +13,7 @@ import {
   resolveVideoTimelineSeekTime,
   type DramaEpisodeVideoTimelineSegment,
 } from '../../lib/dramaEpisodeVideoTimeline'
+import { useI18n } from '../../i18n'
 
 type Props = {
   fragments: DramaFragment[]
@@ -58,6 +59,7 @@ export function DramaFragmentSegmentedVideoPlayer({
   // prevPlayingFragmentIdRef 上次已处理的分镜切换
   const prevPlayingFragmentIdRef = useRef<number | null>(playingFragmentId)
   // isPlaying 是否正在播放
+  const { t } = useI18n()
   const [isPlaying, setIsPlaying] = useState(false)
   // globalCurrentTime 全局时间轴当前位置（秒）
   const [globalCurrentTime, setGlobalCurrentTime] = useState(0)
@@ -401,7 +403,7 @@ export function DramaFragmentSegmentedVideoPlayer({
             <div className="drama-ep-video-overlay-actions">
               <button
                 type="button"
-                aria-label={isFullscreen ? '退出全屏' : '全屏预览'}
+                aria-label={isFullscreen ? t('drama.player.exitFullscreen') : t('drama.player.fullscreen')}
                 className="drama-ep-video-overlay-btn"
                 onClick={() => void handleToggleFullscreen()}
               >
@@ -413,7 +415,7 @@ export function DramaFragmentSegmentedVideoPlayer({
               </button>
               <button
                 type="button"
-                aria-label="下载视频"
+                aria-label={t('drama.player.download')}
                 className="drama-ep-video-overlay-btn"
                 onClick={handleDownloadVideo}
               >
@@ -422,10 +424,10 @@ export function DramaFragmentSegmentedVideoPlayer({
             </div>
           </>
         ) : posterUrl ? (
-          <img src={posterUrl} alt="分镜预览" />
+          <img src={posterUrl} alt={t('drama.player.posterAlt')} />
         ) : (
           <div className="drama-ep-player-placeholder">
-            <span>视频待生成</span>
+            <span>{t('drama.player.pending')}</span>
           </div>
         )}
       </div>
@@ -438,7 +440,7 @@ export function DramaFragmentSegmentedVideoPlayer({
         <div className="drama-ep-video-toolbar">
           <button
             type="button"
-            aria-label={isPlaying ? '暂停' : '播放'}
+            aria-label={isPlaying ? t('drama.player.pause') : t('drama.player.play')}
             disabled={!hasCurrentVideo}
             className="drama-ep-video-icon-btn"
             onClick={handleTogglePlay}
@@ -497,9 +499,9 @@ export function DramaFragmentSegmentedVideoPlayer({
 
           <button
             type="button"
-            aria-label={autoLinkNext ? '关闭自动衔接下一片段' : '开启自动衔接下一片段'}
+            aria-label={autoLinkNext ? t('drama.player.autoLinkOff') : t('drama.player.autoLinkOn')}
             title={
-              autoLinkNext ? '关闭自动衔接下一片段' : '当前片段播放完后自动播放下一片段'
+              autoLinkNext ? t('drama.player.autoLinkOff') : t('drama.player.autoLinkHint')
             }
             disabled={!hasAnyVideo}
             className={`drama-ep-video-autolink${autoLinkNext ? ' is-on' : ''}`}
@@ -511,7 +513,7 @@ export function DramaFragmentSegmentedVideoPlayer({
 
           <button
             type="button"
-            aria-label={muted ? '取消静音' : '静音'}
+            aria-label={muted ? t('drama.player.unmute') : t('drama.player.mute')}
             disabled={!hasCurrentVideo}
             className="drama-ep-video-icon-btn is-muted"
             onClick={() => setMuted((value) => !value)}
@@ -525,8 +527,8 @@ export function DramaFragmentSegmentedVideoPlayer({
 
           <button
             type="button"
-            aria-label={isFullscreen ? '退出全屏' : '全屏预览'}
-            title={isFullscreen ? '退出全屏' : '全屏预览'}
+            aria-label={isFullscreen ? t('drama.player.exitFullscreen') : t('drama.player.fullscreen')}
+            title={isFullscreen ? t('drama.player.exitFullscreen') : t('drama.player.fullscreen')}
             disabled={!hasCurrentVideo}
             className="drama-ep-video-icon-btn"
             onClick={() => void handleToggleFullscreen()}

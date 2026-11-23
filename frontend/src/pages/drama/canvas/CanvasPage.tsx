@@ -2,6 +2,7 @@
 import { useParams } from 'react-router-dom'
 import RequireAuth from '../RequireAuth'
 import { CanvasWorkspace } from './CanvasWorkspace'
+import { tr } from '../../../i18n'
 
 /** 鉴权后渲染全屏自由画布 */
 export default function CanvasPage() {
@@ -20,7 +21,7 @@ function CanvasPageInner() {
   if (!Number.isFinite(id) || id <= 0) {
     return (
       <div className="free-canvas-page" style={{ display: 'grid', placeItems: 'center' }}>
-        <p style={{ color: '#64748b' }}>无效的项目 ID</p>
+        <p style={{ color: '#64748b' }}>{tr('episode.canvas.invalidProjectId')}</p>
       </div>
     )
   }

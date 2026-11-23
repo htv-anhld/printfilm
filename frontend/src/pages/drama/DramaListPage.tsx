@@ -24,7 +24,9 @@ import {
   isCanvasWorkflow,
 } from '../../lib/dramaWorkflow'
 import RequireAuth from './RequireAuth'
-import { useI18n } from '../../i18n'
+import { tr, useI18n } from '../../i18n'
+import { DramaContentLocaleSelect } from '../../components/drama/DramaContentLocaleSelect'
+import type { DramaContentLocale } from '../../components/drama/dramaContentLocale'
 import { DramaEpisodeCountPopover } from './DramaEpisodeCountPopover'
 import { DramaImageStyleModal } from './DramaImageStyleModal'
 import { DramaProjectCardMenu } from './DramaProjectCardMenu'
@@ -32,8 +34,6 @@ import './drama.css'
 
 const CREATIVE_MIN_LENGTH = 20
 const CREATIVE_MAX_LENGTH = 2000
-const CANVAS_PLACEHOLDER =
-  '自由画布创作项目，稍后在画布中完善故事与资产。'
 
 type AgentTab = 'ai' | 'canvas'
 
@@ -68,7 +68,7 @@ export default function DramaListPage() {
 // 渲染 Agent 首页内容
 function DramaListInner() {
   const navigate = useNavigate()
-  const { t, m } = useI18n()
+  const { t, m, locale } = useI18n()
   const filterOptions = useMemo<PillOption<ProjectFilter>[]>(
     () =>
       FILTER_KEYS.map((value) => ({
@@ -105,6 +105,7 @@ function DramaListInner() {
   const [filter, setFilter] = useState<ProjectFilter>('all')
   const [query, setQuery] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [contentLocale, setContentLocale] = useState<DramaContentLocale>(locale)
 
   // 加载项目列表
   async function loadProjects() {
@@ -119,7 +120,7 @@ function DramaListInner() {
   useEffect(() => {
     setLoading(true)
     loadProjects()
-      .catch((err) => setError(err instanceof Error ? err.message : '加载失败'))
+      .catch((err) => setError(err instanceof Error ? err.message : tr('drama.common.loadFailed')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -127,25 +128,28 @@ function DramaListInner() {
   async function handleGenerate() {
     const source = storyText.trim()
     if (source.length < CREATIVE_MIN_LENGTH) {
-      setError(`故事内容至少 ${CREATIVE_MIN_LENGTH} 字`)
+      setError(t('drama.list.storyTooShort', { n: CREATIVE_MIN_LENGTH }))
       return
     }
     if (source.length > CREATIVE_MAX_LENGTH) {
-      setError(`故事内容请控制在 ${CREATIVE_MAX_LENGTH} 字以内`)
+      setError(t('drama.list.storyTooLong', { n: CREATIVE_MAX_LENGTH }))
       return
     }
     setBusy(true)
     setError('')
     try {
-      const project = await dramaApi.createProject({
+      // content_locale：后端按此语言生成大纲/剧本
+      const body: Parameters<typeof dramaApi.createProject>[0] = {
         source,
         episode_count: episodeCount,
         image_style_id: imageStyleId || undefined,
         title: source.slice(0, 40),
-      })
+        content_locale: contentLocale,
+      }
+      const project = await dramaApi.createProject(body)
       navigate(`/drama/projects/${project.id}`, { state: { activeStep: 'outline' } })
     } catch (err) {
-      setError(err instanceof Error ? err.message : '创建失败')
+      setError(err instanceof Error ? err.message : t('drama.common.createFailed'))
     } finally {
       setBusy(false)
     }
@@ -157,15 +161,17 @@ function DramaListInner() {
     setCanvasBusy(true)
     setError('')
     try {
-      const project = await dramaApi.createProject({
-        source: CANVAS_PLACEHOLDER,
+      const body: Parameters<typeof dramaApi.createProject>[0] = {
+        source: t('drama.list.canvasPlaceholder'),
         episode_count: 1,
-        title: '自由画布项目',
+        title: t('drama.list.canvasProjectTitle'),
         workflow: 'canvas',
-      })
+        content_locale: locale,
+      }
+      const project = await dramaApi.createProject(body)
       navigate(`/drama/projects/${project.id}/canvas`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '创建画布项目失败')
+      setError(err instanceof Error ? err.message : t('drama.list.canvasCreateFailed'))
     } finally {
       setCanvasBusy(false)
     }
@@ -373,7 +379,7 @@ function DramaListInner() {
                   value={storyText}
                   onChange={(e) => setStoryText(e.target.value.slice(0, CREATIVE_MAX_LENGTH + 50))}
                   disabled={busy}
-                  placeholder="在此输入你构想的故事内容：故事设定、主角特征、剧情脉络、最终结局等"
+                  placeholder={t('drama.list.storyPlaceholder')}
                   rows={7}
                   maxLength={CREATIVE_MAX_LENGTH + 50}
                 />
@@ -391,6 +397,8 @@ function DramaListInner() {
                   <DramaImageStyleModal value={imageStyleId} onChange={setImageStyleId} disabled={busy} />
                   <span className="drama-agent-opt-divider" aria-hidden />
                   <DramaEpisodeCountPopover value={episodeCount} onChange={setEpisodeCount} disabled={busy} />
+                  <span className="drama-agent-opt-divider" aria-hidden />
+                  <DramaContentLocaleSelect value={contentLocale} onChange={setContentLocale} disabled={busy} />
                 </div>
                 <Button
                   variant="lime"
@@ -400,7 +408,7 @@ function DramaListInner() {
                   onClick={() => void handleGenerate()}
                 >
                   <Sparkles size={16} strokeWidth={1.75} aria-hidden />
-                  {busy ? '创建中…' : '立即生成'}
+                  {busy ? t('drama.common.creating') : t('drama.list.generateNow')}
                 </Button>
               </div>
             </div>
@@ -420,8 +428,8 @@ function DramaListInner() {
             <div className="pf-empty-illust" aria-hidden>
               <FolderOpen size={48} strokeWidth={1.2} />
             </div>
-            <h2>还没有项目</h2>
-            <p className="pf-muted">用 AI 生剧本或自由画布，创建你的第一部漫剧</p>
+            <h2>{t('drama.list.emptyTitle')}</h2>
+            <p className="pf-muted">{t('drama.list.emptyHint')}</p>
             <Button
               variant="lime"
               onClick={() => {
@@ -429,14 +437,14 @@ function DramaListInner() {
                 handleTabClick('ai')
               }}
             >
-              新建项目
+              {t('drama.list.newProject')}
             </Button>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="pf-empty-state is-compact">
-            <p className="pf-muted">没有符合筛选的项目</p>
+            <p className="pf-muted">{t('drama.list.noMatch')}</p>
             <Button variant="ghost" size="sm" onClick={() => { setFilter('all'); setQuery('') }}>
-              清除筛选
+              {t('drama.list.clearFilter')}
             </Button>
           </div>
         ) : (
@@ -452,7 +460,7 @@ function DramaListInner() {
               <span className="pf-drama-card-plus" aria-hidden>
                 +
               </span>
-              <strong>新建项目</strong>
+              <strong>{t('drama.list.newProject')}</strong>
             </button>
             {filteredItems.map((item) => {
               const isSelected = selected.has(item.id)
@@ -467,7 +475,7 @@ function DramaListInner() {
                     type="button"
                     className="pf-drama-card-cover"
                     onClick={() => openProject(item)}
-                    aria-label={`打开 ${item.title}`}
+                    aria-label={t('drama.list.openAria', { title: item.title })}
                   >
                     {coverSrc ? (
                       <img
@@ -480,12 +488,12 @@ function DramaListInner() {
                     ) : (
                       <span className="pf-drama-card-cover-fallback">{verticalTitleLabel(item.title)}</span>
                     )}
-                    {canvas ? <span className="pf-drama-card-cover-badge is-canvas">自由画布</span> : null}
+                    {canvas ? <span className="pf-drama-card-cover-badge is-canvas">{t('drama.list.badgeCanvas')}</span> : null}
                     {!canvas && item.cover_pending ? (
-                      <span className="pf-drama-card-cover-badge">封面生成中</span>
+                      <span className="pf-drama-card-cover-badge">{t('drama.list.badgeCoverPending')}</span>
                     ) : null}
                     {!canvas && !coverSrc && !item.cover_pending && item.asset_count > 0 ? (
-                      <span className="pf-drama-card-cover-badge is-muted">待出图</span>
+                      <span className="pf-drama-card-cover-badge is-muted">{t('drama.list.badgeNoImage')}</span>
                     ) : null}
                     <label
                       className={`drama-project-row-check${isSelected || selectionMode ? ' is-visible' : ''}`}
@@ -505,7 +513,7 @@ function DramaListInner() {
                       />
                     </div>
                     <p className="pf-drama-card-meta">{formatDramaCardMeta(item)}</p>
-                    <p className="pf-drama-card-usage" title="本剧累计费用与生成次数">
+                    <p className="pf-drama-card-usage" title={t('drama.list.usageTitle')}>
                       {formatDramaUsageBrief(item.usage)}
                     </p>
                     <p className="pf-drama-card-time">{formatUpdatedAt(item.updated_at || item.created_at)}</p>
@@ -519,14 +527,14 @@ function DramaListInner() {
         {selected.size > 0 ? (
           <div className="drama-project-selection-bar">
             <div className="drama-project-selection-inner">
-              <span>已选择 {selected.size} 个项目</span>
+              <span>{t('drama.list.selectedCount', { n: selected.size })}</span>
               <button
                 type="button"
                 className="drama-project-selection-cancel"
                 disabled={deleting}
                 onClick={() => setSelected(new Set())}
               >
-                取消选择
+                {t('drama.list.clearSelection')}
               </button>
               <button
                 type="button"
@@ -535,7 +543,7 @@ function DramaListInner() {
                 onClick={() => void handleDeleteSelected()}
               >
                 <Trash2 size={16} strokeWidth={1.8} />
-                {deleting ? '删除中…' : '删除'}
+                {deleting ? t('drama.common.deleting') : t('drama.common.delete')}
               </button>
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
   readProjectResolution,
   type DramaResolution,
 } from '../../lib/dramaProjectOutputSettings'
+import { useI18n } from '../../i18n'
 import './drama.css'
 
 type Props = {
@@ -33,6 +34,7 @@ export function DramaProjectOutputSettings({
   compact = false,
   onChange,
 }: Props) {
+  const { t } = useI18n()
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null)
@@ -47,12 +49,12 @@ export function DramaProjectOutputSettings({
       ? readEpisodeResolution(params, fallbackParams)
       : readProjectResolution(params)
   const outputLabel = formatProjectOutputLabel(aspectRatio, resolution)
-  const scopeHint = scope === 'episode' ? '本集' : '项目统一'
-  const panelTitle = scope === 'episode' ? '分集画幅' : '项目画幅'
+  const scopeHint = scope === 'episode' ? t('drama.output.scopeEpisode') : t('drama.output.scopeProject')
+  const panelTitle = scope === 'episode' ? t('drama.output.titleEpisode') : t('drama.output.titleProject')
   const panelNote =
     scope === 'episode'
-      ? '仅本集分镜使用；未单独设置时继承项目默认。修改后请重新生成各镜视频。'
-      : '全部分集共用同一规格，避免各镜比例/清晰度不一致导致无法拼接。'
+      ? t('drama.output.noteEpisode')
+      : t('drama.output.noteProject')
 
   useLayoutEffect(() => {
     if (!open || !rootRef.current) {
@@ -131,8 +133,8 @@ export function DramaProjectOutputSettings({
         disabled={disabled || saving}
         title={
           scope === 'episode'
-            ? '本集画幅与清晰度；各镜生成后可直接拼接'
-            : '全项目统一画幅与清晰度，各分镜生成后可直接拼接'
+            ? t('drama.output.btnTitleEpisode')
+            : t('drama.output.btnTitleProject')
         }
         onClick={() => setOpen((c) => !c)}
       >
@@ -148,7 +150,7 @@ export function DramaProjectOutputSettings({
               className="fc-gen-opt-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
               style={panelStyle}
               role="dialog"
-              aria-label={scope === 'episode' ? '分集画幅与清晰度' : '项目画幅与清晰度'}
+              aria-label={scope === 'episode' ? t('drama.output.ariaEpisode') : t('drama.output.ariaProject')}
             >
               <div className="fc-gen-opt-panel-title">{panelTitle}</div>
               <p className="drama-project-output-note">{panelNote}</p>
@@ -167,7 +169,7 @@ export function DramaProjectOutputSettings({
                 ))}
               </div>
               <div className="fc-gen-opt-panel-title" style={{ marginTop: 12 }}>
-                清晰度
+                {t('drama.settings.resolution')}
               </div>
               <div className="fc-gen-chip-row">
                 {DRAMA_RES_OPTIONS.map((r) => (

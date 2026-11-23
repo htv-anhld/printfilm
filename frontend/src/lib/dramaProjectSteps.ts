@@ -1,5 +1,7 @@
 /** Drama project workflow steps: 剧情大纲 → 分镜 → 生成视频 */
 
+import { tr } from '../i18n'
+
 export type ProjectStepKey = 'outline' | 'storyboard' | 'video'
 export type WorkspaceViewKey = ProjectStepKey | 'assets' | 'episodes'
 
@@ -18,13 +20,13 @@ export type WorkspaceLocationState = {
 export function buildProjectSteps(hasScript: boolean): ProjectStepItem[] {
   const steps: Array<{ key: ProjectStepKey; label: string }> = hasScript
     ? [
-        { key: 'outline', label: '剧情大纲' },
-        { key: 'storyboard', label: '分镜' },
-        { key: 'video', label: '生成视频' },
+        { key: 'outline', label: tr('lib.steps.outline') },
+        { key: 'storyboard', label: tr('lib.steps.storyboard') },
+        { key: 'video', label: tr('lib.steps.video') },
       ]
     : [
-        { key: 'storyboard', label: '分镜' },
-        { key: 'video', label: '生成视频' },
+        { key: 'storyboard', label: tr('lib.steps.storyboard') },
+        { key: 'video', label: tr('lib.steps.video') },
       ]
   return steps.map((step, index) => ({ ...step, order: index + 1 }))
 }

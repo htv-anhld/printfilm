@@ -1,6 +1,7 @@
 /** 空画布居中展示的默认节点选择器 */
 import { MousePointer2 } from 'lucide-react'
 import { CANVAS_NODE_OPTIONS, type CanvasNodeKind } from './canvasTypes'
+import { tr } from '../../../i18n'
 
 type CanvasNodeSelectorProps = {
   onSelect: (kind: CanvasNodeKind) => void
@@ -31,7 +32,7 @@ export function CanvasNodeSelector({ onSelect }: CanvasNodeSelectorProps) {
         </div>
         <p className="fc-node-hint">
           <MousePointer2 size={16} strokeWidth={1.8} />
-          点击快速添加
+          {tr('episode.canvas.quickAdd')}
         </p>
       </div>
     </div>

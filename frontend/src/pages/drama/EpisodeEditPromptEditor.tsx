@@ -17,6 +17,7 @@ import {
   type MentionCaretRect,
 } from '../../lib/dramaEpisodePromptEditor'
 import type { AssetScope } from './dramaEpisodeEditUtils'
+import { useI18n } from '../../i18n'
 import { EpisodeEditMentionPopover } from './EpisodeEditMentionPopover'
 
 type Props = {
@@ -35,10 +36,12 @@ export function EpisodeEditPromptEditor({
   assets,
   referencedIds,
   editing,
-  placeholder = '输入画面描述、对白、旁白；键入 @ 引用资产或插入时长…',
+  placeholder: placeholderProp,
   onContentChange,
   onOpenAsset,
 }: Props) {
+  const { t } = useI18n()
+  const placeholder = placeholderProp ?? t('episode.promptEditor.placeholder')
   const editorRef = useRef<HTMLDivElement>(null)
   const lastEmittedRef = useRef(content)
   const mentionTriggerRangeRef = useRef<Range | null>(null)
@@ -189,7 +192,7 @@ export function EpisodeEditPromptEditor({
         className={`drama-ep-prompt-editor${editing ? ' is-editing' : ''}`}
         role="textbox"
         aria-multiline="true"
-        aria-label="分镜脚本"
+        aria-label={t('episode.promptEditor.aria')}
         aria-readonly={!editing}
         contentEditable={editing}
         suppressContentEditableWarning

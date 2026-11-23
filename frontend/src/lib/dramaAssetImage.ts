@@ -1,4 +1,5 @@
 /** 漫剧资产是否已有形象图（AI 生成或本地上传） */
+import { tr } from '../i18n'
 import type { DramaAsset } from '../api/drama'
 
 // 从 params 中读取可能存在的预览 URL（画布同步等）
@@ -40,5 +41,5 @@ export function dramaAssetImageGenButtonLabel(
   queueLabel: string | null,
 ): string {
   if (queueLabel) return queueLabel
-  return dramaAssetHasImage(asset) ? '重新生成形象' : '生成形象'
+  return dramaAssetHasImage(asset) ? tr('lib.assetImage.regenerate') : tr('lib.assetImage.generate')
 }

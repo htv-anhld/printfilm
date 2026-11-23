@@ -7,6 +7,7 @@ import { generateAndBindCharacterVoice } from '../../../../lib/characterVoiceGen
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../../../lib/dramaVoiceBinding'
 import { useCanvasStore } from '../CanvasStore'
 import { CANVAS_UPLOADABLE_KINDS, type CanvasNodeKind } from '../canvasTypes'
+import { tr } from '../../../../i18n'
 import {
   canvasKindToLibraryTypes,
   GlobalAssetPickerModal,
@@ -61,17 +62,17 @@ export function CanvasNodeUploadBar({
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      setErrorMessage('请选择图片文件')
+      setErrorMessage(tr('episode.canvas.selectImageFile'))
       return
     }
     if (file.size > 20 * 1024 * 1024) {
-      setErrorMessage('图片不能超过 20MB')
+      setErrorMessage(tr('episode.canvas.imageTooLarge'))
       return
     }
 
     setUploading(true)
     void uploadNodeMedia(nodeId, file)
-      .catch((err) => setErrorMessage(err instanceof Error ? err.message : '上传失败'))
+      .catch((err) => setErrorMessage(err instanceof Error ? err.message : tr('episode.canvas.uploadFailed')))
       .finally(() => setUploading(false))
   }
 
@@ -83,11 +84,11 @@ export function CanvasNodeUploadBar({
       const assetId = await ensureNodeAsset(nodeId)
       const list = await dramaApi.listAssets(projectId)
       const asset = list.find((a) => a.id === assetId)
-      if (!asset) throw new Error('角色资产不存在')
+      if (!asset) throw new Error(tr('episode.canvas.characterAssetMissing'))
       const { character } = await generateAndBindCharacterVoice(projectId, asset)
       syncNodeFromAsset(nodeId, character)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '音色生成失败')
+      setErrorMessage(err instanceof Error ? err.message : tr('episode.canvas.voiceGenFailed'))
     } finally {
       setVoiceLoading(false)
     }
@@ -110,7 +111,7 @@ export function CanvasNodeUploadBar({
           onClick={() => fileInputRef.current?.click()}
         >
           {uploading ? <Loader2 size={14} className="fc-spin" /> : <Upload size={14} strokeWidth={1.8} />}
-          {uploading ? '上传中…' : '上传图片'}
+          {uploading ? tr('episode.canvas.uploading') : tr('episode.canvas.uploadImage')}
         </button>
         <button
           type="button"
@@ -119,7 +120,7 @@ export function CanvasNodeUploadBar({
           onClick={() => setPickerOpen(true)}
         >
           <FolderOpen size={14} strokeWidth={1.8} />
-          从资产库选择
+          {tr('episode.canvas.pickFromLibrary')}
         </button>
         {DRAMA_VOICE_BINDING_ENABLED && isCharacter ? (
           hasVoice && voiceUrl ? (
@@ -136,14 +137,14 @@ export function CanvasNodeUploadBar({
               className="fc-toolbar-chip"
               disabled={uploading || voiceLoading}
               onClick={() => void handleGenerateVoice()}
-              title="按角色设定 AI 生成音色"
+              title={tr('episode.canvas.genVoiceTitle')}
             >
               {voiceLoading ? (
                 <Loader2 size={14} className="fc-spin" />
               ) : (
                 <AudioLines size={14} strokeWidth={1.8} />
               )}
-              {voiceLoading ? '生成中…' : '生成音色'}
+              {voiceLoading ? tr('episode.canvas.generating') : tr('episode.canvas.generateVoice')}
             </button>
           )
         ) : null}
@@ -155,8 +156,8 @@ export function CanvasNodeUploadBar({
         projectId={projectId}
         defaultTab="all"
         allowedTypes={canvasKindToLibraryTypes(kind)}
-        title="从资产库选择"
-        confirmLabel="确认使用"
+        title={tr('episode.canvas.pickFromLibrary')}
+        confirmLabel={tr('episode.canvas.confirmUse')}
         onPick={async (source) => {
           await applyLibraryMediaToNode(nodeId, source)
         }}

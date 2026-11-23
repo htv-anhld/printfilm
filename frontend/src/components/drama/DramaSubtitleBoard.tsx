@@ -11,6 +11,7 @@ import {
   subtitleModeUsesModelOutput,
   type DramaSubtitleMode,
 } from '../../lib/dramaSubtitleBoard'
+import { useI18n } from '../../i18n'
 
 type Props = {
   fragments: DramaFragment[]
@@ -21,9 +22,11 @@ type Props = {
 // 渲染可折叠的分集字幕板预览与导出按钮。
 export function DramaSubtitleBoard({
   fragments,
-  episodeName = '本集',
+  episodeName: episodeNameProp,
   subtitleMode,
 }: Props) {
+  const { t } = useI18n()
+  const episodeName = episodeNameProp || t('drama.subtitleBoard.thisEpisode')
   const cues = buildDramaSubtitleBoard(fragments)
   const modelOutput = subtitleModeUsesModelOutput(subtitleMode)
   // collapsed 默认折叠，减少右侧预览占位
@@ -39,9 +42,10 @@ export function DramaSubtitleBoard({
           onClick={() => setCollapsed((prev) => !prev)}
         >
           <span className="drama-subtitle-board__title-wrap">
-            <h4>字幕板</h4>
+            <h4>{t('drama.subtitleBoard.title')}</h4>
             <p>
-              {modelOutput ? '模型自出' : '后期拼接'} · {cues.length} 条
+              {modelOutput ? t('drama.subtitleBoard.modelOutput') : t('drama.subtitleBoard.postStitch')} ·{' '}
+              {t('drama.subtitleBoard.cuesCount', { n: cues.length })}
             </p>
           </span>
           {collapsed ? (
@@ -54,22 +58,22 @@ export function DramaSubtitleBoard({
           type="button"
           className="drama-subtitle-board__export"
           disabled={cues.length === 0}
-          title="导出 SRT，可直接导入剪映"
+          title={t('drama.subtitleBoard.exportTitle')}
           onClick={(event) => {
             event.stopPropagation()
             const srt = exportDramaSubtitleBoardSrt(fragments)
             if (!srt) return
             // 剪映桌面版可识别 UTF-8 BOM 的 .srt
             const blob = new Blob(['\uFEFF', srt], { type: 'application/x-subrip;charset=utf-8' })
-            triggerBlobDownload(blob, `${sanitizeMediaBasename(episodeName)}_字幕.srt`)
+            triggerBlobDownload(blob, `${sanitizeMediaBasename(episodeName)}_${t('drama.subtitleBoard.fileSuffix')}.srt`)
           }}
         >
-          导出SRT
+          {t('drama.subtitleBoard.export')}
         </button>
       </div>
       {!collapsed ? (
         cues.length === 0 ? (
-          <div className="drama-subtitle-board__empty">当前分镜里还没有可预览的对白/旁白字幕。</div>
+          <div className="drama-subtitle-board__empty">{t('drama.subtitleBoard.empty')}</div>
         ) : (
           <div className="drama-subtitle-board__list">
             {cues.map((cue, index) => (
@@ -81,7 +85,7 @@ export function DramaSubtitleBoard({
                   <span>
                     {formatSubtitleClock(cue.startSec)} - {formatSubtitleClock(cue.endSec)}
                   </span>
-                  <span>片段 {String(cue.fragmentIndex + 1).padStart(2, '0')}</span>
+                  <span>{t('drama.subtitleBoard.segment', { n: String(cue.fragmentIndex + 1).padStart(2, '0') })}</span>
                   <span>{cue.speaker}</span>
                 </div>
                 <div className="drama-subtitle-board__text">{cue.text}</div>

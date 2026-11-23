@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { isAssetsReadyComposeError } from '../../lib/apiError'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, defaultsFromTemplate } from '../../api'
 import type { Project, Shot, Template } from '../../api'
@@ -36,7 +37,7 @@ import {
   statusLabel,
 } from '../../lib/status'
 import {
-  SEGMENT_SCRIPT_PLACEHOLDER,
+  segmentScriptPlaceholder,
   SHOT_DURATION_MAX,
   firstVisualFromScript,
   narrationFromScript,
@@ -45,6 +46,7 @@ import {
   replaceNarrationInScript,
   validateSegmentScriptDuration,
 } from '../../lib/segmentDuration'
+import { currentMessages, isLocale, tr, useI18n } from '../../i18n'
 
 function csvEscape(value: string | number | null | undefined) {
   const s = String(value ?? '')
@@ -53,7 +55,7 @@ function csvEscape(value: string | number | null | undefined) {
 }
 
 function downloadStoryboardCsv(project: Project) {
-  const header = ['镜号', '旁白', '画面描述', '时长秒', '状态', '镜头标题']
+  const header = currentMessages().studio.board.csvHeader
   const rows = (project.shots || [])
     .slice()
     .sort((a, b) => a.shot_no - b.shot_no)
@@ -96,7 +98,7 @@ function shotCaption(shot: Shot) {
   if (shot.overlay_title) {
     return `${shot.overlay_title}${
       shot.overlay_subtitle ? ` · ${shot.overlay_subtitle}` : ''
-    }${shot.narration ? `｜旁白：${shot.narration}` : ''}`
+    }${shot.narration ? tr('studio.board.captionNarration', { text: shot.narration }) : ''}`
   }
   return shot.narration
 }
@@ -124,6 +126,7 @@ export default function StoryboardPage() {
   const { id } = useParams()
   const projectId = Number(id)
   const nav = useNavigate()
+  const { t, m } = useI18n()
   const [project, setProject] = useState<Project | null>(null)
   const [template, setTemplate] = useState<Template | null>(null)
   const [busy, setBusy] = useState(false)
@@ -164,8 +167,8 @@ export default function StoryboardPage() {
           setTemplate(list.find((t) => t.id === p.template_id) || null)
         })
       })
-      .catch((err) => setError(err instanceof Error ? err.message : '加载失败'))
-  }, [nav, projectId])
+      .catch((err) => setError(err instanceof Error ? err.message : t('studio.board.errLoad')))
+  }, [nav, projectId, t])
 
   useEffect(() => {
     if (!project) return
@@ -191,6 +194,9 @@ export default function StoryboardPage() {
   }, [menuShotId])
 
   const running = isProjectBusy(project)
+  // contentLocale 后端返回的内容语言（旧后端无此字段时不展示）
+  const rawContentLocale = project?.content_locale
+  const contentLocale = isLocale(rawContentLocale) ? rawContentLocale : null
   const step = project ? kepuStepIndex('board', project) : 2
   const totalDuration = useMemo(
     () => (project?.shots || []).reduce((s, x) => s + (Number(x.duration) || 0), 0),
@@ -243,14 +249,14 @@ export default function StoryboardPage() {
         : 'generate'
 
   const generateLabel = running
-    ? '生成中…'
+    ? t('studio.board.generating')
     : shots.length === 0
-      ? '去风格页生成分镜'
+      ? t('studio.board.goStyle')
       : needsScriptConfirm
-        ? '确认分镜，逐镜出图与配音'
+        ? t('studio.board.confirmGenerate')
         : needsVideos
-          ? '逐镜出视频'
-          : '继续生成'
+          ? t('studio.board.genVideos')
+          : t('studio.board.continueGenerate')
 
   // 工作台进度：完整模式要镜头视频 + 外部 TTS，静图模式只配音合成
   const progressItems = useMemo(() => {
@@ -263,16 +269,16 @@ export default function StoryboardPage() {
     const stage = effectiveStatus(project)
     type ProgressItem = { label: string; done: boolean; run?: boolean; pct?: number }
     const items: ProgressItem[] = [
-      { label: '主题解析', done: true },
-      { label: '分镜脚本', done: list.length > 0 || !['DRAFT', 'SCRIPTING'].includes(project.status) },
+      { label: t('studio.board.pThemeParse'), done: true },
+      { label: t('studio.board.pScript'), done: list.length > 0 || !['DRAFT', 'SCRIPTING'].includes(project.status) },
       {
-        label: `画面生成 (${imgs}/${list.length || 0})`,
+        label: t('studio.board.pImages', { done: imgs, total: list.length || 0 }),
         done: list.length > 0 && imgs === list.length,
       },
     ]
     if (full) {
       items.push({
-        label: `镜头视频 (${vids}/${list.length || 0})`,
+        label: t('studio.board.pVideos', { done: vids, total: list.length || 0 }),
         done:
           list.length > 0 &&
           (vids === list.length ||
@@ -282,19 +288,19 @@ export default function StoryboardPage() {
       })
     }
     items.push({
-      label: `配音合成 (${auds}/${list.length || 0})`,
+      label: t('studio.board.pAudio', { done: auds, total: list.length || 0 }),
       done: list.length > 0 && auds === list.length,
       run: stage === 'AUDIOING',
       pct: stage === 'AUDIOING' ? project.progress : undefined,
     })
     items.push({
-      label: full ? '镜头拼接' : '成片渲染',
+      label: full ? t('studio.board.pStitch') : t('studio.board.pRender'),
       done: Boolean(project.final_video_url) || project.status === 'DONE',
       run: stage === 'COMPOSING',
       pct: stage === 'COMPOSING' ? project.progress : undefined,
     })
     return items
-  }, [project])
+  }, [project, t])
 
   function openFinalPreview() {
     if (!project?.final_video_url) return
@@ -313,13 +319,13 @@ export default function StoryboardPage() {
     try {
       setProject(await api.generate(project.id))
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '继续生成失败'
-      if (msg.includes('合成成片')) {
+      const msg = err instanceof Error ? err.message : t('studio.board.errContinue')
+      if (isAssetsReadyComposeError(err)) {
         try {
           setError('')
           setProject(await api.compose(project.id))
         } catch (e2) {
-          setError(e2 instanceof Error ? e2.message : '合成失败')
+          setError(e2 instanceof Error ? e2.message : t('studio.board.errCompose'))
         }
         return
       }
@@ -333,10 +339,10 @@ export default function StoryboardPage() {
   async function restartGenerate() {
     if (!project) return
     const ok = await dialog.confirm({
-      title: '推倒重做',
-      message: '将清空当前分镜与素材，重新拆分镜（生成后仍可先确认再继续）。',
-      confirmText: '确认重做',
-      cancelText: '再想想',
+      title: t('studio.board.restartTitle'),
+      message: t('studio.board.restartMessage'),
+      confirmText: t('studio.board.restartConfirm'),
+      cancelText: t('studio.board.restartCancel'),
       tone: 'danger',
     })
     if (!ok) return
@@ -345,7 +351,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.generate(project.id, { restart: true }))
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '重做失败'
+      const msg = err instanceof Error ? err.message : t('studio.board.errRestart')
       setError(msg)
       await handleBillingError(err, nav)
     } finally {
@@ -356,10 +362,10 @@ export default function StoryboardPage() {
   async function deleteProject() {
     if (!project) return
     const ok = await dialog.confirm({
-      title: '删除项目',
-      message: '确定删除该项目？素材与成片将一并清除，此操作不可恢复。',
-      confirmText: '删除',
-      cancelText: '取消',
+      title: t('studio.board.deleteTitle'),
+      message: t('studio.board.deleteMessage'),
+      confirmText: t('studio.board.deleteConfirm'),
+      cancelText: t('studio.board.cancel'),
       tone: 'danger',
     })
     if (!ok) return
@@ -368,7 +374,7 @@ export default function StoryboardPage() {
       await api.deleteProject(project.id)
       nav('/history')
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errDelete'))
     } finally {
       setBusy(false)
     }
@@ -380,7 +386,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.compose(project.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '合成失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errCompose'))
     } finally {
       setBusy(false)
     }
@@ -393,7 +399,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.uploadCover(project.id, file))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '封面上传失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errCover'))
     } finally {
       setBusy(false)
       if (coverInputRef.current) coverInputRef.current.value = ''
@@ -406,7 +412,7 @@ export default function StoryboardPage() {
       .sort((a, b) => a.shot_no - b.shot_no)
       .find((s) => s.image_url)
     if (!first?.image_url) {
-      setError('暂无可用镜头画面')
+      setError(t('studio.board.errNoShotImage'))
       return
     }
     setBusy(true)
@@ -414,7 +420,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.updateProject(project.id, { cover_url: first.image_url }))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '设置封面失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errSetCover'))
     } finally {
       setBusy(false)
     }
@@ -432,11 +438,11 @@ export default function StoryboardPage() {
     if (!project || batchSelected.length === 0) return
     const durationVal = batchDuration.trim() === '' ? null : Number(batchDuration)
     if (durationVal != null && (!Number.isFinite(durationVal) || durationVal <= 0)) {
-      setError('请输入有效时长（秒）')
+      setError(t('studio.board.errBatchDuration'))
       return
     }
     if (durationVal == null && !batchRegenAudio) {
-      setError('请设置时长，或勾选重配音')
+      setError(t('studio.board.errBatchNothing'))
       return
     }
     setBusy(true)
@@ -453,7 +459,7 @@ export default function StoryboardPage() {
       setProject(await api.getProject(project.id))
       setBatchOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '批量调整失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errBatch'))
       try {
         setProject(await api.getProject(project.id))
       } catch {
@@ -471,7 +477,7 @@ export default function StoryboardPage() {
       await api.publish(project.id)
       nav('/history')
     } catch (err) {
-      setError(err instanceof Error ? err.message : '发布失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errPublish'))
     } finally {
       setBusy(false)
     }
@@ -497,7 +503,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.regenImage(project.id, shot.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '生成画面失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errGenImage'))
     } finally {
       markShotIdle(shot.id)
     }
@@ -509,7 +515,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.regenVideo(project.id, shot.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '生成视频失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errGenVideo'))
     } finally {
       markShotIdle(shot.id)
     }
@@ -522,7 +528,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.regenAudio(project.id, shot.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '重配音失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errRedub'))
     } finally {
       setBusy(false)
     }
@@ -588,7 +594,7 @@ export default function StoryboardPage() {
     // durationCheck 时长校验结果
     const durationCheck = validateSegmentScriptDuration(scriptText)
     if (!durationCheck.valid) {
-      setError(durationCheck.message || '分镜时长不合法')
+      setError(durationCheck.message || t('studio.board.errShotDuration'))
       return
     }
     setBusy(true)
@@ -606,7 +612,7 @@ export default function StoryboardPage() {
       closeShotEdit()
       setProject(await api.getProject(project.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errSave'))
     } finally {
       setBusy(false)
     }
@@ -629,7 +635,7 @@ export default function StoryboardPage() {
       setProject(updated)
       setPromptEdit(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存提示词失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errSavePrompts'))
     } finally {
       setBusy(false)
     }
@@ -648,7 +654,7 @@ export default function StoryboardPage() {
       setProject(updated)
       setPromptEdit(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '恢复模板失败')
+      setError(err instanceof Error ? err.message : t('studio.board.errRestore'))
     } finally {
       setBusy(false)
     }
@@ -657,7 +663,7 @@ export default function StoryboardPage() {
   if (!project && !error) {
     return (
       <AppShell active="studio">
-        <p className="pf-muted">加载中…</p>
+        <p className="pf-muted">{t('studio.board.loading')}</p>
       </AppShell>
     )
   }
@@ -671,8 +677,11 @@ export default function StoryboardPage() {
   }
 
   const structure = (project.shots || []).slice(0, 5).map((s, i) => {
-    const labels = ['开端', '发展', '转折', '高潮', '结局']
-    return { label: labels[i] || `段落 ${i + 1}`, text: s.narration || s.overlay_title || '—' }
+    const labels = m.studio.board.structureLabels
+    return {
+      label: labels[i] || t('studio.board.paragraphN', { n: i + 1 }),
+      text: s.narration || s.overlay_title || '—',
+    }
   })
 
   return (
@@ -682,7 +691,7 @@ export default function StoryboardPage() {
           <div>
             <button type="button" className="pf-back" onClick={() => nav(`/studio/${project.id}/style`)}>
               <IconChevronLeft size={18} />
-              AI 生成故事板 / 分镜工作台
+              {t('studio.board.back')}
             </button>
             <h1 className="pf-page-title">{project.title}</h1>
           </div>
@@ -695,7 +704,7 @@ export default function StoryboardPage() {
                 onClick={openFinalPreview}
               >
                 <IconMonitor size={14} />
-                预览成片
+                {t('studio.board.previewFinal')}
               </button>
             ) : primaryAction === 'compose' ? (
               <button
@@ -705,7 +714,7 @@ export default function StoryboardPage() {
                 onClick={composeOnly}
               >
                 <IconPlay size={14} />
-                拼接成片
+                {t('studio.board.compose')}
               </button>
             ) : (
               <button
@@ -727,7 +736,7 @@ export default function StoryboardPage() {
               onClick={openBatchAdjust}
             >
               <IconSliders size={15} />
-              批量调整
+              {t('studio.board.batchAdjust')}
             </button>
             <button
               type="button"
@@ -736,12 +745,12 @@ export default function StoryboardPage() {
               onClick={restartGenerate}
             >
               <IconRefresh size={15} />
-              推倒重做
+              {t('studio.board.restart')}
             </button>
             {primaryAction !== 'preview' && hasFinal ? (
               <button type="button" className="pf-btn-text" onClick={openFinalPreview}>
                 <IconMonitor size={15} />
-                预览成片
+                {t('studio.board.previewFinal')}
               </button>
             ) : null}
             {primaryAction === 'preview' && readyToCompose ? (
@@ -750,10 +759,10 @@ export default function StoryboardPage() {
                 className="pf-btn-text"
                 disabled={busy || running}
                 onClick={composeOnly}
-title="用当前镜头重新拼接"
-            >
-              重新拼接
-            </button>
+                title={t('studio.board.recomposeTitle')}
+              >
+                {t('studio.board.recompose')}
+              </button>
             ) : null}
             {primaryAction !== 'generate' && !readyToCompose ? (
               <button
@@ -762,7 +771,7 @@ title="用当前镜头重新拼接"
                 disabled={busy || running}
                 onClick={continueGenerate}
               >
-                {generateLabel === '生成中…' ? '继续生成' : generateLabel}
+                {running ? t('studio.board.continueGenerate') : generateLabel}
               </button>
             ) : null}
             <button
@@ -771,7 +780,7 @@ title="用当前镜头重新拼接"
               onClick={() => nav(`/studio/${project.id}/editor`)}
             >
               <IconEdit size={14} />
-              打开编辑器
+              {t('studio.board.openEditor')}
             </button>
           </div>
         </div>
@@ -790,7 +799,7 @@ title="用当前镜头重新拼接"
 
       <div className="pf-board">
         <aside className="pf-create-col">
-          <h3>项目设置</h3>
+          <h3>{t('studio.board.settings')}</h3>
           {(project.cover_url || template?.preview_cover) ? (
             <img
               src={api.assetUrl(project.cover_url || template?.preview_cover)}
@@ -827,17 +836,17 @@ title="用当前镜头重新拼接"
               onClick={() => coverInputRef.current?.click()}
             >
               <IconImage size={14} />
-              更换封面
+              {t('studio.board.changeCover')}
             </button>
             <button
               type="button"
               className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
               disabled={busy || running || !shots.some((s) => s.image_url)}
               onClick={useFirstShotCover}
-              title="使用第一个有画面的镜头作为封面"
+              title={t('studio.board.firstShotCoverTitle')}
             >
               <IconImage size={14} />
-              用首镜封面
+              {t('studio.board.firstShotCover')}
             </button>
             <button
               type="button"
@@ -846,24 +855,24 @@ title="用当前镜头重新拼接"
               onClick={() => downloadStoryboardCsv(project)}
             >
               <IconDownload size={14} />
-              草稿导出
+              {t('studio.board.exportDraft')}
             </button>
           </div>
           <ul className="pf-meta-list" style={{ marginTop: '0.85rem' }}>
             <li>
-              <span>项目名称</span>
+              <span>{t('studio.board.metaName')}</span>
               <span>{project.title}</span>
             </li>
             <li>
-              <span>状态</span>
+              <span>{t('studio.board.metaStatus')}</span>
               <span>{statusLabel(project)}</span>
             </li>
             <li>
-              <span>进度</span>
+              <span>{t('studio.board.metaProgress')}</span>
               <span>{project.progress}%</span>
             </li>
             <li>
-              <span>时长</span>
+              <span>{t('studio.board.metaDuration')}</span>
               <span>
                 {Math.floor(totalDuration / 60)
                   .toString()
@@ -875,17 +884,23 @@ title="用当前镜头重新拼接"
               </span>
             </li>
             <li>
-              <span>画面比例</span>
+              <span>{t('studio.board.metaRatio')}</span>
               <span>{project.output_ratio || (project.pipeline_mode === 'image_text' ? '9:16' : '16:9')}</span>
             </li>
             <li>
-              <span>成片方式</span>
-              <span>{project.pipeline_mode === 'image_text' ? '静图成片' : 'AI 视频'}</span>
+              <span>{t('studio.board.metaOutput')}</span>
+              <span>{project.pipeline_mode === 'image_text' ? t('studio.board.outputImageText') : t('studio.board.outputVideo')}</span>
             </li>
             <li>
-              <span>风格</span>
+              <span>{t('studio.board.metaStyle')}</span>
               <span>{template?.name || project.template_id}</span>
             </li>
+            {contentLocale ? (
+              <li>
+                <span>{t('studio.board.metaContentLocale')}</span>
+                <span>{t(`studio.contentLocale.options.${contentLocale}`)}</span>
+              </li>
+            ) : null}
           </ul>
           <button
             type="button"
@@ -893,18 +908,18 @@ title="用当前镜头重新拼接"
             onClick={() => nav(`/studio/${project.id}/style`)}
             disabled={running}
           >
-            编辑项目设置
+            {t('studio.board.editSettings')}
           </button>
           <div className="pf-prompt-panel">
-            <h4>内置提示词</h4>
+            <h4>{t('studio.board.builtinPrompts')}</h4>
             <p className="pf-muted" style={{ fontSize: '0.72rem', margin: '0 0 0.45rem' }}>
-              画风来自模板。角色是否出镜由 AI 按模板与主题决定；只有这里改过才覆盖本项目。
+              {t('studio.board.builtinPromptsHint')}
             </p>
             {(
               [
-                ['风格', displayPrompts.style_prompt],
-                ['角色', displayPrompts.character_prompt],
-                ['额外', displayPrompts.extra_prompt],
+                [t('studio.board.promptStyle'), displayPrompts.style_prompt],
+                [t('studio.board.promptCharacter'), displayPrompts.character_prompt],
+                [t('studio.board.promptExtra'), displayPrompts.extra_prompt],
               ] as const
             ).map(([label, value]) => (
               <button
@@ -921,29 +936,29 @@ title="用当前镜头重新拼接"
                 }
               >
                 <strong>{label}</strong>
-                <span>{(value || '').trim() || '（空，点击编辑）'}</span>
+                <span>{(value || '').trim() || t('studio.board.promptEmpty')}</span>
               </button>
             ))}
           </div>
           <p className="pf-muted" style={{ fontSize: '0.75rem', marginTop: '0.75rem' }}>
-            内容由 AI 生成，请注意核对准确性
+            {t('studio.board.aiDisclaimer')}
           </p>
         </aside>
 
         <div className="pf-board-main">
           <div className="pf-outline-grid">
             <article className="pf-create-col">
-              <h3>AI 生成大纲</h3>
+              <h3>{t('studio.board.outline')}</h3>
               <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.65 }}>
                 {project.source_text}
               </p>
               <div className="pf-tags">
-                <span>核心主题</span>
-                <span>{project.source_type === 'script' ? '完整文案' : '一句话主题'}</span>
+                <span>{t('studio.board.coreTheme')}</span>
+                <span>{project.source_type === 'script' ? t('studio.board.sourceScript') : t('studio.board.sourceTheme')}</span>
               </div>
             </article>
             <article className="pf-create-col">
-              <h3>结构摘要</h3>
+              <h3>{t('studio.board.structure')}</h3>
               <ul className="pf-meta-list">
                 {structure.length ? (
                   structure.map((s) => (
@@ -954,7 +969,7 @@ title="用当前镜头重新拼接"
                   ))
                 ) : (
                   <li>
-                    <span>等待分镜</span>
+                    <span>{t('studio.board.waitingShots')}</span>
                     <span>—</span>
                   </li>
                 )}
@@ -964,16 +979,16 @@ title="用当前镜头重新拼接"
 
           <section className="pf-shot-card">
             <div className="pf-shot-card-head">
-              <h3>分镜列表（共 {project.shots.length} 个场景）</h3>
+              <h3>{t('studio.board.shotList', { n: project.shots.length })}</h3>
               <div className="pf-toolbar">
                 {project.status === 'DONE' && hasFinal ? (
                   <button type="button" className="pf-btn pf-btn-lime pf-btn-sm" disabled={busy} onClick={publish}>
-                    发布
+                    {t('studio.board.publish')}
                   </button>
                 ) : null}
                 {hasFinal ? (
                   <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" onClick={openFinalPreview}>
-                    预览成片
+                    {t('studio.board.previewFinal')}
                   </button>
                 ) : (
                   <button
@@ -982,7 +997,7 @@ title="用当前镜头重新拼接"
                     disabled={busy || running || !readyToCompose}
                     onClick={composeOnly}
                   >
-                    拼接成片
+                    {t('studio.board.compose')}
                   </button>
                 )}
               </div>
@@ -990,12 +1005,12 @@ title="用当前镜头重新拼接"
             {project.shots.length === 0 ? (
               <p className="pf-muted" style={{ margin: '1.5rem 0', textAlign: 'center' }}>
                 {running
-                  ? '正在拆分镜…'
-                  : '暂无分镜。从风格配置页开始生成后，可先确认修改，再手动开始画面生成。'}
+                  ? t('studio.board.splitting')
+                  : t('studio.board.noShots')}
               </p>
             ) : needsScriptConfirm ? (
               <p className="pf-muted" style={{ margin: '0 0 1rem' }}>
-                分镜已就绪。点表格「旁白」改口播（会同步脚本并影响整片配音），点「逐段分镜」改画面节奏与 @duration。确认后按阶段预扣：画面+配音 → 镜头视频 → 合成。
+                {t('studio.board.readyHint')}
               </p>
             ) : null}
             {project.shots.length === 0 ? null : (
@@ -1003,13 +1018,13 @@ title="用当前镜头重新拼接"
                 <table className="pf-shot-table">
                   <thead>
                     <tr>
-                      <th className="col-no">场景</th>
-                      <th className="col-thumb">画面</th>
-                      <th className="col-narr">旁白/台词</th>
-                      <th className="col-seg">逐段分镜</th>
-                      <th className="col-dur">时长</th>
-                      <th className="col-status">状态</th>
-                      <th className="col-ops">操作</th>
+                      <th className="col-no">{t('studio.board.colScene')}</th>
+                      <th className="col-thumb">{t('studio.board.colThumb')}</th>
+                      <th className="col-narr">{t('studio.board.colNarration')}</th>
+                      <th className="col-seg">{t('studio.board.colSegment')}</th>
+                      <th className="col-dur">{t('studio.board.colDuration')}</th>
+                      <th className="col-status">{t('studio.board.colStatus')}</th>
+                      <th className="col-ops">{t('studio.board.colOps')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1031,7 +1046,7 @@ title="用当前镜头重新拼接"
                       const done = shotDisplayDone(displayKind)
                       const failed = displayKind === 'failed'
                       const sceneTitle =
-                        shot.overlay_title?.trim() || `场景 ${String(shot.shot_no).padStart(2, '0')}`
+                        shot.overlay_title?.trim() || t('studio.board.sceneN', { n: String(shot.shot_no).padStart(2, '0') })
                       const narration = (shot.narration || '').trim()
                       const script = shot.segment_script || shot.video_prompt || ''
                       const { cues, beats } = parseSegmentScript(script)
@@ -1062,7 +1077,7 @@ title="用当前镜头重新拼接"
                                 />
                               ) : (
                                 <div className="pf-shot-thumb empty">
-                                  {shotGenerating ? '生成中' : '待出图'}
+                                  {shotGenerating ? t('studio.board.thumbGenerating') : t('studio.board.thumbPending')}
                                 </div>
                               )}
                             </button>
@@ -1072,7 +1087,7 @@ title="用当前镜头重新拼接"
                               type="button"
                               className="pf-shot-narration pf-shot-editable"
                               disabled={rowBusy}
-                              title="点击编辑旁白与标题"
+                              title={t('studio.board.editNarrationTitle')}
                               onClick={() => openShotEdit(shot, 'narration')}
                             >
                               <span className="title">{sceneTitle}</span>
@@ -1086,7 +1101,7 @@ title="用当前镜头重新拼接"
                               type="button"
                               className="pf-shot-desc pf-shot-editable"
                               disabled={rowBusy}
-                              title="点击编辑逐段分镜脚本"
+                              title={t('studio.board.editSegmentTitle')}
                               onClick={() => openShotEdit(shot, 'segment_script')}
                               style={{ textAlign: 'left', width: '100%' }}
                             >
@@ -1123,12 +1138,12 @@ title="用当前镜头重新拼接"
                                   ))}
                                   {beats.length > 4 ? (
                                     <span className="pf-muted" style={{ fontSize: '0.75rem' }}>
-                                      另有 {beats.length - 4} 段…
+                                      {t('studio.board.moreBeats', { n: beats.length - 4 })}
                                     </span>
                                   ) : null}
                                 </div>
                               ) : (
-                                desc || '（点击填写逐段分镜）'
+                                desc || t('studio.board.fillSegment')
                               )}
                             </button>
                           </td>
@@ -1154,7 +1169,7 @@ title="用当前镜头重新拼接"
                                 disabled={rowBusy}
                                 onClick={() => openShotEdit(shot)}
                               >
-                                编辑
+                                {t('studio.board.opEdit')}
                               </button>
                               <button
                                 type="button"
@@ -1162,23 +1177,23 @@ title="用当前镜头重新拼接"
                                 disabled={rowBusy}
                                 onClick={() => regenImage(shot)}
                               >
-                                {shot.image_url ? '重绘画面' : '生成画面'}
+                                {shot.image_url ? t('studio.board.opRedraw') : t('studio.board.opGenImage')}
                               </button>
                               {isFullPipeline ? (
                                 <button
                                   type="button"
                                   className="op op-video"
                                   disabled={rowBusy || !shot.image_url}
-                                  title={!shot.image_url ? '请先生成该镜画面' : undefined}
+                                  title={!shot.image_url ? t('studio.board.opNeedImage') : undefined}
                                   onClick={() => regenVideo(shot)}
                                 >
-                                  {shot.video_url ? '重生视频' : '出视频'}
+                                  {shot.video_url ? t('studio.board.opRegenVideo') : t('studio.board.opGenVideo')}
                                 </button>
                               ) : null}
                               <button
                                 type="button"
                                 className="more"
-                                aria-label="更多操作"
+                                aria-label={t('studio.board.opMore')}
                                 disabled={rowBusy}
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -1197,7 +1212,7 @@ title="用当前镜头重新拼接"
                                       regenAudio(shot)
                                     }}
                                   >
-                                    重配音
+                                    {t('studio.board.opRedub')}
                                   </button>
                                 </div>
                               ) : null}
@@ -1212,8 +1227,11 @@ title="用当前镜头重新拼接"
             )}
             <div className="pf-shot-footer">
               <span className="pf-muted" style={{ fontSize: '0.82rem' }}>
-                总时长: {formatMmSs(totalDuration)} | 画面: {project.shots.length} 个 | 音频:{' '}
-                {project.shots.filter((s) => s.audio_url).length} 段 | 分辨率: 预览
+                {t('studio.board.footer', {
+                  total: formatMmSs(totalDuration),
+                  shots: project.shots.length,
+                  audios: project.shots.filter((s) => s.audio_url).length,
+                })}
               </span>
               <div className="pf-toolbar">
                 <button
@@ -1223,7 +1241,7 @@ title="用当前镜头重新拼接"
                   onClick={() => downloadStoryboardCsv(project)}
                 >
                   <IconDownload size={15} />
-                  导出分镜脚本
+                  {t('studio.board.exportScript')}
                 </button>
                 <button
                   type="button"
@@ -1232,7 +1250,7 @@ title="用当前镜头重新拼接"
                   onClick={deleteProject}
                 >
                   <IconTrash size={15} />
-                  删除项目
+                  {t('studio.board.deleteProject')}
                 </button>
               </div>
             </div>
@@ -1240,7 +1258,7 @@ title="用当前镜头重新拼接"
         </div>
 
         <aside className="pf-create-col pf-board-settings">
-          <h3>生成进度</h3>
+          <h3>{t('studio.board.progress')}</h3>
           <ul className="pf-progress-list">
             {progressItems.map((item) => (
               <li key={item.label}>
@@ -1269,9 +1287,9 @@ title="用当前镜头重新拼接"
       {batchOpen && project ? (
         <div className="modal-backdrop" onClick={() => !busy && setBatchOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>批量调整分镜</h3>
+            <h3>{t('studio.board.batchTitle')}</h3>
             <p className="pf-muted" style={{ marginTop: 0 }}>
-              已选 {batchSelected.length} / {project.shots.length} 个镜头
+              {t('studio.board.batchSelected', { n: batchSelected.length, total: project.shots.length })}
             </p>
             <div
               style={{
@@ -1291,7 +1309,7 @@ title="用当前镜头重新拼接"
                     setBatchSelected(e.target.checked ? project.shots.map((s) => s.id) : [])
                   }
                 />
-                全选
+                {t('studio.board.selectAll')}
               </label>
               {project.shots
                 .slice()
@@ -1310,17 +1328,20 @@ title="用当前镜头重新拼接"
                         )
                       }
                     />
-                    镜头 {String(s.shot_no).padStart(2, '0')} · {formatMmSs(Number(s.duration) || 0)}
+                    {t('studio.board.shotItem', {
+                      no: String(s.shot_no).padStart(2, '0'),
+                      dur: formatMmSs(Number(s.duration) || 0),
+                    })}
                   </label>
                 ))}
             </div>
             <label>
-              统一时长（秒，留空则不改）
+              {t('studio.board.batchDuration')}
               <input
                 type="number"
                 min={1}
                 step={0.5}
-                placeholder="例如 6"
+                placeholder={t('studio.board.batchDurationPlaceholder')}
                 value={batchDuration}
                 onChange={(e) => setBatchDuration(e.target.value)}
               />
@@ -1331,7 +1352,7 @@ title="用当前镜头重新拼接"
                 checked={batchRegenAudio}
                 onChange={(e) => setBatchRegenAudio(e.target.checked)}
               />
-              对所选镜头重新配音
+              {t('studio.board.batchRedub')}
             </label>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
               <button
@@ -1340,7 +1361,7 @@ title="用当前镜头重新拼接"
                 disabled={busy || batchSelected.length === 0}
                 onClick={applyBatchAdjust}
               >
-                应用
+                {t('studio.board.apply')}
               </button>
               <button
                 type="button"
@@ -1348,7 +1369,7 @@ title="用当前镜头重新拼接"
                 disabled={busy}
                 onClick={() => setBatchOpen(false)}
               >
-                取消
+                {t('studio.board.cancel')}
               </button>
             </div>
           </div>
@@ -1370,37 +1391,37 @@ title="用当前镜头重新拼接"
           >
             <h3>
               {editMode === 'narration'
-                ? `编辑镜头 ${editing.shot_no} · 旁白与标题`
+                ? t('studio.board.editTitleNarration', { n: editing.shot_no })
                 : editMode === 'segment'
-                  ? `编辑镜头 ${editing.shot_no} · 逐段分镜`
-                  : `编辑镜头 ${editing.shot_no} · 全部提示词`}
+                  ? t('studio.board.editTitleSegment', { n: editing.shot_no })
+                  : t('studio.board.editTitleFull', { n: editing.shot_no })}
             </h3>
             <div className="pf-prompt-modal-scroll">
               {editMode === 'narration' || editMode === 'full' ? (
                 <>
                   <label>
-                    镜头标题
+                    {t('studio.board.shotTitle')}
                     <input
                       autoFocus={editFocus === 'title' || editMode === 'narration'}
                       value={editing.overlay_title || ''}
                       onChange={(e) => setEditing({ ...editing, overlay_title: e.target.value })}
                     />
                     <span className="pf-muted pf-prompt-hint">
-                      分镜列表名称；图文成片会叠到画面顶部
+                      {t('studio.board.shotTitleHint')}
                     </span>
                   </label>
                   <label>
-                    副标题
+                    {t('studio.board.subtitle')}
                     <input
                       value={editing.overlay_subtitle || ''}
                       onChange={(e) => setEditing({ ...editing, overlay_subtitle: e.target.value })}
                     />
                     <span className="pf-muted pf-prompt-hint">
-                      图文成片叠字；AI 视频成片不烧这行，只作分镜说明
+                      {t('studio.board.subtitleHint')}
                     </span>
                   </label>
                   <label>
-                    旁白
+                    {t('studio.board.narration')}
                     <textarea
                       autoFocus={editFocus === 'narration'}
                       value={editing.narration}
@@ -1408,14 +1429,14 @@ title="用当前镜头重新拼接"
                       rows={editMode === 'narration' ? 6 : 3}
                     />
                     <span className="pf-muted pf-prompt-hint">
-                      会同步到脚本旁白段，并影响整片配音（改完需重新生成配音/成片）
+                      {t('studio.board.narrationHint')}
                     </span>
                   </label>
                 </>
               ) : null}
               {editMode === 'full' ? (
                 <label>
-                  画面提示词（首帧）
+                  {t('studio.board.imgPrompt')}
                   <textarea
                     autoFocus={editFocus === 'img_prompt'}
                     value={editing.img_prompt}
@@ -1423,21 +1444,21 @@ title="用当前镜头重新拼接"
                     rows={3}
                   />
                   <span className="pf-muted pf-prompt-hint">
-                    会同步到脚本首段画面，出图与视频都用这一段
+                    {t('studio.board.imgPromptHint')}
                   </span>
                 </label>
               ) : null}
               {editMode === 'segment' || editMode === 'full' ? (
                 <>
                   <label>
-                    逐段分镜脚本（画面节奏与 @duration）
+                    {t('studio.board.segmentScript')}
                     <textarea
                       className="pf-prompt-segment"
                       autoFocus={editFocus === 'segment_script' || editMode === 'segment'}
                       value={editing.segment_script || editing.video_prompt || ''}
                       onChange={(e) => patchEditingScript(e.target.value)}
                       rows={editMode === 'segment' ? 8 : 5}
-                      placeholder={SEGMENT_SCRIPT_PLACEHOLDER}
+                      placeholder={segmentScriptPlaceholder()}
                     />
                   </label>
                   <div className="pf-chips pf-prompt-duration-chips">
@@ -1449,7 +1470,7 @@ title="用当前镜头重新拼接"
                       ))
                     ) : (
                       <span className="pf-muted" style={{ fontSize: '0.8rem' }}>
-                        暂无 @duration 标签
+                        {t('studio.board.noDurationTags')}
                       </span>
                     )}
                     <span
@@ -1460,14 +1481,14 @@ title="用当前镜头重新拼接"
                         color: editDurationCheck.valid ? undefined : 'var(--pf-danger, #c0392b)',
                       }}
                     >
-                      合计 {editDurationCheck.total}s / {SHOT_DURATION_MAX}s
+                      {t('studio.board.durationTotal', { total: editDurationCheck.total, max: SHOT_DURATION_MAX })}
                     </span>
                   </div>
                   {!editDurationCheck.valid && editDurationCheck.message ? (
                     <p className="pf-error pf-prompt-duration-error">{editDurationCheck.message}</p>
                   ) : null}
                   <label>
-                    运镜备注
+                    {t('studio.board.camera')}
                     <input
                       value={editing.camera || ''}
                       onChange={(e) => setEditing({ ...editing, camera: e.target.value })}
@@ -1475,7 +1496,7 @@ title="用当前镜头重新拼接"
                   </label>
                   <div className="pf-prompt-modal-row">
                     <label>
-                      时长（秒，保存后按 @duration 重算）
+                      {t('studio.board.durationSec')}
                       <input
                         type="number"
                         value={editing.duration}
@@ -1496,7 +1517,7 @@ title="用当前镜头重新拼接"
                     setEditFocus('segment_script')
                   }}
                 >
-                  逐段分镜…
+                  {t('studio.board.toSegment')}
                 </button>
               ) : null}
               {editMode !== 'narration' ? (
@@ -1508,7 +1529,7 @@ title="用当前镜头重新拼接"
                     setEditFocus('narration')
                   }}
                 >
-                  旁白与标题…
+                  {t('studio.board.toNarration')}
                 </button>
               ) : null}
               {editMode !== 'full' ? (
@@ -1520,7 +1541,7 @@ title="用当前镜头重新拼接"
                     setEditFocus('')
                   }}
                 >
-                  全部字段
+                  {t('studio.board.toFull')}
                 </button>
               ) : null}
               <span className="pf-prompt-modal-foot-spacer" />
@@ -1530,10 +1551,10 @@ title="用当前镜头重新拼接"
                 disabled={busy || !editDurationCheck.valid}
                 onClick={saveShot}
               >
-                保存
+                {t('studio.board.save')}
               </button>
               <button type="button" className="pf-btn pf-btn-ghost" onClick={closeShotEdit}>
-                取消
+                {t('studio.board.cancel')}
               </button>
             </div>
           </div>
@@ -1543,12 +1564,12 @@ title="用当前镜头重新拼接"
       {promptEdit ? (
         <div className="modal-backdrop" onClick={() => setPromptEdit(null)}>
           <div className="modal pf-prompt-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>项目内置提示词</h3>
+            <h3>{t('studio.board.promptModalTitle')}</h3>
             <p className="pf-muted" style={{ fontSize: '0.8rem', marginTop: 0 }}>
-              默认跟随后台模板。保存为与模板相同的内容会自动清除覆盖；已生成镜头需点重生成才会更新。
+              {t('studio.board.promptModalHint')}
             </p>
             <label>
-              风格提示词
+              {t('studio.board.stylePrompt')}
               <textarea
                 value={promptEdit.style_prompt}
                 onChange={(e) => setPromptEdit({ ...promptEdit, style_prompt: e.target.value })}
@@ -1556,7 +1577,7 @@ title="用当前镜头重新拼接"
               />
             </label>
             <label>
-              角色提示词
+              {t('studio.board.characterPrompt')}
               <textarea
                 autoFocus
                 value={promptEdit.character_prompt}
@@ -1565,7 +1586,7 @@ title="用当前镜头重新拼接"
               />
             </label>
             <label>
-              额外要求
+              {t('studio.board.extraPrompt')}
               <textarea
                 value={promptEdit.extra_prompt}
                 onChange={(e) => setPromptEdit({ ...promptEdit, extra_prompt: e.target.value })}
@@ -1579,7 +1600,7 @@ title="用当前镜头重新拼接"
                 disabled={busy}
                 onClick={saveProjectPrompts}
               >
-                保存
+                {t('studio.board.save')}
               </button>
               <button
                 type="button"
@@ -1587,10 +1608,10 @@ title="用当前镜头重新拼接"
                 disabled={busy}
                 onClick={() => void restoreTemplatePrompts()}
               >
-                恢复后台模板
+                {t('studio.board.restoreTemplate')}
               </button>
               <button type="button" className="pf-btn pf-btn-ghost" onClick={() => setPromptEdit(null)}>
-                取消
+                {t('studio.board.cancel')}
               </button>
             </div>
           </div>
@@ -1602,10 +1623,10 @@ title="用当前镜头重新拼接"
           <div className="modal preview-modal" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>
-                {preview.kind === 'final' ? preview.title : `镜头 ${preview.shotNo}`}
+                {preview.kind === 'final' ? preview.title : t('studio.board.shotN', { n: preview.shotNo })}
               </h3>
               <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" onClick={() => setPreview(null)}>
-                关闭
+                {t('studio.board.close')}
               </button>
             </div>
             {preview.kind === 'final' ? (
@@ -1621,7 +1642,7 @@ title="用当前镜头重新拼接"
             ) : preview.imageUrl ? (
               <img className="preview-media" src={api.assetUrl(preview.imageUrl)} alt="" />
             ) : (
-              <p className="pf-muted">暂无预览</p>
+              <p className="pf-muted">{t('studio.board.noPreview')}</p>
             )}
             {preview.kind === 'shot' && preview.audioUrl ? (
               <audio src={api.assetUrl(preview.audioUrl)} controls style={{ width: '100%' }} />

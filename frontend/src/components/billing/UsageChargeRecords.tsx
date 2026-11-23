@@ -2,25 +2,19 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, type UsageChargeRecord } from '../../api'
 import Pagination from '../ui/Pagination'
 import { pageCountOf } from '../../lib/pagination'
+import { LOCALE_DATE } from '../../i18n/detect'
+import { formatDateTime, getActiveLocale, tr, useI18n } from '../../i18n'
 
 /** 格式化相对时间展示 */
 function formatWhen(iso?: string | null) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatDateTime(iso)
 }
 
 /** 格式化 token 数量 */
 function formatTokens(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
   if (n >= 10_000) return `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1)}k`
-  return n.toLocaleString('zh-CN')
+  return n.toLocaleString(LOCALE_DATE[getActiveLocale()])
 }
 
 type UsageChargeRecordsProps = {
@@ -30,6 +24,7 @@ type UsageChargeRecordsProps = {
 
 /** 使用扣费记录列表：按次展示 LLM / 生图 / 生视频等计费明细 */
 export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeRecordsProps) {
+  const { t } = useI18n()
   /*
    * items 当前页记录
    * page 当前页码
@@ -63,7 +58,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
       setPage(nextPage)
       setItems(res.items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载扣费记录失败')
+      setError(e instanceof Error ? e.message : tr('billing.records.loadFailed'))
       setItems([])
       setTotal(0)
     } finally {
@@ -83,16 +78,16 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
   return (
     <section className={`pf-usage-records${variant === 'compact' ? ' is-compact' : ''}`}>
       <header className="pf-usage-records-head">
-        <h3>使用扣费记录</h3>
-        <p className="pf-muted">每次 AI 调用的 token 用量与扣费明细</p>
+        <h3>{t('billing.records.title')}</h3>
+        <p className="pf-muted">{t('billing.records.lead')}</p>
       </header>
 
-      {loading ? <p className="pf-muted">加载中…</p> : null}
+      {loading ? <p className="pf-muted">{t('common.loading')}</p> : null}
       {error ? <p className="pf-error">{error}</p> : null}
 
       {!loading && !error && items.length === 0 ? (
         <div className="pf-settings-empty">
-          <p>暂无扣费记录</p>
+          <p>{t('billing.records.empty')}</p>
         </div>
       ) : null}
 
@@ -106,7 +101,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
                   <em className="pf-muted">
                     {item.context}
                     {item.total_tokens > 0 ? ` · ${formatTokens(item.total_tokens)} tokens` : ''}
-                    {item.estimated ? ' · 估算' : ''}
+                    {item.estimated ? ` · ${t('billing.records.estimated')}` : ''}
                   </em>
                 </span>
                 <span className="pf-settings-list-meta pf-usage-record-meta">
@@ -129,7 +124,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
           onChange={setPage}
-          ariaLabel="扣费记录分页"
+          ariaLabel={t('billing.records.pagination')}
         />
       ) : null}
     </section>

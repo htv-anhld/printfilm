@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import type { UsageSummary, Wallet } from '../../api'
+import { formatDateTime, useI18n } from '../../i18n'
 
 type Props = {
   wallet: Wallet | null
@@ -11,13 +12,12 @@ type Props = {
 }
 
 function formatUpdated(d: Date | null) {
-  if (!d) return '—'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return formatDateTime(d)
 }
 
 /** 定价页深色余额卡片：余额、本月消耗、冻结、充值记录 */
 export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, onHistory }: Props) {
+  const { t } = useI18n()
   const [balanceVisible, setBalanceVisible] = useState(true)
 
   const balanceYuan = wallet?.balance_yuan ?? usage?.balance_yuan ?? 0
@@ -27,12 +27,12 @@ export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, 
   return (
     <aside className="pf-pricing-wallet-dark">
       <div className="pf-pricing-wallet-dark-head">
-        <span className="pf-pricing-wallet-dark-label">可用余额</span>
+        <span className="pf-pricing-wallet-dark-label">{t('pricing.walletBalance')}</span>
         <div className="pf-pricing-wallet-dark-actions">
           <button
             type="button"
             className="pf-pricing-wallet-eye"
-            aria-label={balanceVisible ? '隐藏余额' : '显示余额'}
+            aria-label={balanceVisible ? t('pricing.hideBalance') : t('pricing.showBalance')}
             onClick={() => setBalanceVisible((v) => !v)}
           >
             {balanceVisible ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -41,10 +41,10 @@ export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, 
             type="button"
             className="pf-pricing-wallet-history"
             disabled={!loggedIn}
-            title={loggedIn ? '查看充值记录' : '请先登录'}
+            title={loggedIn ? t('billing.wallet.viewHistory') : t('pricing.loginFirst')}
             onClick={onHistory}
           >
-            充值记录
+            {t('pricing.history')}
           </button>
         </div>
       </div>
@@ -55,16 +55,16 @@ export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, 
 
       <dl className="pf-pricing-wallet-dark-meta">
         <div>
-          <dt>本次消耗</dt>
+          <dt>{t('pricing.monthCharge')}</dt>
           <dd>{loggedIn ? `¥${monthCharge.toFixed(2)}` : '—'}</dd>
         </div>
         <div>
-          <dt>冻结金额</dt>
+          <dt>{t('billing.wallet.frozen')}</dt>
           <dd>{loggedIn ? `¥${frozenYuan.toFixed(2)}` : '—'}</dd>
         </div>
       </dl>
 
-      <p className="pf-pricing-wallet-dark-updated">更新于 {formatUpdated(updatedAt)}</p>
+      <p className="pf-pricing-wallet-dark-updated">{t('pricing.updatedAt', { time: formatUpdated(updatedAt) })}</p>
     </aside>
   )
 }

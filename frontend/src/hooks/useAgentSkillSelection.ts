@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { listAgentSkills, uploadAgentSkillFile, type AgentSkill } from '../api/agentSkills'
+import { tr } from '../i18n'
 import {
   loadStoredSkillIds,
   resolveSelectedSkillIds,
@@ -92,7 +93,7 @@ export function useAgentSkillSelection(): UseAgentSkillSelectionResult {
         return next
       })
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : '上传失败')
+      setUploadError(err instanceof Error ? err.message : tr('common.uploadFailed'))
     } finally {
       setUploading(false)
     }

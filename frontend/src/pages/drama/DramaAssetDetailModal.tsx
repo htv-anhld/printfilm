@@ -11,6 +11,7 @@ import {
 } from '../../lib/dramaAssetImageVersions'
 import { readAssetVoiceBinding } from './CharacterVoiceBindModal'
 import { DramaImageLightbox } from './DramaImageLightbox'
+import { useI18n } from '../../i18n'
 
 type Props = {
   asset: DramaAsset
@@ -44,7 +45,7 @@ export function DramaAssetDetailModal({
   asset,
   open,
   busy = false,
-  genLabel = '生成形象',
+  genLabel: genLabelProp,
   onClose,
   onUpdated,
   onGenerate,
@@ -59,6 +60,8 @@ export function DramaAssetDetailModal({
    * restoringVersionId 正在还原的版本
    * lightboxSrc 放大预览图 URL
    */
+  const { t } = useI18n()
+  const genLabel = genLabelProp ?? t('drama.assetDetail.genLabel')
   const [promptDraft, setPromptDraft] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -74,7 +77,16 @@ export function DramaAssetDetailModal({
   const isProp =
     (asset.type || '').toLowerCase() === 'prop' ||
     (asset.type || '').toLowerCase() === 'material'
-  const deleteLabel = isScene ? '删除场景' : isProp ? '删除道具' : '删除角色'
+  const deleteLabel = isScene
+    ? t('drama.assetDetail.deleteScene')
+    : isProp
+      ? t('drama.assetDetail.deleteProp')
+      : t('drama.assetDetail.deleteCharacter')
+  const typeKey = (asset.type || '').toLowerCase()
+  const typeLabel =
+    typeKey === 'character' || typeKey === 'scene' || typeKey === 'prop' || typeKey === 'voice'
+      ? t(`drama.common.${typeKey}`)
+      : asset.type
   const canDelete = Boolean(onDelete) && (isCharacter || isScene || isProp)
   const dirty = promptDraft.trim() !== readVisualPrompt(asset).trim()
   const imageVersions = readAssetImageVersions(asset)
@@ -91,7 +103,7 @@ export function DramaAssetDetailModal({
   async function savePrompt() {
     const text = promptDraft.trim()
     if (!text) {
-      onError('提示词不能为空')
+      onError(t('drama.assetDetail.promptEmpty'))
       return
     }
     setSaving(true)
@@ -101,7 +113,7 @@ export function DramaAssetDetailModal({
       })
       onUpdated(updated)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '保存提示词失败')
+      onError(err instanceof Error ? err.message : t('drama.assetDetail.savePromptFailed'))
     } finally {
       setSaving(false)
     }
@@ -112,7 +124,7 @@ export function DramaAssetDetailModal({
     if (dirty) {
       const text = promptDraft.trim()
       if (!text) {
-        onError('提示词不能为空')
+        onError(t('drama.assetDetail.promptEmpty'))
         return
       }
       setSaving(true)
@@ -123,7 +135,7 @@ export function DramaAssetDetailModal({
         onUpdated(updated)
         onGenerate(updated)
       } catch (err) {
-        onError(err instanceof Error ? err.message : '保存提示词失败')
+        onError(err instanceof Error ? err.message : t('drama.assetDetail.savePromptFailed'))
       } finally {
         setSaving(false)
       }
@@ -139,7 +151,7 @@ export function DramaAssetDetailModal({
       const updated = await dramaApi.uploadAssetMedia(asset.id, file)
       onUpdated(updated)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '上传失败')
+      onError(err instanceof Error ? err.message : t('drama.common.uploadFailed'))
     } finally {
       setUploading(false)
       if (uploadInputRef.current) uploadInputRef.current.value = ''
@@ -153,7 +165,7 @@ export function DramaAssetDetailModal({
       const updated = await dramaApi.activateAssetImageVersion(asset.id, versionId)
       onUpdated(updated)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '还原失败')
+      onError(err instanceof Error ? err.message : t('drama.assetDetail.restoreFailed'))
     } finally {
       setRestoringVersionId(null)
     }
@@ -164,14 +176,14 @@ export function DramaAssetDetailModal({
       <Modal
         open={open}
         onClose={onClose}
-        title={asset.name || '资产详情'}
+        title={asset.name || t('drama.assetDetail.title')}
         size="lg"
         className="drama-asset-detail-modal"
         dismissible={!lightboxSrc}
         footer={
           <div className="drama-modal-actions">
             <button type="button" className="pf-btn" onClick={onClose}>
-              关闭
+              {t('drama.common.close')}
             </button>
             <button
               type="button"
@@ -179,7 +191,7 @@ export function DramaAssetDetailModal({
               disabled={saving || !dirty || actionBusy}
               onClick={() => void savePrompt()}
             >
-              {saving ? '保存中…' : '保存提示词'}
+              {saving ? t('drama.common.saving') : t('drama.assetDetail.savePrompt')}
             </button>
             <button
               type="button"
@@ -187,7 +199,7 @@ export function DramaAssetDetailModal({
               disabled={actionBusy || !promptDraft.trim()}
               onClick={() => void handleGenerate()}
             >
-              {busy ? '生成中…' : genLabel}
+              {busy ? t('drama.common.generating') : genLabel}
             </button>
           </div>
         }
@@ -197,7 +209,7 @@ export function DramaAssetDetailModal({
             type="button"
             className="drama-asset-detail-media"
             disabled={!mediaSrc}
-            title={mediaSrc ? '点击放大' : undefined}
+            title={mediaSrc ? t('drama.assetDetail.clickToZoom') : undefined}
             onClick={() => mediaSrc && setLightboxSrc(mediaSrc)}
           >
             {mediaSrc ? (
@@ -208,10 +220,10 @@ export function DramaAssetDetailModal({
           </button>
 
           <p className="drama-muted drama-asset-detail-meta">
-            {asset.type}
-            {hasImage ? ' · 已出图' : ' · 未出图'}
-            {isCharacter && voice ? ` · 已绑音色：${voice.label}` : ''}
-            {mediaSrc ? ' · 点击图片可放大' : ''}
+            {typeLabel}
+            {hasImage ? t('drama.assetDetail.hasImage') : t('drama.assetDetail.noImage')}
+            {isCharacter && voice ? t('drama.assetDetail.boundVoice', { label: voice.label }) : ''}
+            {mediaSrc ? t('drama.assetDetail.zoomHint') : ''}
           </p>
 
           <div className="drama-asset-detail-extra">
@@ -232,7 +244,11 @@ export function DramaAssetDetailModal({
               disabled={actionBusy}
               onClick={() => uploadInputRef.current?.click()}
             >
-              {uploading ? '上传中…' : hasImage ? '更换图片' : '上传图片'}
+              {uploading
+                ? t('drama.common.uploading')
+                : hasImage
+                  ? t('drama.assetDetail.replaceImage')
+                  : t('drama.assetDetail.uploadImage')}
             </button>
             {isCharacter && onBindVoice ? (
               <button
@@ -240,7 +256,7 @@ export function DramaAssetDetailModal({
                 className="pf-btn pf-btn-sm"
                 onClick={() => onBindVoice(asset)}
               >
-                {voice ? '更换音色' : '绑定音色'}
+                {voice ? t('drama.assetDetail.replaceVoice') : t('drama.assetDetail.bindVoice')}
               </button>
             ) : null}
             {canDelete ? (
@@ -256,10 +272,10 @@ export function DramaAssetDetailModal({
           </div>
 
           {imageVersions.length > 0 ? (
-            <section className="drama-asset-image-versions" aria-label="形象历史版本">
+            <section className="drama-asset-image-versions" aria-label={t('drama.assetDetail.versionsAria')}>
               <header className="drama-asset-image-versions-head">
-                <strong>历史版本</strong>
-                <span className="drama-muted">{imageVersions.length} 个</span>
+                <strong>{t('drama.assetDetail.versions')}</strong>
+                <span className="drama-muted">{t('drama.assetDetail.versionsCount', { n: imageVersions.length })}</span>
               </header>
               <ul className="drama-asset-image-versions-list">
                 {imageVersions.map((version) => {
@@ -270,7 +286,7 @@ export function DramaAssetDetailModal({
                       <button
                         type="button"
                         className="drama-asset-image-version-thumb"
-                        title="点击放大"
+                        title={t('drama.assetDetail.clickToZoom')}
                         onClick={() => setLightboxSrc(thumb)}
                       >
                         <img src={thumb} alt="" />
@@ -289,7 +305,7 @@ export function DramaAssetDetailModal({
                         disabled={actionBusy}
                         onClick={() => void handleRestoreVersion(version.id)}
                       >
-                        {restoring ? '还原中…' : '还原'}
+                        {restoring ? t('drama.assetDetail.restoring') : t('drama.assetDetail.restore')}
                       </button>
                     </li>
                   )
@@ -299,12 +315,12 @@ export function DramaAssetDetailModal({
           ) : null}
 
           <label className="drama-field">
-            <span>生图提示词</span>
+            <span>{t('drama.assetDetail.imagePrompt')}</span>
             <textarea
               rows={8}
               value={promptDraft}
               onChange={(e) => setPromptDraft(e.target.value)}
-              placeholder="描述外观、构图、光影与风格…"
+              placeholder={t('drama.assetDetail.imagePromptPlaceholder')}
             />
           </label>
         </div>
@@ -313,7 +329,7 @@ export function DramaAssetDetailModal({
       {lightboxSrc ? (
         <DramaImageLightbox
           src={lightboxSrc}
-          alt={asset.name || '预览'}
+          alt={asset.name || t('drama.lightbox.alt')}
           onClose={() => setLightboxSrc(null)}
         />
       ) : null}

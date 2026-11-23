@@ -8,6 +8,7 @@ import {
   Text,
   UserRound,
 } from 'lucide-react'
+import { tr } from '../../../i18n'
 
 export type CanvasNodeKind = 'character' | 'scene' | 'video' | 'image' | 'text' | 'audio'
 
@@ -54,23 +55,34 @@ export function canvasKindToAssetType(kind: CanvasNodeKind): string {
 }
 
 /** 空画布居中快速新建选项（顺序与设计稿一致） */
+// label 用 getter：切换语言后读取即为当前语言文案
+function nodeOption(id: CanvasNodeKind, icon: LucideIcon): CanvasNodeOption {
+  return {
+    id,
+    icon,
+    get label() {
+      return tr(`episode.common.kind.${id}`)
+    },
+  }
+}
+
 export const CANVAS_NODE_OPTIONS: CanvasNodeOption[] = [
-  { id: 'character', label: '角色', icon: UserRound },
-  { id: 'scene', label: '场景', icon: Landmark },
-  { id: 'video', label: '视频', icon: PlaySquare },
-  { id: 'image', label: '图片', icon: ImageIcon },
-  { id: 'text', label: '文本', icon: Text },
-  { id: 'audio', label: '音频', icon: AudioLines },
+  nodeOption('character', UserRound),
+  nodeOption('scene', Landmark),
+  nodeOption('video', PlaySquare),
+  nodeOption('image', ImageIcon),
+  nodeOption('text', Text),
+  nodeOption('audio', AudioLines),
 ]
 
 /** 左侧添加面板选项 */
 export const ADD_NODE_OPTIONS: CanvasNodeOption[] = [
-  { id: 'character', label: '角色', icon: UserRound },
-  { id: 'scene', label: '场景', icon: Landmark },
-  { id: 'text', label: '文本', icon: Text },
-  { id: 'image', label: '图片', icon: ImageIcon },
-  { id: 'video', label: '视频', icon: PlaySquare },
-  { id: 'audio', label: '音频', icon: AudioLines },
+  nodeOption('character', UserRound),
+  nodeOption('scene', Landmark),
+  nodeOption('text', Text),
+  nodeOption('image', ImageIcon),
+  nodeOption('video', PlaySquare),
+  nodeOption('audio', AudioLines),
 ]
 
 export const CANVAS_NODE_OPTION_BY_KIND = Object.fromEntries(
@@ -79,12 +91,24 @@ export const CANVAS_NODE_OPTION_BY_KIND = Object.fromEntries(
 
 /** 各类型默认展示名 */
 export const CANVAS_NODE_DEFAULT_LABEL: Record<CanvasNodeKind, string> = {
-  character: '新角色',
-  scene: '新场景',
-  video: '新视频',
-  image: '新图片',
-  text: '文本',
-  audio: '新音频',
+  get character() {
+    return tr('episode.canvas.defaultLabel.character')
+  },
+  get scene() {
+    return tr('episode.canvas.defaultLabel.scene')
+  },
+  get video() {
+    return tr('episode.canvas.defaultLabel.video')
+  },
+  get image() {
+    return tr('episode.canvas.defaultLabel.image')
+  },
+  get text() {
+    return tr('episode.canvas.defaultLabel.text')
+  },
+  get audio() {
+    return tr('episode.canvas.defaultLabel.audio')
+  },
 }
 
 /** 节点卡片尺寸（宽 × 高，用于落点居中） */

@@ -45,6 +45,7 @@ import {
 } from './canvasTypes'
 import { useCanvasAutoSave } from './useCanvasAutoSave'
 import { CanvasStoreContext, useCanvasStore as useCanvasStoreBase } from './canvasStoreContext'
+import { tr } from '../../../i18n'
 
 type CanvasStoreValue = {
   projectId: number
@@ -202,7 +203,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       })
       .catch((err) => {
         if (cancelled) return
-        setErrorMessage(err instanceof Error ? err.message : '加载画布失败')
+        setErrorMessage(err instanceof Error ? err.message : tr('episode.canvas.store.loadFailed'))
         readyRef.current = true
       })
       .finally(() => {
@@ -348,7 +349,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
         })
         assetId = asset.id
       } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : '创建资产失败')
+        setErrorMessage(err instanceof Error ? err.message : tr('episode.canvas.store.createAssetFailed'))
         return
       }
 
@@ -393,7 +394,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const ensureNodeAsset = useCallback(
     async (nodeId: string) => {
       const node = nodesRef.current.find((n) => n.id === nodeId)
-      if (!node) throw new Error('节点不存在')
+      if (!node) throw new Error(tr('episode.canvas.store.nodeMissing'))
       if (typeof node.data.assetId === 'number' && node.data.assetId > 0) {
         return node.data.assetId
       }
@@ -440,11 +441,11 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const applyLibraryMediaToNode = useCallback(
     async (nodeId: string, source: DramaAsset) => {
       if (!source.url && !source.cover) {
-        throw new Error('所选资产没有可用图片')
+        throw new Error(tr('episode.canvas.store.noImage'))
       }
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
-      if (!node) throw new Error('节点不存在')
+      if (!node) throw new Error(tr('episode.canvas.store.nodeMissing'))
       const assetId = await ensureNodeAsset(nodeId)
       const promptHint = readEditableVisualPrompt(source)
       const nextName = (source.name || '').trim() || node.data.label
@@ -534,11 +535,11 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const generateNodeImage = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<ImageGenerationOptions>) => {
       const trimmed = prompt.trim()
-      if (!trimmed) throw new Error('请输入提示词')
+      if (!trimmed) throw new Error(tr('episode.canvas.store.promptRequired'))
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
-      if (!node) throw new Error('节点不存在')
-      if (node.data.kind === 'video') throw new Error('视频节点请使用视频生成')
+      if (!node) throw new Error(tr('episode.canvas.store.nodeMissing'))
+      if (node.data.kind === 'video') throw new Error(tr('episode.canvas.store.videoUseVideoGen'))
 
       setNodes((current) =>
         current.map((n) =>
@@ -550,7 +551,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
 
       try {
         const assetId = await ensureNodeAsset(nodeId)
-        /* 把 @asset:id 展开为可读名称再送生图 API；本地仍保留 token */
+        /* 把 @asset:id 展开为可读名称再送生图 API；本地仍保留 token（送给模型的提示词片段，保持中文不做界面翻译） */
         const expandedPrompt = trimmed.replace(/@asset:(\d+)/g, (token, idStr: string) => {
           const refId = Number(idStr)
           const ref = nodesRef.current.find((n) => n.data.assetId === refId)
@@ -603,7 +604,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           },
         })
         const mediaUrl = latest.url || latest.cover || ''
-        if (!mediaUrl) throw new Error('生图超时，请重试')
+        if (!mediaUrl) throw new Error(tr('episode.canvas.store.imageTimeout'))
         setNodes((current) =>
           current.map((n) =>
             n.id === nodeId
@@ -652,10 +653,10 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const generateNodeVideo = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<VideoGenerationOptions>) => {
       const trimmed = prompt.trim()
-      if (!trimmed) throw new Error('请输入提示词')
+      if (!trimmed) throw new Error(tr('episode.canvas.store.promptRequired'))
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
-      if (!node) throw new Error('节点不存在')
+      if (!node) throw new Error(tr('episode.canvas.store.nodeMissing'))
 
       setNodes((current) =>
         current.map((n) =>
@@ -690,7 +691,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           referenceAssetIds: collectIncomingAssetIds(nodeId),
         })
         const mediaUrl = resolveDramaMediaUrl(latest.url || latest.cover || '')
-        if (!mediaUrl) throw new Error('生视频超时，请重试')
+        if (!mediaUrl) throw new Error(tr('episode.canvas.store.videoTimeout'))
         setNodes((current) =>
           current.map((n) =>
             n.id === nodeId

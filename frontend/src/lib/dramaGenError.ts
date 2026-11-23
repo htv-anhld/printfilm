@@ -2,6 +2,7 @@
 
 import { dialog } from './dialog'
 import { isBillingError } from './billingError'
+import { tr } from '../i18n'
 
 export type DramaGenErrorView = {
   /** 短标题 */
@@ -18,7 +19,7 @@ export type DramaGenErrorView = {
 
 /** 是否为上游 Seedream 账户欠费 */
 export function isUpstreamAccountError(message: string): boolean {
-  return /AccountOverdueError|上游 Seedream 账户欠费|上游.*账户欠费/i.test(message)
+  return /AccountOverdueError|上游 Seedream 账户欠费|上游.*账户欠费|upstream.*account.*(overdue|arrears)/i.test(message)
 }
 
 // 从 Seedance JSON 文案里取出 content[n]
@@ -31,16 +32,47 @@ function extractContentIndex(raw: string): number | null {
 
 /** 判断文案是否像「具体根因」（优先于「重试上限」等包装句） */
 function looksLikeRootCause(text: string): boolean {
-  return /PrivacyInformation|InputImageSensitive|SensitiveContentDetected|参考图疑似|参考音频过短|may contain real person|Seedance create error|上一镜失败|无法衔接|分镜已变更|分镜上下文|InputTextSensitive|resource download failed|audio_url|audio duration|Credits insufficient|File type not supported|参考图格式不支持/i.test(
+  return /PrivacyInformation|InputImageSensitive|SensitiveContentDetected|参考图疑似|参考音频过短|may contain real person|Seedance create error|上一镜失败|无法衔接|分镜已变更|分镜上下文|InputTextSensitive|resource download failed|audio_url|audio duration|Credits insufficient|File type not supported|参考图格式不支持|previous shot failed|storyboard (has )?changed|reference audio too short/i.test(
     text,
   )
 }
 
 // 从错误里尽量抽出已标注的槽位名（后端 content_labels）
 function extractNamedSlot(text: string): string | null {
-  const named = text.match(/(角色|场景|道具|旁白|参考图|音色)「([^」]+)」/)
-  if (named) return `${named[1]}「${named[2]}」`
+  const named = matchNamedSlot(text, SLOT_ALL_RE)
+  if (named) return tr('lib.genError.namedSlot', { kind: named.kind, name: named.name })
   return null
+}
+
+// 槽位类型（后端中文/英文标注）→ 当前语言展示名
+const SLOT_KIND_KEYS: Record<string, string> = {
+  角色: 'character',
+  character: 'character',
+  场景: 'scene',
+  scene: 'scene',
+  道具: 'prop',
+  prop: 'prop',
+  旁白: 'narration',
+  narration: 'narration',
+  参考图: 'refImage',
+  'reference image': 'refImage',
+  音色: 'voice',
+  voice: 'voice',
+}
+
+const SLOT_ALL_RE =
+  /(角色|场景|道具|旁白|参考图|音色)「([^」]+)」|\b(character|scene|prop|narration|reference image|voice)\s*[「"“]([^」"”]+)[」"”]/i
+const SLOT_IMAGE_RE =
+  /(角色|场景|道具|参考图)「([^」]+)」|\b(character|scene|prop|reference image)\s*[「"“]([^」"”]+)[」"”]/i
+
+// 匹配「角色「名」」或 Character "名"，返回本地化类型名与名称
+function matchNamedSlot(text: string, re: RegExp): { kind: string; name: string } | null {
+  const m = text.match(re)
+  if (!m) return null
+  const rawKind = (m[1] || m[3] || '').toLowerCase()
+  const name = m[2] || m[4] || ''
+  const key = SLOT_KIND_KEYS[rawKind] || SLOT_KIND_KEYS[m[1] || '']
+  return { kind: key ? tr(`lib.genError.slot.${key}`) : rawKind, name }
 }
 
 /**
@@ -58,60 +90,62 @@ export function pickRootDramaGenError(
 
 /**
  * 将任务 error / error_message 转为前端展示文案。
- * 已是中文短句时尽量保留，仅补建议。
+ * 已是短句时尽量保留，仅补建议。
  */
 export function formatDramaGenError(raw: string | null | undefined): DramaGenErrorView {
   const text = String(raw || '').trim()
+  const g = (key: string, vars?: Record<string, string | number>) => tr(`lib.genError.${key}`, vars)
+  const clip = (n: number) => (text.length > n ? `${text.slice(0, n)}…` : text)
   if (!text) {
     return {
-      title: '生成失败',
-      message: '任务未能完成，且未记录具体错误信息。',
-      suggestion: '请稍后重试；若反复失败，检查网络/代理是否能访问 TokenFree，以及后台模型渠道密钥。',
+      title: g('failedTitle'),
+      message: g('empty.message'),
+      suggestion: g('empty.suggestion'),
     }
   }
 
-  if (/ReadTimeout|WriteTimeout|等待上游超时|响应超时/i.test(text)) {
+  if (/ReadTimeout|WriteTimeout|等待上游超时|响应超时|\btimed out\b/i.test(text)) {
     return {
-      title: '上游响应超时',
-      message: text.length > 200 ? `${text.slice(0, 200)}…` : text,
-      suggestion:
-        '已经连上 TokenFree，但出图/出视频等待超过上限。请稍后重试；若文本能生成、只有图/视频超时，多半是上游排队较慢，不是代理断网。',
+      title: g('timeout.title'),
+      message: clip(200),
+      suggestion: g('timeout.suggestion'),
     }
   }
 
-  if (/网络错误|ConnectError|ConnectTimeout|无法连接上游|tokenfree\.com|api\.kie\.ai/i.test(text)) {
+  if (
+    /网络错误|ConnectError|ConnectTimeout|无法连接上游|network error|cannot connect|unable to connect|tokenfree\.com|api\.kie\.ai/i.test(
+      text,
+    )
+  ) {
     return {
-      title: '无法连接图片/视频服务',
-      message: text.length > 200 ? `${text.slice(0, 200)}…` : text,
-      suggestion:
-        '本机当前连不上上游（常见于代理未放行或网络中断）。请检查网络/代理后重试，并确认后台 TokenFree 渠道密钥有效。',
+      title: g('network.title'),
+      message: clip(200),
+      suggestion: g('network.suggestion'),
     }
   }
 
-  if (/^生图失败$/.test(text)) {
+  if (/^生图失败$|^image generation failed\.?$|^tạo ảnh thất bại\.?$/i.test(text)) {
     return {
-      title: '生图失败',
-      message: '生图未成功，但旧任务未保存具体原因（多为上游连接失败且错误文案为空）。',
-      suggestion:
-        '请重新生成一次；新版本会写出明确错误。仍失败时检查 TokenFree 网络与密钥。',
+      title: g('imageFailed.title'),
+      message: g('imageFailed.message'),
+      suggestion: g('imageFailed.suggestion'),
     }
   }
 
   if (isUpstreamAccountError(text) || (/Seedream error 403/i.test(text) && /AccountOverdue/i.test(text))) {
     return {
-      title: '平台上游账户欠费',
-      message:
-        '上游 Seedream 模型账户余额不足，生图请求被拒绝。这是站点上游模型账户欠费，不是您个人钱包余额问题。',
-      suggestion: '请联系站点管理员在 TokenFree 控制台充值；充值完成后请重试生图。',
+      title: g('upstreamAccount.title'),
+      message: g('upstreamAccount.message'),
+      suggestion: g('upstreamAccount.suggestion'),
       upstreamAccountBlocked: true,
     }
   }
 
   if (isBillingError(text)) {
     return {
-      title: '余额不足',
-      message: /余额不足|请先充值/.test(text) ? text : '当前余额不足，无法继续生成。',
-      suggestion: '请先充值后再重试该任务。',
+      title: g('billing.title'),
+      message: /余额不足|请先充值|insufficient balance|top up|số dư/i.test(text) ? text : g('billing.message'),
+      suggestion: g('billing.suggestion'),
       billingBlocked: true,
     }
   }
@@ -122,162 +156,158 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
     )
   ) {
     const idx = extractContentIndex(text)
-    const named = text.match(/(角色|场景|道具|参考图)「([^」]+)」/)
+    const named = matchNamedSlot(text, SLOT_IMAGE_RE)
     if (named) {
       return {
-        title: '参考图疑似真人',
-        message: `视频服务审核未通过：${named[1]}「${named[2]}」的参考图可能含真人肖像，已拒绝生成。`,
-        suggestion: `请在左侧资产中打开「${named[2]}」，重新生成或上传偏动漫/插画的形象后再生成该分镜。`,
+        title: g('realPerson.title'),
+        message: g('realPerson.namedMessage', { kind: named.kind, name: named.name }),
+        suggestion: g('realPerson.namedSuggestion', { name: named.name }),
       }
     }
-    const where =
-      idx != null
-        ? `（提交内容第 ${idx + 1} 项 / content[${idx}]，多为角色或场景参考图）`
-        : '（某张参考图）'
+    const where = idx != null ? g('realPerson.whereIndex', { n: idx + 1, idx }) : g('realPerson.whereAny')
     return {
-      title: '参考图疑似真人',
-      message: `视频服务审核未通过：输入图片${where}可能含真人肖像，已拒绝生成。`,
-      suggestion:
-        '打开左侧资产，为相关角色/场景重新用 AI 生成偏动漫或插画的形象（避免真人照片），或上传合规图后再重新生成该分镜。',
+      title: g('realPerson.title'),
+      message: g('realPerson.message', { where }),
+      suggestion: g('realPerson.suggestion'),
     }
   }
 
-  if (/重试超过上限|超过重试上限|内部自动重试超过上限/.test(text)) {
+  if (/重试超过上限|超过重试上限|内部自动重试超过上限|retr(y|ies).*(limit|exceeded)|exceeded.*retr/i.test(text)) {
     return {
-      title: '多次生成仍失败',
+      title: g('retryLimit.title'),
       message: text,
-      suggestion:
-        '这是同一次任务内的自动重试耗尽，不是禁止你再点生成。请根据真实原因（常见是参考图真人审核）改素材或文案后，再重新点生成。',
+      suggestion: g('retryLimit.suggestion'),
     }
   }
 
-  if (/上一镜失败|无法衔接尾帧/.test(text)) {
+  if (/上一镜失败|无法衔接尾帧|previous shot failed|cannot (chain|continue) from (the )?last frame/i.test(text)) {
     return {
-      title: '无法衔接上一镜',
-      message: '本镜依赖上一镜的尾帧衔接，但上一镜未成功，因此本镜未开始生成。',
-      suggestion: '先修复并重新生成失败的上一镜，再按镜序生成后续片段。',
+      title: g('prevShot.title'),
+      message: g('prevShot.message'),
+      suggestion: g('prevShot.suggestion'),
     }
   }
 
-  if (/分镜已变更|分镜上下文丢失|分镜不存在/.test(text)) {
+  if (/分镜已变更|分镜上下文丢失|分镜不存在|storyboard (has )?changed|shot (not found|does not exist)/i.test(text)) {
     return {
-      title: '分镜已更新',
-      message: '分镜在生成过程中被保存或重切，旧任务已失效。',
-      suggestion: '请回到分集页，用当前分镜列表重新点生成；不要重试旧任务。',
+      title: g('storyboardChanged.title'),
+      message: g('storyboardChanged.message'),
+      suggestion: g('storyboardChanged.suggestion'),
     }
   }
 
   if (/InputTextSensitive|text.*sensitive|敏感/i.test(text) && /Seedance|create error/i.test(text)) {
     return {
-      title: '文案未通过审核',
-      message: '分镜脚本或提示词触发了内容安全审核。',
-      suggestion: '请修改分镜中的敏感表述后重试。',
+      title: g('textSensitive.title'),
+      message: g('textSensitive.message'),
+      suggestion: g('textSensitive.suggestion'),
     }
   }
 
   if (/resource download failed|audio_url/i.test(text) && !/audio duration/i.test(text)) {
     return {
-      title: '参考音频无法下载',
-      message: '音色参考文件地址无效或暂时无法访问。',
-      suggestion: '检查角色绑定的试听音频，重新生成或更换音色后再试。',
+      title: g('audioDownload.title'),
+      message: g('audioDownload.message'),
+      suggestion: g('audioDownload.suggestion'),
     }
   }
 
   // Seedance r2v：reference_audio 须 ≥ 1.8 秒（不是参考图）
-  if (/audio duration|参考音频过短|1\.8/i.test(text) && /audio|音色|reference_audio|content\[/i.test(text)) {
+  if (
+    /audio duration|参考音频过短|reference audio too short|1\.8/i.test(text) &&
+    /audio|音色|reference_audio|content\[/i.test(text)
+  ) {
     const idx = extractContentIndex(text)
     const named = extractNamedSlot(text)
     const where =
-      named ||
-      (idx != null ? `提交内容第 ${idx + 1} 项 / content[${idx}]（参考音频，不是图片）` : '某条角色/旁白音色')
+      named || (idx != null ? g('audioShort.whereIndex', { n: idx + 1, idx }) : g('audioShort.whereAny'))
     return {
-      title: '参考音频过短',
-      message: `视频服务要求参考音频时长 ≥ 1.8 秒，当前过短：${where}。`,
-      suggestion:
-        '打开左侧对应角色或旁白资产，重新生成/上传更长的试听音频（建议 ≥ 2 秒）后再生成该分镜。这不是参考图问题。',
+      title: g('audioShort.title'),
+      message: g('audioShort.message', { where }),
+      suggestion: g('audioShort.suggestion'),
     }
   }
 
   if (/only support adaptive aspect ratio|adaptive aspect ratio/i.test(text)) {
     return {
-      title: '画幅参数不兼容',
-      message: '当前视频通道的图生视频若走单首帧，固定比例可能被拒绝。',
-      suggestion: '请重新生成该分镜；服务端会按参考图自适应画幅。',
+      title: g('aspect.title'),
+      message: g('aspect.message'),
+      suggestion: g('aspect.suggestion'),
     }
   }
 
   if (/Credits insufficient|积分不足|余额不足.*[Kk]ie|Kie.*积分/i.test(text)) {
     return {
-      title: '视频渠道积分不足',
-      message: '上游账户积分不足，无法创建视频生成任务（不是参考图或音频时长问题）。',
-      suggestion: '请联系管理员在 TokenFree 控制台充值后再重试；充值后重新生成该分镜即可。',
+      title: g('credits.title'),
+      message: g('credits.message'),
+      suggestion: g('credits.suggestion'),
       upstreamAccountBlocked: true,
     }
   }
 
-  if (/File type not supported|参考图格式不支持|不支持 SVG/i.test(text)) {
+  if (/File type not supported|参考图格式不支持|不支持 SVG|unsupported reference image/i.test(text)) {
     return {
-      title: '参考图格式不支持',
+      title: g('fileType.title'),
       message:
-        text.includes('参考图格式不支持')
+        text.includes('参考图格式不支持') || /unsupported reference image/i.test(text)
           ? text
-          : '上游拒绝了参考图：File type not supported（常见原因是 SVG 占位图或非位图）。',
-      suggestion:
-        '检查本镜引用的角色/场景/道具封面是否为 PNG/JPG/WEBP。若仍是 SVG 占位图，请对该资产重新生图或上传位图后再生成视频。',
+          : g('fileType.message'),
+      suggestion: g('fileType.suggestion'),
     }
   }
 
   if (/Seedance create error\s*400|Kie createTask error/i.test(text)) {
     const idx = extractContentIndex(text)
     const named = extractNamedSlot(text)
-    const where =
-      named ||
-      (idx != null ? `（提交内容第 ${idx + 1} 项 / content[${idx}]）` : '')
+    const where = named
+      ? g('rejected.whereNamed', { where: named })
+      : idx != null
+        ? g('rejected.whereIndex', { n: idx + 1, idx })
+        : ''
     return {
-      title: '视频服务拒绝请求',
-      message: `上游返回参数或内容错误，未能创建生成任务${where}。`,
-      suggestion: '检查本镜参考图、参考音频时长（须 ≥ 1.8 秒）与脚本后重试；若持续失败请联系客服并提供任务号。',
+      title: g('rejected.title'),
+      message: g('rejected.message', { where }),
+      suggestion: g('rejected.suggestion'),
     }
   }
 
-  if (/Seedance|上游生成失败/i.test(text)) {
+  if (/Seedance|上游生成失败|upstream generation failed/i.test(text)) {
     return {
-      title: '视频生成失败',
-      message: text.length > 160 ? `${text.slice(0, 160)}…` : text,
-      suggestion: '可稍后重试该分镜；连续失败时请更换参考图或简化脚本。',
+      title: g('videoFailed.title'),
+      message: clip(160),
+      suggestion: g('videoFailed.suggestion'),
     }
   }
 
-  if (/跳过重复任务|分镜已生成完成/.test(text)) {
+  if (/跳过重复任务|分镜已生成完成|duplicate task/i.test(text)) {
     return {
-      title: '旧任务已跳过',
-      message: '调度器发现该分镜已有成片，因此取消了这条重复入队的旧任务。',
-      suggestion:
-        '若你是在「重新生成」，请看队列里是否还有进行中的新任务；没有的话再点一次重新生成。不要把这条旧取消当成当前失败。',
+      title: g('skipped.title'),
+      message: g('skipped.message'),
+      suggestion: g('skipped.suggestion'),
     }
   }
 
-  if (/已取消|任务已中断/.test(text)) {
+  if (/已取消|任务已中断|cancell?ed|interrupted/i.test(text)) {
     return {
-      title: text.includes('取消') ? '已取消' : '任务已中断',
+      title: /取消|cancel/i.test(text) ? g('cancelled.title') : g('interrupted.title'),
       message: text,
-      suggestion: '需要成片时请重新入队生成。',
+      suggestion: g('cancelled.suggestion'),
     }
   }
 
-  // 已是较短中文：原样展示，补通用建议
-  if (!/[{\\[\]"]/.test(text) && text.length <= 120 && /[\u4e00-\u9fff]/.test(text)) {
+  // 已是较短的可读句子（中文 / 越南语）：原样展示，补通用建议
+  if (!/[{\\[\]"]/.test(text) && text.length <= 120 && /[\u4e00-\u9fff\u00c0-\u1ef9]/.test(text)) {
     return {
-      title: '生成失败',
+      title: g('failedTitle'),
       message: text,
-      suggestion: '请按提示处理后重新生成该分镜。',
+      suggestion: g('shortSuggestion'),
     }
   }
 
   return {
-    title: '生成失败',
-    message: text.length > 200 ? `${text.slice(0, 200)}…` : text,
-    suggestion: '请检查本镜参考图与脚本后重试。',
+    title: g('failedTitle'),
+    message: clip(200),
+    suggestion: g('fallbackSuggestion'),
   }
 }
 
