@@ -64,6 +64,18 @@ export function CreemSettingsSection({
           />
         </LabeledControl>
         <LabeledControl
+          label={t("settings.payment.creem.planProducts")}
+          hint={t("settings.payment.creem.planProductsHint")}
+          className="settings-field-span-full"
+        >
+          <input
+            className="settings-input font-mono"
+            placeholder="starter_month:prod_a,starter_year:prod_b,pro_month:prod_c"
+            value={form.creem_plan_products ?? ""}
+            onChange={(e) => patchField("creem_plan_products", e.target.value)}
+          />
+        </LabeledControl>
+        <LabeledControl
           label={t("settings.payment.creem.appUrl")}
           hint={t("settings.payment.creem.appUrlHint")}
           className="settings-field-span-full"

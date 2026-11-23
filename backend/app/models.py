@@ -44,6 +44,8 @@ class User(Base):
     balance_fen: Mapped[int] = mapped_column(Integer, default=0)
     frozen_fen: Mapped[int] = mapped_column(Integer, default=0)
     plan: Mapped[str] = mapped_column(String(32), default="free")
+    # balance_fen 中属于订阅月额度的部分：扣费优先消耗，计费月结束未用完即过期
+    sub_credit_fen: Mapped[int] = mapped_column(Integer, default=0)
     # user | admin
     role: Mapped[str] = mapped_column(String(16), default="user")
     avatar_url: Mapped[str] = mapped_column(String(512), default="")

@@ -168,6 +168,8 @@ class Settings(BaseSettings):
     # 一次性 credit 包：一个 Creem 产品 + custom_price（美分）；或逐包映射 "credits_900:prod_x,credits_3900:prod_y"
     creem_credit_product_id: str = ""
     creem_sku_products: str = ""
+    # 订阅产品：plan_interval:prod，如 "starter_month:prod_a,starter_year:prod_b,pro_month:prod_c"
+    creem_plan_products: str = ""
 
     public_base_url: str = "http://127.0.0.1:8000"
     # 用户端站点地址（支付完成跳回、邮件链接）；生产填正式域名

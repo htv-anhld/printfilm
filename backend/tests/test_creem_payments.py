@@ -127,8 +127,9 @@ async def test_completed_credits_once(db_session, monkeypatch, creem_usd):
 async def test_completed_amount_or_currency_mismatch_not_credited(db_session, monkeypatch, creem_usd):
     user = await make_user(db_session, balance_fen=0)
     out = await _checkout(db_session, monkeypatch, user)
-    assert (await dispatch_event(db_session, _completed(out["out_trade_no"], amount=100, evt="e1")))[1] == "amount mismatch"
-    assert (await dispatch_event(db_session, _completed(out["out_trade_no"], currency="EUR", evt="e2")))[1] == "currency mismatch"
+    # 订阅模块也监听 checkout.completed，note 会拼上它的 "not subscription"
+    assert "amount mismatch" in (await dispatch_event(db_session, _completed(out["out_trade_no"], amount=100, evt="e1")))[1]
+    assert "currency mismatch" in (await dispatch_event(db_session, _completed(out["out_trade_no"], currency="EUR", evt="e2")))[1]
     await db_session.refresh(user)
     assert user.balance_fen == 0
 

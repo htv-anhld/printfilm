@@ -292,6 +292,7 @@ export const viShell = {
       pagination: 'Phân trang lịch sử trừ phí',
     },
     wallet: {
+      monthly: 'Credit tháng (hết hạn cuối kỳ)',
       viewHistory: 'Xem lịch sử nạp tiền',
       frozen: 'Số tiền tạm giữ',
     },

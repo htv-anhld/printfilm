@@ -33,6 +33,7 @@ export function creemPatch(form: AdminModelSettings, draft: CreemSecretsDraft) {
     creem_test_mode: form.creem_test_mode ?? true,
     creem_credit_product_id: form.creem_credit_product_id ?? "",
     creem_sku_products: form.creem_sku_products ?? "",
+    creem_plan_products: form.creem_plan_products ?? "",
     app_public_url: form.app_public_url ?? "",
   };
 }

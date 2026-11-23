@@ -93,3 +93,56 @@ Tài liệu API: <https://docs.creem.io>. Creem là Merchant of Record nên tự
   `/customer-portal`). Code dùng `/customers/billing`; **cần gọi thử ở chế độ test** trước khi lên production.
 - Tài liệu chưa mô tả tham số REST để huỷ thuê bao vào cuối kỳ. Code gửi body rỗng, nên huỷ cuối kỳ
   được chuyển sang cổng khách hàng của Creem.
+
+## 4. Thuê bao định kỳ
+
+**Gói** (`backend/app/services/subscriptions/plans.py`, bảng giá Dravelio):
+
+| ID | Credit/tháng | Giá tháng | Giá năm | Luồng song song |
+|---|---|---|---|---|
+| `starter` | 1.900 | $19 | $205 | 3 |
+| `pro` | 6.200 | $62 | $670 | 6 |
+| `ultra_a` | 16.500 | $140 (niêm yết $165) | $1.584 | 8 |
+| `ultra_b` | 34.500 | $293 (niêm yết $345) | $3.312 | 8 |
+| `ultra_c` | 54.000 | $459 (niêm yết $540) | $5.184 | 8 |
+
+**Cấu hình:** tạo trên Creem một *subscription product* cho mỗi gói × chu kỳ, rồi khai báo
+`CREEM_PLAN_PRODUCTS=starter_month:prod_a,starter_year:prod_b,…`. Gói chưa map sẽ hiện
+"Sắp ra mắt". Webhook cần đăng ký thêm: `subscription.active`, `subscription.paid`,
+`subscription.update`, `subscription.scheduled_cancel`, `subscription.canceled`,
+`subscription.expired`, `subscription.past_due`, `subscription.unpaid`, `subscription.paused`.
+
+**Credit tháng và credit lẻ — không có ví thứ hai.** `users.sub_credit_fen` đánh dấu phần
+nào của `balance_fen` là credit tháng:
+
+- Mọi khoản trừ tiền (`_ledger` với delta âm) **trừ vào credit tháng trước**
+- Khi freeze, task ghi lại phần lấy từ credit tháng (`task_runs.billing_sub_fen`); khi hoàn
+  phần freeze thừa thì **trả đúng phần đó về credit tháng**, nên credit tháng không bị biến
+  thành credit vĩnh viễn
+- Sang tháng mới: phần credit tháng còn dư hết hạn (ledger `sub_expire`), rồi cấp credit tháng mới (`sub_grant`)
+- Gói năm cũng **cấp theo từng tháng** (`next_grant_at`, job bảo trì 5 phút một lần trong
+  scheduler), để tránh cấp 12 tháng một lần rồi khó thu hồi khi hoàn tiền
+- Bảng `subscription_grants` (unique `subscription_id + period_key`) đảm bảo mỗi tháng chỉ cấp
+  một lần, kể cả khi webhook gửi lặp hoặc job chạy lại
+
+**Vòng đời:**
+
+| Sự kiện | Xử lý |
+|---|---|
+| `checkout.completed` (metadata.kind=subscription) | Tạo bản ghi thuê bao, cấp credit tháng đầu, `users.plan` = gói |
+| `subscription.paid` / `active` | Cập nhật kỳ, cấp credit tháng hiện tại (bỏ qua nếu đã cấp) |
+| `subscription.update` (đổi gói) | Nâng gói giữa kỳ thì **cộng phần chênh lệch credit ngay**; hạ gói thì không thu lại |
+| `scheduled_cancel` | Giữ quyền lợi tới cuối kỳ |
+| `canceled` / `expired` / `unpaid` / `paused` | Credit tháng còn lại hết hạn, `users.plan` = `free`, số luồng song song về mặc định |
+| Hết kỳ quá 2 ngày mà không có webhook gia hạn | Job bảo trì tự đánh dấu `expired` |
+
+**Luồng song song theo gói:** scheduler đọc `users.plan` → `max_concurrent` của gói; user free
+dùng `TASK_USER_MAX_CONCURRENCY`. Lưu ý vẫn bị chặn bởi giới hạn toàn hệ thống
+`TASK_RUNTIME_MAX_CONCURRENCY`: **phải nâng giới hạn này** khi có nhiều người dùng gói Ultra.
+
+**API:** `GET /api/billing/plans`, `GET /api/billing/subscription`,
+`POST /api/billing/subscriptions/{checkout,upgrade,portal,cancel}`.
+
+**Bẫy:** Nút "huỷ" trong app là **huỷ ngay** (credit tháng mất luôn). Huỷ vào cuối kỳ thì người
+dùng làm trong cổng khách hàng Creem (nút "Quản lý thuê bao"), vì tài liệu REST của Creem chưa
+mô tả tham số huỷ cuối kỳ.

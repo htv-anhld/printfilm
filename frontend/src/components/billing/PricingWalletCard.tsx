@@ -2,7 +2,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import type { UsageSummary, Wallet } from '../../api'
 import { formatDateTime, useI18n } from '../../i18n'
-import { formatMajor, useBillingConfig } from '../../lib/money'
+import { formatMajor, formatMoney, useBillingConfig } from '../../lib/money'
 
 type Props = {
   wallet: Wallet | null
@@ -64,6 +64,12 @@ export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, 
           <dt>{t('billing.wallet.frozen')}</dt>
           <dd>{loggedIn ? formatMajor(frozenYuan) : '—'}</dd>
         </div>
+        {(wallet?.sub_credit_fen ?? 0) > 0 ? (
+          <div>
+            <dt>{t('billing.wallet.monthly')}</dt>
+            <dd>{formatMoney(wallet?.sub_credit_fen)}</dd>
+          </div>
+        ) : null}
       </dl>
 
       <p className="pf-pricing-wallet-dark-updated">{t('pricing.updatedAt', { time: formatUpdated(updatedAt) })}</p>

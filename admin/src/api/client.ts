@@ -629,6 +629,7 @@ export type AdminModelSettings = {
   creem_test_mode?: boolean;
   creem_credit_product_id?: string;
   creem_sku_products?: string;
+  creem_plan_products?: string;
   app_public_url?: string;
   has_creem_api_key?: boolean;
   has_creem_webhook_secret?: boolean;

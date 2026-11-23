@@ -49,6 +49,11 @@ async def _ledger(
     note: str = "",
 ) -> None:
     user.balance_fen = int(user.balance_fen or 0) + int(delta_fen)
+    # 订阅月额度优先被消耗：任何扣减先吃 sub_credit_fen；它永远不超过可用余额
+    sub = int(getattr(user, "sub_credit_fen", 0) or 0)
+    if int(delta_fen) < 0:
+        sub = max(0, sub + int(delta_fen))
+    user.sub_credit_fen = max(0, min(sub, int(user.balance_fen)))
     db.add(
         WalletLedger(
             user_id=user.id,
@@ -60,6 +65,22 @@ async def _ledger(
             note=note[:255],
         )
     )
+
+
+async def _has_live_subscription(db: AsyncSession, user_id: int) -> bool:
+    """用户是否有仍在发放月额度的订阅（退冻结时决定是否还回月额度）。"""
+    try:
+        from app.models_commerce import Subscription
+    except ImportError:  # pragma: no cover
+        return False
+    from app.services.subscriptions.plans import LIVE_STATUSES
+
+    row = (
+        await db.execute(
+            select(Subscription.id).where(Subscription.user_id == user_id, Subscription.status.in_(LIVE_STATUSES)).limit(1)
+        )
+    ).scalar_one_or_none()
+    return row is not None
 
 
 async def _lock_user(db: AsyncSession, user_id: int) -> User | None:
@@ -217,6 +238,8 @@ async def freeze_for_task(db: AsyncSession, task: TaskRun) -> int:
     # 仅通过 _ledger 扣余额，避免双重扣款
     user.frozen_fen = int(user.frozen_fen or 0) + need
     task.billing_estimate_fen = need
+    # 记下这笔冻结里有多少来自月额度，退回时原路还回
+    task.billing_sub_fen = min(int(getattr(user, "sub_credit_fen", 0) or 0), need)
     task.billing_status = "frozen"
     await _ledger(
         db,
@@ -356,6 +379,11 @@ async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
             ref_id=str(task_id),
             note="refund_unused_freeze",
         )
+        # 实扣先消耗冻结里的月额度部分，剩余月额度原路还回（订阅已过期则不还）
+        sub_part = int(getattr(task, "billing_sub_fen", 0) or 0)
+        restore = max(0, min(refund, sub_part - min(sub_part, charged)))
+        if restore > 0 and await _has_live_subscription(db, int(user.id)):
+            user.sub_credit_fen = min(int(user.balance_fen), int(user.sub_credit_fen or 0) + restore)
 
     task.billing_charged_fen = charged
     task.billing_refunded_fen = refund

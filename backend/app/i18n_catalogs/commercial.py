@@ -26,6 +26,14 @@ EN: dict[str, str] = {
     "Creem 未返回支付链接": "Creem did not return a checkout link",
     "Creem 未返回客户门户链接": "Creem did not return a customer portal link",
     "Creem 未配置 credit 产品（CREEM_CREDIT_PRODUCT_ID）": "No Creem credit product is configured (CREEM_CREDIT_PRODUCT_ID)",
+    # ── 订阅 ──
+    "订阅仅在美元计费时可用": "Subscriptions are only available with USD billing",
+    "未知订阅套餐": "Unknown subscription plan",
+    "该套餐暂未开放购买": "This plan is not available for purchase yet",
+    "你已有订阅，请使用升级 / 变更套餐": "You already have a subscription. Use upgrade / change plan instead",
+    "当前没有订阅": "You don't have a subscription",
+    "已经是该套餐": "You are already on this plan",
+    "当前没有可管理的订阅": "There is no subscription to manage",
 }
 
 VI: dict[str, str] = {
@@ -51,4 +59,12 @@ VI: dict[str, str] = {
     "Creem 未返回支付链接": "Creem không trả về liên kết thanh toán",
     "Creem 未返回客户门户链接": "Creem không trả về liên kết cổng khách hàng",
     "Creem 未配置 credit 产品（CREEM_CREDIT_PRODUCT_ID）": "Chưa cấu hình sản phẩm credit trên Creem (CREEM_CREDIT_PRODUCT_ID)",
+    # ── 订阅 ──
+    "订阅仅在美元计费时可用": "Thuê bao chỉ dùng được khi tính phí bằng USD",
+    "未知订阅套餐": "Gói thuê bao không tồn tại",
+    "该套餐暂未开放购买": "Gói này chưa mở bán",
+    "你已有订阅，请使用升级 / 变更套餐": "Bạn đã có thuê bao, hãy dùng chức năng nâng cấp / đổi gói",
+    "当前没有订阅": "Bạn chưa có thuê bao",
+    "已经是该套餐": "Bạn đang dùng gói này rồi",
+    "当前没有可管理的订阅": "Không có thuê bao nào để quản lý",
 }

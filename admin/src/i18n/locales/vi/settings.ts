@@ -172,6 +172,8 @@ export const viSettings = {
       creditProductHint: "Một sản phẩm một lần trên Creem; giá từng gói gửi qua custom_price",
       skuProducts: "Sản phẩm riêng theo gói",
       skuProductsHint: "Tuỳ chọn, ưu tiên hơn sản phẩm chung. Dạng sku:prod_id, cách nhau bằng dấu phẩy",
+      planProducts: "Sản phẩm thuê bao",
+      planProductsHint: "Mỗi gói × chu kỳ là một sản phẩm thuê bao trên Creem. Dạng plan_interval:prod_id; plan ∈ starter, pro, ultra_a, ultra_b, ultra_c; interval ∈ month, year. Gói chưa map sẽ hiện \"Sắp ra mắt\"",
       appUrl: "Địa chỉ trang người dùng",
       appUrlHint: "Creem đưa người dùng về đây sau khi thanh toán, ví dụ https://app.ten-mien.com",
       webhookUrl: "URL webhook",

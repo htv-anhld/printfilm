@@ -12,6 +12,7 @@ import AppShell from '../components/layout/AppShell'
 import PaymentBrandIcon from '../components/billing/PaymentBrandIcon'
 import PaymentModal, { type PayCheckout } from '../components/billing/PaymentModal'
 import PricingWalletCard from '../components/billing/PricingWalletCard'
+import SubscriptionPlans from '../components/billing/SubscriptionPlans'
 import TopupHistoryModal from '../components/billing/TopupHistoryModal'
 import { api, type BillingSku, type UsageSummary, type Wallet } from '../api'
 import { useI18n } from '../i18n'
@@ -82,8 +83,8 @@ export default function PricingPage() {
       if (types.length && !types.includes(payType)) setPayType(types[0] as PayType)
     })
     refresh()
-    if (params.get('paid') === '1') {
-      setHint(t('pricing.paidHint'))
+    if (params.get('paid') === '1' || params.get('subscribed') === '1') {
+      setHint(params.get('subscribed') === '1' ? t('pricing.plans.subscribedHint') : t('pricing.paidHint'))
       const timerId = window.setInterval(() => refresh(), 2500)
       return () => window.clearInterval(timerId)
     }
@@ -280,6 +281,8 @@ export default function PricingPage() {
               ) : null}
             </div>
           </section>
+
+          <SubscriptionPlans loggedIn={loggedIn} onChanged={() => void refresh()} />
 
           <section className="pf-pricing-skus" id="pricing-skus">
             <header className="pf-pricing-section-head">

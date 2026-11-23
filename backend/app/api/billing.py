@@ -84,6 +84,8 @@ async def wallet(user: User = Depends(get_current_user)) -> dict:
         "currency": billing_currency(s),
         "symbol": currency_symbol(s),
         "balance_display": format_money(int(user.balance_fen or 0), s),
+        # 余额中属于订阅月额度的部分（期末过期）；其余为永久 credit
+        "sub_credit_fen": int(getattr(user, "sub_credit_fen", 0) or 0),
         "plan": user.plan or "free",
         "billing_enabled": s.billing_enabled,
         "markup": s.billing_markup,
@@ -575,3 +577,96 @@ def _register_optional_creem_handlers() -> None:
             importlib.import_module(name)
         except ModuleNotFoundError:
             continue
+
+
+# ── 订阅 ─────────────────────────────────────────────
+
+
+class SubscriptionPlanBody(BaseModel):
+    plan_id: str
+    interval: Literal["month", "year"] = "month"
+
+
+@router.get("/plans")
+async def list_plans() -> dict:
+    """订阅套餐（对齐 Dravelio /billing/plans）；purchasable 表示该周期已配置 Creem 产品。"""
+    from app.services.subscriptions.plans import public_plans
+
+    s = get_settings()
+    return {
+        "plans": public_plans(s),
+        "currency": billing_currency(s),
+        "symbol": currency_symbol(s),
+        "enabled": billing_currency(s) == "USD" and bool((s.creem_api_key or "").strip()),
+    }
+
+
+@router.get("/subscription")
+async def my_subscription(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """当前订阅与本月剩余额度。"""
+    from app.services.payments.subscriptions import live_subscription, subscription_out
+
+    return subscription_out(await live_subscription(db, int(user.id)), user)
+
+
+async def _subscription_call(db: AsyncSession, fn, *args):
+    """订阅操作统一错误映射：业务错误 400，Creem 故障 502。"""
+    from app.services.creem import CreemError
+
+    try:
+        return await fn(db, *args)
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except CreemError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/subscriptions/checkout")
+async def subscription_checkout(
+    body: SubscriptionPlanBody,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """新订阅：返回 Creem checkout_url。"""
+    from app.services.payments.subscriptions import create_subscription_checkout
+
+    return await _subscription_call(db, create_subscription_checkout, user, body.plan_id, body.interval)
+
+
+@router.post("/subscriptions/upgrade")
+async def subscription_upgrade(
+    body: SubscriptionPlanBody,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """变更套餐（按比例立即补差价）。"""
+    from app.services.payments.subscriptions import change_plan
+
+    return await _subscription_call(db, change_plan, user, body.plan_id, body.interval)
+
+
+@router.post("/subscriptions/portal")
+async def subscription_portal(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Creem 客户门户链接（改卡、发票、期末取消）。"""
+    from app.services.payments.subscriptions import portal_link
+
+    return {"url": await _subscription_call(db, portal_link, user)}
+
+
+@router.post("/subscriptions/cancel")
+async def subscription_cancel(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """立即取消订阅（剩余月额度随之过期）。"""
+    from app.services.payments.subscriptions import cancel
+
+    return await _subscription_call(db, cancel, user)

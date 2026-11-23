@@ -172,6 +172,8 @@ export const zhSettings = {
       creditProductHint: "Creem 上一个一次性产品；各包价格通过 custom_price 传入",
       skuProducts: "逐包产品映射",
       skuProductsHint: "可选，优先于通用产品。格式 sku:prod_id，逗号分隔",
+      planProducts: "订阅产品",
+      planProductsHint: "每个套餐 × 周期对应 Creem 上一个订阅产品。格式 plan_interval:prod_id；plan ∈ starter、pro、ultra_a、ultra_b、ultra_c；interval ∈ month、year。未映射的套餐显示「即将上线」",
       appUrl: "用户端站点地址",
       appUrlHint: "付款完成后 Creem 跳回这里，如 https://app.example.com",
       webhookUrl: "Webhook 地址",

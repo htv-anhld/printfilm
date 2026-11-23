@@ -102,6 +102,7 @@ class AdminModelSettingsOut(BaseModel):
     creem_test_mode: bool = True
     creem_credit_product_id: str = ""
     creem_sku_products: str = ""
+    creem_plan_products: str = ""
     app_public_url: str = ""
     has_creem_api_key: bool = False
     has_creem_webhook_secret: bool = False
@@ -238,6 +239,7 @@ class AdminModelSettingsPatch(BaseModel):
     creem_test_mode: bool | None = None
     creem_credit_product_id: str | None = None
     creem_sku_products: str | None = None
+    creem_plan_products: str | None = None
     app_public_url: str | None = None
 
     billing_enabled: bool | None = None
@@ -360,6 +362,7 @@ def model_config_field_names() -> tuple[str, ...]:
         "creem_test_mode",
         "creem_credit_product_id",
         "creem_sku_products",
+        "creem_plan_products",
         "app_public_url",
         "billing_enabled",
         "billing_currency",

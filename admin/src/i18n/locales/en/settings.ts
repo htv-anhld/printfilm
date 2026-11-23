@@ -172,6 +172,8 @@ export const enSettings = {
       creditProductHint: "One one-time product on Creem; each pack's price is sent as custom_price",
       skuProducts: "Per-pack products",
       skuProductsHint: "Optional, overrides the shared product. Format sku:prod_id, comma separated",
+      planProducts: "Subscription products",
+      planProductsHint: "One Creem subscription product per plan × period. Format plan_interval:prod_id; plan ∈ starter, pro, ultra_a, ultra_b, ultra_c; interval ∈ month, year. Unmapped plans show \"Coming soon\"",
       appUrl: "User app URL",
       appUrlHint: "Creem sends buyers back here after paying, e.g. https://app.example.com",
       webhookUrl: "Webhook URL",

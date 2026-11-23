@@ -292,6 +292,7 @@ export const zhShell = {
       pagination: '扣费记录分页',
     },
     wallet: {
+      monthly: '月额度（期末过期）',
       viewHistory: '查看充值记录',
       frozen: '冻结金额',
     },

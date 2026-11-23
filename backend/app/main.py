@@ -218,6 +218,10 @@ async def _apply_schema_patches() -> None:
         if "capability" not in uecols:
             await conn.execute(text("ALTER TABLE usage_events ADD COLUMN capability VARCHAR(16)"))
 
+        # 订阅月额度
+        if "sub_credit_fen" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN sub_credit_fen INTEGER DEFAULT 0"))
+
         # 订单：币种 / 支付渠道 / 渠道单号 / 首充赠送
         ocols = await _pg_columns(conn, "orders")
         if ocols and "currency" not in ocols:
@@ -233,6 +237,8 @@ async def _apply_schema_patches() -> None:
 
         # Task platform additive columns
         trcols = await _pg_columns(conn, "task_runs")
+        if "billing_sub_fen" not in trcols:
+            await conn.execute(text("ALTER TABLE task_runs ADD COLUMN billing_sub_fen INTEGER DEFAULT 0"))
         if "locale" not in trcols:
             # 旧任务都是中文界面发起的，保持 zh
             await conn.execute(text("ALTER TABLE task_runs ADD COLUMN locale VARCHAR(8) DEFAULT 'zh'"))

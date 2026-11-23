@@ -276,12 +276,47 @@ export type Wallet = {
   currency?: BillingCurrency
   symbol?: string
   balance_display?: string
+  /** 余额中属于订阅月额度（期末过期）的部分 */
+  sub_credit_fen?: number
   plan: string
   billing_enabled: boolean
   markup: number
 }
 
 export type BillingCurrency = 'USD' | 'CNY'
+
+export type PlanInterval = 'month' | 'year'
+
+/** /api/billing/plans 单个套餐（金额单位美分） */
+export type SubscriptionPlan = {
+  id: string
+  name: string
+  credits_per_month: number
+  price_month: number
+  price_year: number
+  list_price_month?: number
+  max_concurrent: number
+  rank: number
+  recommended?: boolean
+  purchasable: Record<PlanInterval, boolean>
+}
+
+/** /api/billing/subscription */
+export type MySubscription = {
+  id?: number
+  plan_id: string
+  plan_name?: string
+  interval?: PlanInterval
+  status: string
+  credits_per_period?: number
+  max_concurrent?: number
+  current_period_start?: string | null
+  current_period_end?: string | null
+  next_grant_at?: string | null
+  cancel_at_period_end?: boolean
+  sub_credit_fen: number
+  can_manage?: boolean
+}
 
 /** /api/billing/config：全站计费展示配置 */
 export type BillingConfig = {
@@ -626,6 +661,32 @@ export const api = {
       '/api/billing/creem/checkout',
       { method: 'POST', body: JSON.stringify({ sku_id }) },
     )
+  },
+  billingPlans() {
+    return request<{ plans: SubscriptionPlan[]; currency: BillingCurrency; symbol: string; enabled: boolean }>(
+      '/api/billing/plans',
+    )
+  },
+  mySubscription() {
+    return request<MySubscription>('/api/billing/subscription')
+  },
+  subscriptionCheckout(plan_id: string, interval: PlanInterval) {
+    return request<{ checkout_url: string }>('/api/billing/subscriptions/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ plan_id, interval }),
+    })
+  },
+  subscriptionChange(plan_id: string, interval: PlanInterval) {
+    return request<MySubscription>('/api/billing/subscriptions/upgrade', {
+      method: 'POST',
+      body: JSON.stringify({ plan_id, interval }),
+    })
+  },
+  subscriptionPortal() {
+    return request<{ url: string }>('/api/billing/subscriptions/portal', { method: 'POST' })
+  },
+  subscriptionCancel() {
+    return request<MySubscription>('/api/billing/subscriptions/cancel', { method: 'POST' })
   },
   billingConfig() {
     return request<BillingConfig>('/api/billing/config')

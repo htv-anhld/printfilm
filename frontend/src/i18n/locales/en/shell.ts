@@ -292,6 +292,7 @@ export const enShell = {
       pagination: 'Charge pages',
     },
     wallet: {
+      monthly: 'Monthly credits (expire each period)',
       viewHistory: 'View top-up history',
       frozen: 'On hold',
     },
