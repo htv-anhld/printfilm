@@ -285,3 +285,32 @@ Trạng thái: `held` (giữ `PARTNER_HOLD_DAYS` ngày, nên ≥ cửa sổ hoà
 
 **API:** `/api/partner-program/{me,apply,dashboard,redeem,submissions}`; admin `/api/admin/partners`,
 `/partners/{id}/review`, `/partners/{id}/mark-paid`, `/partner-submissions`, `/partner-submissions/{id}/review`.
+
+## 11. OAuth apps và MCP (kết nối agent AI)
+
+Người dùng kết nối PRINTFILM với **Claude** (Settings → Connectors → Add custom connector →
+dán `https://<API>/api/mcp`) hoặc agent khác hỗ trợ MCP. Claude tự đăng ký client, chuyển người dùng sang
+trang đồng ý `/oauth/authorize`, rồi gọi các tool.
+
+**Máy chủ OAuth 2.1** (`services/oauth_provider.py`):
+
+- Authorization code + **PKCE S256 bắt buộc**; client bí mật còn phải gửi kèm secret (post hoặc basic)
+- **Dynamic client registration** (`POST /api/oauth/register`, RFC 7591) cho MCP client
+- Metadata: `/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource`.
+  **Nginx phải chuyển tiếp `/.well-known/oauth-` sang API** (đã thêm vào `frontend/nginx.conf`, `deploy/nginx.local.conf`)
+- **Access token chính là một API key** (`pf_live_…`, hạn 1 giờ, gắn `oauth_app_id`), nên dùng lại nguyên
+  `/api/v1/*`, cơ chế tính tiền và thu hồi. Token OAuth không hiện trong danh sách API key người dùng tự tạo
+- Refresh token 30 ngày, **mỗi lần refresh tạo token mới và huỷ token cũ**. **Mã uỷ quyền bị dùng lại** thì
+  thu hồi mọi token đã cấp (RFC 6749 §4.1.2)
+- Redirect URI phải đăng ký trước: chỉ chấp nhận https (http chỉ cho localhost), không có fragment
+
+**MCP** (`/api/mcp`, Streamable HTTP, JSON-RPC 2.0, protocol `2025-06-18`/`2025-03-26`/`2024-11-05`):
+tool `generate_image`, `generate_video`, `get_video_task`, `get_balance`, gọi lại đúng code của `/api/v1`
+(cùng cách tính tiền và kiểm tra quyền sở hữu task). Lỗi nghiệp vụ (hết tiền, tham số sai) trả về
+`isError: true` để agent tự xử lý. Không có token thì trả 401 kèm `WWW-Authenticate: Bearer resource_metadata=…`.
+
+**Giao diện:** Cài đặt → API có thêm mục "Ứng dụng & MCP": URL kết nối, ứng dụng đã cấp quyền (thu hồi
+được), tạo OAuth app riêng (secret chỉ hiện một lần), lịch sử gọi MCP (`GET /api/mcp/requests`).
+
+**Cũng thêm trong commit này:** `frontend/nginx.conf` đặt `Cache-Control: no-store` cho `index.html`
+và cache dài hạn cho `/assets/` (roadmap mục 1.3: tránh trình duyệt giữ bundle cũ sau khi deploy).

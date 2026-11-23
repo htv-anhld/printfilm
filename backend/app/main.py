@@ -14,6 +14,7 @@ from app.api.admin import router as admin_router
 from app.api import error_reports as error_reports_api
 from app.api import teams as teams_api
 from app.api import partners as partners_api
+from app.api import oauth as oauth_api
 from app.api.drama import router as drama_router
 from app.config import get_settings
 from app.database import AsyncSessionLocal, engine, init_db
@@ -105,6 +106,8 @@ app.include_router(drama_router, prefix="/api")
 app.include_router(error_reports_api.router, prefix="/api")
 app.include_router(teams_api.router, prefix="/api")
 app.include_router(partners_api.router, prefix="/api")
+app.include_router(oauth_api.router, prefix="/api")
+app.include_router(oauth_api.well_known)
 app.include_router(admin_router, prefix="/api")
 
 
@@ -249,6 +252,14 @@ async def _apply_schema_patches() -> None:
             await conn.execute(text("ALTER TABLE subscriptions ADD COLUMN seats INTEGER DEFAULT 1"))
         if scols and "team_id" not in scols:
             await conn.execute(text("ALTER TABLE subscriptions ADD COLUMN team_id INTEGER"))
+
+        # API Key：OAuth 访问令牌
+        kcols = await _pg_columns(conn, "user_api_keys")
+        if kcols and "oauth_app_id" not in kcols:
+            await conn.execute(text("ALTER TABLE user_api_keys ADD COLUMN oauth_app_id INTEGER"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_api_keys_oauth_app_id ON user_api_keys (oauth_app_id)"))
+        if kcols and "expires_at" not in kcols:
+            await conn.execute(text("ALTER TABLE user_api_keys ADD COLUMN expires_at TIMESTAMPTZ"))
 
         # 订单：币种 / 支付渠道 / 渠道单号 / 首充赠送
         ocols = await _pg_columns(conn, "orders")

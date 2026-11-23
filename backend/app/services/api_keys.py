@@ -43,7 +43,8 @@ async def create_api_key(db: AsyncSession, user: User, name: str) -> tuple[UserA
 async def list_api_keys(db: AsyncSession, user_id: int) -> list[UserApiKey]:
     result = await db.execute(
         select(UserApiKey)
-        .where(UserApiKey.user_id == user_id, UserApiKey.revoked_at.is_(None))
+        # OAuth 访问令牌在「已授权应用」里管理，不混进手动 Key 列表
+        .where(UserApiKey.user_id == user_id, UserApiKey.revoked_at.is_(None), UserApiKey.oauth_app_id.is_(None))
         .order_by(UserApiKey.id.desc())
     )
     return list(result.scalars().all())
@@ -71,6 +72,24 @@ async def user_from_api_key(db: AsyncSession, raw_key: str) -> User | None:
     if not row:
         return None
     api_key, user = row
+    # OAuth 访问令牌有过期时间
+    expires = api_key.expires_at
+    if expires is not None:
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if expires <= datetime.now(timezone.utc):
+            return None
     api_key.last_used_at = datetime.now(timezone.utc)
     await db.flush()
     return user
+
+
+async def api_key_context(db: AsyncSession, raw_key: str) -> tuple[User, UserApiKey] | None:
+    """Bearer → (用户, Key 行)：MCP 需要知道令牌属于哪个 OAuth 应用。"""
+    user = await user_from_api_key(db, raw_key)
+    if user is None:
+        return None
+    row = (
+        await db.execute(select(UserApiKey).where(UserApiKey.key_hash == _hash_key(raw_key.strip())))
+    ).scalar_one_or_none()
+    return (user, row) if row is not None else None

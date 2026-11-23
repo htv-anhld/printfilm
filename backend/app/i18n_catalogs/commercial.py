@@ -87,6 +87,18 @@ EN: dict[str, str] = {
     "合作伙伴不存在": "Partner not found",
     "提交不存在": "Submission not found",
     "该提交已审核": "This submission was already reviewed",
+    # ── OAuth / MCP ──
+    "回调地址无效：需为 https（本机可用 http://localhost）": "Invalid redirect URI: use https (http://localhost is allowed for local apps)",
+    "最多创建 {n} 个应用": "You can create at most {n} apps",
+    "应用不存在或已停用": "App not found or disabled",
+    "客户端密钥错误": "Invalid client secret",
+    "回调地址与应用登记的不一致": "The redirect URI doesn't match the app's registered URIs",
+    "必须使用 PKCE（S256）": "PKCE (S256) is required",
+    "授权码无效": "Invalid authorization code",
+    "授权码已使用": "Authorization code already used",
+    "授权码已过期": "Authorization code expired",
+    "PKCE 校验失败": "PKCE verification failed",
+    "刷新令牌无效或已过期": "Invalid or expired refresh token",
 }
 
 VI: dict[str, str] = {
@@ -173,4 +185,16 @@ VI: dict[str, str] = {
     "合作伙伴不存在": "Đối tác không tồn tại",
     "提交不存在": "Nội dung không tồn tại",
     "该提交已审核": "Nội dung này đã được duyệt",
+    # ── OAuth / MCP ──
+    "回调地址无效：需为 https（本机可用 http://localhost）": "URL chuyển hướng không hợp lệ: phải là https (máy cục bộ được dùng http://localhost)",
+    "最多创建 {n} 个应用": "Bạn chỉ tạo được tối đa {n} ứng dụng",
+    "应用不存在或已停用": "Ứng dụng không tồn tại hoặc đã bị tắt",
+    "客户端密钥错误": "Client secret không đúng",
+    "回调地址与应用登记的不一致": "URL chuyển hướng không khớp với URL đã đăng ký của ứng dụng",
+    "必须使用 PKCE（S256）": "Bắt buộc dùng PKCE (S256)",
+    "授权码无效": "Mã uỷ quyền không hợp lệ",
+    "授权码已使用": "Mã uỷ quyền đã được dùng",
+    "授权码已过期": "Mã uỷ quyền đã hết hạn",
+    "PKCE 校验失败": "Xác minh PKCE thất bại",
+    "刷新令牌无效或已过期": "Refresh token không hợp lệ hoặc đã hết hạn",
 }

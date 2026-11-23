@@ -204,3 +204,70 @@ class PartnerSubmission(Base):
     review_note: Mapped[str] = mapped_column(String(512), default="")
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class OAuthApp(Base):
+    """OAuth 客户端（用户自建或 MCP 客户端动态注册）。access token 以 user_api_keys 行签发。"""
+
+    __tablename__ = "oauth_apps"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # 创建者（动态注册的公共客户端为空）
+    owner_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(128))
+    client_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    # 机密客户端的密钥哈希；公共客户端（PKCE）为空
+    client_secret_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    redirect_uris: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # manual | dynamic
+    registration: Mapped[str] = mapped_column(String(16), default="manual")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class OAuthCode(Base):
+    """授权码：10 分钟、一次性、绑定 redirect_uri 与 PKCE challenge。"""
+
+    __tablename__ = "oauth_codes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    app_id: Mapped[int] = mapped_column(ForeignKey("oauth_apps.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    redirect_uri: Mapped[str] = mapped_column(String(1000))
+    scope: Mapped[str] = mapped_column(String(255), default="")
+    code_challenge: Mapped[str] = mapped_column(String(128))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class OAuthRefreshToken(Base):
+    """刷新令牌（轮换：每次刷新作废旧的、签发新的）。"""
+
+    __tablename__ = "oauth_refresh_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    app_id: Mapped[int] = mapped_column(ForeignKey("oauth_apps.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    scope: Mapped[str] = mapped_column(String(255), default="")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class McpRequest(Base):
+    """MCP 工具调用日志（对齐 Dravelio /api/mcp/requests）。"""
+
+    __tablename__ = "mcp_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    app_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    method: Mapped[str] = mapped_column(String(64))
+    tool: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # ok | error
+    status: Mapped[str] = mapped_column(String(16), default="ok")
+    summary: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

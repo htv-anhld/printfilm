@@ -16,6 +16,7 @@ import SettingsToolRunsPanel from './SettingsToolRunsPanel'
 import { formatDateTime, useI18n, type Locale } from '../i18n'
 import { formatMajor, useBillingConfig } from '../lib/money'
 import TeamPanel from './settings/TeamPanel'
+import OAuthAppsPanel from './settings/OAuthAppsPanel'
 
 type SettingsTab =
   | 'account'
@@ -320,7 +321,12 @@ export default function SettingsPage() {
 
           {tab === 'security' ? <ChangePasswordCard email={user?.email || ''} /> : null}
 
-          {tab === 'api' ? <ApiKeysPanel /> : null}
+          {tab === 'api' ? (
+            <>
+              <ApiKeysPanel />
+              <OAuthAppsPanel />
+            </>
+          ) : null}
 
           {tab === 'team' ? <TeamPanel /> : null}
 

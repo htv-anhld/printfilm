@@ -7,6 +7,7 @@ import AuthPage from './pages/AuthPage'
 import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import TeamInvitePage from './pages/TeamInvitePage'
 import PartnersPage from './pages/PartnersPage'
+import OAuthAuthorizePage from './pages/OAuthAuthorizePage'
 import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
 import MethodPage from './pages/MethodPage'
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
         <Route path="/teams/invite" element={<TeamInvitePage />} />
         <Route path="/partners" element={<PartnersPage />} />
+        <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/tools/:toolId" element={<ToolDetailPage />} />

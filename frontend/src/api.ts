@@ -214,6 +214,28 @@ export type User = {
   sub_credit_fen?: number
 }
 
+export type OAuthAppRow = {
+  id: number
+  name: string
+  client_id: string
+  redirect_uris: string[]
+  confidential: boolean
+  registration: string
+  created_at?: string | null
+  client_secret?: string
+}
+
+export type McpRequestRow = {
+  id: number
+  app?: string | null
+  method: string
+  tool?: string | null
+  status: string
+  summary?: string | null
+  duration_ms: number
+  created_at?: string | null
+}
+
 export type PartnerInfo = {
   status: 'none' | 'pending' | 'approved' | 'rejected' | 'suspended'
   ref_code?: string | null
@@ -484,6 +506,41 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ code, state, ref }),
     })
+  },
+  oauthApps() {
+    return request<{ items: OAuthAppRow[]; authorized: { id: number; name: string; client_id: string; authorized_at?: string | null }[] }>(
+      '/api/oauth/apps',
+    )
+  },
+  createOAuthApp(name: string, redirect_uris: string[]) {
+    return request<OAuthAppRow>('/api/oauth/apps', { method: 'POST', body: JSON.stringify({ name, redirect_uris, confidential: true }) })
+  },
+  deleteOAuthApp(id: number) {
+    return request<{ ok: boolean }>(`/api/oauth/apps/${id}`, { method: 'DELETE' })
+  },
+  revokeOAuthAuthorization(id: number) {
+    return request<{ ok: boolean }>(`/api/oauth/authorized/${id}`, { method: 'DELETE' })
+  },
+  oauthAuthorizePreview(client_id: string, redirect_uri: string) {
+    return request<{ name: string; redirect_host: string; scopes: string[] }>(
+      `/api/oauth/authorize/preview?client_id=${encodeURIComponent(client_id)}&redirect_uri=${encodeURIComponent(redirect_uri)}`,
+    )
+  },
+  oauthAuthorize(body: {
+    client_id: string
+    redirect_uri: string
+    scope?: string | null
+    state?: string | null
+    code_challenge: string
+    code_challenge_method: string
+    approve: boolean
+  }) {
+    return request<{ redirect_url: string }>('/api/oauth/authorize', { method: 'POST', body: JSON.stringify(body) })
+  },
+  mcpRequests(page = 1) {
+    return request<{ items: McpRequestRow[]; meta: { page: number; page_size: number; total: number } }>(
+      `/api/mcp/requests?page=${page}&page_size=20`,
+    )
   },
   partnerMe() {
     return request<PartnerInfo>('/api/partner-program/me')

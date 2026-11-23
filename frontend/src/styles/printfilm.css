@@ -7521,3 +7521,11 @@ button.pf-shot-editable:disabled {
 .pf-partners-stats strong {
   font-size: 1.25rem;
 }
+
+/* ── OAuth 同意页 ── */
+.pf-oauth-scopes {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+}
