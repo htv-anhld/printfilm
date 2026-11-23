@@ -21,6 +21,8 @@ class DramaProject(Base):
     description: Mapped[str | None] = mapped_column(String(512), nullable=True)
     content: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
     params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # AI 产出内容语言（zh | en | vi）：剧本/分镜/台词等用该语言生成；创建时取界面语言
+    content_locale: Mapped[str] = mapped_column(String(8), default="zh")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

@@ -14,6 +14,7 @@ from app.api.admin import router as admin_router
 from app.api.drama import router as drama_router
 from app.config import get_settings
 from app.database import AsyncSessionLocal, engine, init_db
+from app.i18n import locale_from_headers, set_locale
 from app.logging_setup import configure_logging
 from app.models import Template, User
 from app.services.tasks.runtime import runtime_summary, start_task_runtime, stop_task_runtime
@@ -44,6 +45,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def bind_request_locale(request: Request, call_next):
+    # 界面语言：前端带 X-Locale（zh | en | vi），其次 Accept-Language；供 app.i18n._() 使用
+    set_locale(locale_from_headers(request.headers.get("x-locale"), request.headers.get("accept-language")))
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -147,6 +155,9 @@ async def _apply_schema_patches() -> None:
             await conn.execute(text("ALTER TABLE shots ADD COLUMN video_skip_reason VARCHAR(32)"))
 
         pcols = await _pg_columns(conn, "projects")
+        if "content_locale" not in pcols:
+            # 已有项目内容都是中文，默认 zh；新项目按创建时界面语言写入
+            await conn.execute(text("ALTER TABLE projects ADD COLUMN content_locale VARCHAR(8) DEFAULT 'zh'"))
         if "pipeline_mode" not in pcols:
             await conn.execute(text("ALTER TABLE projects ADD COLUMN pipeline_mode VARCHAR(32) DEFAULT 'full'"))
         if "output_ratio" not in pcols:
@@ -171,6 +182,10 @@ async def _apply_schema_patches() -> None:
             await conn.execute(text("ALTER TABLE projects ADD COLUMN video_model VARCHAR(64) DEFAULT ''"))
 
         # User billing columns
+        dpcols = await _pg_columns(conn, "drama_projects")
+        if "content_locale" not in dpcols:
+            await conn.execute(text("ALTER TABLE drama_projects ADD COLUMN content_locale VARCHAR(8) DEFAULT 'zh'"))
+
         ucols = await _pg_columns(conn, "users")
         # 早期库可能无 create_all 后缺此列（模型有、补丁曾遗漏）
         if "quota_left" not in ucols:
@@ -205,6 +220,9 @@ async def _apply_schema_patches() -> None:
 
         # Task platform additive columns
         trcols = await _pg_columns(conn, "task_runs")
+        if "locale" not in trcols:
+            # 旧任务都是中文界面发起的，保持 zh
+            await conn.execute(text("ALTER TABLE task_runs ADD COLUMN locale VARCHAR(8) DEFAULT 'zh'"))
         if "dedupe_key" not in trcols:
             await conn.execute(text("ALTER TABLE task_runs ADD COLUMN dedupe_key VARCHAR(128)"))
         if "batch_key" not in trcols:

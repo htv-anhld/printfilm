@@ -19,6 +19,8 @@ class DramaProjectCreate(BaseModel):
     # script=大纲分集流程；canvas=自由画布
     workflow: str = Field(default="script", description="script | canvas")
     params: dict[str, Any] | None = None
+    # AI 产出内容语言 zh | en | vi；缺省取请求界面语言
+    content_locale: str | None = Field(default=None, max_length=16)
 
 
 class DramaProjectUpdate(BaseModel):
@@ -26,6 +28,7 @@ class DramaProjectUpdate(BaseModel):
     description: str | None = None
     content: dict | list | None = None
     params: dict[str, Any] | None = None
+    content_locale: str | None = Field(default=None, max_length=16)
 
 
 class DramaScriptOut(BaseModel):
@@ -124,6 +127,8 @@ class DramaProjectOut(BaseModel):
     episode_count: int = 0
     # script | canvas
     workflow: str = "script"
+    # AI 产出内容语言 zh | en | vi
+    content_locale: str = "zh"
     usage: DramaProjectUsageStats = Field(default_factory=lambda: DramaProjectUsageStats())
     active_tasks: list[TaskRunBriefOut] = Field(default_factory=list)
 
@@ -143,6 +148,8 @@ class DramaProjectListItem(BaseModel):
     cover_pending: bool = False
     # script | canvas
     workflow: str = "script"
+    # AI 产出内容语言 zh | en | vi
+    content_locale: str = "zh"
     usage: DramaProjectUsageStats = Field(default_factory=lambda: DramaProjectUsageStats())
     active_tasks: list[TaskRunBriefOut] = Field(default_factory=list)
 

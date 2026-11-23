@@ -7,9 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# 成片合成需要 FFmpeg；中文烧录字幕需要文泉驿字体
+# 成片合成需要 FFmpeg；中文烧录字幕需要文泉驿字体，越南语/英文字幕靠 DejaVu 补齐变音符号
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg fonts-wqy-zenhei \
+    && apt-get install -y --no-install-recommends ffmpeg fonts-wqy-zenhei fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

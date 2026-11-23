@@ -4,7 +4,8 @@ from pydantic import BaseModel, Field
 
 
 class ApiKeyCreateRequest(BaseModel):
-    name: str = Field(default="默认 Key", max_length=64)
+    # 为空时按请求语言填默认名称
+    name: str | None = Field(default=None, max_length=64)
 
 
 class ApiKeyOut(BaseModel):

@@ -112,6 +112,8 @@ class Project(Base):
     # full = 图→视频→配音→合成；image_text = 静图+叠字+配音+Ken Burns（跳过 AI 视频）
     # 由用户选择，不由模板锁定
     pipeline_mode: Mapped[str] = mapped_column(String(32), default="full")
+    # AI 产出内容语言（zh | en | vi）：剧本/旁白/字幕等用该语言生成；创建时取界面语言
+    content_locale: Mapped[str] = mapped_column(String(8), default="zh")
     # 输出画幅，如 16:9 / 9:16；空则回退模板 default_ratio
     output_ratio: Mapped[str] = mapped_column(String(16), default="")
     # TTS voice id (openspeech speaker or preset alias); empty → template default
