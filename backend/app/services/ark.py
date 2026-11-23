@@ -528,6 +528,13 @@ class ArkGateway:
     def mock(self) -> bool:
         return self.settings.ark_mock or not self._ark_api_key()
 
+    @property
+    def text_mock(self) -> bool:
+        """文字 LLM 是否走 mock：ARK_MOCK 下由 ARK_MOCK_TEXT 决定，否则同 mock。"""
+        if self.settings.ark_mock:
+            return bool(self.settings.ark_mock_text)
+        return self.mock
+
     def _headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self._ark_api_key()}",
@@ -692,7 +699,7 @@ class ArkGateway:
     ) -> StoryboardResult:
         """科普分镜 LLM；content_locale 非 zh 时追加输出语言指令（口播/叠字用该语言，画面字段英文）。"""
         locale = resolve_content_locale(content_locale)
-        if self.mock:
+        if self.text_mock:
             return await asyncio.to_thread(
                 self._mock_storyboard,
                 source_text,
@@ -2562,7 +2569,7 @@ class ArkGateway:
         locale = resolve_content_locale(content_locale)
         topic = (topic or "").strip() or _("人工智能如何改变日常生活")
         mode = "script" if mode == "script" else "theme"
-        if self.mock:
+        if self.text_mock:
             return self._mock_expand_content(topic, mode, locale=locale)
 
         if mode == "script":

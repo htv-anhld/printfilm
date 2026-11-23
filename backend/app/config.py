@@ -89,6 +89,9 @@ class Settings(BaseSettings):
     kepu_seedance_sfx_audio: bool = True
 
     ark_mock: bool = False
+    # ARK_MOCK=true 时文字 LLM（科普分镜 / 主题扩写）是否也走 mock。
+    # 设为 false：图 / 视频仍是假素材，但脚本走真实 LLM（只配了文字渠道 Key 时联调用）
+    ark_mock_text: bool = True
     # 内置任务平台的进程内并发上限（全站 Worker 槽位）。
     task_runtime_max_concurrency: int = 4
     # 单用户同时进行中的 Worker 槽位（不含 awaiting_poll 注册项）。

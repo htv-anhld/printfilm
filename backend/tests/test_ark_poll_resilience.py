@@ -73,6 +73,7 @@ def ark_client(monkeypatch) -> ArkGateway:
     )
     client = ArkGateway(settings)
     monkeypatch.setattr(ArkGateway, "mock", property(lambda self: False))
+    monkeypatch.setattr(ArkGateway, "text_mock", property(lambda self: False))
     return client
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from app.i18n import _
 
 import json
+import re
 import logging
 from typing import Any
 
@@ -139,6 +140,48 @@ async def chat_completions(
     raise RuntimeError(str(last_exc) if last_exc else "LLM failed")
 
 
+_FENCE_HEAD_RE = re.compile(r"^```[a-zA-Z]*\s*")
+_FENCE_TAIL_RE = re.compile(r"\s*```\s*$")
+_QUOTA_HINTS = ("insufficient_user_quota", "insufficient_quota", "额度不足", "余额不足", "credit balance is too low")
+
+
+def strip_json_fence(text: str) -> str:
+    """去掉首尾的 ``` / ```json 代码块标记。"""
+    raw = (text or "").strip()
+    if not raw.startswith("```"):
+        return raw
+    return _FENCE_TAIL_RE.sub("", _FENCE_HEAD_RE.sub("", raw)).strip()
+
+
+def is_quota_exhausted(status_code: int, body: str) -> bool:
+    """渠道余额 / 额度耗尽：换渠道可能成功，按渠道故障处理（触发 failover）。"""
+    if status_code not in {401, 402, 403, 429}:
+        return False
+    low = (body or "").lower()
+    return any(h in low for h in _QUOTA_HINTS)
+
+
+def adjust_payload_for_param_error(payload: dict[str, Any], error_text: str) -> dict[str, Any] | None:
+    """根据上游 400 报错去掉 / 改名不被支持的参数；无法处理返回 None。
+
+    - temperature 被弃用或只允许默认值 → 去掉 temperature
+    - 要求 max_completion_tokens → max_tokens 改名
+    - response_format 类型不支持 → 去掉（提示词本身要求输出 JSON，调用方会解析）
+    """
+    text = (error_text or "").lower()
+    out = dict(payload)
+    if "max_completion_tokens" in text and "max_tokens" in out:
+        out["max_completion_tokens"] = out.pop("max_tokens")
+        return out
+    if "temperature" in text and "temperature" in out:
+        out.pop("temperature")
+        return out
+    if "response_format" in text and "response_format" in out:
+        out.pop("response_format")
+        return out
+    return None
+
+
 async def _chat_once(
     api_key: str,
     model: str,
@@ -178,20 +221,30 @@ async def _chat_once(
         max_tokens,
     )
     async with httpx.AsyncClient(timeout=timeout) as client:
-        try:
-            res = await client.post(
-                f"{base}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-            )
-        except httpx.HTTPError as exc:
-            if is_failover_exception(exc):
-                raise _ChannelFailover(f"LLM network error ({type(exc).__name__}): {exc}") from exc
-            raise
-        if is_failover_status(res.status_code):
+        # 不同上游对参数的支持不同（Claude 新模型弃用 temperature、不认 json_object；
+        # OpenAI 推理模型要 max_completion_tokens）。遇到 400 参数错误就按提示调整重试，最多 3 次。
+        for _attempt in range(4):
+            try:
+                res = await client.post(
+                    f"{base}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                )
+            except httpx.HTTPError as exc:
+                if is_failover_exception(exc):
+                    raise _ChannelFailover(f"LLM network error ({type(exc).__name__}): {exc}") from exc
+                raise
+            if res.status_code != 400:
+                break
+            adjusted = adjust_payload_for_param_error(payload, res.text or "")
+            if adjusted is None:
+                break
+            logger.warning("文字 LLM model=%s 参数不被支持，调整后重试：%s", model, (res.text or "")[:200])
+            payload = adjusted
+        if is_failover_status(res.status_code) or is_quota_exhausted(res.status_code, res.text or ""):
             raise _ChannelFailover(f"LLM error {res.status_code}: {res.text[:800]}")
         if res.status_code >= 400:
             raise RuntimeError(f"LLM error {res.status_code}: {res.text[:800]}")
@@ -213,5 +266,8 @@ async def _chat_once(
         except json.JSONDecodeError as exc:
             raise RuntimeError(_("LLM 响应不是合法 JSON: {detail}", detail=body[:200])) from exc
     content = _message_content(data)
+    if response_format:
+        # Claude 等不支持 json_object 的模型常把 JSON 包在 ```json 代码块里
+        content = strip_json_fence(content)
     logger.info("文字 LLM 返回 content_len=%s", len(content))
     return content

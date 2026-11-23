@@ -59,6 +59,8 @@ def captured_llm(monkeypatch: pytest.MonkeyPatch) -> list[str]:
         return _SHOTS_JSON
 
     monkeypatch.setattr(ArkGateway, "mock", property(lambda self: False))
+
+    monkeypatch.setattr(ArkGateway, "text_mock", property(lambda self: False))
     monkeypatch.setattr(ark_mod, "chat_completions", _fake_chat)
     return systems
 

@@ -394,3 +394,24 @@ API: `GET/POST /api/creative/projects`, `GET/PATCH/DELETE /api/creative/projects
 `http(s)` hoặc `/static/` (chặn `javascript:`); ≤ 100 bảng, ≤ 300 mục mỗi bảng.
 
 `/api/content/expand` (mở rộng chủ đề thành kịch bản) **đã có sẵn** từ trước, không cần làm thêm.
+
+## 17. Dùng key OpenAI / Claude cho LLM văn bản
+
+Thêm kênh ở **Admin → Cài đặt hệ thống → Mô hình**, giao thức `openai`:
+
+| Kênh | Endpoint | Ghi chú |
+|---|---|---|
+| Claude | `https://api.anthropic.com/v1` | Dùng lớp tương thích OpenAI của Anthropic. Tải danh mục model tự gửi `x-api-key` + `anthropic-version` |
+| OpenAI | `https://api.openai.com/v1` | Model văn bản như `gpt-4o-mini`, `gpt-5` |
+
+Sau đó đặt **Text model** mặc định là model của kênh đó.
+
+Code tự xử lý khác biệt tham số giữa các nhà cung cấp (`backend/app/services/llm_client.py`):
+- Upstream báo 400 vì `temperature` / `response_format` không hỗ trợ → bỏ tham số đó và gửi lại
+- Model đòi `max_completion_tokens` (dòng `gpt-5`) → đổi tên `max_tokens` và gửi lại
+- JSON trả về bọc trong khối ```json → tự bóc
+- Kênh báo hết số dư (`insufficient_user_quota`...) → coi là lỗi kênh, chuyển sang kênh dự phòng nếu model có binding ở kênh khác
+
+Giới hạn hiện tại: **ảnh và video chưa chạy qua OpenAI** (code đang theo định dạng Seedream/Seedance và TokenFree). Claude không sinh ảnh / video.
+
+**Thử LLM thật khi chưa có key ảnh/video:** trong `deploy/.env.docker` đặt `ARK_MOCK=true` và `ARK_MOCK_TEXT=false`. Ảnh/video vẫn là file giả lập, còn kịch bản (storyboard, mở rộng chủ đề) gọi LLM thật. Mặc định `ARK_MOCK_TEXT=true` (giữ hành vi cũ: mock toàn bộ).
