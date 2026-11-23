@@ -629,6 +629,35 @@ export const api = {
     }
     return (await res.json()) as { url: string; width: number; height: number; engine: string }
   },
+  studio3dScenes() {
+    return request<{ items: { id: number; name: string; snapshot_url?: string | null; updated_at?: string | null }[] }>(
+      '/api/studio3d/scenes',
+    )
+  },
+  studio3dScene(id: number) {
+    return request<{ id: number; name: string; data: unknown; snapshot_url?: string | null }>(`/api/studio3d/scenes/${id}`)
+  },
+  createStudio3dScene(body: { name: string; data: unknown }) {
+    return request<{ id: number; name: string }>('/api/studio3d/scenes', { method: 'POST', body: JSON.stringify(body) })
+  },
+  updateStudio3dScene(id: number, body: { name: string; data: unknown }) {
+    return request<{ id: number; name: string }>(`/api/studio3d/scenes/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+  },
+  async studio3dSnapshot(id: number, png: Blob) {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('file', png, 'snapshot.png')
+    const res = await fetch(`${API_BASE}/api/studio3d/scenes/${id}/snapshot`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throwApiError(res.status, err.detail, res.statusText)
+    }
+    return (await res.json()) as { url: string }
+  },
   partnerMe() {
     return request<PartnerInfo>('/api/partner-program/me')
   },

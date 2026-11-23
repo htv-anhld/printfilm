@@ -366,3 +366,18 @@ crf 18). **Miễn phí** vì không tốn chi phí upstream. Nếu sau này có 
 **Chặn SSRF và đọc file tuỳ ý:** chỉ nhận file tải lên, URL `/static/…` của chính hệ thống (đã chặn `../`) hoặc
 URL thuộc domain OSS đã cấu hình. **Video 4K tốn nhiều CPU**: nếu máy chủ yếu, nên giảm `VIDEO_TARGETS` hoặc chuyển
 sang chạy nền qua task runtime.
+
+## 15. Dàn cảnh 3D (3D layout)
+
+Trang `/studio3d` (three.js, **lazy-load**: `three` nằm trong chunk riêng khoảng 560 KB): đặt người
+đứng/ngồi, bàn ghế, tường, cửa, ô tô, cây, đèn; kéo/xoay/phóng to bằng gizmo; chọn ống kính 14–135 mm và tỉ lệ
+khung; xem qua góc máy (có viền đen theo tỉ lệ); **chụp PNG 1280 px từ góc máy** để làm ảnh tham chiếu bố
+cục cho tool tạo ảnh/video.
+
+API: `GET /api/drama/layout3d/options`, `GET/POST /api/studio3d/scenes`,
+`GET/PATCH/DELETE /api/studio3d/scenes/{id}`, `POST /api/studio3d/scenes/{id}/snapshot` (chỉ nhận PNG,
+≤ 8 MB). Mỗi cảnh ≤ 60 đối tượng / 200 KB JSON, mỗi người ≤ 100 cảnh.
+
+**Giới hạn hiện tại:** ảnh chụp chưa tự điền vào tool tạo ảnh hay canvas phim truyện; người dùng phải sao chép
+link hoặc tải ảnh về rồi tải lên. Mô hình 3D là khối hình học cơ bản (chưa có model nhân vật có khớp để
+tạo dáng). **Chưa kiểm thử bằng trình duyệt thật** trong lần làm này: mới qua typecheck, build, và test API.

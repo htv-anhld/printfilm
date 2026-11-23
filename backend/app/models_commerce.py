@@ -290,3 +290,18 @@ class LibraryItem(Base):
     tags: Mapped[list | None] = mapped_column(JSON, nullable=True)
     duration_sec: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Scene3D(Base):
+    """3D 场景布局（站位 / 道具 / 机位），截图后作为构图参考图用于生图 / 生视频。"""
+
+    __tablename__ = "studio3d_scenes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(128))
+    # {objects: [...], camera: {...}, ratio: "16:9"}
+    data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    snapshot_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

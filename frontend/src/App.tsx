@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import DialogHost from './components/ui/DialogHost'
 import BillingAlertHost from './components/billing/BillingAlertHost'
@@ -10,6 +11,8 @@ import PartnersPage from './pages/PartnersPage'
 import OAuthAuthorizePage from './pages/OAuthAuthorizePage'
 import TextToolPage from './pages/TextToolPage'
 import UpscalePage from './pages/UpscalePage'
+// three.js 较大，3D 工作室按需加载
+const Studio3DPage = lazy(() => import('./pages/Studio3DPage'))
 import LibraryPage from './pages/LibraryPage'
 import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
@@ -52,6 +55,14 @@ export default function App() {
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/tools/text/:kind" element={<TextToolPage />} />
         <Route path="/tools/upscale" element={<UpscalePage />} />
+        <Route
+          path="/studio3d"
+          element={
+            <Suspense fallback={null}>
+              <Studio3DPage />
+            </Suspense>
+          }
+        />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/tools/:toolId" element={<ToolDetailPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
