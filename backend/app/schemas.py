@@ -531,6 +531,9 @@ class AdminOrderOut(BaseModel):
     trade_no: str | None
     paid_at: datetime | None
     created_at: datetime
+    currency: str = "CNY"
+    provider: str = "epay"
+    bonus_fen: int = 0
 
     model_config = {"from_attributes": True}
 

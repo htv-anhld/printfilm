@@ -16,9 +16,10 @@ import {
 import type { AdminStats, AdminUpstreamUsage } from "@/api/client";
 import type { DashboardInsightItem } from "@/pages/dashboard/DashboardInsightGrid";
 import { calcProfitFen, sumDailyUsage, sumProjectStatuses } from "@/pages/dashboard/dashboardMetrics";
-import { fenToYuan } from "@/lib/utils";
+
 import { projectStatusLabel } from "@/lib/statusLabels";
 import { tr } from "@/i18n";
+import { money } from "@/lib/money";
 
 /** 财务账单 Tab 图标指标 */
 export function buildFinanceInsights(
@@ -39,31 +40,31 @@ export function buildFinanceInsights(
     {
       key: "paid-total",
       label: tr("dashboard.fin.totalTopup"),
-      value: `¥${fenToYuan(stats.order_paid_total_fen)}`,
-      hint: tr("dashboard.todayAmount", { amount: fenToYuan(stats.order_paid_today_fen) }),
+      value: money(stats.order_paid_total_fen),
+      hint: tr("dashboard.todayAmount", { amount: money(stats.order_paid_today_fen) }),
       icon: Banknote,
       tone: "blue",
     },
     {
       key: "charge-month",
       label: tr("dashboard.fin.monthCharge"),
-      value: `¥${fenToYuan(monthCharge)}`,
-      hint: tr("dashboard.todayAmount", { amount: fenToYuan(stats.usage_charge_today_fen ?? 0) }),
+      value: money(monthCharge),
+      hint: tr("dashboard.todayAmount", { amount: money(stats.usage_charge_today_fen ?? 0) }),
       icon: Zap,
       tone: "purple",
     },
     {
       key: "cost-month",
       label: tr("dashboard.fin.monthCost"),
-      value: `¥${fenToYuan(monthCost)}`,
-      hint: tr("dashboard.todayAmount", { amount: fenToYuan(stats.usage_cost_today_fen ?? 0) }),
+      value: money(monthCost),
+      hint: tr("dashboard.todayAmount", { amount: money(stats.usage_cost_today_fen ?? 0) }),
       icon: Wallet,
       tone: "sand",
     },
     {
       key: "profit-month",
       label: tr("dashboard.fin.monthProfit"),
-      value: `¥${fenToYuan(profitFen)}`,
+      value: money(profitFen),
       hint: monthCharge > 0 ? tr("dashboard.profitRate", { pct: `${((profitFen / monthCharge) * 100).toFixed(1)}%` }) : undefined,
       icon: Percent,
       tone: profitFen >= 0 ? "mint" : "rose",
@@ -74,8 +75,8 @@ export function buildFinanceInsights(
     items.push({
       key: "upstream-delta",
       label: tr("dashboard.fin.costDiff7"),
-      value: `¥${fenToYuan(delta7)}`,
-      hint: tr("dashboard.fin.localVsOfficial", { local: fenToYuan(localCost7), official: fenToYuan(officialCost7) }),
+      value: money(delta7),
+      hint: tr("dashboard.fin.localVsOfficial", { local: money(localCost7), official: money(officialCost7) }),
       icon: delta7 >= 0 ? TrendingUp : TrendingDown,
       tone: delta7 >= 0 ? "teal" : "rose",
     });
@@ -84,7 +85,7 @@ export function buildFinanceInsights(
   items.push({
     key: "paid-today",
     label: tr("dashboard.fin.todayReceived"),
-    value: `¥${fenToYuan(stats.order_paid_today_fen)}`,
+    value: money(stats.order_paid_today_fen),
     hint: tr("orders.tabs.orders"),
     icon: CircleDollarSign,
     tone: "teal",

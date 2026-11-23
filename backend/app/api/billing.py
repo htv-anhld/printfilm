@@ -22,7 +22,9 @@ from app.deps import get_current_user
 from app.models import Order, Project, UsageEvent, User
 from app.models_tasks import TaskRun
 from app.services import billing, epay
+from app.services.billing.currency import billing_currency, currency_symbol, format_money
 from app.services.billing.http import http_exception_for_value_error
+from app.services.billing.orders import mark_order_paid
 from app.services.billing.settlement import (
     billing_active,
     ensure_balance_for_task_batch,
@@ -38,26 +40,62 @@ class CreateOrderBody(BaseModel):
     pay_type: Literal["alipay", "wxpay"]
 
 
+def _epay_pay_types() -> list[str]:
+    """易支付只收人民币；美元计费时不提供。"""
+    return ["alipay", "wxpay"] if billing_currency() == "CNY" else []
+
+
+def available_pay_types() -> list[str]:
+    """当前币种可用的支付方式（其它渠道在各自模块里追加）。"""
+    return _epay_pay_types()
+
+
+@router.get("/config")
+async def billing_config() -> dict:
+    """前端展示计费所需的全站配置（币种、换算、赠送、可用支付方式）。"""
+    s = get_settings()
+    return {
+        "billing_enabled": bool(s.billing_enabled),
+        "currency": billing_currency(s),
+        "symbol": currency_symbol(s),
+        # 钱包整数单位：USD 下 1 = 1 credit = 1 美分
+        "unit": "credit" if billing_currency(s) == "USD" else "fen",
+        "units_per_major": 100,
+        "signup_grant_fen": int(s.billing_signup_grant_fen or 0),
+        "first_topup_bonus_fen": int(s.billing_first_topup_bonus_fen or 0),
+        "pay_types": available_pay_types(),
+    }
+
+
 @router.get("/wallet")
 async def wallet(user: User = Depends(get_current_user)) -> dict:
+    s = get_settings()
     return {
         "balance_fen": int(user.balance_fen or 0),
         "frozen_fen": int(user.frozen_fen or 0),
+        # *_yuan 是历史字段名，含义为「计费币种主单位」（USD 下即美元）
         "balance_yuan": round(int(user.balance_fen or 0) / 100, 2),
         "frozen_yuan": round(int(user.frozen_fen or 0) / 100, 2),
+        "currency": billing_currency(s),
+        "symbol": currency_symbol(s),
+        "balance_display": format_money(int(user.balance_fen or 0), s),
         "plan": user.plan or "free",
-        "billing_enabled": settings.billing_enabled,
-        "markup": settings.billing_markup,
+        "billing_enabled": s.billing_enabled,
+        "markup": s.billing_markup,
     }
 
 
 @router.get("/skus")
 async def list_skus() -> dict:
+    s = get_settings()
     return {
         # 套餐名按请求语言展示；下单给支付网关的商品名仍用中文原文
-        "skus": [{**item, "name": _(str(item["name"]))} for item in billing.SKUS],
-        "pay_types": ["alipay", "wxpay"],
-        "markup": settings.billing_markup,
+        "skus": [{**item, "name": _(str(item["name"]))} for item in billing.active_skus(s)],
+        "currency": billing_currency(s),
+        "symbol": currency_symbol(s),
+        "pay_types": available_pay_types(),
+        "markup": s.billing_markup,
+        "first_topup_bonus_fen": int(s.billing_first_topup_bonus_fen or 0),
     }
 
 
@@ -131,6 +169,8 @@ async def create_order(
 ) -> dict:
     # 下单前先清理该用户已过期的待支付单
     await billing.close_expired_pending_orders(db, user_id=user.id)
+    if body.pay_type not in _epay_pay_types():
+        raise HTTPException(status_code=400, detail=_("当前计费币种不支持该支付方式"))
     sku = billing.sku_by_id(body.sku_id)
     if not sku:
         raise HTTPException(status_code=400, detail=_("未知充值包"))
@@ -143,6 +183,8 @@ async def create_order(
         credit_fen=int(sku["credit_fen"]),
         pay_type=body.pay_type,
         status="pending",
+        currency=billing_currency(),
+        provider="epay",
     )
     db.add(order)
     await db.commit()
@@ -343,6 +385,9 @@ async def list_orders(
                 "status": o.status,
                 "trade_no": o.trade_no,
                 "paid_at": o.paid_at.isoformat() if o.paid_at else None,
+                "currency": o.currency or "CNY",
+                "provider": o.provider or "epay",
+                "bonus_fen": int(o.bonus_fen or 0),
                 "created_at": o.created_at.isoformat() if o.created_at else None,
             }
         )
@@ -367,6 +412,9 @@ async def get_order(
         "credit_fen": order.credit_fen,
         "pay_type": order.pay_type,
         "paid_at": order.paid_at.isoformat() if order.paid_at else None,
+        "currency": order.currency or "CNY",
+        "provider": order.provider or "epay",
+        "bonus_fen": int(order.bonus_fen or 0),
     }
 
 
@@ -446,22 +494,10 @@ async def epay_notify(request: Request, db: AsyncSession = Depends(get_db)) -> P
     if order.status == "paid":
         return PlainTextResponse("success")
 
-    user = await db.get(User, order.user_id)
-    if not user:
+    try:
+        await mark_order_paid(db, order, trade_no=trade_no or None, note=f"epay:{order.pay_type}")
+    except ValueError:
         return PlainTextResponse("fail", status_code=404)
-
-    order.status = "paid"
-    order.trade_no = trade_no or None
-    order.paid_at = datetime.now(timezone.utc)
-    await billing.credit_topup(
-        db,
-        user,
-        int(order.credit_fen),
-        ref_type="order",
-        ref_id=order.out_trade_no,
-        note=f"epay:{order.pay_type}",
-    )
     await db.commit()
-    logger.info("epay paid order=%s user=%s credit=%s", out_trade_no, user.id, order.credit_fen)
     return PlainTextResponse("success")
 

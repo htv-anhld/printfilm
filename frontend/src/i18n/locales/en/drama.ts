@@ -412,7 +412,7 @@ export const enDrama = {
     noPending: 'No assets without images in this category',
     batchImageTitle: 'Generate looks in bulk',
     category: 'category',
-    batchImageMessage: 'Images will be generated for {n} assets without images under “{tab}” (submitted in parallel, not queued).\n\nAbout ¥{unit} is pre-charged per image, ≈ ¥{total} in total (current balance ¥{balance}; adjusted to actual upstream usage afterwards).\n\nContinue?',
+    batchImageMessage: 'Images will be generated for {n} assets without images under “{tab}” (submitted in parallel, not queued).\n\nAbout {unit} is pre-charged per image, ≈ {total} in total (current balance {balance}; adjusted to actual upstream usage afterwards).\n\nContinue?',
     startGenerate: 'Start',
     voiceGenFailed: 'Voice generation failed',
     batchVoiceTitle: 'Generate voices in bulk',

@@ -12,6 +12,12 @@ EN: dict[str, str] = {
     "渠道「{name}」的 Base URL 必须以 http:// 或 https:// 开头": (
         "The Base URL of channel “{name}” must start with http:// or https://"
     ),
+    # ── 计费币种 / 充值包 ──
+    "当前计费币种不支持该支付方式": "This payment method is not available for the current billing currency",
+    "入门积分包": "Starter credits",
+    "标准积分包": "Standard credits",
+    "进阶积分包": "Plus credits",
+    "专业积分包": "Pro credits",
 }
 
 VI: dict[str, str] = {
@@ -23,4 +29,10 @@ VI: dict[str, str] = {
     "渠道「{name}」的 Base URL 必须以 http:// 或 https:// 开头": (
         "Base URL của kênh “{name}” phải bắt đầu bằng http:// hoặc https://"
     ),
+    # ── 计费币种 / 充值包 ──
+    "当前计费币种不支持该支付方式": "Phương thức thanh toán này không dùng được với đơn vị tiền hiện tại",
+    "入门积分包": "Gói credit Khởi đầu",
+    "标准积分包": "Gói credit Tiêu chuẩn",
+    "进阶积分包": "Gói credit Nâng cao",
+    "专业积分包": "Gói credit Chuyên nghiệp",
 }

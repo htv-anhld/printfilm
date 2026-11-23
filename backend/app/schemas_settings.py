@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -98,7 +98,10 @@ class AdminModelSettingsOut(BaseModel):
 
     # Token 计费
     billing_enabled: bool = False
-    billing_markup: float = 1.0
+    billing_currency: str = "USD"
+    billing_markup: float = 2.3
+    billing_usd_cny: float = 7.0
+    billing_first_topup_bonus_fen: int = 500
     billing_estimate_buffer: float = 1.2
     billing_seedance_video0: float = 46.0
     billing_seedance_video1: float = 28.0
@@ -219,7 +222,10 @@ class AdminModelSettingsPatch(BaseModel):
     clear_epay_key: bool = False
 
     billing_enabled: bool | None = None
-    billing_markup: float | None = None
+    billing_currency: Literal["USD", "CNY"] | None = None
+    billing_markup: float | None = Field(default=None, ge=1.0, le=20.0)
+    billing_usd_cny: float | None = Field(default=None, gt=0, le=100)
+    billing_first_topup_bonus_fen: int | None = Field(default=None, ge=0)
     billing_estimate_buffer: float | None = None
     billing_seedance_video0: float | None = None
     billing_seedance_video1: float | None = None
@@ -331,7 +337,10 @@ def model_config_field_names() -> tuple[str, ...]:
         "epay_notify_url",
         "epay_return_url",
         "billing_enabled",
+        "billing_currency",
         "billing_markup",
+        "billing_usd_cny",
+        "billing_first_topup_bonus_fen",
         "billing_estimate_buffer",
         "billing_seedance_video0",
         "billing_seedance_video1",

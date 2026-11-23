@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.billing.currency import localize_money_symbol
 from app.i18n import _
 from app.config import Settings, get_settings
 from app.models import UsageEvent, User, WalletLedger
@@ -111,10 +112,12 @@ async def pending_task_commitment_fen(
 
 def _insufficient(need: int, available: int) -> str:
     """余额不足提示（按当前语言）；译文须以「余额不足」的译文开头，供 402 映射识别。"""
-    return _(
-        "余额不足：需要 ¥{need}，当前 ¥{available}，请先充值",
-        need=f"{need / 100:.2f}",
-        available=f"{available / 100:.2f}",
+    return localize_money_symbol(
+        _(
+            "余额不足：需要 ¥{need}，当前 ¥{available}，请先充值",
+            need=f"{need / 100:.2f}",
+            available=f"{available / 100:.2f}",
+        )
     )
 
 
@@ -135,11 +138,13 @@ async def ensure_balance_for_task(db: AsyncSession, user: User, task: TaskRun) -
     if available < required:
         if pending > 0:
             raise ValueError(
-                _(
-                    "余额不足：本次需要 ¥{need}（含排队中 ¥{pending}），当前 ¥{available}，请先充值",
-                    need=f"{need/100:.2f}",
-                    pending=f"{pending/100:.2f}",
-                    available=f"{available/100:.2f}",
+                localize_money_symbol(
+                    _(
+                        "余额不足：本次需要 ¥{need}（含排队中 ¥{pending}），当前 ¥{available}，请先充值",
+                        need=f"{need/100:.2f}",
+                        pending=f"{pending/100:.2f}",
+                        available=f"{available/100:.2f}",
+                    )
                 )
             )
         raise ValueError(_insufficient(need, available))
@@ -168,12 +173,14 @@ async def ensure_balance_for_task_batch(
     available = int(locked.balance_fen or 0)
     if available < required:
         raise ValueError(
-            _(
-                "余额不足：批量生成 {qty} 项需 ¥{additional}（含排队中 ¥{pending}），当前 ¥{available}，请先充值",
-                qty=qty,
-                additional=f"{additional/100:.2f}",
-                pending=f"{pending/100:.2f}",
-                available=f"{available/100:.2f}",
+            localize_money_symbol(
+                _(
+                    "余额不足：批量生成 {qty} 项需 ¥{additional}（含排队中 ¥{pending}），当前 ¥{available}，请先充值",
+                    qty=qty,
+                    additional=f"{additional/100:.2f}",
+                    pending=f"{pending/100:.2f}",
+                    available=f"{available/100:.2f}",
+                )
             )
         )
     return {

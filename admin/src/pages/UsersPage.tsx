@@ -19,6 +19,7 @@ import { formatAccountId } from "@/lib/admin-account";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { fenToYuan } from "@/lib/utils";
 import { formatDateTime, tr, useI18n } from "@/i18n";
+import { money } from "@/lib/money";
 
 type ListRes = { items: AdminUserRow[]; meta: PageMeta };
 
@@ -178,8 +179,8 @@ export function UsersPage() {
                 <TableCell className="font-medium">{u.email}</TableCell>
                 <TableCell>{u.nickname || "—"}</TableCell>
                 <TableCell className="text-xs">{u.phone || "—"}</TableCell>
-                <TableCell className="tabular-nums">¥{fenToYuan(u.balance_fen)}</TableCell>
-                <TableCell className="tabular-nums">¥{fenToYuan(u.frozen_fen)}</TableCell>
+                <TableCell className="tabular-nums">{money(u.balance_fen)}</TableCell>
+                <TableCell className="tabular-nums">{money(u.frozen_fen)}</TableCell>
                 <TableCell>
                   <Badge variant={u.role === "admin" ? "success" : "secondary"}>{u.role}</Badge>
                 </TableCell>

@@ -231,6 +231,9 @@ export type BillingOrder = {
   trade_no?: string | null
   paid_at?: string | null
   created_at?: string | null
+  currency?: BillingCurrency
+  provider?: string
+  bonus_fen?: number
 }
 
 export type UsageSummary = {
@@ -267,11 +270,30 @@ export type UsageChargeList = {
 export type Wallet = {
   balance_fen: number
   frozen_fen: number
+  /** 历史字段名：计费币种主单位（USD 下即美元） */
   balance_yuan: number
   frozen_yuan: number
+  currency?: BillingCurrency
+  symbol?: string
+  balance_display?: string
   plan: string
   billing_enabled: boolean
   markup: number
+}
+
+export type BillingCurrency = 'USD' | 'CNY'
+
+/** /api/billing/config：全站计费展示配置 */
+export type BillingConfig = {
+  billing_enabled: boolean
+  currency: BillingCurrency
+  symbol: string
+  /** USD 下钱包整数单位是 credit（1 credit = 1 美分） */
+  unit: 'credit' | 'fen'
+  units_per_major: number
+  signup_grant_fen: number
+  first_topup_bonus_fen: number
+  pay_types: string[]
 }
 
 export type BillingPreflight = {
@@ -590,7 +612,17 @@ export const api = {
     return request<Wallet>('/api/billing/wallet')
   },
   billingSkus() {
-    return request<{ skus: BillingSku[]; pay_types: string[]; markup: number }>('/api/billing/skus')
+    return request<{
+      skus: BillingSku[]
+      pay_types: string[]
+      markup: number
+      currency?: BillingCurrency
+      symbol?: string
+      first_topup_bonus_fen?: number
+    }>('/api/billing/skus')
+  },
+  billingConfig() {
+    return request<BillingConfig>('/api/billing/config')
   },
   createBillingOrder(sku_id: string, pay_type: 'alipay' | 'wxpay') {
     return request<{

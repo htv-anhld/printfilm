@@ -412,7 +412,7 @@ export const zhDrama = {
     noPending: '当前分类没有未生成的资产',
     batchImageTitle: '批量生成形象',
     category: '分类',
-    batchImageMessage: '将为当前「{tab}」下 {n} 个未出图资产开始生图（并行提交，不排队）。\n\n每张预扣约 ¥{unit}，本次合计约 ¥{total}（当前余额 ¥{balance}；结束后按实际上游用量多退少补）。\n\n是否继续？',
+    batchImageMessage: '将为当前「{tab}」下 {n} 个未出图资产开始生图（并行提交，不排队）。\n\n每张预扣约 {unit}，本次合计约 {total}（当前余额 {balance}；结束后按实际上游用量多退少补）。\n\n是否继续？',
     startGenerate: '开始生成',
     voiceGenFailed: '音色生成失败',
     batchVoiceTitle: '批量生成音色',

@@ -244,7 +244,7 @@ export const zhShell = {
       tipRedirect: '已打开易支付页面，请在新窗口完成支付；完成后返回本页等待到账',
       tipAlipay: '请使用支付宝扫码完成支付',
       tipWechat: '请使用微信扫码完成支付',
-      credit: '到账 ¥{amount}',
+      credit: '到账 {amount}',
       amount: '支付金额',
       cashierOpened: '支付页已在新窗口打开',
       reopenCashier: '重新打开支付页',
@@ -266,7 +266,7 @@ export const zhShell = {
     topupHistory: {
       title: '充值记录',
       empty: '暂无充值记录',
-      credit: '到账 ¥{amount}',
+      credit: '到账 {amount}',
     },
     orderStatus: {
       pending: '待支付',

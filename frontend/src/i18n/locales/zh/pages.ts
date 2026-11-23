@@ -343,7 +343,7 @@ export const zhPages = {
     unavailable: '{label}即将上线，请先使用支付宝或微信支付',
     chooseAmount: '选择充值金额',
     credit: '到账',
-    bonus: '额外赠送 ¥{amount}',
+    bonus: '额外赠送 {amount}',
     foreverHint: '余额永久有效',
     ordering: '下单中…',
     payNow: '立即充值',
@@ -375,7 +375,7 @@ export const zhPages = {
     loginFirst: '请先登录',
     monthCharge: '本次消耗',
     currentPlan: '当前套餐',
-    frozen: '冻结中 ¥{amount}',
+    frozen: '冻结中 {amount}',
     updatedAt: '更新于 {time}',
   },
   history: {

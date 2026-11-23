@@ -4,6 +4,7 @@ import Pagination from '../ui/Pagination'
 import { pageCountOf } from '../../lib/pagination'
 import { LOCALE_DATE } from '../../i18n/detect'
 import { formatDateTime, getActiveLocale, tr, useI18n } from '../../i18n'
+import { formatMajor, useBillingConfig } from '../../lib/money'
 
 /** 格式化相对时间展示 */
 function formatWhen(iso?: string | null) {
@@ -24,6 +25,8 @@ type UsageChargeRecordsProps = {
 
 /** 使用扣费记录列表：按次展示 LLM / 生图 / 生视频等计费明细 */
 export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeRecordsProps) {
+  // 计费币种配置到达后重渲染金额
+  useBillingConfig()
   const { t } = useI18n()
   /*
    * items 当前页记录
@@ -106,7 +109,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
                 </span>
                 <span className="pf-settings-list-meta pf-usage-record-meta">
                   <strong className="pf-usage-record-charge">
-                    {item.charge_fen > 0 ? `-¥${item.charge_yuan.toFixed(2)}` : '—'}
+                    {item.charge_fen > 0 ? formatMajor(-item.charge_yuan) : '—'}
                   </strong>
                   <em className="pf-muted">{formatWhen(item.created_at)}</em>
                 </span>

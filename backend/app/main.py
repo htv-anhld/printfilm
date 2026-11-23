@@ -218,6 +218,19 @@ async def _apply_schema_patches() -> None:
         if "capability" not in uecols:
             await conn.execute(text("ALTER TABLE usage_events ADD COLUMN capability VARCHAR(16)"))
 
+        # 订单：币种 / 支付渠道 / 渠道单号 / 首充赠送
+        ocols = await _pg_columns(conn, "orders")
+        if ocols and "currency" not in ocols:
+            # 存量订单都是易支付人民币
+            await conn.execute(text("ALTER TABLE orders ADD COLUMN currency VARCHAR(8) DEFAULT 'CNY'"))
+        if ocols and "provider" not in ocols:
+            await conn.execute(text("ALTER TABLE orders ADD COLUMN provider VARCHAR(16) DEFAULT 'epay'"))
+        if ocols and "provider_ref" not in ocols:
+            await conn.execute(text("ALTER TABLE orders ADD COLUMN provider_ref VARCHAR(128)"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_orders_provider_ref ON orders (provider_ref)"))
+        if ocols and "bonus_fen" not in ocols:
+            await conn.execute(text("ALTER TABLE orders ADD COLUMN bonus_fen INTEGER DEFAULT 0"))
+
         # Task platform additive columns
         trcols = await _pg_columns(conn, "task_runs")
         if "locale" not in trcols:

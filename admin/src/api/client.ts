@@ -218,6 +218,9 @@ export type AdminOrder = {
   trade_no?: string | null;
   paid_at?: string | null;
   created_at: string;
+  currency?: "USD" | "CNY";
+  provider?: string;
+  bonus_fen?: number;
 };
 
 export type AdminLedger = {
@@ -622,6 +625,9 @@ export type AdminModelSettings = {
   has_epay_key: boolean;
   billing_enabled: boolean;
   billing_markup: number;
+  billing_currency?: "USD" | "CNY";
+  billing_usd_cny?: number;
+  billing_first_topup_bonus_fen?: number;
   billing_estimate_buffer: number;
   billing_seedance_video0: number;
   billing_seedance_video1: number;

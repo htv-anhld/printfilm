@@ -21,7 +21,10 @@ logger = logging.getLogger(__name__)
 
 
 def _fen_to_yuan(fen: int) -> str:
-    return f"¥{int(fen) / 100:.2f}"
+    """金额文案（按计费币种：$ / ¥）。"""
+    from app.services.billing.currency import format_money
+
+    return format_money(int(fen))
 
 
 async def _user_total_charge_fen(db: AsyncSession, user_id: int) -> int:

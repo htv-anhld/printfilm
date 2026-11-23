@@ -228,8 +228,12 @@ async def _ensure_image_tool_balance(db: AsyncSession, user: User, tool_id: str)
     need = await estimate_task_fen(db, synthetic)
     available = int(user.balance_fen or 0)
     if available < need:
+        from app.services.billing.currency import localize_money_symbol
+
         raise ValueError(
-            _("余额不足：需要 ¥{need}，当前 ¥{available}，请先充值", need=f"{need/100:.2f}", available=f"{available/100:.2f}")
+            localize_money_symbol(
+                _("余额不足：需要 ¥{need}，当前 ¥{available}，请先充值", need=f"{need/100:.2f}", available=f"{available/100:.2f}")
+            )
         )
 
 

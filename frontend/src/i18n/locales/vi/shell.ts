@@ -244,7 +244,7 @@ export const viShell = {
       tipRedirect: 'Đã mở trang Epay, vui lòng thanh toán trong cửa sổ mới; xong hãy quay lại trang này chờ tiền vào tài khoản',
       tipAlipay: 'Vui lòng dùng Alipay quét mã để thanh toán',
       tipWechat: 'Vui lòng dùng WeChat quét mã để thanh toán',
-      credit: 'Nhận ¥{amount}',
+      credit: 'Nhận {amount}',
       amount: 'Số tiền thanh toán',
       cashierOpened: 'Trang thanh toán đã mở trong cửa sổ mới',
       reopenCashier: 'Mở lại trang thanh toán',
@@ -266,7 +266,7 @@ export const viShell = {
     topupHistory: {
       title: 'Lịch sử nạp tiền',
       empty: 'Chưa có lịch sử nạp tiền',
-      credit: 'Nhận ¥{amount}',
+      credit: 'Nhận {amount}',
     },
     orderStatus: {
       pending: 'Chờ thanh toán',

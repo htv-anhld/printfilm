@@ -273,11 +273,19 @@ class Order(Base):
     sku_id: Mapped[str] = mapped_column(String(64))
     amount_fen: Mapped[int] = mapped_column(Integer)
     credit_fen: Mapped[int] = mapped_column(Integer)
-    pay_type: Mapped[str] = mapped_column(String(16))  # alipay | wxpay
-    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending|paid|closed
+    pay_type: Mapped[str] = mapped_column(String(16))  # alipay | wxpay | creem
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending|paid|closed|refunded
     trade_no: Mapped[str | None] = mapped_column(String(128), nullable=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # 下单时的计费币种（amount_fen / credit_fen 的单位）；存量订单都是人民币
+    currency: Mapped[str] = mapped_column(String(8), default="CNY")
+    # 支付渠道：epay | creem
+    provider: Mapped[str] = mapped_column(String(16), default="epay")
+    # 渠道侧会话 / checkout ID（Creem checkout_id 等），回调对账用
+    provider_ref: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    # 首充赠送（已含在入账里，单独记录便于对账）
+    bonus_fen: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class ToolRun(Base):

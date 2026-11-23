@@ -12,10 +12,11 @@ import { PageHeader, Toolbar } from "@/components/ui/page";
 import { PaginationBar } from "@/components/PaginationBar";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
 import { compactJsonPreview, hasJsonContent } from "@/lib/jsonPreview";
-import { cn, fenToYuan } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { taskDomainLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
 import { formatDateTime, formatTime as formatClock, tr, useI18n } from "@/i18n";
+import { money } from "@/lib/money";
 
 const REFRESH_MS = 15000;
 const TERMINAL_STATUSES = new Set(["succeeded", "failed", "cancelled"]);
@@ -468,9 +469,9 @@ export function QueuesPage() {
                         <td className="text-xs">{task.progress_percent}%</td>
                         <td className="text-xs">
                           {task.billing_charged_fen != null && task.billing_charged_fen > 0
-                            ? `¥${fenToYuan(task.billing_charged_fen)}`
+                            ? money(task.billing_charged_fen)
                             : task.billing_status === "frozen"
-                              ? t("tasks.frozen", { amount: fenToYuan(task.billing_estimate_fen ?? 0) })
+                              ? t("tasks.frozen", { amount: money(task.billing_estimate_fen ?? 0) })
                               : "—"}
                         </td>
                         <td className="task-list-json-cell">{jsonCell(task.payload)}</td>

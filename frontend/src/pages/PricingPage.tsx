@@ -16,6 +16,7 @@ import TopupHistoryModal from '../components/billing/TopupHistoryModal'
 import { api, type BillingSku, type UsageSummary, type Wallet } from '../api'
 import { useI18n } from '../i18n'
 import { GITHUB_REPO_URL } from '../lib/siteLinks'
+import { formatCredits, formatMoney, useBillingConfig, usesCredits } from '../lib/money'
 
 type PayType = 'alipay' | 'wxpay'
 
@@ -23,19 +24,16 @@ type SkuView = BillingSku & { recommended?: boolean }
 
 const HERO_FEATURE_KEYS = ['featInstant', 'featSafe', 'featForever'] as const
 
-function yuan(fen: number) {
-  return (fen / 100).toFixed(2)
-}
 
-function yuanShort(fen: number) {
-  const v = fen / 100
-  return Number.isInteger(v) ? String(v) : v.toFixed(2)
-}
 
 /** 定价与充值页 */
 export default function PricingPage() {
   const nav = useNavigate()
   const { t, m } = useI18n()
+  const { symbol } = useBillingConfig()
+  // USD 下展示 credit 数，CNY 下展示金额
+  const creditLabel = (minor: number) =>
+    usesCredits() ? `${formatCredits(minor)} credits` : formatMoney(minor, { short: true })
   const [params] = useSearchParams()
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [usage, setUsage] = useState<UsageSummary | null>(null)
@@ -264,14 +262,14 @@ export default function PricingPage() {
                     <p className="pf-pricing-sku-tier">{label}</p>
                     <p className="pf-pricing-sku-hint">{tierHint}</p>
                     <div className="pf-pricing-sku-price">
-                      <span className="yen">¥</span>
+                      <span className="yen">{symbol}</span>
                       <strong>{(sku.amount_fen / 100).toFixed(0)}</strong>
                     </div>
                     <p className="pf-pricing-sku-credit">
-                      {t('pricing.credit')} <em>¥{yuan(sku.credit_fen)}</em>
+                      {t('pricing.credit')} <em>{creditLabel(sku.credit_fen)}</em>
                     </p>
                     {bonus > 0 ? (
-                      <p className="pf-pricing-sku-bonus">{t('pricing.bonus', { amount: yuanShort(bonus) })}</p>
+                      <p className="pf-pricing-sku-bonus">{t('pricing.bonus', { amount: creditLabel(bonus) })}</p>
                     ) : (
                       <p className="pf-pricing-sku-bonus is-empty">&nbsp;</p>
                     )}

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
 import { api } from "@/api/client";
 import { useI18n } from "@/i18n";
+import { majorMoney, money } from "@/lib/money";
 
 // 易支付与 Token 计费配置
 export function PaymentSettingsPanel() {
@@ -70,7 +71,10 @@ export function PaymentSettingsPanel() {
         epay_notify_url: form.epay_notify_url,
         epay_return_url: form.epay_return_url,
         billing_enabled: form.billing_enabled,
-        billing_markup: 1.0,
+        billing_currency: form.billing_currency ?? "USD",
+        billing_markup: form.billing_markup,
+        billing_usd_cny: form.billing_usd_cny ?? 7,
+        billing_first_topup_bonus_fen: form.billing_first_topup_bonus_fen ?? 0,
         billing_estimate_buffer: form.billing_estimate_buffer,
         billing_seedance_video0: form.billing_seedance_video0,
         billing_seedance_video1: form.billing_seedance_video1,
@@ -138,11 +142,11 @@ export function PaymentSettingsPanel() {
       setTokenfreeInfo(
         t("settings.payment.quotaInfo", {
           quota: res.quota ?? "—",
-          remainYuan: res.remain_yuan,
+          remainYuan: majorMoney(res.remain_yuan),
           remainUsd,
           rate: res.usd_cny,
           used: res.used_quota ?? "—",
-          usedYuan: res.used_yuan,
+          usedYuan: majorMoney(res.used_yuan),
           console: res.console_url,
         }),
       );
@@ -265,6 +269,46 @@ export function PaymentSettingsPanel() {
                 onChange={(e) => patchField("billing_estimate_buffer", Number(e.target.value))}
               />
             </LabeledControl>
+            <LabeledControl label={t("settings.payment.currency")} hint={t("settings.payment.currencyHint")}>
+              <select
+                className="settings-select"
+                value={form.billing_currency ?? "USD"}
+                onChange={(e) => patchField("billing_currency", e.target.value as "USD" | "CNY")}
+              >
+                <option value="USD">USD (credit)</option>
+                <option value="CNY">CNY</option>
+              </select>
+            </LabeledControl>
+            <LabeledControl label={t("settings.payment.markup")} hint={t("settings.payment.markupHint")}>
+              <input
+                className="settings-input"
+                type="number"
+                step="0.1"
+                min={1}
+                max={20}
+                value={form.billing_markup}
+                onChange={(e) => patchField("billing_markup", Number(e.target.value))}
+              />
+            </LabeledControl>
+            <LabeledControl label={t("settings.payment.usdCny")} hint={t("settings.payment.usdCnyHint")}>
+              <input
+                className="settings-input"
+                type="number"
+                step="0.01"
+                min={0.01}
+                value={form.billing_usd_cny ?? 7}
+                onChange={(e) => patchField("billing_usd_cny", Number(e.target.value))}
+              />
+            </LabeledControl>
+            <LabeledControl label={t("settings.payment.firstTopupBonus")} hint={t("settings.payment.firstTopupBonusHint")}>
+              <input
+                className="settings-input"
+                type="number"
+                min={0}
+                value={form.billing_first_topup_bonus_fen ?? 0}
+                onChange={(e) => patchField("billing_first_topup_bonus_fen", Number(e.target.value))}
+              />
+            </LabeledControl>
             <LabeledControl label={t("settings.payment.signupGrant")}>
               <input
                 className="settings-input"
@@ -372,10 +416,10 @@ export function PaymentSettingsPanel() {
                       </td>
                       <td className="p-2">{row.capability}</td>
                       <td className="p-2">
-                        {row.official_cost_yuan ? `¥${row.official_cost_yuan}` : "—"}
+                        {row.official_cost_yuan ? majorMoney(row.official_cost_yuan) : "—"}
                       </td>
                       <td className="p-2">
-                        {row.user_charge_yuan ? `¥${row.user_charge_yuan}` : "—"}
+                        {row.user_charge_yuan ? majorMoney(row.user_charge_yuan) : "—"}
                       </td>
                       <td className="p-2">
                         <div>{row.rate_label}</div>
@@ -447,7 +491,7 @@ export function PaymentSettingsPanel() {
             />
           </div>
           <div className="settings-field-grid mt-2">
-            <LabeledControl label={t("settings.payment.alertInterval")} hint={t("settings.payment.alertIntervalHint")}>
+            <LabeledControl label={t("settings.payment.alertInterval")} hint={t("settings.payment.alertIntervalHint", { amount: money(10000) })}>
               <input
                 className="settings-input"
                 type="number"

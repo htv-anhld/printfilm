@@ -1,5 +1,9 @@
 # PRINTFILM 计费说明
 
+> **商业版（`feat/dravelio-parity`）变化**：计费币种（默认 USD credit）、加价倍率（默认 2.3）、
+> 首充赠送、Creem、订阅等见 [`COMMERCIAL_FEATURES.md`](COMMERCIAL_FEATURES.md)。
+> 下文「分」在 `BILLING_CURRENCY=USD` 下指美分（= credit），「不再加价」已改为乘 `BILLING_MARKUP`。
+
 ## 原则
 
 - 按上游 **真实 TokenFree 成本**（或无法拿到 usage 时的保守估价）计费。

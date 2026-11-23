@@ -244,7 +244,7 @@ export const enShell = {
       tipRedirect: 'The Epay page is open. Finish paying in the new window, then come back here to wait for credit',
       tipAlipay: 'Scan with Alipay to pay',
       tipWechat: 'Scan with WeChat to pay',
-      credit: 'You receive ¥{amount}',
+      credit: 'You receive {amount}',
       amount: 'Amount due',
       cashierOpened: 'The payment page opened in a new window',
       reopenCashier: 'Reopen payment page',
@@ -266,7 +266,7 @@ export const enShell = {
     topupHistory: {
       title: 'Top-up history',
       empty: 'No top-ups yet',
-      credit: 'Credited ¥{amount}',
+      credit: 'Credited {amount}',
     },
     orderStatus: {
       pending: 'Pending',

@@ -14,6 +14,7 @@ import { dramaProjectEntryPath, formatDramaCardMeta } from '../lib/dramaWorkflow
 import { STATUS_CN } from '../lib/status'
 import SettingsToolRunsPanel from './SettingsToolRunsPanel'
 import { formatDateTime, useI18n, type Locale } from '../i18n'
+import { formatMajor, useBillingConfig } from '../lib/money'
 
 type SettingsTab =
   | 'account'
@@ -66,6 +67,8 @@ function formatWhen(iso: string | undefined, locale: Locale) {
 }
 
 export default function SettingsPage() {
+  // 计费币种配置到达后重渲染金额
+  useBillingConfig()
   const nav = useNavigate()
   const { t, locale } = useI18n()
   const [params, setParams] = useSearchParams()
@@ -297,11 +300,11 @@ export default function SettingsPage() {
               <div className="pf-settings-balance">
                 <div>
                   <span className="pf-muted">{t('settings.balance')}</span>
-                  <strong>¥{(wallet?.balance_yuan ?? 0).toFixed(2)}</strong>
+                  <strong>{formatMajor(wallet?.balance_yuan)}</strong>
                 </div>
                 <div>
                   <span className="pf-muted">{t('settings.frozen')}</span>
-                  <em>¥{(wallet?.frozen_yuan ?? 0).toFixed(2)}</em>
+                  <em>{formatMajor(wallet?.frozen_yuan)}</em>
                 </div>
               </div>
               <MonthlyUsageCard variant="compact" showTopup={false} />

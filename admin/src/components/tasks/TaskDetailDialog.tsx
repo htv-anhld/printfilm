@@ -14,8 +14,9 @@ import { AdminModal } from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { taskDomainLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
 import { hasJsonContent, prettyJson } from "@/lib/jsonPreview";
-import { cn, fenToYuan } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { formatDateTime, tr, useI18n } from "@/i18n";
+import { money } from "@/lib/money";
 
 type TaskDetailDialogProps = {
   taskId: number | null;
@@ -385,15 +386,15 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                     </div>
                     <div>
                       <dt>{t("tasks.detail.estimate")}</dt>
-                      <dd>¥{fenToYuan(task.billing_estimate_fen ?? 0)}</dd>
+                      <dd>{money(task.billing_estimate_fen ?? 0)}</dd>
                     </div>
                     <div>
                       <dt>{t("tasks.detail.charged")}</dt>
-                      <dd>¥{fenToYuan(task.billing_charged_fen ?? 0)}</dd>
+                      <dd>{money(task.billing_charged_fen ?? 0)}</dd>
                     </div>
                     <div>
                       <dt>{t("tasks.detail.refunded")}</dt>
-                      <dd>¥{fenToYuan(task.billing_refunded_fen ?? 0)}</dd>
+                      <dd>{money(task.billing_refunded_fen ?? 0)}</dd>
                     </div>
                   </dl>
                 </section>
@@ -429,8 +430,8 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                               <td className="font-mono text-xs">{line.billing_key}</td>
                               <td className="max-w-[120px] truncate text-xs">{line.model || "—"}</td>
                               <td>{line.total_tokens ?? 0}</td>
-                              <td>¥{fenToYuan(line.charge_fen ?? 0)}</td>
-                              <td>¥{fenToYuan(line.cost_fen ?? 0)}</td>
+                              <td>{money(line.charge_fen ?? 0)}</td>
+                              <td>{money(line.cost_fen ?? 0)}</td>
                               <td>{line.billing_basis_label ?? (line.estimated ? t("orders.usage.basis.estimate") : t("orders.usage.measured"))}</td>
                             </tr>
                           ))

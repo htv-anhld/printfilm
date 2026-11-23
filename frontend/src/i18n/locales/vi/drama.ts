@@ -412,7 +412,7 @@ export const viDrama = {
     noPending: 'Mục này không có tài nguyên nào chưa tạo ảnh',
     batchImageTitle: 'Tạo hình ảnh hàng loạt',
     category: 'mục',
-    batchImageMessage: 'Sẽ tạo ảnh cho {n} tài nguyên chưa có ảnh trong “{tab}” (gửi song song, không xếp hàng).\n\nMỗi ảnh tạm trừ khoảng ¥{unit}, tổng cộng khoảng ¥{total} (số dư hiện tại ¥{balance}; sau khi xong sẽ hoàn/trừ theo mức dùng thực tế).\n\nTiếp tục?',
+    batchImageMessage: 'Sẽ tạo ảnh cho {n} tài nguyên chưa có ảnh trong “{tab}” (gửi song song, không xếp hàng).\n\nMỗi ảnh tạm trừ khoảng {unit}, tổng cộng khoảng {total} (số dư hiện tại {balance}; sau khi xong sẽ hoàn/trừ theo mức dùng thực tế).\n\nTiếp tục?',
     startGenerate: 'Bắt đầu tạo',
     voiceGenFailed: 'Tạo giọng đọc thất bại',
     batchVoiceTitle: 'Tạo giọng đọc hàng loạt',

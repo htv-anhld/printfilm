@@ -82,8 +82,8 @@ def test_charge_official_image_uses_per_call() -> None:
     set_cached_rates(rates)
     try:
         charge = charge_fen_official_image(settings, model="seedream-5-0-pro")
-        # 2K sunburst 10 积分 × 3.5 分 = 35 分（$0.05）
-        assert charge == 35
+        # 2K sunburst 10 积分 × 3.5 分 = 35 分（$0.05），× markup 1.5 → 53
+        assert charge == 53
     finally:
         set_cached_rates(None)
 
@@ -96,8 +96,8 @@ def test_charge_official_image_falls_back_without_cache() -> None:
     settings.billing_seedream_per_m = 8.0
     settings.billing_est_seedream_tokens = 45_000
     set_cached_rates(None)
-    # 2K sunburst 10 积分 × 3.5 分 = 35 分（$0.05）
-    assert charge_fen_official_image(settings) == 35
+    # 2K sunburst 10 积分 × 3.5 分 = 35 分（$0.05），× markup 1.5 → 53
+    assert charge_fen_official_image(settings) == 53
 
 
 def test_charge_official_image_uses_sunburst_size_tiers() -> None:
@@ -145,8 +145,8 @@ def test_charge_official_video_uses_vendor_sec_not_placeholder() -> None:
     set_cached_rates(rates)
     try:
         charge = charge_fen_official_video(5.0, settings, model="seedance-2-5", resolution="480p")
-        # 3.36 元 → 336 分
-        assert charge == 336
+        # 3.36 元 → 336 分，× markup 1.5 → 504
+        assert charge == 504
     finally:
         set_cached_rates(None)
 

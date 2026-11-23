@@ -30,7 +30,7 @@ export const zhTasks = {
     result: "结果",
   },
   emptyHint: "切换到「全部」查看历史任务",
-  frozen: "预扣 ¥{amount}",
+  frozen: "预扣 {amount}",
   createdAt: "创建 {time}",
   startedAt: "开始 {time}",
   payloadFields: {

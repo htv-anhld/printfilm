@@ -104,9 +104,13 @@ class Settings(BaseSettings):
     # Legacy flag; prefer billing_enabled
     quota_enabled: bool = False
 
-    # Token 计费：用户扣费 = TokenFree 官方成本（billing_markup 保留兼容，不再乘）
+    # 计费币种：USD（1 = 1 美分 = 1 credit，商业版）| CNY（1 = 1 分，开源版）。列名仍叫 *_fen
+    billing_currency: str = "USD"
+    # 用户扣费 = 上游成本 × markup（Dravelio 为 2.3；开源版等价于 1.0）
     billing_enabled: bool = False
-    billing_markup: float = 1.0
+    billing_markup: float = 2.3
+    # 首次充值赠送（最小单位）；0 关闭
+    billing_first_topup_bonus_fen: int = 500
     # token / 视频时长估价缓冲；按张生图官价不再乘此系数（否则 5 元赠金冻不住一张图）
     billing_estimate_buffer: float = 1.2
     # Yuan per million tokens (provider cost)

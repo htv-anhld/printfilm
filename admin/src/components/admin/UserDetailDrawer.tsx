@@ -17,9 +17,10 @@ import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatAccountId } from "@/lib/admin-account";
-import { fenToYuan } from "@/lib/utils";
+
 import { formatDateTime, tr, useI18n } from "@/i18n";
 import { ledgerKindLabel, orderStatusLabel } from "@/lib/statusLabels";
+import { money } from "@/lib/money";
 
 type ListRes<T> = { items: T[]; meta: PageMeta };
 
@@ -94,8 +95,8 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
                   { label: t("users.fields.nickname"), value: user.nickname || "—" },
                   { label: t("users.fields.phone"), value: user.phone || "—" },
                   { label: t("users.fields.role"), value: user.role },
-                  { label: t("users.fields.balance"), value: `¥${fenToYuan(user.balance_fen)}` },
-                  { label: t("users.fields.frozen"), value: `¥${fenToYuan(user.frozen_fen)}` },
+                  { label: t("users.fields.balance"), value: money(user.balance_fen) },
+                  { label: t("users.fields.frozen"), value: money(user.frozen_fen) },
                   {
                     label: t("users.fields.createdAt"),
                     value: formatDateTime(user.created_at),
@@ -127,7 +128,7 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
                     orders.map((o) => (
                       <tr key={o.id}>
                         <td className="font-mono text-xs">{o.out_trade_no}</td>
-                        <td>¥{fenToYuan(o.amount_fen)}</td>
+                        <td>{money(o.amount_fen)}</td>
                         <td>{orderStatusLabel(o.status)}</td>
                         <td className="text-xs">{formatDateTime(o.created_at)}</td>
                       </tr>
@@ -159,8 +160,8 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
                     ledger.map((row) => (
                       <tr key={row.id}>
                         <td>{ledgerKindLabel(row.kind)}</td>
-                        <td>¥{fenToYuan(row.delta_fen)}</td>
-                        <td>¥{fenToYuan(row.balance_after)}</td>
+                        <td>{money(row.delta_fen)}</td>
+                        <td>{money(row.balance_after)}</td>
                         <td className="max-w-[200px] truncate text-xs">{row.note || "—"}</td>
                       </tr>
                     ))
@@ -195,8 +196,8 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
                           {formatDateTime(row.created_at)}
                         </td>
                         <td>{row.capability || "—"}</td>
-                        <td>¥{fenToYuan(row.charge_fen ?? 0)}</td>
-                        <td>¥{fenToYuan(row.cost_fen ?? 0)}</td>
+                        <td>{money(row.charge_fen ?? 0)}</td>
+                        <td>{money(row.cost_fen ?? 0)}</td>
                         <td>
                           {row.task_run_id ? (
                             <AdminEntityLink kind="task" id={row.task_run_id} />
