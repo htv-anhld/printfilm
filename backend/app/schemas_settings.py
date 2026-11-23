@@ -96,6 +96,16 @@ class AdminModelSettingsOut(BaseModel):
     epay_return_url: str = ""
     has_epay_key: bool = False
 
+    # Creem
+    creem_api_key: str = ""
+    creem_webhook_secret: str = ""
+    creem_test_mode: bool = True
+    creem_credit_product_id: str = ""
+    creem_sku_products: str = ""
+    app_public_url: str = ""
+    has_creem_api_key: bool = False
+    has_creem_webhook_secret: bool = False
+
     # Token 计费
     billing_enabled: bool = False
     billing_currency: str = "USD"
@@ -221,6 +231,15 @@ class AdminModelSettingsPatch(BaseModel):
     epay_return_url: str | None = None
     clear_epay_key: bool = False
 
+    creem_api_key: str | None = None
+    creem_webhook_secret: str | None = None
+    clear_creem_api_key: bool = False
+    clear_creem_webhook_secret: bool = False
+    creem_test_mode: bool | None = None
+    creem_credit_product_id: str | None = None
+    creem_sku_products: str | None = None
+    app_public_url: str | None = None
+
     billing_enabled: bool | None = None
     billing_currency: Literal["USD", "CNY"] | None = None
     billing_markup: float | None = Field(default=None, ge=1.0, le=20.0)
@@ -336,6 +355,12 @@ def model_config_field_names() -> tuple[str, ...]:
         "epay_key",
         "epay_notify_url",
         "epay_return_url",
+        "creem_api_key",
+        "creem_webhook_secret",
+        "creem_test_mode",
+        "creem_credit_product_id",
+        "creem_sku_products",
+        "app_public_url",
         "billing_enabled",
         "billing_currency",
         "billing_markup",
@@ -386,6 +411,8 @@ SECRET_FIELD_FLAGS: dict[str, str] = {
     "tos_access_key": "has_tos_access_key",
     "tos_secret_key": "has_tos_secret_key",
     "epay_key": "has_epay_key",
+    "creem_api_key": "has_creem_api_key",
+    "creem_webhook_secret": "has_creem_webhook_secret",
     "smtp_password": "has_smtp_password",
 }
 

@@ -59,3 +59,37 @@ first_topup_bonus_fen, pay_types}` (không cần đăng nhập).
 - Đã sửa lỗi markup bị nhân hai lần ở giá ảnh theo lượt (trước đây không lộ vì markup = 1).
 - Đã sửa lỗi admin luôn gửi `billing_markup: 1.0` khi lưu trang Thanh toán.
 - `orders.currency` ghi lại đơn vị tiền lúc đặt; đơn cũ của 易支付 là `CNY`.
+
+## 3. Cổng thanh toán Creem
+
+Tài liệu API: <https://docs.creem.io>. Creem là Merchant of Record nên tự thu và nộp VAT/GST.
+
+**Cấu hình** (env hoặc Admin → Thanh toán → Creem):
+
+| Khoá | Ghi chú |
+|---|---|
+| `CREEM_API_KEY` | Key thử và Key thật **không dùng lẫn** được |
+| `CREEM_WEBHOOK_SECRET` | Lấy ở Creem → Developers → Webhooks. **Thiếu secret thì mọi webhook bị từ chối** |
+| `CREEM_TEST_MODE` | `true` → `test-api.creem.io` |
+| `CREEM_CREDIT_PRODUCT_ID` | Một sản phẩm thanh toán một lần trên Creem; giá từng gói gửi qua `custom_price` (cent) |
+| `CREEM_SKU_PRODUCTS` | Tuỳ chọn: `credits_900:prod_a,…`, ưu tiên hơn sản phẩm chung |
+| `APP_PUBLIC_URL` | Địa chỉ trang người dùng; Creem đưa người mua về `/pricing?paid=1&order=…` |
+
+**URL webhook:** `https://<domain API>/api/billing/creem/webhook`. Đăng ký ít nhất
+`checkout.completed` và `refund.created` (thuê bao cần thêm các event `subscription.*`, xem mục 4).
+
+**Luồng mua credit lẻ:**
+1. `POST /api/billing/creem/checkout {sku_id}` → tạo `orders` (provider=creem, pending), gọi
+   Creem với `request_id = out_trade_no` và `metadata.kind = "topup"` → trả về `checkout_url`
+2. Frontend chuyển cả trang sang `checkout_url`
+3. Webhook `checkout.completed` → xác minh chữ ký HMAC-SHA256 trên **raw body** → chống lặp
+   theo event id (bảng `payment_events`) → **so khớp số tiền và đơn vị tiền** → `mark_order_paid`
+4. `refund.created` → thu hồi credit theo tỷ lệ số tiền hoàn (gồm cả thưởng nạp lần đầu).
+   Số dư **có thể âm**, thể hiện người dùng đang nợ
+
+**Bẫy:**
+- Đơn Creem chờ tối đa 24 giờ mới bị đóng (đơn 易支付 là 5 phút). Webhook đến muộn sau khi đơn đã đóng vẫn được cộng tiền.
+- Trên tài liệu Creem có hai endpoint cổng khách hàng khác nhau (`/customers/billing` và
+  `/customer-portal`). Code dùng `/customers/billing`; **cần gọi thử ở chế độ test** trước khi lên production.
+- Tài liệu chưa mô tả tham số REST để huỷ thuê bao vào cuối kỳ. Code gửi body rỗng, nên huỷ cuối kỳ
+  được chuyển sang cổng khách hàng của Creem.

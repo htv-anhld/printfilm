@@ -18,6 +18,14 @@ EN: dict[str, str] = {
     "标准积分包": "Standard credits",
     "进阶积分包": "Plus credits",
     "专业积分包": "Pro credits",
+    # ── Creem ──
+    "Creem 未配置 API Key": "Creem API key is not configured",
+    "连接 Creem 失败，请稍后重试": "Could not reach Creem. Please try again later",
+    "Creem 返回错误（HTTP {code}）": "Creem returned an error (HTTP {code})",
+    "Creem 返回内容无法解析": "Could not parse the Creem response",
+    "Creem 未返回支付链接": "Creem did not return a checkout link",
+    "Creem 未返回客户门户链接": "Creem did not return a customer portal link",
+    "Creem 未配置 credit 产品（CREEM_CREDIT_PRODUCT_ID）": "No Creem credit product is configured (CREEM_CREDIT_PRODUCT_ID)",
 }
 
 VI: dict[str, str] = {
@@ -35,4 +43,12 @@ VI: dict[str, str] = {
     "标准积分包": "Gói credit Tiêu chuẩn",
     "进阶积分包": "Gói credit Nâng cao",
     "专业积分包": "Gói credit Chuyên nghiệp",
+    # ── Creem ──
+    "Creem 未配置 API Key": "Chưa cấu hình API Key của Creem",
+    "连接 Creem 失败，请稍后重试": "Không kết nối được Creem, vui lòng thử lại sau",
+    "Creem 返回错误（HTTP {code}）": "Creem trả về lỗi (HTTP {code})",
+    "Creem 返回内容无法解析": "Không đọc được phản hồi của Creem",
+    "Creem 未返回支付链接": "Creem không trả về liên kết thanh toán",
+    "Creem 未返回客户门户链接": "Creem không trả về liên kết cổng khách hàng",
+    "Creem 未配置 credit 产品（CREEM_CREDIT_PRODUCT_ID）": "Chưa cấu hình sản phẩm credit trên Creem (CREEM_CREDIT_PRODUCT_ID)",
 }

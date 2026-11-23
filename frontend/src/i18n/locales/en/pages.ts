@@ -397,6 +397,8 @@ export const enPages = {
     orderFailed: 'Could not create the order',
     payMethods: 'Payment methods',
     paySafe: 'Secure payments',
+    card: 'Card',
+    cardSub: 'Visa · Mastercard · Apple Pay, via Creem',
     alipay: 'Alipay',
     wechat: 'WeChat Pay',
     recommended: 'Recommended',

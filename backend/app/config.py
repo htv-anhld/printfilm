@@ -160,7 +160,18 @@ class Settings(BaseSettings):
     epay_notify_url: str = ""
     epay_return_url: str = ""
 
+    # Creem（国际卡收款，Merchant of Record）：https://docs.creem.io
+    creem_api_key: str = ""
+    creem_webhook_secret: str = ""
+    # true → test-api.creem.io（测试 Key 与正式 Key 互不通用）
+    creem_test_mode: bool = True
+    # 一次性 credit 包：一个 Creem 产品 + custom_price（美分）；或逐包映射 "credits_900:prod_x,credits_3900:prod_y"
+    creem_credit_product_id: str = ""
+    creem_sku_products: str = ""
+
     public_base_url: str = "http://127.0.0.1:8000"
+    # 用户端站点地址（支付完成跳回、邮件链接）；生产填正式域名
+    app_public_url: str = "http://localhost:5173"
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
 

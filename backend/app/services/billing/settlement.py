@@ -459,7 +459,9 @@ async def close_expired_pending_orders(
             continue
         if created.tzinfo is None:
             created = created.replace(tzinfo=timezone.utc)
-        if (now - created).total_seconds() < 300:
+        # 易支付扫码 5 分钟过期；Creem 托管收银台给 24 小时（迟到的回调仍会入账）
+        ttl = 86400 if (getattr(order, "provider", "") or "") == "creem" else 300
+        if (now - created).total_seconds() < ttl:
             continue
         order.status = "closed"
         closed += 1

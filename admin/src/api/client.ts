@@ -626,6 +626,12 @@ export type AdminModelSettings = {
   billing_enabled: boolean;
   billing_markup: number;
   billing_currency?: "USD" | "CNY";
+  creem_test_mode?: boolean;
+  creem_credit_product_id?: string;
+  creem_sku_products?: string;
+  app_public_url?: string;
+  has_creem_api_key?: boolean;
+  has_creem_webhook_secret?: boolean;
   billing_usd_cny?: number;
   billing_first_topup_bonus_fen?: number;
   billing_estimate_buffer: number;

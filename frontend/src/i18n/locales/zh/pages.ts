@@ -332,6 +332,8 @@ export const zhPages = {
     orderFailed: '下单失败',
     payMethods: '支付方式',
     paySafe: '支付安全保障',
+    card: '银行卡',
+    cardSub: 'Visa · Mastercard · Apple Pay（Creem）',
     alipay: '支付宝',
     wechat: '微信支付',
     recommended: '推荐',

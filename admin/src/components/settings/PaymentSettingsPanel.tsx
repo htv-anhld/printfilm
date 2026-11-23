@@ -6,6 +6,8 @@ import {
   SettingsStatusBar,
   SettingsTabShell,
 } from "@/components/settings/SettingsPanel";
+import { CreemSettingsSection } from "@/components/settings/CreemSettingsSection";
+import { EMPTY_CREEM_SECRETS, creemPatch, creemReady, type CreemSecretsDraft } from "@/lib/creemSettings";
 import { SecretField } from "@/components/settings/SecretField";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,8 @@ export function PaymentSettingsPanel() {
   const { t } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();
   const [epayKeyInput, setEpayKeyInput] = useState("");
+  /* Creem 密钥本地编辑态（保存后清空） */
+  const [creemDraft, setCreemDraft] = useState<CreemSecretsDraft>(EMPTY_CREEM_SECRETS);
   const [clearEpayKey, setClearEpayKey] = useState(false);
   const [smtpPasswordInput, setSmtpPasswordInput] = useState("");
   const [clearSmtpPassword, setClearSmtpPassword] = useState(false);
@@ -70,6 +74,7 @@ export function PaymentSettingsPanel() {
         clear_epay_key: clearEpayKey,
         epay_notify_url: form.epay_notify_url,
         epay_return_url: form.epay_return_url,
+        ...creemPatch(form, creemDraft),
         billing_enabled: form.billing_enabled,
         billing_currency: form.billing_currency ?? "USD",
         billing_markup: form.billing_markup,
@@ -106,6 +111,7 @@ export function PaymentSettingsPanel() {
     );
     setEpayKeyInput("");
     setClearEpayKey(false);
+    setCreemDraft(EMPTY_CREEM_SECRETS);
     setSmtpPasswordInput("");
     setClearSmtpPassword(false);
   }
@@ -167,6 +173,13 @@ export function PaymentSettingsPanel() {
         title={t("settings.payment.statusTitle")}
         items={[
           {
+            id: "creem",
+            label: "Creem",
+            ready: creemReady(form, creemDraft),
+            readyText: t("settings.payment.configured"),
+            pendingText: t("settings.payment.incomplete"),
+          },
+          {
             id: "epay",
             label: t("settings.payment.epay"),
             ready: epayReady,
@@ -198,6 +211,8 @@ export function PaymentSettingsPanel() {
       />
 
       <div className="settings-routing-grid">
+        <CreemSettingsSection form={form} draft={creemDraft} onDraft={setCreemDraft} patchField={patchField} />
+
         <SettingsPanel
           className="settings-panel--compact"
           title={t("settings.payment.p1Title")}

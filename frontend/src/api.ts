@@ -621,6 +621,12 @@ export const api = {
       first_topup_bonus_fen?: number
     }>('/api/billing/skus')
   },
+  creemCheckout(sku_id: string) {
+    return request<{ out_trade_no: string; checkout_url: string; amount_fen: number; credit_fen: number }>(
+      '/api/billing/creem/checkout',
+      { method: 'POST', body: JSON.stringify({ sku_id }) },
+    )
+  },
   billingConfig() {
     return request<BillingConfig>('/api/billing/config')
   },

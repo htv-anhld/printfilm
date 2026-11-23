@@ -410,6 +410,8 @@ export const viPages = {
     orderFailed: 'Đặt hàng thất bại',
     payMethods: 'Phương thức thanh toán',
     paySafe: 'Thanh toán an toàn',
+    card: 'Thẻ quốc tế',
+    cardSub: 'Visa · Mastercard · Apple Pay, qua Creem',
     alipay: 'Alipay',
     wechat: 'WeChat Pay',
     recommended: 'Đề xuất',

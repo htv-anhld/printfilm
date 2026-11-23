@@ -46,8 +46,13 @@ def _epay_pay_types() -> list[str]:
 
 
 def available_pay_types() -> list[str]:
-    """当前币种可用的支付方式（其它渠道在各自模块里追加）。"""
-    return _epay_pay_types()
+    """当前币种可用的支付方式：CNY → 易支付；USD → Creem（已配置 Key 时）。"""
+    from app.services import creem
+
+    types = _epay_pay_types()
+    if billing_currency() == "USD" and creem.creem_configured():
+        types.append("creem")
+    return types
 
 
 @router.get("/config")
@@ -501,3 +506,72 @@ async def epay_notify(request: Request, db: AsyncSession = Depends(get_db)) -> P
     await db.commit()
     return PlainTextResponse("success")
 
+
+
+class CreemCheckoutBody(BaseModel):
+    sku_id: str
+
+
+@router.post("/creem/checkout")
+async def creem_checkout(
+    body: CreemCheckoutBody,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """credit 包走 Creem 托管收银台：返回 checkout_url，前端整页跳转。"""
+    from app.services.creem import CreemError
+    from app.services.payments.creem_topup import create_topup_checkout
+
+    await billing.close_expired_pending_orders(db, user_id=user.id)
+    try:
+        return await create_topup_checkout(db, user, body.sku_id)
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except CreemError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/creem/webhook")
+async def creem_webhook_endpoint(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+    """Creem 回调：原始请求体验签 → 事件去重 → 分发（credit 包 / 订阅 / 退款）。
+
+    验签失败返回 401（Creem 不会把它当成功）；处理异常返回 500 让 Creem 重试。
+    """
+    import json as _json
+
+    from app.services import creem
+    from app.services.payments import creem_topup  # noqa: F401  注册 credit 包处理函数
+    from app.services.payments.creem_webhook import dispatch_event
+
+    _register_optional_creem_handlers()
+    raw = await request.body()
+    if not creem.verify_webhook_signature(raw, request.headers.get("creem-signature")):
+        logger.warning("creem webhook bad signature")
+        raise HTTPException(status_code=401, detail="invalid signature")
+    try:
+        event = _json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="invalid json") from exc
+    if not isinstance(event, dict):
+        raise HTTPException(status_code=400, detail="invalid payload")
+    try:
+        status, note = await dispatch_event(db, event)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("creem webhook handler failed event=%s", event.get("id"))
+        raise HTTPException(status_code=500, detail="handler failed") from None
+    return {"ok": True, "status": status, "note": note}
+
+
+def _register_optional_creem_handlers() -> None:
+    """挂载其它模块的 Creem 事件处理（订阅等）；模块不存在时跳过。"""
+    import importlib
+
+    for name in ("app.services.payments.subscriptions",):
+        try:
+            importlib.import_module(name)
+        except ModuleNotFoundError:
+            continue
