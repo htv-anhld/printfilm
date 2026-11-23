@@ -38,7 +38,7 @@ def _day_key(value: Any) -> str:
 
 async def _usage_day_expr(db: AsyncSession):
     """按日历日分桶（PostgreSQL CAST AS DATE）。"""
-    _ = db
+    del db
     return cast(UsageEvent.created_at, Date)
 
 

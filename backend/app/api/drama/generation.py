@@ -7,6 +7,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
+from app.services.drama.content_locale import content_text
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -41,20 +43,20 @@ async def generate_image(
     if body.asset_id:
         asset = await db.get(DramaAsset, body.asset_id)
         if not asset or asset.project_id != project.id:
-            raise HTTPException(status_code=404, detail="资产不存在")
+            raise HTTPException(status_code=404, detail=_("资产不存在"))
         params = dict(asset.params or {})
         from datetime import datetime, timezone
 
         params["generation"] = {
             "status": "queued",
             "queued_at": datetime.now(timezone.utc).isoformat(),
-            "message": "已入队",
+            "message": _("已入队"),
         }
         asset.params = params
 
     prompt = (body.prompt or "").strip()
     if not prompt:
-        raise HTTPException(status_code=400, detail="缺少 prompt")
+        raise HTTPException(status_code=400, detail=_("缺少 prompt"))
 
     kind = body.asset_type_kind or (asset.type if asset else "character")
     # style_id 请求优先，否则回退项目 params
@@ -114,10 +116,10 @@ async def generate_video(
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     asset = await db.get(DramaAsset, body.asset_id)
     if not asset or asset.project_id != project.id:
-        raise HTTPException(status_code=404, detail="资产不存在")
+        raise HTTPException(status_code=404, detail=_("资产不存在"))
     prompt = (body.prompt or "").strip()
     if not prompt:
-        raise HTTPException(status_code=400, detail="缺少 prompt")
+        raise HTTPException(status_code=400, detail=_("缺少 prompt"))
 
     params = dict(asset.params or {})
     params["generation"] = {"status": "generating"}
@@ -178,9 +180,9 @@ async def suggest_voice_prompt(
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     asset = await db.get(DramaAsset, body.asset_id)
     if not asset or asset.project_id != project.id:
-        raise HTTPException(status_code=404, detail="资产不存在")
+        raise HTTPException(status_code=404, detail=_("资产不存在"))
     if (asset.type or "").lower() != "character":
-        raise HTTPException(status_code=400, detail="仅支持角色资产")
+        raise HTTPException(status_code=400, detail=_("仅支持角色资产"))
 
     async def _do_voice_prompt() -> tuple[str, str, str]:
         voice_prompt, speaker, sample_text = await suggest_voice_prompt_for_character(asset, project)
@@ -235,19 +237,19 @@ async def generate_voice(
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     prompt = (body.voice_prompt or "").strip()
     if not prompt:
-        raise HTTPException(status_code=400, detail="缺少 voice_prompt")
+        raise HTTPException(status_code=400, detail=_("缺少 voice_prompt"))
 
     asset = None
     if body.asset_id:
         asset = await db.get(DramaAsset, body.asset_id)
         if not asset or asset.project_id != project.id:
-            raise HTTPException(status_code=404, detail="资产不存在")
+            raise HTTPException(status_code=404, detail=_("资产不存在"))
     else:
         asset = DramaAsset(
             project_id=project.id,
             type="voice",
             asset_type="audio",
-            name=(body.name or "").strip() or "未命名音色",
+            name=(body.name or "").strip() or content_text("未命名音色"),
             params={"voicePrompt": prompt, "generation": {"status": "generating"}},
         )
         db.add(asset)
@@ -265,9 +267,9 @@ async def generate_voice(
     if body.character_asset_id:
         character_asset = await db.get(DramaAsset, body.character_asset_id)
         if not character_asset or character_asset.project_id != project.id:
-            raise HTTPException(status_code=404, detail="角色资产不存在")
+            raise HTTPException(status_code=404, detail=_("角色资产不存在"))
         if (character_asset.type or "").lower() != "character":
-            raise HTTPException(status_code=400, detail="character_asset_id 须为角色资产")
+            raise HTTPException(status_code=400, detail=_("character_asset_id 须为角色资产"))
 
     try:
         updated = await generate_voice_asset_audio(

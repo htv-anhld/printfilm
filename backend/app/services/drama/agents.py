@@ -4,6 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.i18n import _
+from app.services.drama.content_locale import (
+    char_limit,
+    content_text,
+    default_episode_title,
+    is_default_episode_title,
+    text_units,
+)
 from app.services.drama.llm import drama_chat_json
 from app.services.drama.script_summary_prompt import (
     SCRIPT_SUMMARY_SYSTEM_PROMPT,
@@ -150,7 +158,7 @@ def _format_neighbor_episode_briefs(episodes: list[dict[str, Any]], number: int,
     blocks: list[str] = []
     for item in sorted(picked, key=lambda x: int(x.get("episodeNumber") or 0)):
         num = item.get("episodeNumber")
-        title = item.get("title") or f"第 {num} 集"
+        title = item.get("title") or default_episode_title(num)
         creative = str(item.get("creative") or "").strip()
         summary = str(item.get("summary") or "").strip()
         parts = [f"第 {num} 集《{title}》"]
@@ -182,7 +190,7 @@ def _format_neighbor_episode_bodies(
     blocks: list[str] = []
     for item in sorted(picked, key=lambda x: int(x.get("episodeNumber") or 0)):
         num = item.get("episodeNumber")
-        title = item.get("title") or f"第 {num} 集"
+        title = item.get("title") or default_episode_title(num)
         body = str(item.get("body") or item.get("content") or "").strip()
         if len(body) > 1800:
             body = body[:1800] + "\n…（上文已截断）"
@@ -235,8 +243,8 @@ async def run_episode_summary_from_creative(
     """本集创意 → 集级 summary（可更新 title）。"""
     brief = (creative or "").strip()
     if len(brief) < 20:
-        raise ValueError("本集原始创意至少 20 字")
-    title_text = (title or "").strip() or f"第 {number} 集"
+        raise ValueError(_("本集原始创意至少 20 字"))
+    title_text = (title or "").strip() or default_episode_title(number)
     user_parts = [
         *build_single_episode_context(
             project_summary,
@@ -257,11 +265,11 @@ async def run_episode_summary_from_creative(
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list) or not episodes:
-        raise ValueError("模型未返回本集摘要")
+        raise ValueError(_("模型未返回本集摘要"))
     item = episodes[0] if isinstance(episodes[0], dict) else {}
     out_summary = str(item.get("summary") or item.get("synopsis") or "").strip()
     if len(out_summary) < 40:
-        raise ValueError("本集摘要过短，请重试")
+        raise ValueError(_("本集摘要过短，请重试"))
     out_title = str(item.get("title") or "").strip() or title_text
     return [
         {
@@ -289,8 +297,8 @@ async def run_episode_body_from_brief(
     brief = (creative or "").strip()
     syn = (summary or "").strip()
     if len(brief) < 10 and len(syn) < 40:
-        raise ValueError("请先填写本集创意或摘要")
-    title_text = (title or "").strip() or f"第 {number} 集"
+        raise ValueError(_("请先填写本集创意或摘要"))
+    title_text = (title or "").strip() or default_episode_title(number)
     user_parts = [
         *build_single_episode_context(
             project_summary,
@@ -312,11 +320,11 @@ async def run_episode_body_from_brief(
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list):
-        raise ValueError("模型未返回本集正文")
+        raise ValueError(_("模型未返回本集正文"))
     title_by_num = {number: title_text}
     normalized = _normalize_batch_episodes(episodes, number, number, title_by_num)
     if not normalized:
-        raise ValueError(f"模型未返回第 {number} 集正文")
+        raise ValueError(_("模型未返回第 {number} 集正文", number=number))
     row = normalized[0]
     row["creative"] = brief or str(row.get("creative") or "")
     row["summary"] = syn or str(row.get("summary") or "")
@@ -376,7 +384,7 @@ async def run_episode_full_from_creative(
     out = body_rows[0]
     out["creative"] = str(syn_row.get("creative") or creative).strip()
     out["summary"] = str(syn_row.get("summary") or "").strip()
-    out["title"] = str(out.get("title") or syn_row.get("title") or title or f"第 {number} 集")
+    out["title"] = str(out.get("title") or syn_row.get("title") or title or default_episode_title(number))
     return [out]
 
 
@@ -393,8 +401,8 @@ async def run_episode_brief_from_body(
     """已有拍摄正文 → 反推本集 creative + summary（不改 body）。"""
     script_body = (body or "").strip()
     if len(script_body) < 80:
-        raise ValueError("本集剧本内容过短，无法反推创意与摘要")
-    title_text = (title or "").strip() or f"第 {number} 集"
+        raise ValueError(_("本集剧本内容过短，无法反推创意与摘要"))
+    title_text = (title or "").strip() or default_episode_title(number)
     user_parts = [
         *build_single_episode_context(
             project_summary,
@@ -415,14 +423,14 @@ async def run_episode_brief_from_body(
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list) or not episodes:
-        raise ValueError("模型未返回本集创意与摘要")
+        raise ValueError(_("模型未返回本集创意与摘要"))
     item = episodes[0] if isinstance(episodes[0], dict) else {}
     out_creative = str(item.get("creative") or "").strip()
     out_summary = str(item.get("summary") or item.get("synopsis") or "").strip()
     if len(out_creative) < 20:
-        raise ValueError("反推的本集创意过短，请重试")
+        raise ValueError(_("反推的本集创意过短，请重试"))
     if len(out_summary) < 40:
-        raise ValueError("反推的本集摘要过短，请重试")
+        raise ValueError(_("反推的本集摘要过短，请重试"))
     out_title = str(item.get("title") or "").strip() or title_text
     return [
         {
@@ -443,7 +451,7 @@ async def run_script_summary(
     # Build structured outline from creative brief
     trimmed = (creative or "").strip()
     if len(trimmed) < 10:
-        raise ValueError("原始创意至少需要 10 个字")
+        raise ValueError(_("原始创意至少需要 10 个字"))
 
     user_message = build_script_summary_user_message(
         trimmed,
@@ -500,7 +508,7 @@ def merge_episode_bodies(
         body = str(item.get("body") or item.get("content") or "")
         creative = str(item.get("creative") or "").strip()
         summary = str(item.get("summary") or item.get("synopsis") or "").strip()
-        title = str(item.get("title") or "").strip() or f"第 {number} 集"
+        title = str(item.get("title") or "").strip() or default_episode_title(number)
         prev = by_number.get(number)
         if prev:
             prev_body = str(prev.get("body") or "")
@@ -521,9 +529,9 @@ def merge_episode_bodies(
                     creative = prev_creative
                 if not summary:
                     summary = prev_summary
-            if title.startswith("第 ") and prev.get("title"):
+            if (title.startswith("第 ") or is_default_episode_title(title, number)) and prev.get("title"):
                 title = str(prev.get("title"))
-            elif not title or title == f"第 {number} 集":
+            elif not title or is_default_episode_title(title, number):
                 title = str(prev.get("title") or title)
         new_origin = str(item.get("origin") or "").strip()
         prev_origin = str(prev.get("origin") or "").strip() if prev else ""
@@ -590,8 +598,8 @@ def append_manual_episode(
     if next_number < 1:
         next_number = 1
     if next_number > MAX_DRAMA_EPISODES:
-        raise ValueError(f"最多 {MAX_DRAMA_EPISODES} 集")
-    title_text = (title or "").strip() or f"第 {next_number} 集"
+        raise ValueError(_("最多 {n} 集", n=MAX_DRAMA_EPISODES))
+    title_text = (title or "").strip() or default_episode_title(next_number)
     added = {
         "episodeNumber": next_number,
         "title": title_text,
@@ -619,7 +627,8 @@ def count_completed_episodes(episodes: list[dict[str, Any]], total: int) -> int:
 
 
 def _content_char_len(text: str) -> int:
-    return len("".join((text or "").split()))
+    # zh：去空白字符数（原逻辑）；vi/en：按词数折算成汉字当量
+    return text_units(text)
 
 
 def normalize_series_title(raw: str | None) -> str:
@@ -630,8 +639,9 @@ def normalize_series_title(raw: str | None) -> str:
     title = title.strip("「」『』《》\"'“”‘’").strip()
     title = title.splitlines()[0].strip()
     # 截到合理项目名长度（中文短剧名）
-    if len(title) > 24:
-        title = title[:24].rstrip("，。；、…·-— ")
+    limit = char_limit(24)
+    if len(title) > limit:
+        title = title[:limit].rstrip("，。；、…·-— ")
     return title
 
 
@@ -652,7 +662,9 @@ def pick_auto_project_title(
     looks_default = (
         not current
         or current in {"未命名漫剧", "自由画布项目"}
-        or len(current) > 36
+        or current in {content_text("未命名漫剧", loc) for loc in ("en", "vi")}
+        or current in {content_text("自由画布项目", loc) for loc in ("en", "vi")}
+        or len(current) > char_limit(36)
         or (creative_prefix and current.startswith(creative_prefix))
         or current.endswith("…")
     )
@@ -663,24 +675,32 @@ def pick_auto_project_title(
 
 def format_summary_text(summary: dict[str, Any]) -> str:
     # Human-readable outline for UI / LLM context
+    # 标签按内容语言（zh 与原文一致）；该文本会存进 params.summary_text 给前端展示
+    t = content_text
     lines = [
-        f"剧名：{summary.get('seriesTitle', '')}",
-        f"集数：{summary.get('episodeCount', '')}",
-        f"类型：{summary.get('storyType', '')}",
-        f"受众：{summary.get('targetAudience', '')}",
-        f"钩子：{summary.get('coreHook', '')}",
-        f"一句话：{summary.get('oneLineStory', '')}",
+        t("剧名：{v}", v=summary.get("seriesTitle", "")),
+        t("集数：{v}", v=summary.get("episodeCount", "")),
+        t("类型：{v}", v=summary.get("storyType", "")),
+        t("受众：{v}", v=summary.get("targetAudience", "")),
+        t("钩子：{v}", v=summary.get("coreHook", "")),
+        t("一句话：{v}", v=summary.get("oneLineStory", "")),
         "",
-        "人物：",
+        t("人物："),
     ]
     for c in summary.get("characters") or []:
         if isinstance(c, dict):
             lines.append(
-                f"- {c.get('name', '')}（{c.get('roleType', '')}/{c.get('title', '')}）："
-                f"{c.get('visualImage', '')}；标签：{c.get('coreTags', '')}；"
-                f"弧光：{c.get('growthArc', '')}"
+                t(
+                    "- {name}（{role}/{title}）：{visual}；标签：{tags}；弧光：{arc}",
+                    name=c.get("name", ""),
+                    role=c.get("roleType", ""),
+                    title=c.get("title", ""),
+                    visual=c.get("visualImage", ""),
+                    tags=c.get("coreTags", ""),
+                    arc=c.get("growthArc", ""),
+                )
             )
-    lines.extend(["", "梗概：", str(summary.get("synopsis") or "")])
+    lines.extend(["", t("梗概："), str(summary.get("synopsis") or "")])
     return "\n".join(lines)
 
 
@@ -688,7 +708,7 @@ def _format_episode_title_list(episodes: list[dict[str, Any]]) -> str:
     rows: list[str] = []
     for item in sorted(episodes, key=lambda x: int(x.get("episodeNumber") or 0)):
         num = item.get("episodeNumber")
-        title = item.get("title") or f"第 {num} 集"
+        title = item.get("title") or default_episode_title(num)
         rows.append(f"第 {num} 集：{title}")
     return "\n".join(rows) if rows else "（暂无分集规划）"
 
@@ -707,7 +727,7 @@ def _format_existing_episode_content(episodes: list[dict[str, Any]], limit: int 
     blocks: list[str] = []
     for item in tail:
         num = item.get("episodeNumber")
-        title = item.get("title") or f"第 {num} 集"
+        title = item.get("title") or default_episode_title(num)
         body = str(item.get("body") or item.get("content") or "").strip()
         # 过长时截断尾部摘要，避免挤占当前集生成空间
         if len(body) > 1800:
@@ -723,6 +743,7 @@ def _titles_ready(existing: list[dict[str, Any]], total: int) -> bool:
         if isinstance(item, dict)
         and str(item.get("title") or "").strip()
         and not str(item.get("title") or "").startswith("第 ")
+        and not is_default_episode_title(str(item.get("title") or ""), int(item.get("episodeNumber") or 0))
     }
     # 也接受「第 N 集」以外、或至少有 total 条带 title 的记录
     with_title = [
@@ -736,6 +757,7 @@ def _titles_ready(existing: list[dict[str, Any]], total: int) -> bool:
         # 若全是占位「第 N 集」则仍需重跑大纲
         placeholder_only = all(
             str(item.get("title") or "").strip() in {f"第 {item.get('episodeNumber')} 集", f"第{item.get('episodeNumber')}集"}
+            or is_default_episode_title(str(item.get("title") or ""), int(item.get("episodeNumber") or 0))
             for item in with_title
         )
         return not placeholder_only
@@ -763,7 +785,7 @@ async def run_episode_outline(
     data = await drama_chat_json(EPISODE_OUTLINE_SYSTEM, user, max_tokens=4096)
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list) or not episodes:
-        raise ValueError("分集大纲返回格式无效")
+        raise ValueError(_("分集大纲返回格式无效"))
     result: list[dict[str, Any]] = []
     for i, item in enumerate(episodes):
         if not isinstance(item, dict):
@@ -772,14 +794,14 @@ async def run_episode_outline(
             number = int(item.get("episodeNumber") or (i + 1))
         except (TypeError, ValueError):
             number = i + 1
-        title = str(item.get("title") or "").strip() or f"第 {number} 集"
+        title = str(item.get("title") or "").strip() or default_episode_title(number)
         result.append({"episodeNumber": number, "title": title, "body": ""})
     if len(result) < episode_count:
         # 补齐缺失集号
         have = {int(x["episodeNumber"]) for x in result}
         for n in range(1, episode_count + 1):
             if n not in have:
-                result.append({"episodeNumber": n, "title": f"第 {n} 集", "body": ""})
+                result.append({"episodeNumber": n, "title": default_episode_title(n), "body": ""})
     result.sort(key=lambda x: int(x["episodeNumber"]))
     return result[:episode_count]
 
@@ -822,7 +844,7 @@ async def run_episode_script_batch(
         if isinstance(item, dict)
     }
     batch_titles = "\n".join(
-        f"第 {n} 集：{title_by_num.get(n) or f'第 {n} 集'}" for n in range(start, end + 1)
+        f"第 {n} 集：{title_by_num.get(n) or default_episode_title(n)}" for n in range(start, end + 1)
     )
     batch_size_n = end - start + 1
     summary_text = format_summary_text(summary)
@@ -856,7 +878,7 @@ async def run_episode_script_batch(
 
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list):
-        raise ValueError("分集剧本返回格式无效")
+        raise ValueError(_("分集剧本返回格式无效"))
 
     normalized = _normalize_batch_episodes(episodes, start, end, title_by_num)
     # 正文过短则带强调提示重试一次
@@ -883,7 +905,7 @@ async def run_episode_script_batch(
             normalized = _normalize_batch_episodes(retry_eps, start, end, title_by_num)
 
     if not normalized:
-        raise ValueError(f"模型未返回第 {start}–{end} 集正文")
+        raise ValueError(_("模型未返回第 {start}–{end} 集正文", start=start, end=end))
     return normalized
 
 
@@ -899,16 +921,16 @@ async def run_episode_script_from_draft(
     number = int(episode_number)
     draft_text = (draft or "").strip()
     if number < 1:
-        raise ValueError("集号无效")
+        raise ValueError(_("集号无效"))
     if len(draft_text) < 20:
-        raise ValueError("请先输入至少 20 字的分集剧本草稿")
+        raise ValueError(_("请先输入至少 20 字的分集剧本草稿"))
 
     title_by_num = {
         int(item.get("episodeNumber") or 0): str(item.get("title") or "")
         for item in existing
         if isinstance(item, dict)
     }
-    current_title = title_by_num.get(number) or f"第 {number} 集"
+    current_title = title_by_num.get(number) or default_episode_title(number)
     ctx = build_single_episode_context(
         summary,
         existing,
@@ -935,7 +957,7 @@ async def run_episode_script_from_draft(
     )
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list):
-        raise ValueError("分集剧本返回格式无效")
+        raise ValueError(_("分集剧本返回格式无效"))
     normalized = _normalize_batch_episodes(episodes, number, number, title_by_num)
     too_short = [
         item
@@ -961,7 +983,7 @@ async def run_episode_script_from_draft(
         if isinstance(retry_eps, list):
             normalized = _normalize_batch_episodes(retry_eps, number, number, title_by_num)
     if not normalized:
-        raise ValueError(f"模型未返回第 {number} 集正文")
+        raise ValueError(_("模型未返回第 {number} 集正文", number=number))
     origin_item = next(
         (
             item
@@ -1000,7 +1022,7 @@ def _normalize_batch_episodes(
         title = (
             str(item.get("title") or "").strip()
             or title_by_num.get(number_i)
-            or f"第 {number_i} 集"
+            or default_episode_title(number_i)
         )
         row: dict[str, Any] = {
             "episodeNumber": number_i,

@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -286,7 +287,7 @@ async def confirm_episode_from_script(
     """确认一集剧本：增量抽取资产并只切该集分镜。"""
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     if not project.script:
-        raise HTTPException(status_code=400, detail="缺少剧本")
+        raise HTTPException(status_code=400, detail=_("缺少剧本"))
     try:
         require_confirmable_episode_body(project.script.episode_content, body.episode_number)
     except ValueError as exc:
@@ -299,7 +300,7 @@ async def confirm_episode_from_script(
     ).scalar_one()
     params = dict(locked.params or {}) if isinstance(locked.params, dict) else {}
     if str(params.get("assets_seed_status") or "") == "generating":
-        raise HTTPException(status_code=409, detail="资产抽取进行中，请稍后再确认")
+        raise HTTPException(status_code=409, detail=_("资产抽取进行中，请稍后再确认"))
 
     params["assets_seed_status"] = "generating"
     params["assets_seed_generating_at"] = datetime.now(UTC).isoformat()
@@ -360,7 +361,7 @@ async def confirm_episode_from_script(
         project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
         params = dict(project.params or {}) if isinstance(project.params, dict) else {}
         params["assets_seed_status"] = "failed"
-        params["assets_seed_error"] = "确认分集未完成"
+        params["assets_seed_error"] = _("确认分集未完成")
         params.pop("assets_seed_generating_at", None)
         project.params = params
         await db.commit()
@@ -369,7 +370,7 @@ async def confirm_episode_from_script(
         project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
         params = dict(project.params or {}) if isinstance(project.params, dict) else {}
         params["assets_seed_status"] = "failed"
-        params["assets_seed_error"] = "确认分集失败"
+        params["assets_seed_error"] = _("确认分集失败")
         params.pop("assets_seed_generating_at", None)
         project.params = params
         await db.commit()
@@ -448,7 +449,7 @@ async def plan_episode_fragments(
         if protected:
             raise HTTPException(
                 status_code=409,
-                detail="本集含已生成视频或手改分镜，请确认后强制重新分镜",
+                detail=_("本集含已生成视频或手改分镜，请确认后强制重新分镜"),
             )
 
     params["fragment_plan_status"] = "generating"
@@ -577,11 +578,11 @@ async def activate_video_version(
     )
     fragment = result.scalar_one_or_none()
     if not fragment:
-        raise HTTPException(status_code=404, detail="分镜不存在")
+        raise HTTPException(status_code=404, detail=_("分镜不存在"))
     await get_owned_episode(db, fragment.episode_id, user)
     status = str(fragment_generation_status(fragment).get("status") or "")
     if status in {"queued", "running", "generating"}:
-        raise HTTPException(status_code=409, detail="分镜正在生成，请完成后再切换版本")
+        raise HTTPException(status_code=409, detail=_("分镜正在生成，请完成后再切换版本"))
     try:
         payload = activate_fragment_video_version(fragment, body.version_id.strip())
     except ValueError as exc:
@@ -612,7 +613,7 @@ async def generate_episode(
         )
         raise HTTPException(
             status_code=400,
-            detail="没有可生成的分镜（保存后分镜已更新，请再点一次生成）",
+            detail=_("没有可生成的分镜（保存后分镜已更新，请再点一次生成）"),
         )
 
     # 已在排队/生成的分镜跳过；其余按镜序入队（衔接时后一镜等上一镜尾帧）
@@ -625,7 +626,7 @@ async def generate_episode(
     if not idle_frags:
         raise HTTPException(
             status_code=409,
-            detail="所选分镜正在生成，请等待完成后再试",
+            detail=_("所选分镜正在生成，请等待完成后再试"),
         )
 
     # 尾帧衔接：上一镜在生成/排队时可先入队本镜，由任务队列按镜序等待；未开上一镜则仍拒绝
@@ -651,7 +652,7 @@ async def generate_episode(
             if not prev_last and not (prev.video or "").strip():
                 raise HTTPException(
                     status_code=400,
-                    detail="已开启尾帧衔接：请先生成上一镜并等待尾帧就绪后，再点本镜生成",
+                    detail=_("已开启尾帧衔接：请先生成上一镜并等待尾帧就绪后，再点本镜生成"),
                 )
 
     # 清除进程内「本集已取消」标记，避免旧取消态把新入队任务立刻作废
@@ -670,7 +671,7 @@ async def generate_episode(
         params = dict(f.params or {})
         # 用户主动点生成：清零内部重试计数（上限只约束同一次任务内的自动重试）
         params.pop("generation_attempts", None)
-        params["generation"] = {"status": "queued", "queued_at": queued_at, "message": "已入队"}
+        params["generation"] = {"status": "queued", "queued_at": queued_at, "message": _("已入队")}
         f.params = params
 
     created_tasks: list[int] = []
@@ -863,7 +864,7 @@ async def compose_episode(
     project = await get_owned_drama_project(db, ep.project_id, user)
     episode = await load_episode_for_compose(db, episode_id)
     if episode is None:
-        raise HTTPException(status_code=404, detail="分集不存在")
+        raise HTTPException(status_code=404, detail=_("分集不存在"))
     req = body or DramaComposeEpisodeRequest()
     try:
         url = await compose_episode_video(
@@ -876,7 +877,7 @@ async def compose_episode(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
         logger.exception("episode compose failed episode_id=%s", episode_id)
-        raise HTTPException(status_code=500, detail=f"全片合成失败：{exc}") from exc
+        raise HTTPException(status_code=500, detail=_("全片合成失败：{error}", error=exc)) from exc
     return {"ok": True, "video_url": url, "episode_id": episode_id}
 
 

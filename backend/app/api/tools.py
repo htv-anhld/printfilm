@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.deps import get_current_user
+from app.i18n import _
 from app.models import ToolRun, User
 from app.schemas_tools import ToolRunListOut, ToolRunOut, ToolRunRecordOut, ToolTaskOut
 from app.services.billing import run_billed_ephemeral_deferred, settle_deferred_video_poll
@@ -64,7 +65,7 @@ async def run_tool(
             if not raw:
                 continue
             if len(raw) > 40 * 1024 * 1024:
-                raise ValueError("单个文件不能超过 40MB")
+                raise ValueError(_("单个文件不能超过 40MB"))
             saved.append(save_upload(user.id, raw, item.filename or "upload.bin"))
         if tid in IMAGE_TOOLS:
             try:
@@ -118,7 +119,7 @@ async def run_tool(
                 data=data,
             )
         else:
-            raise ValueError("未知工具")
+            raise ValueError(_("未知工具"))
         await db.commit()
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -135,7 +136,7 @@ async def get_tool_task(
     user: User = Depends(get_current_user),
 ) -> ToolTaskOut:
     if not task_id.strip():
-        raise HTTPException(status_code=400, detail="缺少任务")
+        raise HTTPException(status_code=400, detail=_("缺少任务"))
     tid = task_id.strip()
     row = (
         await db.execute(
@@ -146,7 +147,7 @@ async def get_tool_task(
     # 本地无归属记录即拒绝：上游 task_id 可被持有者之外的人猜测传递，
     # 不能在没有归属凭据时代理查上游（视频 URL 会被拖走）。
     if not row:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail=_("任务不存在"))
     if isinstance(row.params, dict):
         raw_bid = row.params.get("billing_task_id")
         if raw_bid is not None:
@@ -219,6 +220,6 @@ async def get_run(
 ) -> ToolRunRecordOut:
     row = await get_tool_run(db, user.id, run_id)
     if not row:
-        raise HTTPException(status_code=404, detail="记录不存在")
+        raise HTTPException(status_code=404, detail=_("记录不存在"))
     await db.commit()
     return _record_out(row)

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.deps import get_current_admin
+from app.i18n import _
 from app.models import Project, Template, User
 from app.schemas import (
     AdminTemplateCreate,
@@ -82,7 +83,7 @@ async def get_template(
 ) -> AdminTemplateOut:
     tpl = await db.get(Template, template_id)
     if not tpl:
-        raise HTTPException(status_code=404, detail="模板不存在")
+        raise HTTPException(status_code=404, detail=_("模板不存在"))
     return AdminTemplateOut.model_validate(tpl)
 
 
@@ -95,7 +96,7 @@ async def create_template(
     # Create a new template row
     existing = await db.get(Template, body.id)
     if existing:
-        raise HTTPException(status_code=400, detail="模板 ID 已存在")
+        raise HTTPException(status_code=400, detail=_("模板 ID 已存在"))
     tpl = Template(**body.model_dump())
     db.add(tpl)
     await db.commit()
@@ -113,7 +114,7 @@ async def patch_template(
     # Partial update including is_active / is_premium
     tpl = await db.get(Template, template_id)
     if not tpl:
-        raise HTTPException(status_code=404, detail="模板不存在")
+        raise HTTPException(status_code=404, detail=_("模板不存在"))
     data = body.model_dump(exclude_unset=True)
     for key, value in data.items():
         setattr(tpl, key, value)
@@ -131,7 +132,7 @@ async def delete_template(
     # Refuse delete when projects still reference the template
     tpl = await db.get(Template, template_id)
     if not tpl:
-        raise HTTPException(status_code=404, detail="模板不存在")
+        raise HTTPException(status_code=404, detail=_("模板不存在"))
     used = int(
         (
             await db.execute(
@@ -141,7 +142,7 @@ async def delete_template(
         or 0
     )
     if used > 0:
-        raise HTTPException(status_code=400, detail=f"模板仍被 {used} 个项目引用，无法删除")
+        raise HTTPException(status_code=400, detail=_("模板仍被 {n} 个项目引用，无法删除", n=used))
     await db.delete(tpl)
     await db.commit()
     return {"ok": True}

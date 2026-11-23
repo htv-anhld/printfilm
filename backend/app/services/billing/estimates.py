@@ -106,11 +106,11 @@ def _estimate_assets_fen(project: Project, settings: Settings) -> int:
     if need_img <= 0 and need_tts <= 0:
         return 1
     total = 0
-    for _ in range(max(need_img, 0)):
+    for _i in range(max(need_img, 0)):
         total += _catalog_image_fen(settings)
     if need_tts > 0:
         n = max(len(shots), 1)
-        _, c_tts = charge_fen_for_tokens(
+        _unused, c_tts = charge_fen_for_tokens(
             settings.billing_est_tts_tokens * n,
             "tts",
             settings=settings,
@@ -189,7 +189,7 @@ async def estimate_task_fen(db: AsyncSession, task: TaskRun, settings: Settings 
             )
             return _buffered_fen(c, s)
         if task_type in {"shot_regen_audio", "project_regen_audio"}:
-            _, c = charge_fen_for_tokens(s.billing_est_tts_tokens * 3, "tts", settings=s)
+            _unused, c = charge_fen_for_tokens(s.billing_est_tts_tokens * 3, "tts", settings=s)
             return _buffered_fen(c, s)
         if task_type == "project_compose_only":
             return 1
@@ -241,7 +241,7 @@ async def estimate_task_fen(db: AsyncSession, task: TaskRun, settings: Settings 
                 c += max(1, _catalog_image_fen(s, payload=payload) // 2)
             return c
         if task_type == "voice_synthesis":
-            _, c = charge_fen_for_tokens(s.billing_est_tts_tokens, "tts", settings=s)
+            _unused, c = charge_fen_for_tokens(s.billing_est_tts_tokens, "tts", settings=s)
             return _buffered_fen(c, s)
         if task_type in {"skill_optimize", "voice_prompt"}:
             c = charge_fen_official_llm(s.billing_est_llm_tokens, s)

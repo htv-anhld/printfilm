@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_admin
 from app.models import User
@@ -138,9 +139,9 @@ async def admin_tokenfree_account_quota(
     from app.services.tokenfree_usage import fetch_tokenfree_account, tokenfree_usage_configured
 
     if not tokenfree_usage_configured():
-        raise HTTPException(status_code=400, detail="未配置 TokenFree API Key（请先在「模型」填写）")
+        raise HTTPException(status_code=400, detail=_("未配置 TokenFree API Key（请先在「模型」填写）"))
     try:
         return await fetch_tokenfree_account()
     except RuntimeError as exc:
         logger.warning("tokenfree quota query failed: %s", exc)
-        raise HTTPException(status_code=502, detail="TokenFree 额度查询失败") from exc
+        raise HTTPException(status_code=502, detail=_("TokenFree 额度查询失败")) from exc

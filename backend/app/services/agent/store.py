@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models_agent import AgentSkill
 from app.services.agent.parse import SkillParseError, parse_skill_markdown
+from app.i18n import _
 
 logger = logging.getLogger(__name__)
 
@@ -145,15 +146,15 @@ async def create_user_skill(db: AsyncSession, user_id: int, markdown: str) -> Ag
     """用户上传 markdown skill。"""
     text = (markdown or "").strip()
     if len(text) > MAX_UPLOAD_CHARS:
-        raise SkillParseError(f"Skill 不能超过 {MAX_UPLOAD_CHARS} 字")
+        raise SkillParseError(_("Skill 不能超过 {n} 字", n=MAX_UPLOAD_CHARS))
     parsed = parse_skill_markdown(text)
     if await count_user_skills(db, user_id) >= MAX_USER_SKILLS:
-        raise SkillParseError(f"最多上传 {MAX_USER_SKILLS} 条自定义 Skill")
+        raise SkillParseError(_("最多上传 {n} 条自定义 Skill", n=MAX_USER_SKILLS))
     existing = await db.execute(
         select(AgentSkill).where(AgentSkill.user_id == int(user_id), AgentSkill.slug == parsed["slug"])
     )
     if existing.scalar_one_or_none() is not None:
-        raise SkillParseError("已有同名 Skill，请换 name 或先删除旧的")
+        raise SkillParseError(_("已有同名 Skill，请换 name 或先删除旧的"))
     row = AgentSkill(
         slug=parsed["slug"],
         name=parsed["name"],
@@ -182,10 +183,10 @@ async def update_user_skill(
         row.is_active = bool(is_active)
     if markdown is not None:
         if row.is_builtin:
-            raise SkillParseError("系统内置 Skill 不能改正文")
+            raise SkillParseError(_("系统内置 Skill 不能改正文"))
         parsed = parse_skill_markdown(markdown)
         if len(parsed["body"]) > MAX_UPLOAD_CHARS:
-            raise SkillParseError(f"Skill 不能超过 {MAX_UPLOAD_CHARS} 字")
+            raise SkillParseError(_("Skill 不能超过 {n} 字", n=MAX_UPLOAD_CHARS))
         row.slug = parsed["slug"]
         row.name = parsed["name"]
         row.description = parsed["description"]
@@ -198,6 +199,6 @@ async def update_user_skill(
 
 async def delete_user_skill(db: AsyncSession, row: AgentSkill) -> None:
     if row.is_builtin:
-        raise SkillParseError("系统内置 Skill 不能删除")
+        raise SkillParseError(_("系统内置 Skill 不能删除"))
     await db.delete(row)
     await db.commit()

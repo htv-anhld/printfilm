@@ -17,6 +17,8 @@ from app.config import get_settings
 from app.models import User
 from app.models_drama import DramaAsset, DramaEpisode, DramaEpisodeFragment, DramaFragmentAssetRef, DramaProject
 from app.services.ark import get_ark
+from app.i18n import _
+from app.services.drama.content_locale import project_content_locale
 from app.services.drama.billing_util import record_seedance_video_usage, record_seedream_image_usage, seedance_billing_key
 from app.services.drama.output_settings import (
     infer_aspect_ratio_from_pixels,
@@ -29,6 +31,7 @@ from app.services.drama.build_seedance_generate_body import (
     SEEDANCE_ATTACH_REFERENCE_AUDIO,
     build_seedance_generate_body,
     build_seedance_reference_catalog,
+    build_speech_language_section,
     describe_seedance_content_slots,
     drama_asset_to_payload,
     read_asset_voice_audio_url,
@@ -262,7 +265,7 @@ def fragment_generation_status(fragment: DramaEpisodeFragment) -> dict[str, Any]
             if status == "failed":
                 err = str(out.get("error") or "")
                 root = str(out.get("root_error") or "").strip()
-                if root and ("重试超过" in err or "超过重试" in err or not err):
+                if root and ("重试超过" in err or "超过重试" in err or _is_retry_limit_error(err) or not err):
                     out["error"] = root
             return out
         if status == "done":
@@ -284,6 +287,9 @@ def _is_retry_limit_error(text: str) -> bool:
         "重试超过" in t
         or "超过重试" in t
         or "内部自动重试超过" in t
+        # en / vi 译文（见 i18n_catalogs/drama.py「分镜内部自动重试超过上限」）
+        or "retry limit" in t.lower()
+        or "giới hạn tự thử lại" in t.lower()
     )
 
 
@@ -295,7 +301,7 @@ def build_failed_generation_params(
     attempts: int | None = None,
     attempt_limit: int | None = None,
 ) -> dict[str, Any]:
-    msg = str(error or "生成失败")[:500]
+    msg = str(error or _("生成失败"))[:500]
     prev = prev_gen if isinstance(prev_gen, dict) else {}
     prev_root = str(prev.get("root_error") or "").strip()
     prev_err = str(prev.get("error") or "").strip()
@@ -455,7 +461,7 @@ def activate_fragment_video_version(
     params = dict(fragment.params or {}) if isinstance(fragment.params, dict) else {}
     versions_raw = params.get("video_versions")
     if not isinstance(versions_raw, list):
-        raise ValueError("没有可切换的历史版本")
+        raise ValueError(_("没有可切换的历史版本"))
     target: dict[str, Any] | None = None
     remaining: list[dict[str, Any]] = []
     for item in versions_raw:
@@ -466,7 +472,7 @@ def activate_fragment_video_version(
             continue
         remaining.append(dict(item))
     if not target or not str(target.get("video") or "").strip():
-        raise ValueError("指定版本不存在")
+        raise ValueError(_("指定版本不存在"))
 
     from datetime import datetime, timezone
 
@@ -598,7 +604,7 @@ def activate_asset_image_version(
     params = dict(asset.params or {}) if isinstance(asset.params, dict) else {}
     versions_raw = params.get("image_versions")
     if not isinstance(versions_raw, list):
-        raise ValueError("没有可切换的历史版本")
+        raise ValueError(_("没有可切换的历史版本"))
     target: dict[str, Any] | None = None
     remaining: list[dict[str, Any]] = []
     for item in versions_raw:
@@ -610,7 +616,7 @@ def activate_asset_image_version(
         remaining.append(dict(item))
     target_url = str((target or {}).get("url") or (target or {}).get("cover") or "").strip()
     if not target or not target_url:
-        raise ValueError("指定版本不存在")
+        raise ValueError(_("指定版本不存在"))
 
     from datetime import datetime, timezone
 
@@ -702,7 +708,7 @@ async def reconcile_orphaned_fragment_generations(
         params.pop("generation_attempts", None)
         params["generation"] = {
             "status": "idle",
-            "message": "任务已中断，请重新生成",
+            "message": _("任务已中断，请重新生成"),
         }
         fragment.params = params
         changed += 1
@@ -750,17 +756,17 @@ def overlay_fragment_status_with_active_task(
     out = dict(status)
     if raw_task in {"pending", "leased"}:
         out["status"] = "queued"
-        out.setdefault("message", "排队中")
+        out.setdefault("message", _("排队中"))
         return out
     out["status"] = "running"
     if raw_task == "awaiting_poll":
         out["phase"] = out.get("phase") or "polling"
-        out["message"] = out.get("message") or "上游生成中"
+        out["message"] = out.get("message") or _("上游生成中")
     elif raw_task == "awaiting_review":
         out["phase"] = out.get("phase") or "review"
-        out["message"] = out.get("message") or "待确认"
+        out["message"] = out.get("message") or _("待确认")
     else:
-        out.setdefault("message", "生成中")
+        out.setdefault("message", _("生成中"))
     return out
 
 
@@ -896,7 +902,7 @@ async def ensure_fragment_reference_images(
         {
             "status": "running",
             "phase": "assets",
-            "message": f"正在生成参考图 0/{len(missing)}",
+            "message": _("正在生成参考图 {done}/{total}", done=0, total=len(missing)),
             "assets_total": len(missing),
             "assets_done": 0,
         },
@@ -926,7 +932,12 @@ async def ensure_fragment_reference_images(
             {
                 "status": "running",
                 "phase": "assets",
-                "message": f"正在生成参考图 {index + 1}/{len(missing)}：{asset.name or asset.id}",
+                "message": _(
+                    "正在生成参考图 {done}/{total}：{name}",
+                    done=index + 1,
+                    total=len(missing),
+                    name=asset.name or asset.id,
+                ),
                 "assets_total": len(missing),
                 "assets_done": index,
                 "asset_id": asset.id,
@@ -956,7 +967,7 @@ async def ensure_fragment_reference_images(
         {
             "status": "running",
             "phase": "video",
-            "message": "参考图已就绪，开始生成视频",
+            "message": _("参考图已就绪，开始生成视频"),
             "assets_total": len(missing),
             "assets_done": len(missing),
         },
@@ -1332,7 +1343,7 @@ async def generate_asset_image(
                 project.id,
             )
     if not (url or "").strip():
-        raise RuntimeError("生图成功但未拿到可用图片 URL")
+        raise RuntimeError(_("生图成功但未拿到可用图片 URL"))
     logger.info("Seedream 返回 project_id=%s url=%s", project.id, url[:100])
 
     await record_seedream_image_usage(
@@ -1584,6 +1595,7 @@ async def prepare_fragment_video_for_submit(
                 "character_intro": resolve_episode_character_intro(
                     episode.params if episode else None
                 ),
+                "content_locale": project_content_locale(project),
             }
         )
         return FragmentVideoPrepared(
@@ -1620,10 +1632,15 @@ async def prepare_fragment_video_for_submit(
         )
         image_url = still.local_url or ""
 
+    i2v_prompt = prompt
+    lang_section = build_speech_language_section(project_content_locale(project))
+    if lang_section:
+        # 非中文项目：首帧图生视频也要约束口播/字幕语言
+        i2v_prompt = f"{lang_section}\n\n{prompt}"
     return FragmentVideoPrepared(
         submit_mode="i2v",
         image_url=image_url,
-        prompt=prompt,
+        prompt=i2v_prompt,
         duration=duration,
         ratio=ratio,
         resolution=resolution,
@@ -1640,7 +1657,7 @@ async def submit_prepared_fragment_video(
 ) -> str:
     ark = get_ark()
     if prepared.submit_mode == "kie":
-        raise RuntimeError("已改为 TokenFree 通道，请重新生成本镜视频")
+        raise RuntimeError(_("已改为 TokenFree 通道，请重新生成本镜视频"))
     if prepared.submit_mode == "seedance_body" and prepared.seedance_body:
         return await ark.gen_video_seedance_body(
             prepared.seedance_body,
@@ -1656,7 +1673,7 @@ async def submit_prepared_fragment_video(
             ratio=prepared.ratio,
             generate_audio=prepared.generate_audio,
         )
-    raise RuntimeError("分镜视频提交上下文不完整")
+    raise RuntimeError(_("分镜视频提交上下文不完整"))
 
 
 def serialize_fragment_video_prepared(prepared: FragmentVideoPrepared) -> dict[str, Any]:

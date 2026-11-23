@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import logging
 import shutil
 from pathlib import Path
@@ -43,7 +44,15 @@ from app.services.kepu_continuity import (
     previous_usable_shot,
     video_extra_refs_for_shot,
 )
-from app.services.voices import resolve_speaker
+from app.services.voices import infer_speaker_gender, resolve_speaker
+from app.i18n import _, use_locale
+from app.services.templates_prompts_en import localize_prompt
+from app.services.kepu_locale import (
+    content_locale_of,
+    default_voice_for_locale,
+    has_cjk,
+    speaker_supports_locale,
+)
 from app.services import seedance_segments as segplan
 from app.services.bgm import clip_shot_bgm, resolve_bgm_path
 
@@ -200,7 +209,36 @@ def _project_voice(project: Project) -> str:
     tpl_preset = ""
     if project.template and project.template.audio_config:
         tpl_preset = str(project.template.audio_config.get("voice_preset") or "")
-    return resolve_speaker(getattr(project, "voice_id", None) or "", template_preset=tpl_preset)
+    speaker = resolve_speaker(getattr(project, "voice_id", None) or "", template_preset=tpl_preset)
+    # 越南语/英语内容：豆包中文音色读不了，按性别换成该语言的默认音色
+    loc = content_locale_of(project)
+    if not speaker_supports_locale(speaker, loc):
+        fallback = default_voice_for_locale(loc, infer_speaker_gender(speaker))
+        if fallback:
+            return fallback
+    return speaker
+
+
+async def _project_content_locale(project_id: int) -> str:
+    """读项目内容语言；读失败（测试桩等）回退 zh。"""
+    try:
+        async with AsyncSessionLocal() as db:
+            project = await db.get(Project, project_id)
+            return content_locale_of(project)
+    except Exception:  # noqa: BLE001
+        return "zh"
+
+
+def _in_content_locale(fn):
+    """后台阶段无请求上下文：按 project.content_locale 设置语言（进度文案/兜底口播/错误提示）。"""
+
+    @functools.wraps(fn)
+    async def wrapper(project_id: int, *args, **kwargs):
+        locale = await _project_content_locale(project_id)
+        with use_locale(locale):
+            return await fn(project_id, *args, **kwargs)
+
+    return wrapper
 
 
 def clamp_shot_duration(duration: float, *, pipeline_mode: str, tpl_min: int, tpl_max: int) -> float:
@@ -236,8 +274,9 @@ def _kepu_video_prompt(
     motion_bias: str,
     camera: str,
     ambient_only: bool,
+    content_locale: str | None = None,
 ) -> str:
-    """科普提交 Seedance：后期叠字，禁止模型烧录字幕。"""
+    """科普提交 Seedance：后期叠字，禁止模型烧录字幕；非 zh 内容追加口播语言约束。"""
     return segplan.build_seedance_prompt(
         segplan.normalize_kepu_subtitle_cue(script or ""),
         style_prefix=style_prefix,
@@ -245,6 +284,7 @@ def _kepu_video_prompt(
         camera=camera,
         ambient_only=ambient_only,
         burn_subtitles=False,
+        content_locale=content_locale,
     )
 
 
@@ -271,8 +311,11 @@ def join_shot_narrations(narrations: list[str]) -> str:
         if not t:
             continue
         if t[-1] not in "。！？；…,.!?;":
-            t += "。"
+            # 越南语/英语用半角句号
+            t += "。" if has_cjk(t) else "."
         parts.append(t)
+    if parts and not has_cjk("".join(parts)):
+        return " ".join(parts)
     return "".join(parts)
 
 
@@ -294,7 +337,7 @@ async def _synthesize_continuous_audio(
     narrations = [(getattr(s, "narration", None) or "") for s in shot_rows]
     full_text = join_shot_narrations(narrations)
     if not full_text.strip():
-        raise ValueError("全部镜头旁白为空，无法配音")
+        raise ValueError(_("全部镜头旁白为空，无法配音"))
 
     ark = get_ark()
     regenerated = force or not _continuous_audio_ok(project_id)
@@ -316,16 +359,16 @@ async def _synthesize_continuous_audio(
         )
         src = storage.local_path_from_url(audio_url or "")
         if not src or not src.exists():
-            raise RuntimeError("整片配音生成失败")
+            raise RuntimeError(_("整片配音生成失败"))
         if src.resolve() != dest.resolve():
             dest.write_bytes(src.read_bytes())
         # 新合成必须复查近静音：TTS 偶发返回极低音量音频，静默合成会产出无声成片
         if is_near_silent_audio(dest):
-            raise RuntimeError("整片配音近静音（音量异常），请重新配音")
+            raise RuntimeError(_("整片配音近静音（音量异常），请重新配音"))
 
     dur = await asyncio.to_thread(probe_duration, dest)
     if not dur or dur < 0.8:
-        raise RuntimeError("整片配音时长异常")
+        raise RuntimeError(_("整片配音时长异常"))
 
     allocated = allocate_durations_by_narration(narrations, dur)
     async with _db_write_lock():
@@ -373,6 +416,7 @@ async def _resume_plan(project_id: int) -> tuple[bool, bool, bool, bool]:
 
 
 @storage.without_intermediate_oss
+@_in_content_locale
 async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
     """跑科普流水线；phase 指定时只执行该计费阶段，避免冻 A 跑 B。"""
     from app.services.kepu_stages import normalize_kepu_pipeline_phase
@@ -396,7 +440,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
         if not skip_script:
             if requested and requested not in {"script", "produce"}:
                 raise RuntimeError(
-                    f"分镜尚未就绪，无法执行阶段 {requested}；请先生成分镜脚本"
+                    _("分镜尚未就绪，无法执行阶段 {phase}；请先生成分镜脚本", phase=requested)
                 )
             await _script_stage(project_id)
             await _ensure_not_cancelled(project_id)
@@ -406,7 +450,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                     "event": "paused",
                     "stage": "SCRIPT_READY",
                     "percent": 15,
-                    "message": "分镜已生成，请确认修改后手动继续",
+                    "message": _("分镜已生成，请确认修改后手动继续"),
                 },
             )
             return
@@ -425,7 +469,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                 "event": "progress",
                 "stage": "RESUME",
                 "percent": 70 if skip_assets else 18,
-                "message": "沿用已有分镜，继续后续阶段",
+                "message": _("沿用已有分镜，继续后续阶段"),
             },
         )
 
@@ -441,9 +485,9 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                     "stage": "ASSETS_READY",
                     "percent": 70 if image_text else 50,
                     "message": (
-                        "分镜图与配音已完成，请确认后继续合成"
+                        _("分镜图与配音已完成，请确认后继续合成")
                         if image_text
-                        else "分镜图与配音已完成，请确认后继续生成镜头视频"
+                        else _("分镜图与配音已完成，请确认后继续生成镜头视频")
                     ),
                 },
             )
@@ -460,7 +504,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                         "event": "paused",
                         "stage": "ASSETS_READY",
                         "percent": 50,
-                        "message": "分镜图与配音已补齐，请再次点击继续生成镜头视频",
+                        "message": _("分镜图与配音已补齐，请再次点击继续生成镜头视频"),
                     },
                 )
                 return
@@ -471,7 +515,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                         "event": "paused",
                         "stage": "VIDEO_READY",
                         "percent": 88,
-                        "message": "镜头视频已就绪，请确认后合成成片",
+                        "message": _("镜头视频已就绪，请确认后合成成片"),
                     },
                 )
                 return
@@ -483,7 +527,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                     "event": "paused",
                     "stage": "VIDEO_READY",
                     "percent": 88,
-                    "message": "镜头视频已完成，请确认后合成成片",
+                    "message": _("镜头视频已完成，请确认后合成成片"),
                 },
             )
             return
@@ -518,9 +562,9 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                     "stage": "ASSETS_READY",
                     "percent": 70 if image_text else 50,
                     "message": (
-                        "分镜图与配音已完成，请确认后继续合成"
+                        _("分镜图与配音已完成，请确认后继续合成")
                         if image_text
-                        else "分镜图与配音已完成，请确认后继续生成镜头视频"
+                        else _("分镜图与配音已完成，请确认后继续生成镜头视频")
                     ),
                 },
             )
@@ -535,7 +579,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                     "event": "paused",
                     "stage": "VIDEO_READY",
                     "percent": 88,
-                    "message": "镜头视频已完成，请确认后合成成片",
+                    "message": _("镜头视频已完成，请确认后合成成片"),
                 },
             )
             return
@@ -566,14 +610,14 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
             project = await db.get(Project, project_id)
             if project and project.status != ProjectStatus.DONE:
                 project.status = ProjectStatus.CANCELLED
-                project.error_msg = "用户取消"
+                project.error_msg = _("用户取消")
                 await db.commit()
         await publish_progress(
             project_id,
             {
                 "event": "failed",
                 "stage": "CANCELLED",
-                "message": "用户取消",
+                "message": _("用户取消"),
                 "retryable": True,
                 "code": "CANCELLED",
             },
@@ -586,14 +630,14 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
                 project = await db.get(Project, project_id)
                 if project and project.status != ProjectStatus.DONE:
                     project.status = ProjectStatus.CANCELLED
-                    project.error_msg = "用户取消"
+                    project.error_msg = _("用户取消")
                     await db.commit()
             await publish_progress(
                 project_id,
                 {
                     "event": "failed",
                     "stage": "CANCELLED",
-                    "message": "用户取消",
+                    "message": _("用户取消"),
                     "retryable": True,
                     "code": "CANCELLED",
                 },
@@ -601,7 +645,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
             return
         logger.exception("pipeline failed project=%s", project_id)
         fail_msg = (
-            "FFmpeg 被系统中断（signal 15），请点击重新拼接"
+            _("FFmpeg 被系统中断（signal 15），请点击重新拼接")
             if is_ffmpeg_interrupted_error(exc)
             else str(exc)[:2000]
         )
@@ -694,15 +738,18 @@ async def _script_stage(project_id: int) -> None:
             output_ratio=_project_output_ratio(project),
             shot_range_override=template_shot_range(tpl),
             allow_source_names=template_allow_source_names(tpl),
+            content_locale=content_locale_of(project),
         )
         plans = plans_result.shots
         project.character_bible = resolve_script_character_bible(
             char_hint,
             plans_result.character_bible,
+            content_locale=content_locale_of(project),
         )
+        content_locale = content_locale_of(project)
         tpl_bgm = ""
         if tpl and isinstance(tpl.audio_config, dict):
-            tpl_bgm = str(tpl.audio_config.get("bgm_mood") or "").strip()
+            tpl_bgm = localize_prompt(str(tpl.audio_config.get("bgm_mood") or "").strip(), content_locale)
         # 风格页用户选曲优先，其次 LLM / 模板推断
         user_bgm = (getattr(project, "bgm_lock", None) or "").strip()
         project.bgm_lock = (
@@ -710,7 +757,7 @@ async def _script_stage(project_id: int) -> None:
             or (plans_result.bgm_lock or "").strip()
             or tpl_bgm
             or (plans[0].bgm if plans else "")
-            or "轻快专业"
+            or localize_prompt("轻快专业", content_locale)
         )
         for shot in list(project.shots):
             await db.delete(shot)
@@ -731,7 +778,7 @@ async def _script_stage(project_id: int) -> None:
             if bible and bible[:24] in scene:
                 scene = scene.replace(bible, "", 1)
             scene = strip_lock_blocks(scene)
-            img_prompt = ark._sanitize_seedream_prompt(scene)
+            img_prompt = ark._sanitize_seedream_prompt(scene, content_locale)
             segment_script = (plan.segment_script or plan.video_prompt or "").strip()
             db.add(
                 Shot(
@@ -766,7 +813,8 @@ def _effective_style(project: Project) -> str:
     user = (getattr(project, "style_prompt", None) or "").strip()
     tpl = project.template
     base = (tpl.style_prefix if tpl else "") or ""
-    return user or base
+    # vi / en 内容：内置模板风格词换英文（管理员自定义文案原样）
+    return user or localize_prompt(base, content_locale_of(project))
 
 
 def _template_seedream_field(project: Project, key: str) -> str:
@@ -776,7 +824,7 @@ def _template_seedream_field(project: Project, key: str) -> str:
     cfg = getattr(tpl, "seedream_config", None) or {}
     if not isinstance(cfg, dict):
         return ""
-    return str(cfg.get(key) or "").strip()
+    return localize_prompt(str(cfg.get(key) or "").strip(), content_locale_of(project))
 
 
 def _effective_character_prompt(project: Project) -> str:
@@ -784,12 +832,22 @@ def _effective_character_prompt(project: Project) -> str:
     return (getattr(project, "character_prompt", None) or "").strip()
 
 
-def resolve_script_character_bible(user_character_prompt: str, llm_bible: str = "") -> str:
+def resolve_script_character_bible(
+    user_character_prompt: str,
+    llm_bible: str = "",
+    *,
+    content_locale: str | None = "zh",
+) -> str:
     """用户覆盖优先，否则用分镜 LLM 的 character_bible。"""
     user = (user_character_prompt or "").strip()
     if user:
         return user
-    return (llm_bible or "").strip() or "无固定人物，各镜独立场景"
+    fallback = (
+        "无固定人物，各镜独立场景"
+        if content_locale_of(SimpleNamespace(content_locale=content_locale)) == "zh"
+        else "No fixed character; each shot is an independent scene"
+    )
+    return (llm_bible or "").strip() or fallback
 
 
 def _effective_extra(project: Project) -> str:
@@ -805,7 +863,7 @@ def _image_size_for(project: Project) -> str | None:
 def _project_image_negative(project: Project) -> str:
     tpl = project.template
     return merge_negative(
-        tpl.negative_prompt if tpl else "",
+        localize_prompt(tpl.negative_prompt if tpl else "", content_locale_of(project)),
         image_text=_is_image_text(project),
         photoreal=template_is_photoreal(tpl),
     )
@@ -918,8 +976,8 @@ async def _parallel_image_and_audio(project_id: int) -> None:
                         project.progress = pct
                         project.status = ProjectStatus.IMAGING
                         await db.commit()
-            msg = f"出图 {done_img}/{total}" + (
-                " · 整片配音生成中…" if need_audio else " · 配音已就绪"
+            msg = _("出图 {done}/{total}", done=done_img, total=total) + (
+                _(" · 整片配音生成中…") if need_audio else _(" · 配音已就绪")
             )
             await publish_progress(
                 project_id,
@@ -1012,7 +1070,7 @@ async def _parallel_image_and_audio(project_id: int) -> None:
                 "event": "progress",
                 "stage": "PARALLEL_ASSETS",
                 "percent": 30,
-                "message": "整片连贯配音中…",
+                "message": _("整片连贯配音中…"),
             },
         )
         await _synthesize_continuous_audio(
@@ -1033,7 +1091,7 @@ async def _parallel_image_and_audio(project_id: int) -> None:
                 "event": "progress",
                 "stage": "PARALLEL_ASSETS",
                 "percent": 48,
-                "message": "整片配音完成",
+                "message": _("整片配音完成"),
             },
         )
 
@@ -1070,7 +1128,7 @@ async def _parallel_image_and_audio(project_id: int) -> None:
             "stage": "ASSETS_READY",
             "percent": 70 if image_text else 50,
             "message": (
-                "分镜图与整片配音已完成"
+                _("分镜图与整片配音已完成")
             ),
         },
     )
@@ -1098,7 +1156,7 @@ async def _parallel_videos(project_id: int) -> None:
         consistency = template_consistency_mode(tpl) == "character" and bool(
             tpl.seedance_config.get("character_consistency", True)
         )
-        motion = str(tpl.seedance_config.get("motion_bias", ""))
+        motion = localize_prompt(str(tpl.seedance_config.get("motion_bias", "")), content_locale_of(project))
         resolution = cfg.ark_video_resolution
         if project.resolution_mode == "hd" and resolution == "480p":
             resolution = "720p"
@@ -1124,6 +1182,7 @@ async def _parallel_videos(project_id: int) -> None:
         style_prefix = _effective_style(project)
         total = len(shot_meta)
         video_model = (getattr(project, "video_model", None) or "").strip()
+        content_locale = content_locale_of(project)
 
     if not shot_meta:
         return
@@ -1151,7 +1210,7 @@ async def _parallel_videos(project_id: int) -> None:
                         "shot": meta["shot_no"],
                         "total": total,
                         "percent": pct,
-                        "message": f"镜头 {meta['shot_no']} 含真人已跳过 AI 视频，将用静图合成",
+                        "message": _("镜头 {n} 含真人已跳过 AI 视频，将用静图合成", n=meta["shot_no"]),
                     },
                 )
                 return proxy
@@ -1174,7 +1233,7 @@ async def _parallel_videos(project_id: int) -> None:
                     "stage": "VIDEOING",
                     "shot": meta["shot_no"],
                     "percent": pct,
-                    "message": f"沿用已有视频 {done}/{total}",
+                    "message": _("沿用已有视频 {done}/{total}", done=done, total=total),
                 },
             )
             return proxy
@@ -1186,6 +1245,7 @@ async def _parallel_videos(project_id: int) -> None:
             motion_bias=motion,
             camera=str(meta.get("camera") or ""),
             ambient_only=ambient_only,
+            content_locale=content_locale,
         )
         dur = segplan.resolve_api_duration(
             script,
@@ -1242,8 +1302,8 @@ async def _parallel_videos(project_id: int) -> None:
                         "total": total,
                         "percent": pct,
                         "message": (
-                            f"镜头 {meta['shot_no']} 含真人已跳过 AI 视频"
-                            + ("（成片将缺该镜）" if generate_audio else "，将用静图合成")
+                            _("镜头 {n} 含真人已跳过 AI 视频", n=meta["shot_no"])
+                            + (_("（成片将缺该镜）") if generate_audio else _("，将用静图合成"))
                         ),
                     },
                 )
@@ -1294,12 +1354,12 @@ async def _parallel_videos(project_id: int) -> None:
                 "total": total,
                 "percent": pct,
                 "message": (
-                    f"逐镜 AI 视频 {done}/{total}（参考上一镜）"
+                    _("逐镜 AI 视频 {done}/{total}（参考上一镜）", done=done, total=total)
                     if extra_refs
                     else (
-                        f"AI 视频（含操作音效）{done}/{total}"
+                        _("AI 视频（含操作音效）{done}/{total}", done=done, total=total)
                         if generate_audio
-                        else f"AI 视频 {done}/{total}"
+                        else _("AI 视频 {done}/{total}", done=done, total=total)
                     )
                 ),
             },
@@ -1320,7 +1380,7 @@ async def _parallel_videos(project_id: int) -> None:
                 await db.commit()
     await publish_progress(
         project_id,
-        {"event": "progress", "stage": "VIDEO_READY", "percent": 88, "message": "全部镜头视频完成"},
+        {"event": "progress", "stage": "VIDEO_READY", "percent": 88, "message": _("全部镜头视频完成")},
     )
 
 
@@ -1419,6 +1479,7 @@ async def _compose_stage(project_id: int) -> None:
                     bgm_volume=0.22,
                     keep_video_sfx=keep_video_sfx,
                     sfx_volume=0.22,
+                    content_locale=content_locale_of(project),
                 ),
             ),
         )
@@ -1457,7 +1518,11 @@ async def _run_ffmpeg_compose_with_retry(project_id: int, work) -> None:
                     "event": "progress",
                     "stage": "COMPOSING",
                     "percent": 93,
-                    "message": f"合成被中断，正在自动重试（{attempt}/{_COMPOSE_SIGTERM_MAX_ATTEMPTS}）…",
+                    "message": _(
+                        "合成被中断，正在自动重试（{attempt}/{total}）…",
+                        attempt=attempt,
+                        total=_COMPOSE_SIGTERM_MAX_ATTEMPTS,
+                    ),
                 },
             )
             await asyncio.sleep(float(attempt) * 2.0)
@@ -1477,16 +1542,21 @@ async def _run_ffmpeg_compose_with_retry(project_id: int, work) -> None:
                         "event": "progress",
                         "stage": "COMPOSING",
                         "percent": 93,
-                        "message": f"合成被中断，正在自动重试（{attempt}/{_COMPOSE_SIGTERM_MAX_ATTEMPTS}）…",
+                        "message": _(
+                        "合成被中断，正在自动重试（{attempt}/{total}）…",
+                        attempt=attempt,
+                        total=_COMPOSE_SIGTERM_MAX_ATTEMPTS,
+                    ),
                     },
                 )
                 await asyncio.sleep(float(attempt) * 2.0)
                 continue
             raise
-    raise last_exc or RuntimeError("FFmpeg 合成失败")
+    raise last_exc or RuntimeError(_("FFmpeg 合成失败"))
 
 
 @storage.without_intermediate_oss
+@_in_content_locale
 async def regen_shot_image(project_id: int, shot_id: int) -> None:
     """重绘单镜首帧图，并清掉该镜视频以便后续重生。"""
     ark = get_ark()
@@ -1549,6 +1619,7 @@ async def regen_shot_image(project_id: int, shot_id: int) -> None:
 
 
 @storage.without_intermediate_oss
+@_in_content_locale
 async def regen_shot_video(project_id: int, shot_id: int) -> None:
     """重绘单镜视频；后镜参考上一镜尾帧。"""
     ark = get_ark()
@@ -1561,12 +1632,14 @@ async def regen_shot_video(project_id: int, shot_id: int) -> None:
         )
         project = result.scalar_one()
         if _is_image_text(project):
-            raise ValueError("图文模式无需生成 AI 视频，请直接重新合成成片")
+            raise ValueError(_("图文模式无需生成 AI 视频，请直接重新合成成片"))
         shot = next((s for s in project.shots if s.id == shot_id), None)
         if not shot or not (shot.image_url or shot.image_ark_url):
             raise ValueError("shot image required")
         generate_audio = _kepu_seedance_sfx_audio(project)
-        motion = str(project.template.seedance_config.get("motion_bias", ""))
+        motion = localize_prompt(
+            str(project.template.seedance_config.get("motion_bias", "")), content_locale_of(project)
+        )
         consistency = template_consistency_mode(project.template) == "character" and bool(
             project.template.seedance_config.get("character_consistency", True)
         )
@@ -1580,6 +1653,7 @@ async def regen_shot_video(project_id: int, shot_id: int) -> None:
             motion_bias=motion,
             camera=shot.camera or "",
             ambient_only=generate_audio,
+            content_locale=content_locale_of(project),
         )
         dur = segplan.resolve_api_duration(
             script,
@@ -1642,6 +1716,7 @@ async def regen_shot_video(project_id: int, shot_id: int) -> None:
 
 
 @storage.without_intermediate_oss
+@_in_content_locale
 async def regen_shot_audio(project_id: int, shot_id: int) -> None:
     """Re-TTS uses continuous full-film narration (editing one shot re-voices the whole track)."""
     async with AsyncSessionLocal() as db:
@@ -1657,7 +1732,7 @@ async def regen_shot_audio(project_id: int, shot_id: int) -> None:
         if not (shot.narration or "").strip() and not any(
             (s.narration or "").strip() for s in project.shots
         ):
-            raise ValueError("旁白为空，无法配音")
+            raise ValueError(_("旁白为空，无法配音"))
         voice = _project_voice(project)
         shots = sorted(project.shots, key=lambda s: s.shot_no)
     await _synthesize_continuous_audio(
@@ -1691,6 +1766,7 @@ async def regen_shot_audio(project_id: int, shot_id: int) -> None:
 
 
 @storage.without_intermediate_oss
+@_in_content_locale
 async def regen_project_audio_and_compose(project_id: int) -> None:
     """Force continuous re-TTS with current voice, then compose."""
     await _set_status(project_id, ProjectStatus.AUDIOING, 80, "AUDIOING")
@@ -1712,7 +1788,7 @@ async def regen_project_audio_and_compose(project_id: int) -> None:
             "event": "progress",
             "stage": "AUDIOING",
             "percent": 82,
-            "message": "整片连贯配音中…",
+            "message": _("整片连贯配音中…"),
         },
     )
     await _synthesize_continuous_audio(
@@ -1724,7 +1800,7 @@ async def regen_project_audio_and_compose(project_id: int) -> None:
             "event": "progress",
             "stage": "AUDIOING",
             "percent": 90,
-            "message": "整片配音完成，开始合成",
+            "message": _("整片配音完成，开始合成"),
         },
     )
 
@@ -1752,7 +1828,7 @@ async def regen_project_audio_and_compose(project_id: int) -> None:
 async def _fail_project_compose(project_id: int, exc: Exception) -> None:
     raw = str(exc)
     if is_ffmpeg_interrupted_error(exc):
-        msg = "FFmpeg 被系统中断（signal 15），请点击重新拼接"
+        msg = _("FFmpeg 被系统中断（signal 15），请点击重新拼接")
     else:
         msg = raw[:2000]
     logger.error("compose failed project=%s: %s", project_id, msg[:500])
@@ -1775,6 +1851,7 @@ async def _fail_project_compose(project_id: int, exc: Exception) -> None:
 
 
 @storage.without_intermediate_oss
+@_in_content_locale
 async def compose_only(project_id: int) -> None:
     try:
         await _compose_stage(project_id)

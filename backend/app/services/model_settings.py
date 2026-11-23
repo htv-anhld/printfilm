@@ -12,6 +12,7 @@ from cryptography.fernet import Fernet
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.config import Settings, get_settings, reload_settings
 from app.models_settings import AppSettings, SystemModelChannelRow
 from app.schemas_routing import (
@@ -278,7 +279,7 @@ def _bootstrap_logical_from_channels(channels: list[SystemModelChannel]) -> tupl
         )
     default_video = ""
     if settings.model_video:
-        default_video, _ = _seedance_logical_meta(settings.model_video)
+        default_video, _unused = _seedance_logical_meta(settings.model_video)
     elif settings.model_video_2:
         default_video = "seedance-2"
     synced = synchronize_logical_models_with_channels(logical_models, channels)
@@ -526,7 +527,7 @@ def _build_readiness(
     logical_models: list[LogicalModel],
     defaults: DefaultModels,
 ) -> list[ModelCapabilityReadiness]:
-    labels = {"text": "文本", "image": "图像", "video": "视频", "audio": "语音"}
+    labels = {"text": _("文本"), "image": _("图像"), "video": _("视频"), "audio": _("语音")}
     items: list[ModelCapabilityReadiness] = []
     for capability, attr in {
         "text": "text_model",
@@ -543,7 +544,11 @@ def _build_readiness(
                 label=labels[capability],
                 model=model_id,
                 ready=bool(resolved),
-                message=f"路由至渠道 {resolved['channel'].name}" if resolved else f"需配置默认{labels[capability]}模型与渠道绑定",
+                message=(
+                    _("路由至渠道 {channel}", channel=resolved["channel"].name)
+                    if resolved
+                    else _("需配置默认{label}模型与渠道绑定", label=labels[capability])
+                ),
             )
         )
     return items
@@ -570,7 +575,7 @@ async def get_admin_model_settings(db: AsyncSession) -> AdminModelSettingsOut:
 async def get_admin_routing_settings(db: AsyncSession) -> AdminRoutingSettingsOut:
     from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID
 
-    channels, logical_models, defaults, _, app_row = await _compose_runtime_state(db)
+    channels, logical_models, defaults, _unused, app_row = await _compose_runtime_state(db)
     admin_channels = [
         item for item in await _load_channels(db, runtime=False) if item.id == TOKENFREE_CHANNEL_ID
     ]
@@ -745,7 +750,7 @@ async def patch_admin_routing_settings(
 
     errors = model_routing_validation_errors(logical_models, channels_after, defaults)
     if errors:
-        raise ValueError("；".join(errors[:5]))
+        raise ValueError(_("；").join(errors[:5]))
 
     config["logical_models"] = [model.model_dump() for model in logical_models]
     config["default_models"] = default_models_to_dict(defaults)

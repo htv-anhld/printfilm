@@ -21,8 +21,12 @@ from app.models_drama import (
     DramaFragmentAssetRef,
     DramaProject,
 )
+from app.i18n import _
+from app.services.drama.content_locale import content_text, text_units
 from app.services.drama.build_fragments import (
     CAST_LINE_RE,
+    SCENE_LOCATION_RE,
+    normalize_scene_location_name,
     build_fragments_from_episode_body,
     extract_introduced_names_from_content,
     is_raw_screenplay_fragment,
@@ -384,7 +388,7 @@ async def refresh_asset_prompts_from_script(
         nonlocal updated
         async with sem:
             kind = (asset.type or "").lower()
-            name = asset.name or "未命名"
+            name = asset.name or _("未命名")
             try:
                 prompt = await resolve_visual_prompt_for_asset(
                     asset,
@@ -418,7 +422,7 @@ async def seed_assets_from_script(
     # Create character/scene/prop/material assets from script if missing
     script = project.script
     if not script or not script.summary:
-        raise ValueError("请先生成剧本摘要")
+        raise ValueError(_("请先生成剧本摘要"))
 
     summary = script.summary if isinstance(script.summary, dict) else {}
     story_type = str(summary.get("storyType") or "").strip()
@@ -501,12 +505,7 @@ async def seed_assets_from_script(
 
     scene_names: list[str] = []
     for body in bodies:
-        for m in re.finditer(
-            r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?[ \t]*(?:内|外|内外)[ \t]+(.+)$",
-            body,
-            re.M,
-        ):
-            scene = m.group(1).strip().split("／")[0].split("/")[0].strip()
+        for scene in _iter_scene_location_names(body):
             if scene and scene not in scene_names:
                 scene_names.append(scene)
 
@@ -637,15 +636,25 @@ def _extract_scene_names_from_bodies(bodies: list[str]) -> list[str]:
     """从场头时间内外景行抽取场景名（去重保序）。"""
     scene_names: list[str] = []
     for body in bodies:
-        for m in re.finditer(
-            r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?[ \t]*(?:内|外|内外)[ \t]+(.+)$",
-            body,
-            re.M,
-        ):
-            scene = m.group(1).strip().split("／")[0].split("/")[0].strip()
+        for scene in _iter_scene_location_names(body):
             if scene and scene not in scene_names:
                 scene_names.append(scene)
     return scene_names
+
+
+def _iter_scene_location_names(body: str) -> list[str]:
+    """逐行匹配场头时间内外景行（兼容 LLM 输出的英/越场头），返回场景名。"""
+    out: list[str] = []
+    for line in (body or "").split("\n"):
+        m = SCENE_LOCATION_RE.match(line.rstrip("\r"))
+        if not m:
+            continue
+        scene = m.group(1).strip().split("／")[0].split("/")[0].strip()
+        if scene and not any("\u4e00" <= ch <= "\u9fff" for ch in scene):
+            # 西文场景名：去掉「- DAY」一类时段尾巴
+            scene = normalize_scene_location_name(scene) or scene
+        out.append(scene)
+    return out
 
 
 def collect_episode_seed_names(
@@ -713,7 +722,7 @@ async def seed_assets_from_episode_body(
     """正文生成后增量 seed：只扫该集出场人物/场景 + 全剧 summary 人物；不抽道具。"""
     script = project.script
     if not script or not script.summary:
-        raise ValueError("请先生成剧本摘要")
+        raise ValueError(_("请先生成剧本摘要"))
 
     summary = script.summary if isinstance(script.summary, dict) else {}
     story_type = str(summary.get("storyType") or "").strip()
@@ -830,10 +839,10 @@ async def seed_episodes_from_script(
     # Create / 重切分镜：按 ### 场次拆分并生成视频向分镜文案
     script = project.script
     if not script:
-        raise ValueError("缺少剧本")
+        raise ValueError(_("缺少剧本"))
     bodies = _normalize_episode_list(script.episode_content)
     if not bodies:
-        raise ValueError("请先生成分集剧本")
+        raise ValueError(_("请先生成分集剧本"))
 
     assets = list(
         (
@@ -880,7 +889,7 @@ async def seed_episodes_from_script(
         series_introduced: set[str] = set()
         for item in bodies:
             ep_no = int(item.get("episodeNumber") or len(created) + 1)
-            title = str(item.get("title") or f"第{ep_no}集")
+            title = str(item.get("title") or content_text("第{n}集", n=ep_no))
             body = str(item.get("body") or item.get("content") or "")
             episode = DramaEpisode(
                 project_id=project.id,
@@ -953,7 +962,7 @@ async def seed_episodes_from_script(
     for ep_no, item in sorted(body_by_number.items()):
         if ep_no in existing_numbers:
             continue
-        title = str(item.get("title") or f"第{ep_no}集")
+        title = str(item.get("title") or content_text("第{n}集", n=ep_no))
         body = str(item.get("body") or item.get("content") or "")
         episode = DramaEpisode(
             project_id=project.id,
@@ -985,7 +994,7 @@ def require_confirmable_episode_body(
     """取出指定集正文；缺失或过短则报错。"""
     number = int(episode_number)
     if number < 1:
-        raise ValueError("集号无效")
+        raise ValueError(_("集号无效"))
     item = None
     for row in _normalize_episode_list(episode_content):
         try:
@@ -996,17 +1005,18 @@ def require_confirmable_episode_body(
             item = row
             break
     if item is None:
-        raise ValueError(f"找不到第 {number} 集剧本")
+        raise ValueError(_("找不到第 {number} 集剧本", number=number))
     body = str(item.get("body") or item.get("content") or "")
     if _body_char_len(body) < MIN_EPISODE_CONTENT_CHARS:
         raise ValueError(
-            f"第 {number} 集正文过短，请先写完或让 AI 优化后再确认进入分镜"
+            _("第 {number} 集正文过短，请先写完或让 AI 优化后再确认进入分镜", number=number)
         )
     return item
 
 
 def _body_char_len(text: str) -> int:
-    return len("".join((text or "").split()))
+    # zh 为去空白字数（原逻辑）；vi/en 按词数折算
+    return text_units(text)
 
 
 def _episode_number_of(episode: DramaEpisode) -> int:
@@ -1113,9 +1123,9 @@ async def seed_single_episode_from_script(
     """只为指定集建行/按规则切分镜，不 force 时保留已有视频与手改。"""
     script = project.script
     if not script:
-        raise ValueError("缺少剧本")
+        raise ValueError(_("缺少剧本"))
     item = require_confirmable_episode_body(script.episode_content, episode_number)
-    title = str(item.get("title") or f"第{episode_number}集")
+    title = str(item.get("title") or content_text("第{n}集", n=episode_number))
     body = str(item.get("body") or item.get("content") or "")
 
     assets = list(
@@ -1189,7 +1199,7 @@ async def seed_single_episode_from_script(
     await db.commit()
     reloaded = await _reload_episode(db, int(target.id))
     if reloaded is None:
-        raise ValueError("分集写入后未能重新加载")
+        raise ValueError(_("分集写入后未能重新加载"))
     logger.info(
         "单集切分镜完成 project_id=%s episode_number=%s episode_id=%s fragments=%s",
         project.id,
@@ -1450,21 +1460,24 @@ def _character_stub_from_cast(
     """分集出场但摘要未写小传时的角色 stub（供建资产 + 后续 AI 补提示词）。"""
     from app.services.drama.build_fragments import infer_character_intro_text
 
-    genre = (story_type or "").strip() or "短剧"
+    # 占位文案按内容语言；build_fragments._is_generic_intro_text 能识别各语言版本
+    t = content_text
+    genre = (story_type or "").strip() or t("短剧")
     stub_params = {
         "name": name,
-        "title": "出场人物",
-        "roleType": "配角",
-        "visualImage": (
-            f"{name}，{genre}人物定妆，可辨识面容与服饰，体态与气质贴合身份，"
-            "影视级写实，白底全身可拍摄"
+        "title": t("出场人物"),
+        "roleType": t("配角"),
+        "visualImage": t(
+            "{name}，{genre}人物定妆，可辨识面容与服饰，体态与气质贴合身份，影视级写实，白底全身可拍摄",
+            name=name,
+            genre=genre,
         ),
-        "coreTags": "出场人物",
+        "coreTags": t("出场人物"),
         "personality": "",
-        "identityBackground": f"剧本分集出场人物「{name}」",
+        "identityBackground": t("剧本分集出场人物「{name}」", name=name),
         "growthExperience": "",
         "relationships": "",
-        "growthArc": "出场 -> 卷入冲突 -> 结局余韵",
+        "growthArc": t("出场 -> 卷入冲突 -> 结局余韵"),
     }
     intro = infer_character_intro_text(name, stub_params, summary, bodies)
     if intro:

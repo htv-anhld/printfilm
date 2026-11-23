@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -31,7 +32,7 @@ async def get_script(
 ) -> DramaScriptOut:
     project = await get_owned_drama_project(db, project_id, user, with_script=True)
     if not project.script:
-        raise HTTPException(status_code=404, detail="剧本不存在")
+        raise HTTPException(status_code=404, detail=_("剧本不存在"))
     return DramaScriptOut.model_validate(project.script)
 
 
@@ -44,7 +45,7 @@ async def update_script(
 ) -> DramaScriptOut:
     project = await get_owned_drama_project(db, project_id, user, with_script=True)
     if not project.script:
-        raise HTTPException(status_code=404, detail="剧本不存在")
+        raise HTTPException(status_code=404, detail=_("剧本不存在"))
     script = project.script
     if body.source is not None:
         script.source = body.source

@@ -10,6 +10,16 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from app.services.kepu_locale import (
+    LATIN_WORDS_PER_SEC,
+    cjk_equivalent_length,
+    has_cjk,
+    latin_text,
+    localize_subtitle_language_cues,
+    speech_language_addon,
+    word_count,
+)
+
 SEGMENT_DURATION_MIN = 3
 SEGMENT_DURATION_MAX = 12
 SHOT_DURATION_MIN = 4
@@ -37,6 +47,39 @@ LEGACY_DRAMA_SUBTITLE_CUES = (
 DEFAULT_BGM_MOOD = "贴合内容的轻量配乐，情绪平稳，不抢旁白"
 SEEDANCE_PRODUCTION_SECTION_HEADER = "【强制约束：音频、字幕与配乐】"
 
+# ---- 越南语 / 英语内容项目：用户可见、可编辑的 cue 一律用英文（解析器同时认中英两种写法） ----
+SUBTITLE_CUE_EN = "【Subtitles: added in post, narration captions synced line by line】"
+NARRATION_PREFIX_EN = "【Narration · natural pace · synced subtitles】"
+NARRATION_PREFIX_EN_PLAIN = "【Narration · natural pace】"
+DEFAULT_BGM_MOOD_EN = "light music that fits the content, steady mood, never over the narration"
+BGM_BELOW_VOICE_EN = "below the voice"
+DEFAULT_VISUAL_EN = "Subtle motion, keep the subject steady"
+# cue 行前缀（中 / 英）
+SUBTITLE_CUE_PREFIXES = ("【字幕", "【Subtitles")
+BGM_CUE_PREFIXES = ("【BGM",)
+NARRATION_CUE_PREFIXES = ("【旁白", "【Narration")
+
+
+def is_subtitle_cue_line(line: str) -> bool:
+    return (line or "").strip().startswith(SUBTITLE_CUE_PREFIXES)
+
+
+def is_cue_line(line: str) -> bool:
+    """字幕 / BGM cue 行（中英两种写法）。"""
+    stripped = (line or "").strip()
+    return stripped.startswith(SUBTITLE_CUE_PREFIXES) or stripped.startswith(BGM_CUE_PREFIXES)
+
+
+def script_uses_english_cues(content: str) -> bool:
+    """脚本是否为英文 cue 版本（越南语 / 英语内容项目生成）。"""
+    text = content or ""
+    return "【Subtitles" in text or "【Narration" in text
+
+
+def _cue_locale(content_locale: str | None) -> str:
+    loc = (content_locale or "zh").strip().lower()[:2]
+    return "en" if loc in {"en", "vi"} else "zh"
+
 # 空镜/景别冒号标签：正文若以此开头则不得配音、不得烧字幕
 VISUAL_SHOT_LABEL_RE = re.compile(
     r"^(?:"
@@ -45,8 +88,47 @@ VISUAL_SHOT_LABEL_RE = re.compile(
     r"建立镜头|气氛镜头"
     r")\s*[：:]"
 )
+# 英语 / 越南语画面标签（前端运镜词库插入的「Wide shot: 」「Viễn cảnh: 」等；不区分大小写）
+LATIN_VISUAL_SHOT_LABELS: tuple[str, ...] = (
+    # en — frontend lib.camera.items.*.insert
+    "empty shot", "wide shot", "full shot", "medium shot", "close shot", "close-up", "close up",
+    "closeup", "extreme close-up", "extreme close up", "establishing shot", "establishing",
+    "atmosphere shot", "push in", "pull out", "pan", "truck", "tracking shot", "high angle",
+    "low angle", "aerial shot", "visual", "environment", "shot", "action", "transition",
+    "flashback",
+    # vi
+    "cảnh trống", "viễn cảnh", "toàn cảnh", "trung cảnh", "cận cảnh", "đặc tả", "đại đặc tả",
+    "cảnh thiết lập", "cảnh không khí", "đẩy máy", "kéo máy", "lia máy", "dịch máy", "máy theo",
+    "góc cao", "góc thấp", "flycam", "hình ảnh", "môi trường", "cảnh quay", "hành động",
+    "chuyển cảnh", "hồi tưởng",
+)
+LATIN_VISUAL_SHOT_LABEL_RE = re.compile(
+    r"^(?:"
+    + "|".join(re.escape(x) for x in sorted(LATIN_VISUAL_SHOT_LABELS, key=len, reverse=True))
+    + r")\s*[：:]",
+    re.IGNORECASE,
+)
+# 空镜的英语 / 越南语写法
+LATIN_EMPTY_SHOT_PREFIXES: tuple[str, ...] = ("empty shot", "cảnh trống")
+
+
+def match_visual_shot_label(text: str) -> bool:
+    """正文是否以画面/景别标签开头（中文「远景：」或英语/越南语「Wide shot:」「Viễn cảnh:」）。"""
+    body = (text or "").strip()
+    return bool(VISUAL_SHOT_LABEL_RE.match(body) or LATIN_VISUAL_SHOT_LABEL_RE.match(body))
+
+
+def starts_with_empty_shot(text: str) -> bool:
+    """「空镜」/ Empty shot / Cảnh trống 开头。"""
+    body = (text or "").strip()
+    if body.startswith("空镜"):
+        return True
+    lowered = body.lower()
+    return any(lowered.startswith(p) for p in LATIN_EMPTY_SHOT_PREFIXES)
+
+
 VOICE_CUE_PREFIX_RE = re.compile(
-    r"^【(?:对白|旁白|内心独白)[^】]*】\s*"
+    r"^【(?:对白|旁白|内心独白|Narration|Dialogue|Inner monologue)[^】]*】\s*"
 )
 # 角色（vo，低落）。——只有舞台指示、没有台词
 STAGE_ONLY_SPEAKER_RE = re.compile(
@@ -66,6 +148,7 @@ _TIME_OR_DURATION_PREFIX_RE = re.compile(
 
 PRODUCTION_META_PREFIXES = (
     "【字幕",
+    "【Subtitles",
     "【BGM",
     "【配乐",
     "【人物介绍",
@@ -91,9 +174,9 @@ def is_visual_description_body(text: str) -> bool:
     body = re.sub(r"^【(?:画面|空镜)[^】]*】\s*", "", body).strip()
     if not body:
         return False
-    if VISUAL_SHOT_LABEL_RE.match(body):
+    if match_visual_shot_label(body):
         return True
-    if body.startswith("空镜") or body.startswith("△") or body.startswith("Δ"):
+    if starts_with_empty_shot(body) or body.startswith("△") or body.startswith("Δ"):
         return True
     return False
 
@@ -147,7 +230,7 @@ def classify_voice_body(body: str) -> str:
     text = (body or "").strip()
     if not text:
         return "keep"
-    if VISUAL_SHOT_LABEL_RE.match(text) or text.startswith("空镜") or text.startswith("△"):
+    if match_visual_shot_label(text) or starts_with_empty_shot(text) or text.startswith("△"):
         return "visual"
     stage = STAGE_ONLY_SPEAKER_RE.match(text)
     if stage and not is_generic_narrator_name(stage.group("speaker")):
@@ -157,7 +240,7 @@ def classify_voice_body(body: str) -> str:
     spoken = SPEAKER_DIALOGUE_RE.match(text)
     if spoken:
         speaker = spoken.group("speaker").strip()
-        if VISUAL_SHOT_LABEL_RE.match(f"{speaker}："):
+        if match_visual_shot_label(f"{speaker}："):
             return "visual"
         if is_generic_narrator_name(speaker):
             return "narration"
@@ -195,14 +278,14 @@ def rewrite_character_vo_voice_lines(content: str) -> str:
             else:
                 out.append(f"{VISUAL_PREFIX}{body}")
             continue
-        if kind == "dialogue" and not prefix.startswith("【对白"):
+        if kind == "dialogue" and not prefix.startswith(("【对白", "【Dialogue")):
             out.append(f"{_dialogue_prefix_like(prefix)}{body}")
             continue
-        if kind == "inner" and not prefix.startswith("【内心独白"):
+        if kind == "inner" and not prefix.startswith(("【内心独白", "【Inner monologue")):
             inner = "【内心独白·同步字幕】" if "同步字幕" in prefix else "【内心独白】"
             out.append(f"{inner}{body}")
             continue
-        if kind == "narration" and not prefix.startswith("【旁白"):
+        if kind == "narration" and not prefix.startswith(NARRATION_CUE_PREFIXES):
             out.append(f"【旁白·慢速清晰】{body}")
             continue
         out.append(raw)
@@ -240,7 +323,7 @@ def script_has_narration_cue(content: str) -> bool:
             continue
         if is_visual_description_body(line):
             continue
-        if NARRATION_PREFIX in line or line.startswith("【旁白"):
+        if NARRATION_PREFIX in line or line.startswith(NARRATION_CUE_PREFIXES):
             return True
     return False
 
@@ -308,8 +391,8 @@ class SegmentBeat:
 
 def suggested_kepu_shot_range(source_text: str, *, pipeline_mode: str = "full") -> tuple[int, int]:
     """按文案字数给出科普分镜数量区间（完整模式偏多镜、短镜）。"""
-    # n 去掉空白后的字数，用于短/中/长文分档
-    n = len(re.sub(r"\s+", "", source_text or ""))
+    # n 去掉空白后的字数，用于短/中/长文分档；越南语/英语按词折算成同等朗读时长的字数
+    n = cjk_equivalent_length(source_text or "")
     if pipeline_mode == "image_text":
         if n < 180:
             return 5, 8
@@ -339,6 +422,12 @@ def estimate_narration_duration(text: str) -> int:
     clean = re.sub(r"^【[^】]*】", "", clean).strip()
     if not clean:
         return SEGMENT_DURATION_MIN
+    body = re.sub(r"^【[^】]*】", "", (text or "").strip()).strip()
+    if latin_text(body):
+        # 越南语/英语：约 2.7 词/秒，同样 +1 秒呼吸
+        words = word_count(body)
+        secs = max(SEGMENT_DURATION_MIN, int(-(-words // LATIN_WORDS_PER_SEC)) + 1)
+        return clamp_segment_duration(secs)
     # (n + 4) // 5 ≈ 5 字/秒，略留半拍呼吸
     secs = max(SEGMENT_DURATION_MIN, int((len(clean) + 4) // 5) + 1)
     return clamp_segment_duration(secs)
@@ -348,11 +437,29 @@ def estimate_visual_duration(text: str) -> int:
     clean = (text or "").strip()
     if not clean:
         return SEGMENT_DURATION_MIN
+    body = re.sub(r"^【[^】]*】", "", clean).strip()
+    if latin_text(body):
+        n = word_count(body)
+        if n < 10:
+            return SEGMENT_DURATION_MIN
+        if n < 25:
+            return 4
+        return clamp_segment_duration(6)
     if len(clean) < 20:
         return SEGMENT_DURATION_MIN
     if len(clean) < 50:
         return 4
     return clamp_segment_duration(6)
+
+
+def infer_bgm_mood_for(content_locale: str | None, *hints: str) -> str:
+    """按内容语言推断 BGM 氛围；zh 与 infer_bgm_mood 相同，vi/en 返回英文。"""
+    mood = infer_bgm_mood(*hints)
+    if _cue_locale(content_locale) == "zh":
+        return mood
+    from app.services.templates_prompts_en import BGM_MOODS_EN
+
+    return BGM_MOODS_EN.get(mood, mood)
 
 
 def infer_bgm_mood(*hints: str) -> str:
@@ -391,13 +498,25 @@ def script_bgm_mood(segment_script: str) -> str:
             mood = line.removeprefix("【BGM：").removesuffix("】").strip()
             if mood:
                 return mood
+        if line.startswith("【BGM:"):
+            mood = line.removeprefix("【BGM:").removesuffix("】").strip()
+            if mood:
+                return mood
         peiyue = parse_peiyue_mood(raw)
         if peiyue:
             return peiyue
     return infer_bgm_mood(segment_script)
 
 
-def build_production_cues(bgm_mood: str) -> list[str]:
+def build_production_cues(bgm_mood: str, content_locale: str | None = None) -> list[str]:
+    """字幕 / BGM cue；vi / en 内容项目用英文 cue（zh 与旧版逐字一致）。"""
+    if _cue_locale(content_locale) != "zh":
+        from app.services.templates_prompts_en import prompt_en
+
+        mood = prompt_en((bgm_mood or "").strip()) or DEFAULT_BGM_MOOD_EN
+        if BGM_BELOW_VOICE_EN not in mood:
+            mood = f"{mood}, {BGM_BELOW_VOICE_EN}"
+        return [SUBTITLE_CUE_EN, f"【BGM: mixed in post · {mood}】"]
     mood = (bgm_mood or "").strip() or DEFAULT_BGM_MOOD
     if "音量低于人声" not in mood:
         mood = f"{mood}，音量低于人声"
@@ -410,6 +529,7 @@ _POST_SUBTITLE_PREFIX_MAP = (
     ("【旁白·慢速清晰·同步字幕】", "【旁白·慢速清晰】"),
     ("【旁白·自然语速·同步字幕】", "【旁白·自然语速】"),
     ("【内心独白·同步字幕】", "【内心独白】"),
+    (NARRATION_PREFIX_EN, NARRATION_PREFIX_EN_PLAIN),
 )
 
 
@@ -421,7 +541,7 @@ def strip_model_burn_subtitle_cues(content: str) -> str:
         if not stripped:
             out.append(raw)
             continue
-        if stripped.startswith("【字幕"):
+        if stripped.startswith(SUBTITLE_CUE_PREFIXES):
             continue
         line = stripped
         for src, dest in _POST_SUBTITLE_PREFIX_MAP:
@@ -471,7 +591,7 @@ def build_seedance_production_section(
     drama_mixed = script_is_drama_mixed(segment_script)
     bgm_mood = script_bgm_mood(segment_script)
 
-    if "音量低于人声" not in bgm_mood:
+    if "音量低于人声" not in bgm_mood and BGM_BELOW_VOICE_EN not in bgm_mood:
         bgm_mood = f"{bgm_mood}，音量低于人声"
 
     # 后期字幕：口播保留，画面禁止任何文字（字幕交给剪辑/导出 SRT）
@@ -568,7 +688,7 @@ def build_seedance_production_section(
     return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n" + "\n".join(lines)
 
 
-def format_segment_line(kind: str, text: str) -> str:
+def format_segment_line(kind: str, text: str, content_locale: str | None = None) -> str:
     clean = (text or "").strip()
     if not clean:
         return ""
@@ -576,7 +696,8 @@ def format_segment_line(kind: str, text: str) -> str:
         return clean
     k = (kind or "visual").strip().lower()
     if k in {"narration", "vo", "旁白"}:
-        return f"{NARRATION_PREFIX}{clean}"
+        prefix = NARRATION_PREFIX if _cue_locale(content_locale) == "zh" else NARRATION_PREFIX_EN
+        return f"{prefix}{clean}"
     return clean
 
 
@@ -622,15 +743,17 @@ def narration_from_script(content: str) -> str:
         if (
             not line
             or line.startswith("@duration:")
-            or line.startswith("【字幕")
-            or line.startswith("【BGM")
+            or is_cue_line(line)
         ):
             continue
-        if NARRATION_PREFIX in line or "旁白" in line[:20]:
+        if NARRATION_PREFIX in line or "旁白" in line[:20] or line.startswith("【Narration"):
             text = re.sub(r"^【[^】]*】", "", line).strip()
             if text:
                 lines.append(text)
-    return "".join(lines) if lines else ""
+    if not lines:
+        return ""
+    # 越南语/英语旁白按空格连接，中文保持无分隔拼接
+    return "".join(lines) if has_cjk("".join(lines)) else " ".join(lines)
 
 
 def first_visual_prompt(content: str) -> str:
@@ -639,18 +762,17 @@ def first_visual_prompt(content: str) -> str:
         if (
             not line
             or line.startswith("@duration:")
-            or line.startswith("【字幕")
-            or line.startswith("【BGM")
+            or is_cue_line(line)
         ):
             continue
-        if NARRATION_PREFIX in line or line.startswith("【旁白"):
+        if NARRATION_PREFIX in line or line.startswith(NARRATION_CUE_PREFIXES):
             continue
         cleaned = re.sub(r"^【[^】]*】", "", line).strip()
         if cleaned:
             return cleaned
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
-        if line and not line.startswith("@") and not line.startswith("【字幕") and not line.startswith("【BGM"):
+        if line and not line.startswith("@") and not is_cue_line(line):
             return re.sub(r"^【[^】]*】", "", line).strip()
     return ""
 
@@ -658,9 +780,13 @@ def first_visual_prompt(content: str) -> str:
 def _is_narration_script_line(line: str) -> bool:
     """判断脚本行是否为旁白口播（含新旧前缀）；字幕 cue 里虽含「旁白」二字但不算。"""
     stripped = (line or "").strip()
-    if not stripped or stripped.startswith("【字幕") or stripped.startswith("【BGM"):
+    if not stripped or is_cue_line(stripped):
         return False
-    return stripped.startswith("【旁白") or NARRATION_PREFIX in stripped or LEGACY_NARRATION_PREFIX in stripped
+    return (
+        stripped.startswith(NARRATION_CUE_PREFIXES)
+        or NARRATION_PREFIX in stripped
+        or LEGACY_NARRATION_PREFIX in stripped
+    )
 
 
 def replace_narration_in_script(content: str, narration: str) -> str:
@@ -673,7 +799,7 @@ def replace_narration_in_script(content: str, narration: str) -> str:
         stripped = raw.strip()
         if text and _is_narration_script_line(stripped) and not replaced:
             prefix_m = re.match(r"^(【[^】]*】)\s*", stripped)
-            prefix = prefix_m.group(1) if prefix_m else NARRATION_PREFIX
+            prefix = prefix_m.group(1) if prefix_m else _narration_prefix_for_script(content)
             out.append(f"{prefix}{text}")
             replaced = True
             continue
@@ -681,8 +807,13 @@ def replace_narration_in_script(content: str, narration: str) -> str:
     if text and not replaced:
         dur = estimate_narration_duration(text)
         out.append(f"@duration:{dur}")
-        out.append(f"{NARRATION_PREFIX}{text}")
+        out.append(f"{_narration_prefix_for_script(content)}{text}")
     return "\n".join(out).strip()
+
+
+def _narration_prefix_for_script(content: str) -> str:
+    """英文 cue 脚本用英文旁白前缀，否则沿用中文。"""
+    return NARRATION_PREFIX_EN if script_uses_english_cues(content) else NARRATION_PREFIX
 
 
 def replace_first_visual_in_script(content: str, visual: str) -> str:
@@ -697,7 +828,7 @@ def replace_first_visual_in_script(content: str, visual: str) -> str:
     cue_end = 0
     for i, raw in enumerate(lines):
         stripped = raw.strip()
-        if stripped.startswith("【字幕") or stripped.startswith("【BGM") or not stripped:
+        if is_cue_line(stripped) or not stripped:
             cue_end = i + 1
             continue
         break
@@ -707,8 +838,7 @@ def replace_first_visual_in_script(content: str, visual: str) -> str:
             not replaced
             and stripped
             and not stripped.startswith("@duration:")
-            and not stripped.startswith("【字幕")
-            and not stripped.startswith("【BGM")
+            and not is_cue_line(stripped)
             and not _is_narration_script_line(stripped)
         ):
             out.append(text)
@@ -727,11 +857,13 @@ def build_segment_script(
     *,
     bgm_mood: str,
     max_total: int = SHOT_DURATION_MAX,
+    content_locale: str | None = None,
 ) -> str:
-    lines = build_production_cues(bgm_mood)
+    """content_locale 为 vi / en 时 cue 与旁白前缀用英文。"""
+    lines = build_production_cues(bgm_mood, content_locale)
     used = 0
     for beat in beats:
-        text = format_segment_line(beat.kind, beat.text)
+        text = format_segment_line(beat.kind, beat.text, content_locale)
         if not text:
             continue
         if beat.kind in {"narration", "vo", "旁白"}:
@@ -749,11 +881,15 @@ def build_segment_script(
             break
     if used == 0:
         lines.append(f"@duration:{SEGMENT_DURATION_MIN}")
-        lines.append("画面轻微动态，保持主体稳定")
+        lines.append("画面轻微动态，保持主体稳定" if _cue_locale(content_locale) == "zh" else DEFAULT_VISUAL_EN)
     return "\n".join(lines).strip()
 
 
-def parse_beats_from_llm_shot(item: dict[str, Any], narration_fallback: str = "") -> list[SegmentBeat]:
+def parse_beats_from_llm_shot(
+    item: dict[str, Any],
+    narration_fallback: str = "",
+    content_locale: str | None = None,
+) -> list[SegmentBeat]:
     """Accept either segments[] or legacy flat text/img_prompt/video_prompt."""
     beats: list[SegmentBeat] = []
     segs = item.get("segments")
@@ -789,7 +925,12 @@ def parse_beats_from_llm_shot(item: dict[str, Any], narration_fallback: str = ""
     if img:
         beats.append(SegmentBeat(duration=estimate_visual_duration(img), kind="visual", text=img))
     elif video:
-        visual = video if not camera else f"{video}，运镜：{camera}"
+        if not camera:
+            visual = video
+        elif _cue_locale(content_locale) == "zh":
+            visual = f"{video}，运镜：{camera}"
+        else:
+            visual = f"{video}, camera: {camera}"
         beats.append(SegmentBeat(duration=estimate_visual_duration(visual), kind="visual", text=visual))
     if text:
         beats.append(
@@ -806,7 +947,7 @@ def seedance_timeline_without_voice(segment_script: str) -> str:
     out: list[str] = []
     for raw in (segment_script or "").replace("\r\n", "\n").split("\n"):
         stripped = raw.strip()
-        if stripped.startswith("【字幕") or stripped.startswith("【BGM"):
+        if is_cue_line(stripped):
             continue
         if _is_narration_script_line(stripped):
             out.append(
@@ -831,8 +972,12 @@ def build_seedance_prompt(
     ambient_only: bool = False,
     burn_subtitles: bool = True,
     character_intro: bool = True,
+    content_locale: str | None = None,
 ) -> str:
-    """Assemble final Seedance text: style lock + production constraints + timed body."""
+    """Assemble final Seedance text: style lock + production constraints + timed body.
+
+    content_locale 非 zh 时追加口播语言约束（人声/字幕跟随内容语言，不说普通话）。
+    """
     parts: list[str] = []
     style = (style_prefix or "").strip()
     if style:
@@ -853,6 +998,10 @@ def build_seedance_prompt(
             character_intro=character_intro and not ambient_only,
         )
     )
+    if not ambient_only:
+        lang_rule = speech_language_addon(content_locale)
+        if lang_rule:
+            parts.append(lang_rule)
     parts.append(
         "【强制约束：节奏与画面】严格按时间轴段落演绎画面；"
         "保持主体外形与首帧一致，动作自然。"
@@ -867,7 +1016,9 @@ def build_seedance_prompt(
     )
     body = replace_duration_with_time_ranges(body_src)
     parts.append(body.strip())
-    return "\n".join(p for p in parts if p).strip()
+    prompt = "\n".join(p for p in parts if p).strip()
+    # 非中文内容：字幕 cue / 字幕规则里的「简体中文」跟随内容语言
+    return localize_subtitle_language_cues(prompt, content_locale)
 
 
 def resolve_api_duration(
@@ -883,37 +1034,44 @@ def resolve_api_duration(
     return clamp_shot_total(total, lo=lo, hi=hi)
 
 
-def apply_segment_script_edit(script: str, *, bgm_mood: str | None = None) -> dict[str, Any]:
-    """Normalize an edited script: ensure cues, recompute duration/narration/img."""
+def apply_segment_script_edit(
+    script: str,
+    *,
+    bgm_mood: str | None = None,
+    content_locale: str | None = None,
+) -> dict[str, Any]:
+    """Normalize an edited script: ensure cues, recompute duration/narration/img.
+
+    content_locale 未传时：脚本已是英文 cue（vi / en 项目生成）则保持英文 cue，否则中文。
+    """
     content = normalize_kepu_subtitle_cue((script or "").strip())
+    if content_locale is None:
+        content_locale = "en" if script_uses_english_cues(content) else "zh"
+    zh = _cue_locale(content_locale) == "zh"
     if not content:
         content = build_segment_script(
-            [SegmentBeat(duration=4, kind="visual", text="画面轻微动态，保持主体稳定")],
-            bgm_mood=bgm_mood or DEFAULT_BGM_MOOD,
+            [SegmentBeat(duration=4, kind="visual", text="画面轻微动态，保持主体稳定" if zh else DEFAULT_VISUAL_EN)],
+            bgm_mood=bgm_mood or (DEFAULT_BGM_MOOD if zh else DEFAULT_BGM_MOOD_EN),
+            content_locale=content_locale,
         )
     else:
-        cues = build_production_cues(bgm_mood or infer_bgm_mood(content))
-        body_lines = [
-            ln
-            for ln in content.splitlines()
-            if not ln.strip().startswith("【字幕") and not ln.strip().startswith("【BGM")
-        ]
+        cues = build_production_cues(
+            bgm_mood or infer_bgm_mood_for(content_locale, content), content_locale
+        )
+        body_lines = [ln for ln in content.splitlines() if not is_cue_line(ln)]
         content = "\n".join(cues + body_lines).strip()
         if not extract_durations(content):
-            body = "\n".join(
-                ln
-                for ln in content.splitlines()
-                if not ln.strip().startswith("【字幕") and not ln.strip().startswith("【BGM")
-            ).strip()
+            body = "\n".join(ln for ln in content.splitlines() if not is_cue_line(ln)).strip()
             content = build_segment_script(
                 [
                     SegmentBeat(
                         duration=estimate_narration_duration(body),
                         kind="narration",
-                        text=body or "平稳推进",
+                        text=body or ("平稳推进" if zh else "Steady progression"),
                     )
                 ],
-                bgm_mood=bgm_mood or infer_bgm_mood(content),
+                bgm_mood=bgm_mood or infer_bgm_mood_for(content_locale, content),
+                content_locale=content_locale,
             )
     return {
         "segment_script": content,

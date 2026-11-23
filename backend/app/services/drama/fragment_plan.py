@@ -40,6 +40,8 @@ from app.services.drama.fragment_plan_prompt import (
     build_fragment_plan_user_prompt,
 )
 from app.services.agent.runner import run_task_json
+from app.i18n import _
+from app.services.drama.content_locale import content_text, first_sentence, is_zh, with_output_language
 
 logger = logging.getLogger(__name__)
 
@@ -192,10 +194,12 @@ def _build_opening_cue_lines(
     ep_no = int(episode_number or 0)
     title = (episode_name or "").strip()
     series = (project_title or "").strip()
+    # 叠字文字会烧进画面：集号按内容语言（zh 为「第N集」原样）
+    ep_label = content_text("第{n}集", n=ep_no) if ep_no > 0 else ""
     if ep_no > 0 and title:
-        cues.append(f"【片头·集号叠字】第{ep_no}集｜{title}")
+        cues.append(f"【片头·集号叠字】{ep_label}｜{title}")
     elif ep_no > 0:
-        cues.append(f"【片头·集号叠字】第{ep_no}集")
+        cues.append(f"【片头·集号叠字】{ep_label}")
     elif title:
         cues.append(f"【片头·集名叠字】{title}")
     if series:
@@ -205,9 +209,14 @@ def _build_opening_cue_lines(
         cues.append(f"【片头·类型标注】{genre}")
     bg = (background_blurb or one_line_story or "").strip()
     if bg:
-        short = re.split(r"[。！？]", bg, maxsplit=1)[0].strip() or bg
-        if len(short) > 48:
-            short = short[:47] + "…"
+        if is_zh():
+            short = re.split(r"[。！？]", bg, maxsplit=1)[0].strip() or bg
+            limit = 48
+        else:
+            short = first_sentence(bg)
+            limit = 120
+        if len(short) > limit:
+            short = short[: limit - 1] + "…"
         cues.append(f"【背景介绍·画面叠字】{short}")
     return cues
 
@@ -610,7 +619,8 @@ async def plan_fragments_with_llm(
         db,
         user_id,
         task="shot_plan",
-        system=FRAGMENT_PLAN_SYSTEM_PROMPT,
+        # 非中文项目：对白/旁白/画面描写用内容语言，行标签保持中文（见 drama_output_directive）
+        system=with_output_language(FRAGMENT_PLAN_SYSTEM_PROMPT),
         user=user_prompt,
         temperature=0.4,
         skill_ids=skill_ids,
@@ -621,7 +631,7 @@ async def plan_fragments_with_llm(
     elif isinstance(raw, list):
         items = raw
     if not isinstance(items, list) or not items:
-        raise RuntimeError("LLM 分镜结果为空")
+        raise RuntimeError(_("LLM 分镜结果为空"))
 
     items = cap_llm_fragment_items(items)
 
@@ -644,7 +654,7 @@ async def plan_fragments_with_llm(
         include_character_intro=include_character_intro,
     )
     if not drafts:
-        raise RuntimeError("LLM 分镜规范化后为空")
+        raise RuntimeError(_("LLM 分镜规范化后为空"))
     drafts = trim_episode_fragment_drafts(drafts)
     logger.info(
         "LLM 分镜完成 episode=%s ep_no=%s fragments=%s introduced_before=%s locked=%s",

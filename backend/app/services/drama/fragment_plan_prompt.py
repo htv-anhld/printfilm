@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
+
+from app.services.drama.content_locale import content_text, text_units
 
 FRAGMENT_PLAN_SYSTEM_PROMPT = """你是短剧视频分镜导演，负责把「场记剧本」拆成适合 AI 视频模型（Seedance 2.5）逐条生成的分镜。
 
@@ -103,7 +104,8 @@ def build_fragment_plan_user_prompt(
 ) -> str:
     # 拼装用户侧：集号/背景元信息 + 分集正文 + 资产目录
     ep_no = int(episode_number or 0)
-    ep_label = f"第{ep_no}集" if ep_no > 0 else "本集"
+    # 集号原文会被写进开幕叠字：按内容语言（zh 为「第N集」）
+    ep_label = content_text("第{n}集", n=ep_no) if ep_no > 0 else "本集"
     locked = [str(s).strip() for s in (locked_summaries or []) if str(s).strip()]
     lines = [
         f"剧名：{(project_title or '').strip() or '未命名短剧'}",
@@ -156,7 +158,8 @@ def build_fragment_plan_user_prompt(
             lines.append(f"- 故事梗概（背景参考）：{syn}")
 
     body_text = (episode_body or "").strip() or "（空）"
-    body_len = len(re.sub(r"\s+", "", body_text))
+    # zh：去空白字数；vi/en：按词数折算的汉字当量（阈值 550 共用）
+    body_len = text_units(body_text)
     lines.extend(
         [
             "",

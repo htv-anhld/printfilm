@@ -10,6 +10,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.i18n import _, get_locale, translate
 from app.models import Project, Shot, User
 from app.models_drama import DramaAsset, DramaEpisode, DramaEpisodeFragment, DramaProject, DramaScript
 from app.models_tasks import TaskEvent, TaskRun, TaskStep, TaskTarget
@@ -27,6 +28,12 @@ ACTIVE_TASK_STATUSES = {
     "awaiting_review",
     "cancel_requested",
 }
+
+
+def task_text(task: Any, source: str, /, **vars: object) -> str:
+    """按任务发起人语言翻译（调度器/轮询等无请求上下文时用）；task 无 locale 时退回当前语言。"""
+    loc = getattr(task, "locale", None) if task is not None else None
+    return translate(source, loc or None, **vars)
 
 
 def task_detail_options() -> tuple:
@@ -103,7 +110,7 @@ async def create_task(
     await _validate_task_scope(db, user, body)
     handler = get_task_handler(body.domain, body.task_type)
     if handler is None:
-        raise ValueError("当前任务类型尚未接入任务平台")
+        raise ValueError(_("当前任务类型尚未接入任务平台"))
     from app.services.billing.settlement import ensure_balance_for_task
 
     balance_probe = TaskRun(
@@ -148,6 +155,7 @@ async def create_task(
         asset_id=body.asset_id,
         shot_id=body.shot_id,
         billing_estimate_fen=int(estimate_fen or 0),
+        locale=get_locale(),
     )
     db.add(task)
     await db.flush()
@@ -170,7 +178,7 @@ async def create_task(
                 event_type="task.created",
                 status=task.status,
                 phase=task.current_step_key,
-                message=f"创建任务 {task.task_type}",
+                message=_("创建任务 {task_type}", task_type=task.task_type),
                 payload={"domain": task.domain},
             ),
         )
@@ -213,7 +221,7 @@ async def activate_next_sequential_task(db: AsyncSession, batch_key: str | None,
             event_type="task.activated",
             status=task.status,
             phase=task.current_step_key,
-            message=f"前置分镜已完成，激活 batch 第 {next_index + 1} 镜",
+            message=task_text(task, "前置分镜已完成，激活 batch 第 {n} 镜", n=next_index + 1),
         )
         await db.commit()
         return
@@ -315,7 +323,7 @@ def stale_pending_fragment_video_reason(frags: list[Any], task: Any | None = Non
     from app.services.drama.generation import fragment_generation_status
 
     if not frags:
-        return _STALE_FRAGMENT_REASON
+        return task_text(task, _STALE_FRAGMENT_REASON)
     payload = getattr(task, "payload", None) if task is not None else None
     # 重新生成会保留旧 video，调度器不能当成重复任务取消
     if isinstance(payload, dict) and payload.get("replace_existing_video"):
@@ -326,7 +334,7 @@ def stale_pending_fragment_video_reason(frags: list[Any], task: Any | None = Non
         status = str(fragment_generation_status(frag).get("status") or "").lower()
         if status in _ACTIVE_FRAGMENT_VIDEO_GEN:
             return None
-    return "分镜已生成完成，跳过重复任务"
+    return task_text(task, "分镜已生成完成，跳过重复任务")
 
 
 # 将任务标记为因分镜变更而取消（立即终态，不走 cancel_requested）。
@@ -380,7 +388,7 @@ async def cancel_fragment_video_tasks_for_fragments(
         refs = task_fragment_ids(task)
         if not refs or not id_set.intersection(refs):
             continue
-        await _mark_task_cancelled_stale(db, task, reason, now)
+        await _mark_task_cancelled_stale(db, task, task_text(task, reason), now)
         changed += 1
     if changed:
         logger.info(
@@ -424,7 +432,7 @@ async def reconcile_stale_pending_tasks(db: AsyncSession) -> int:
                     event_type="task.poll_resumed",
                     status=task.status,
                     phase=task.current_step_key,
-                    message="释放异常过长的收尾认领，恢复上游轮询",
+                    message=task_text(task, "释放异常过长的收尾认领，恢复上游轮询"),
                 )
                 changed += 1
                 continue
@@ -433,7 +441,7 @@ async def reconcile_stale_pending_tasks(db: AsyncSession) -> int:
         if not frag_ids:
             # fragment_id 已被 detach、payload 也无 id → 无法回写，直接作废
             if task.status in {"awaiting_poll", "running", "leased"}:
-                await _mark_task_cancelled_stale(db, task, _STALE_FRAGMENT_REASON, now)
+                await _mark_task_cancelled_stale(db, task, task_text(task, _STALE_FRAGMENT_REASON), now)
                 changed += 1
             continue
 
@@ -582,7 +590,7 @@ async def reconcile_sequential_batches(db: AsyncSession) -> int:
                     event_type="task.activated",
                     status=task.status,
                     phase=task.current_step_key,
-                    message=f"并发空位可用，激活排队任务（上限 {limit}）",
+                    message=task_text(task, "并发空位可用，激活排队任务（上限 {limit}）", limit=limit),
                 )
                 changed += 1
                 activated += 1
@@ -618,7 +626,7 @@ async def reconcile_sequential_batches(db: AsyncSession) -> int:
                 db,
                 batch_key,
                 min(failed_indices),
-                "上一镜失败，串行批次已终止",
+                task_text(tasks[0] if tasks else None, "上一镜失败，串行批次已终止"),
             )
             continue
 
@@ -652,7 +660,7 @@ async def reconcile_sequential_batches(db: AsyncSession) -> int:
                 event_type="task.activated",
                 status=first.status,
                 phase=first.current_step_key,
-                message="串行批次首镜激活",
+                message=task_text(first, "串行批次首镜激活"),
             )
             changed += 1
     for pid, uid in frag_video_projects.items():
@@ -728,7 +736,7 @@ async def rebalance_project_fragment_video_queue(
                 event_type="task.activated",
                 status=task.status,
                 phase=task.current_step_key,
-                message="已关闭镜间衔接，恢复并发生成",
+                message=task_text(task, "已关闭镜间衔接，恢复并发生成"),
             )
         if activated or deferred or pending:
             await db.commit()
@@ -805,7 +813,7 @@ async def rebalance_project_fragment_video_queue(
                     event_type="task.deferred",
                     status=task.status,
                     phase=task.current_step_key,
-                    message="已开启镜间衔接，后镜改回排队等待上一镜",
+                    message=task_text(task, "已开启镜间衔接，后镜改回排队等待上一镜"),
                 )
             else:
                 deferred += 1
@@ -829,7 +837,7 @@ async def rebalance_project_fragment_video_queue(
             event_type="task.activated",
             status=task.status,
             phase=task.current_step_key,
-            message="已开启镜间衔接，按镜序激活当前首镜",
+            message=task_text(task, "已开启镜间衔接，按镜序激活当前首镜"),
         )
 
     await db.commit()
@@ -857,59 +865,59 @@ async def _validate_task_scope(db: AsyncSession, user: User, body: TaskCreateReq
     if body.project_id is not None:
         project = await db.get(Project, body.project_id)
         if not project or int(project.user_id) != int(user.id):
-            raise ValueError("科普项目不存在或无权限")
+            raise ValueError(_("科普项目不存在或无权限"))
     if body.shot_id is not None:
         shot = await db.get(Shot, body.shot_id)
         if not shot:
-            raise ValueError("镜头不存在")
+            raise ValueError(_("镜头不存在"))
         project = await db.get(Project, int(shot.project_id))
         if not project or int(project.user_id) != int(user.id):
-            raise ValueError("镜头不存在或无权限")
+            raise ValueError(_("镜头不存在或无权限"))
         if body.project_id is not None and int(shot.project_id) != int(body.project_id):
-            raise ValueError("镜头与项目不匹配")
+            raise ValueError(_("镜头与项目不匹配"))
 
     drama_project_id: int | None = body.drama_project_id
     if drama_project_id is not None:
         drama_project = await db.get(DramaProject, drama_project_id)
         if not drama_project or int(drama_project.user_id) != int(user.id):
-            raise ValueError("漫剧项目不存在或无权限")
+            raise ValueError(_("漫剧项目不存在或无权限"))
     if body.script_id is not None:
         script = await db.get(DramaScript, body.script_id)
         if not script:
-            raise ValueError("剧本不存在")
+            raise ValueError(_("剧本不存在"))
         drama_project = await db.get(DramaProject, int(script.project_id))
         if not drama_project or int(drama_project.user_id) != int(user.id):
-            raise ValueError("剧本不存在或无权限")
+            raise ValueError(_("剧本不存在或无权限"))
         if drama_project_id is not None and int(script.project_id) != int(drama_project_id):
-            raise ValueError("剧本与漫剧项目不匹配")
+            raise ValueError(_("剧本与漫剧项目不匹配"))
     if body.episode_id is not None:
         episode = await db.get(DramaEpisode, body.episode_id)
         if not episode:
-            raise ValueError("分集不存在")
+            raise ValueError(_("分集不存在"))
         drama_project = await db.get(DramaProject, int(episode.project_id))
         if not drama_project or int(drama_project.user_id) != int(user.id):
-            raise ValueError("分集不存在或无权限")
+            raise ValueError(_("分集不存在或无权限"))
         if drama_project_id is not None and int(episode.project_id) != int(drama_project_id):
-            raise ValueError("分集与漫剧项目不匹配")
+            raise ValueError(_("分集与漫剧项目不匹配"))
     if body.fragment_id is not None:
         fragment = await db.get(DramaEpisodeFragment, body.fragment_id)
         if not fragment:
-            raise ValueError("分镜不存在")
+            raise ValueError(_("分镜不存在"))
         episode = await db.get(DramaEpisode, int(fragment.episode_id))
         drama_project = await db.get(DramaProject, int(episode.project_id)) if episode else None
         if not episode or not drama_project or int(drama_project.user_id) != int(user.id):
-            raise ValueError("分镜不存在或无权限")
+            raise ValueError(_("分镜不存在或无权限"))
         if body.episode_id is not None and int(fragment.episode_id) != int(body.episode_id):
-            raise ValueError("分镜与分集不匹配")
+            raise ValueError(_("分镜与分集不匹配"))
     if body.asset_id is not None:
         asset = await db.get(DramaAsset, body.asset_id)
         if not asset:
-            raise ValueError("资产不存在")
+            raise ValueError(_("资产不存在"))
         drama_project = await db.get(DramaProject, int(asset.project_id))
         if not drama_project or int(drama_project.user_id) != int(user.id):
-            raise ValueError("资产不存在或无权限")
+            raise ValueError(_("资产不存在或无权限"))
         if drama_project_id is not None and int(asset.project_id) != int(drama_project_id):
-            raise ValueError("资产与漫剧项目不匹配")
+            raise ValueError(_("资产与漫剧项目不匹配"))
 
 
 async def get_task_for_user(db: AsyncSession, user: User, task_id: int) -> TaskRun:
@@ -920,7 +928,7 @@ async def get_task_for_user(db: AsyncSession, user: User, task_id: int) -> TaskR
     )
     task = (await db.execute(stmt)).scalar_one_or_none()
     if not task:
-        raise LookupError("任务不存在")
+        raise LookupError(_("任务不存在"))
     return task
 
 
@@ -993,9 +1001,9 @@ async def count_active_tasks_for_user(
 async def cancel_task_for_user(db: AsyncSession, user: User, task_id: int) -> TaskRun:
     task = await get_task_for_user(db, user, task_id)
     if not task.cancelable:
-        raise ValueError("任务不支持取消")
+        raise ValueError(_("任务不支持取消"))
     if task.status in TERMINAL_TASK_STATUSES:
-        raise ValueError("任务已结束，不能取消")
+        raise ValueError(_("任务已结束，不能取消"))
     task.cancel_requested = True
     task.status = "cancel_requested"
     task.next_action_at = datetime.now(UTC)
@@ -1006,7 +1014,7 @@ async def cancel_task_for_user(db: AsyncSession, user: User, task_id: int) -> Ta
                 event_type="task.cancel_requested",
                 status=task.status,
                 phase=task.current_step_key,
-                message="已提交取消请求",
+                message=_("已提交取消请求"),
             ),
         )
     )
@@ -1075,7 +1083,7 @@ async def cancel_tasks_for_scope(
                     event_type="task.cancel_requested",
                     status=task.status,
                     phase=task.current_step_key,
-                    message="由业务范围取消接口触发",
+                    message=_("由业务范围取消接口触发"),
                 ),
             )
         )
@@ -1095,7 +1103,7 @@ async def get_task_admin(db: AsyncSession, task_id: int) -> TaskRun:
     stmt = select(TaskRun).options(*task_detail_options()).where(TaskRun.id == task_id)
     task = (await db.execute(stmt)).scalar_one_or_none()
     if not task:
-        raise LookupError("任务不存在")
+        raise LookupError(_("任务不存在"))
     return task
 
 
@@ -1157,9 +1165,9 @@ async def cancel_task_admin(db: AsyncSession, task_id: int) -> TaskRun:
     """Cancel any task as admin."""
     task = await get_task_admin(db, task_id)
     if not task.cancelable:
-        raise ValueError("任务不支持取消")
+        raise ValueError(_("任务不支持取消"))
     if task.status in TERMINAL_TASK_STATUSES:
-        raise ValueError("任务已结束，不能取消")
+        raise ValueError(_("任务已结束，不能取消"))
     task.cancel_requested = True
     task.status = "cancel_requested"
     task.next_action_at = datetime.now(UTC)
@@ -1170,7 +1178,7 @@ async def cancel_task_admin(db: AsyncSession, task_id: int) -> TaskRun:
                 event_type="task.cancel_requested",
                 status=task.status,
                 phase=task.current_step_key,
-                message="管理员已提交取消请求",
+                message=_("管理员已提交取消请求"),
             ),
         )
     )

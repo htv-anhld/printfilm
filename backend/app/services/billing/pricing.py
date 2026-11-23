@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from app.i18n import _
 from app.config import Settings, get_settings
 
 SKUS: list[dict[str, Any]] = [
@@ -249,8 +250,8 @@ def billing_key_to_capability(billing_key: str) -> str:
 
 def billing_key_label(billing_key: str) -> str:
     cap = billing_key_to_capability(billing_key)
-    labels = {"llm": "LLM 对话", "image": "图片生成", "video": "视频生成", "tts": "语音合成"}
-    return labels.get(cap, billing_key or "其他")
+    labels = {"llm": _("LLM 对话"), "image": _("图片生成"), "video": _("视频生成"), "tts": _("语音合成")}
+    return labels.get(cap, billing_key or _("其他"))
 
 
 def billing_model_rate_rows(settings: Settings | None = None) -> list[dict[str, Any]]:

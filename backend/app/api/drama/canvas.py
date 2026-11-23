@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -55,7 +56,7 @@ async def save_canvas(
             continue
         seen.add(nid)
         data = node.get("data") if isinstance(node.get("data"), dict) else {}
-        name = str(data.get("label") or data.get("name") or f"节点 {nid}")
+        name = str(data.get("label") or data.get("name") or _("节点 {id}", id=nid))
         url = data.get("mediaUrl") or data.get("url") or data.get("cover")
         kind = str(data.get("kind") or "none")
         asset_type = str(

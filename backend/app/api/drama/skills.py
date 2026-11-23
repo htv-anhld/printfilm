@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -18,6 +19,8 @@ from app.schemas_agent import (
 )
 from app.services.agent.compose import skill_to_public_dict
 from app.services.agent.optimize import optimize_prompt_with_skills
+from app.services.drama.access import get_owned_drama_project
+from app.services.drama.content_locale import get_content_locale, project_content_locale
 from app.services.agent.parse import SkillParseError
 from app.services.billing import record_llm_chat_line, run_billed_ephemeral
 from app.services.billing.http import http_exception_for_value_error
@@ -49,6 +52,7 @@ async def list_skills(
 @router.post("/skills/optimize", response_model=AgentSkillOptimizeOut)
 async def optimize_prompt(
     body: AgentSkillOptimizeBody,
+    project_id: int | None = Query(default=None, description="漫剧项目 ID：按其 content_locale 输出"),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AgentSkillOptimizeOut:
@@ -58,6 +62,11 @@ async def optimize_prompt(
     if not skill_ids:
         prompt = (body.prompt or "").strip()
         return AgentSkillOptimizeOut(prompt=prompt, task_id=None)
+    # 内容语言：带 project_id 时跟项目，否则回退当前语言
+    content_locale = get_content_locale()
+    if project_id:
+        project = await get_owned_drama_project(db, int(project_id), user)
+        content_locale = project_content_locale(project)
 
     async def _do_optimize() -> str:
         prompt = await optimize_prompt_with_skills(
@@ -66,6 +75,7 @@ async def optimize_prompt(
             prompt=body.prompt,
             skill_ids=skill_ids,
             task=task_name,
+            content_locale=content_locale,
         )
         await record_llm_chat_line(
             db,
@@ -97,7 +107,7 @@ async def get_skill(
 ) -> AgentSkillOut:
     row = await get_visible_skill(db, user.id, skill_id)
     if row is None:
-        raise HTTPException(status_code=404, detail="Skill 不存在")
+        raise HTTPException(status_code=404, detail=_("Skill 不存在"))
     return _out(row)
 
 
@@ -124,14 +134,14 @@ async def upload_skill_file(
     # 上传 .md 文件
     filename = (file.filename or "").lower()
     if filename and not filename.endswith((".md", ".markdown", ".txt")):
-        raise HTTPException(status_code=400, detail="请上传 .md 文件")
+        raise HTTPException(status_code=400, detail=_("请上传 .md 文件"))
     raw = await file.read()
     if len(raw) > 200 * 1024:
-        raise HTTPException(status_code=400, detail="文件不能超过 200KB")
+        raise HTTPException(status_code=400, detail=_("文件不能超过 200KB"))
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise HTTPException(status_code=400, detail="文件须为 UTF-8 文本") from exc
+        raise HTTPException(status_code=400, detail=_("文件须为 UTF-8 文本")) from exc
     try:
         row = await create_user_skill(db, user.id, text)
     except SkillParseError as exc:
@@ -148,9 +158,9 @@ async def patch_skill(
 ) -> AgentSkillOut:
     row = await get_visible_skill(db, user.id, skill_id)
     if row is None:
-        raise HTTPException(status_code=404, detail="Skill 不存在")
+        raise HTTPException(status_code=404, detail=_("Skill 不存在"))
     if not row.is_builtin and row.user_id != user.id:
-        raise HTTPException(status_code=403, detail="不能修改他人 Skill")
+        raise HTTPException(status_code=403, detail=_("不能修改他人 Skill"))
     try:
         row = await update_user_skill(db, row, markdown=body.markdown, is_active=body.is_active)
     except SkillParseError as exc:
@@ -166,11 +176,11 @@ async def remove_skill(
 ) -> dict:
     row = await get_visible_skill(db, user.id, skill_id)
     if row is None:
-        raise HTTPException(status_code=404, detail="Skill 不存在")
+        raise HTTPException(status_code=404, detail=_("Skill 不存在"))
     if row.is_builtin:
-        raise HTTPException(status_code=400, detail="系统内置 Skill 不能删除，可停用")
+        raise HTTPException(status_code=400, detail=_("系统内置 Skill 不能删除，可停用"))
     if row.user_id != user.id:
-        raise HTTPException(status_code=403, detail="不能删除他人 Skill")
+        raise HTTPException(status_code=403, detail=_("不能删除他人 Skill"))
     try:
         await delete_user_skill(db, row)
     except SkillParseError as exc:

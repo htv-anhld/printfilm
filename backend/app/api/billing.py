@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.config import get_settings
 from app.database import get_db
 from app.deps import get_current_user
@@ -53,7 +54,8 @@ async def wallet(user: User = Depends(get_current_user)) -> dict:
 @router.get("/skus")
 async def list_skus() -> dict:
     return {
-        "skus": billing.SKUS,
+        # 套餐名按请求语言展示；下单给支付网关的商品名仍用中文原文
+        "skus": [{**item, "name": _(str(item["name"]))} for item in billing.SKUS],
         "pay_types": ["alipay", "wxpay"],
         "markup": settings.billing_markup,
     }
@@ -131,7 +133,7 @@ async def create_order(
     await billing.close_expired_pending_orders(db, user_id=user.id)
     sku = billing.sku_by_id(body.sku_id)
     if not sku:
-        raise HTTPException(status_code=400, detail="未知充值包")
+        raise HTTPException(status_code=400, detail=_("未知充值包"))
     out_trade_no = f"PF{int(time.time())}{user.id:04d}{uuid.uuid4().hex[:8]}"
     order = Order(
         out_trade_no=out_trade_no,
@@ -165,7 +167,7 @@ async def create_order(
     return {
         "out_trade_no": out_trade_no,
         "sku_id": sku["id"],
-        "sku_name": str(sku["name"]),
+        "sku_name": _(str(sku["name"])),
         "pay_type": body.pay_type,
         "amount_fen": order.amount_fen,
         "credit_fen": order.credit_fen,
@@ -250,7 +252,7 @@ async def billing_alert_ack(
 
     ok = await acknowledge_user_alert(db, user.id, alert_id)
     if not ok:
-        raise HTTPException(status_code=404, detail="告警不存在")
+        raise HTTPException(status_code=404, detail=_("告警不存在"))
     await db.commit()
     return {"ok": True}
 
@@ -282,15 +284,15 @@ async def usage_events(
     items = []
     for ev, kepu_title, drama_title in rows:
         if drama_title:
-            context = f"漫剧 · {drama_title}"
+            context = _("漫剧 · {title}", title=drama_title)
         elif kepu_title:
-            context = f"科普 · {kepu_title}"
+            context = _("科普 · {title}", title=kepu_title)
         elif ev.project_id:
-            context = f"科普 · 项目 #{ev.project_id}"
+            context = _("科普 · 项目 #{id}", id=ev.project_id)
         elif ev.drama_project_id:
-            context = f"漫剧 · 项目 #{ev.drama_project_id}"
+            context = _("漫剧 · 项目 #{id}", id=ev.drama_project_id)
         else:
-            context = "工具创作"
+            context = _("工具创作")
         charge_fen = int(ev.charge_fen or 0)
         items.append(
             {
@@ -357,7 +359,7 @@ async def get_order(
     result = await db.execute(select(Order).where(Order.out_trade_no == out_trade_no))
     order = result.scalar_one_or_none()
     if not order or order.user_id != user.id:
-        raise HTTPException(status_code=404, detail="订单不存在")
+        raise HTTPException(status_code=404, detail=_("订单不存在"))
     return {
         "out_trade_no": order.out_trade_no,
         "status": order.status,
@@ -378,13 +380,13 @@ async def close_order(
     result = await db.execute(select(Order).where(Order.out_trade_no == out_trade_no))
     order = result.scalar_one_or_none()
     if not order or order.user_id != user.id:
-        raise HTTPException(status_code=404, detail="订单不存在")
+        raise HTTPException(status_code=404, detail=_("订单不存在"))
     if order.status == "paid":
-        raise HTTPException(status_code=400, detail="已支付订单无法关闭")
+        raise HTTPException(status_code=400, detail=_("已支付订单无法关闭"))
     if order.status == "closed":
         return {"out_trade_no": order.out_trade_no, "status": "closed"}
     if order.status != "pending":
-        raise HTTPException(status_code=400, detail="当前状态不可关闭")
+        raise HTTPException(status_code=400, detail=_("当前状态不可关闭"))
     order.status = "closed"
     await db.commit()
     return {"out_trade_no": order.out_trade_no, "status": "closed"}

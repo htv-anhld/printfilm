@@ -13,6 +13,7 @@ from app.services.drama.build_fragments import (
     _merge_params_with_summary,
     _shorten_intro,
 )
+from app.services.drama.content_locale import with_output_language
 from app.services.drama.llm import drama_chat_json
 
 logger = logging.getLogger(__name__)
@@ -158,7 +159,8 @@ async def llm_enrich_character_intros(
     )
     try:
         raw = await drama_chat_json(
-            CHARACTER_INTRO_SYSTEM,
+            # 叠字会烧进画面：按项目内容语言书写（zh 原样）
+            with_output_language(CHARACTER_INTRO_SYSTEM),
             user,
             temperature=0.35,
             max_tokens=1024,

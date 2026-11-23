@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from app.i18n import _
 from app.schemas_routing import (
     DefaultModels,
     LogicalModel,
@@ -272,31 +273,35 @@ def model_routing_validation_errors(
     for model in logical_models:
         key = (model.id or "").strip().lower()
         if not key:
-            errors.append("逻辑模型 ID 不能为空")
+            errors.append(_("逻辑模型 ID 不能为空"))
         elif key in seen_ids:
-            errors.append(f"逻辑模型 ID 重复：{model.id}")
+            errors.append(_("逻辑模型 ID 重复：{id}", id=model.id))
         seen_ids.add(key)
         if not model.bindings:
-            errors.append(f"逻辑模型 {model.name or model.id} 至少需要一个渠道绑定")
+            errors.append(_("逻辑模型 {name} 至少需要一个渠道绑定", name=model.name or model.id))
         binding_keys: set[str] = set()
         for binding in model.bindings:
             binding_key = f"{binding.channel_id}:{normalize_model_name(binding.upstream_model)}"
             if binding.channel_id not in channel_ids:
-                errors.append(f"逻辑模型 {model.id} 引用了不存在的渠道 {binding.channel_id}")
+                errors.append(_("逻辑模型 {id} 引用了不存在的渠道 {channel}", id=model.id, channel=binding.channel_id))
             else:
                 channel = next(item for item in channels if item.id == binding.channel_id)
                 if not channel_supports_model(channel, binding.upstream_model):
                     errors.append(
-                        f"渠道 {channel.name} 未启用上游模型 {binding.upstream_model}"
+                        _(
+                            "渠道 {channel} 未启用上游模型 {model}",
+                            channel=channel.name,
+                            model=binding.upstream_model,
+                        )
                     )
             if binding_key in binding_keys:
-                errors.append(f"逻辑模型 {model.id} 存在重复绑定")
+                errors.append(_("逻辑模型 {id} 存在重复绑定", id=model.id))
             binding_keys.add(binding_key)
-    labels = {"text": "文本", "image": "图片", "video": "视频", "audio": "音频"}
+    labels = {"text": _("文本"), "image": _("图片"), "video": _("视频"), "audio": _("音频")}
     for capability, attr in CAPABILITY_DEFAULT_KEYS.items():
         model_id = getattr(defaults, attr, "") or ""
         if model_id and not is_logical_model_resolvable(logical_models, channels, capability, model_id):
-            errors.append(f"默认{labels[capability]}模型不可解析：{model_id}")
+            errors.append(_("默认{label}模型不可解析：{model}", label=labels[capability], model=model_id))
     return list(dict.fromkeys(errors))
 
 

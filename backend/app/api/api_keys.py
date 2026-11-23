@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -40,6 +41,6 @@ async def revoke_key(
 ) -> dict:
     ok = await api_keys.revoke_api_key(db, user.id, key_id)
     if not ok:
-        raise HTTPException(status_code=404, detail="Key 不存在或已撤销")
+        raise HTTPException(status_code=404, detail=_("Key 不存在或已撤销"))
     await db.commit()
     return {"ok": True}

@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.config import Settings, get_settings
 from app.models import BillingAlertNotification, UsageEvent, User
 from app.models_settings import AppSettings
@@ -117,10 +118,11 @@ async def process_user_milestone_alert(
     note = BillingAlertNotification(
         user_id=int(user.id),
         kind="user_milestone",
-        title="消费提醒",
-        message=(
-            f"您已累计消费 {_fen_to_yuan(target)}。"
-            f"当前累计扣费 {_fen_to_yuan(total)}，请注意账户余额。"
+        title=_("消费提醒"),
+        message=_(
+            "您已累计消费 {target}。当前累计扣费 {total}，请注意账户余额。",
+            target=_fen_to_yuan(target),
+            total=_fen_to_yuan(total),
         ),
         milestone_fen=target,
     )
@@ -163,13 +165,13 @@ async def process_admin_cost_alert(
         logger.warning("admin cost alert skipped: no recipients cost_fen=%s", cost_fen)
         return False
 
-    subject = f"[{s.app_name}] 平台费用告警"
+    subject = f"[{s.app_name}] " + _("平台费用告警")
     body = (
-        f"统计周期：{period_key}\n"
-        f"累计上游成本：{_fen_to_yuan(cost_fen)}\n"
-        f"告警阈值：每 {_fen_to_yuan(threshold)}\n"
-        f"当前档位：{target_level}\n\n"
-        f"请登录管理后台查看用量详情。"
+        _("统计周期：{period}", period=period_key) + "\n"
+        + _("累计上游成本：{cost}", cost=_fen_to_yuan(cost_fen)) + "\n"
+        + _("告警阈值：每 {threshold}", threshold=_fen_to_yuan(threshold)) + "\n"
+        + _("当前档位：{level}", level=target_level) + "\n\n"
+        + _("请登录管理后台查看用量详情。")
     )
     sent = await send_email(to_addrs=recipients, subject=subject, body=body, settings=s)
     if not sent:

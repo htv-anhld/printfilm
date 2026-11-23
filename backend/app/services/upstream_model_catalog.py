@@ -2,6 +2,8 @@
 """从上游渠道拉取可用模型目录（TokenFree / OpenAI 兼容）。"""
 from __future__ import annotations
 
+from app.i18n import _
+
 import logging
 from typing import Any
 
@@ -63,21 +65,21 @@ async def _list_openai_compatible_models(
 ) -> list[dict[str, str]]:
     """GET {base}/models，按 OpenAI 兼容响应解析。"""
     if not base_url:
-        raise RuntimeError("请先填写 Base URL")
+        raise RuntimeError(_("请先填写 Base URL"))
     if not api_key:
-        raise RuntimeError("请先填写 API Key，或使用已保存密钥的渠道")
+        raise RuntimeError(_("请先填写 API Key，或使用已保存密钥的渠道"))
 
     headers = {"Authorization": f"Bearer {api_key}"}
     url = f"{base_url.rstrip('/')}/models"
     async with httpx.AsyncClient(timeout=60.0) as client:
         resp = await client.get(url, headers=headers)
         if resp.status_code >= 400:
-            raise RuntimeError(f"拉取模型目录失败 HTTP {resp.status_code}: {resp.text[:300]}")
+            raise RuntimeError(_("拉取模型目录失败 HTTP {code}: {detail}", code=resp.status_code, detail=resp.text[:300]))
         payload = resp.json()
 
     data = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(data, list):
-        raise RuntimeError("上游返回格式异常：缺少 data 列表")
+        raise RuntimeError(_("上游返回格式异常：缺少 data 列表"))
 
     cap_filter = (capability or "all").strip().lower()
     out: list[dict[str, str]] = []
@@ -120,7 +122,7 @@ async def list_upstream_models(
     )
 
     if proto == "volc_tts":
-        raise RuntimeError("豆包 TTS 暂不支持从上游拉取模型目录，请手动填写 speaker / 音色 ID")
+        raise RuntimeError(_("豆包 TTS 暂不支持从上游拉取模型目录，请手动填写 speaker / 音色 ID"))
 
     if proto == "kie" or proto == "ark" or "volces.com" in base.lower() or "kie.ai" in base.lower():
         from app.services.tokenfree_gateway import TOKENFREE_BASE_URL, resolve_tokenfree_api_key

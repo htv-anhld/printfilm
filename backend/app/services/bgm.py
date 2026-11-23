@@ -12,6 +12,7 @@ _STATIC_ROOT = Path(__file__).resolve().parents[2] / "static"
 SHOT_BGM_MAX = 64
 
 # Map mood keywords → filename stems under static/bgm/
+# 中文关键词在前（zh 行为不变）；其后补英语 / 越南语关键词（非中文内容的 LLM 可能用该语言写 bgm）
 _BGM_FILES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"紧张|悬疑|压迫"), "tense"),
     (re.compile(r"温暖|人文|故事"), "warm"),
@@ -19,6 +20,12 @@ _BGM_FILES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"史诗|宏大|奇幻"), "epic"),
     (re.compile(r"轻快|专业|开源|产品|工作"), "upbeat"),
     (re.compile(r"冷静|纪实"), "calm"),
+    (re.compile(r"(?i)\b(?:tense|suspense|thriller|dark)\b|căng thẳng|hồi hộp|kịch tính"), "tense"),
+    (re.compile(r"(?i)\b(?:warm|heartfelt|story|emotional)\b|ấm áp|cảm động|nhân văn"), "warm"),
+    (re.compile(r"(?i)\b(?:cyber|electronic|tech|futuristic)\b|điện tử|công nghệ|tương lai"), "tech"),
+    (re.compile(r"(?i)\b(?:epic|grand|fantasy|cinematic)\b|hùng tráng|sử thi|kỳ ảo"), "epic"),
+    (re.compile(r"(?i)\b(?:upbeat|light|professional|corporate|product)\b|vui tươi|sôi động|chuyên nghiệp"), "upbeat"),
+    (re.compile(r"(?i)\b(?:calm|documentary|ambient|soft)\b|nhẹ nhàng|bình yên|tài liệu"), "calm"),
 ]
 
 

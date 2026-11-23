@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from app.i18n import _
+
 import logging
 import math
 import time
@@ -398,7 +400,7 @@ def charge_fen_official_llm(tokens: int, settings: Settings, *, model: str = "")
         completion = t - prompt
         yuan = prompt / 1_000_000 * rate.cny_in_per_1m + completion / 1_000_000 * rate.cny_out_per_1m
         return _markup_charge(max(1, int(math.ceil(yuan * 100))), settings)
-    _, charge = charge_fen_for_tokens(t, "llm_chat", settings=settings)
+    _fen, charge = charge_fen_for_tokens(t, "llm_chat", settings=settings)
     return charge
 
 
@@ -428,7 +430,7 @@ def charge_fen_official_video(
     if vendor:
         return _markup_charge(max(1, int(math.ceil(secs * vendor * mult * 100))), settings)
     tok = int(secs * settings.billing_est_seedance_tokens_per_sec * mult)
-    _, charge = charge_fen_for_tokens(tok, "seedance2:video0", settings=settings)
+    _fen, charge = charge_fen_for_tokens(tok, "seedance2:video0", settings=settings)
     return charge
 
 
@@ -506,15 +508,15 @@ async def fetch_tokenfree_pricing() -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=8.0) as client:
             resp = await client.get(url)
     except httpx.HTTPError as exc:
-        raise RuntimeError(f"TokenFree pricing 网络失败: {exc}") from exc
+        raise RuntimeError(_("TokenFree pricing 网络失败: {err}", err=exc)) from exc
     if resp.status_code >= 400:
         raise RuntimeError(f"TokenFree pricing HTTP {resp.status_code}: {resp.text[:300]}")
     try:
         payload = resp.json()
     except ValueError as exc:
-        raise RuntimeError("TokenFree 价目返回非 JSON") from exc
+        raise RuntimeError(_("TokenFree 价目返回非 JSON")) from exc
     if not isinstance(payload, dict):
-        raise RuntimeError("TokenFree 价目格式异常")
+        raise RuntimeError(_("TokenFree 价目格式异常"))
     return payload
 
 

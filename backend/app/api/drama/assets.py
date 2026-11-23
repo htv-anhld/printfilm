@@ -11,6 +11,7 @@ from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -161,7 +162,7 @@ async def update_asset(
     )
     asset = result.scalar_one_or_none()
     if not asset:
-        raise HTTPException(status_code=404, detail="资产不存在")
+        raise HTTPException(status_code=404, detail=_("资产不存在"))
     for field in ("type", "asset_type", "name", "cover", "url", "params"):
         val = getattr(body, field)
         if val is None:
@@ -190,7 +191,7 @@ async def upload_asset_media(
     from app.services import oss as oss_svc
 
     if not oss_svc.oss_enabled():
-        raise HTTPException(status_code=503, detail="OSS 未启用，无法上传资产媒体")
+        raise HTTPException(status_code=503, detail=_("OSS 未启用，无法上传资产媒体"))
 
     result = await db.execute(
         select(DramaAsset)
@@ -199,12 +200,12 @@ async def upload_asset_media(
     )
     asset = result.scalar_one_or_none()
     if not asset:
-        raise HTTPException(status_code=404, detail="资产不存在")
+        raise HTTPException(status_code=404, detail=_("资产不存在"))
 
     gen = (asset.params or {}).get("generation") if isinstance(asset.params, dict) else None
     status = str((gen or {}).get("status") or "").lower() if isinstance(gen, dict) else ""
     if status in {"queued", "running", "generating"}:
-        raise HTTPException(status_code=409, detail="形象生成中，请稍后再更换图片")
+        raise HTTPException(status_code=409, detail=_("形象生成中，请稍后再更换图片"))
 
     content_type = (file.content_type or "").lower()
     allowed = {
@@ -226,7 +227,7 @@ async def upload_asset_media(
                 ".gif": "image/gif",
             }.get(ext, "application/octet-stream")
         else:
-            raise HTTPException(status_code=400, detail="仅支持 JPG / PNG / WebP / GIF")
+            raise HTTPException(status_code=400, detail=_("仅支持 JPG / PNG / WebP / GIF"))
 
     # 直接检查上传临时文件大小，避免先把整文件读入内存。
     upload_fp = file.file
@@ -235,11 +236,11 @@ async def upload_asset_media(
         size = upload_fp.tell()
         upload_fp.seek(0)
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=400, detail=f"无法读取上传文件：{exc}") from exc
+        raise HTTPException(status_code=400, detail=_("无法读取上传文件：{error}", error=exc)) from exc
     if size <= 0:
-        raise HTTPException(status_code=400, detail="空文件")
+        raise HTTPException(status_code=400, detail=_("空文件"))
     if size > 20 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="文件不能超过 20MB")
+        raise HTTPException(status_code=400, detail=_("文件不能超过 20MB"))
 
     object_key = (
         f"{oss_svc.folder_prefix()}/generated/p{asset.project_id}/"
@@ -254,7 +255,7 @@ async def upload_asset_media(
             content_type=content_type or "application/octet-stream",
         )
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=f"OSS 上传失败：{exc}") from exc
+        raise HTTPException(status_code=502, detail=_("OSS 上传失败：{error}", error=exc)) from exc
 
     from app.services.drama.generation import archive_asset_image_version
 
@@ -292,12 +293,12 @@ async def activate_image_version(
     )
     asset = result.scalar_one_or_none()
     if not asset:
-        raise HTTPException(status_code=404, detail="资产不存在")
+        raise HTTPException(status_code=404, detail=_("资产不存在"))
 
     gen = (asset.params or {}).get("generation") if isinstance(asset.params, dict) else None
     status = str((gen or {}).get("status") or "").lower() if isinstance(gen, dict) else ""
     if status in {"queued", "running", "generating"}:
-        raise HTTPException(status_code=409, detail="形象生成中，无法切换历史版本")
+        raise HTTPException(status_code=409, detail=_("形象生成中，无法切换历史版本"))
 
     try:
         activate_asset_image_version(asset, body.version_id.strip())
@@ -324,7 +325,7 @@ async def delete_asset(
     )
     asset = result.scalar_one_or_none()
     if not asset:
-        raise HTTPException(status_code=404, detail="资产不存在")
+        raise HTTPException(status_code=404, detail=_("资产不存在"))
     await db.delete(asset)
     await db.commit()
     return {"ok": True}
@@ -357,7 +358,7 @@ async def seed_assets(
         return SeedAssetsFromScriptOut(
             assets=[DramaAssetOut.model_validate(a) for a in existing],
             status="generating",
-            message="资产抽取进行中，请稍候刷新",
+            message=_("资产抽取进行中，请稍候刷新"),
         )
 
     if heavy:
@@ -384,7 +385,7 @@ async def seed_assets(
         return SeedAssetsFromScriptOut(
             assets=[DramaAssetOut.model_validate(a) for a in existing],
             status="generating",
-            message="资产抽取任务已提交，请稍候刷新",
+            message=_("资产抽取任务已提交，请稍候刷新"),
         )
 
     params["assets_seed_status"] = "generating"
@@ -445,7 +446,7 @@ async def seed_assets(
         project = await get_owned_drama_project(db, project_id, user, with_script=True)
         params = dict(project.params or {}) if isinstance(project.params, dict) else {}
         params["assets_seed_status"] = "failed"
-        params["assets_seed_error"] = "资产抽取失败"
+        params["assets_seed_error"] = _("资产抽取失败")
         params.pop("assets_seed_generating_at", None)
         project.params = params
         await db.commit()

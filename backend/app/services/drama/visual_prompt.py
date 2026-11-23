@@ -9,7 +9,9 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models_drama import DramaAsset, DramaProject
+from app.i18n import _
 from app.services.billing import record_llm_chat_line
+from app.services.drama.content_locale import project_content_locale
 from app.services.drama.llm import drama_chat_text
 from app.services.llm_client import LlmUnavailableError
 from app.services.drama.seed import _episode_bodies
@@ -248,8 +250,17 @@ async def _llm_visual_prompt(
     db: AsyncSession | None = None,
     user_id: int | None = None,
     drama_project_id: int | None = None,
+    content_locale: str | None = None,
 ) -> str:
-    raw = await drama_chat_text(system, user, temperature=0.6, max_tokens=1024)
+    # 生图提示词：非中文项目用英文写（Seedream 对英文理解最好），中文项目原样
+    raw = await drama_chat_text(
+        system,
+        user,
+        temperature=0.6,
+        max_tokens=1024,
+        language="visual",
+        locale=content_locale,
+    )
     prompt = normalize_visual_prompt_text(raw)
     if db is not None and user_id is not None:
         await record_llm_chat_line(
@@ -287,7 +298,12 @@ async def resolve_visual_prompt_for_asset(
         return stored
 
     min_len = MIN_PROMPT_LEN.get(kind, 80)
-    llm_bill = {"db": db, "user_id": project.user_id, "drama_project_id": project.id}
+    llm_bill = {
+        "db": db,
+        "user_id": project.user_id,
+        "drama_project_id": project.id,
+        "content_locale": project_content_locale(project),
+    }
 
     if kind == "character":
         summary_char = find_summary_character(summary, name)
@@ -308,12 +324,12 @@ async def resolve_visual_prompt_for_asset(
             if len(prompt) >= min_len or len(prompt) >= 80:
                 return prompt
             if strict_llm:
-                raise RuntimeError(f"角色「{name}」AI 提示词过短（{len(prompt)} 字）")
+                raise RuntimeError(_("角色「{name}」AI 提示词过短（{n} 字）", name=name, n=len(prompt)))
         except LlmUnavailableError:
             raise
         except Exception as exc:
             if strict_llm:
-                raise RuntimeError(f"角色「{name}」AI 提示词生成失败") from exc
+                raise RuntimeError(_("角色「{name}」AI 提示词生成失败", name=name)) from exc
             logger.exception("角色视觉提示词 LLM 失败 asset_id=%s", asset.id)
         return rule_prompt
 
@@ -341,12 +357,12 @@ async def resolve_visual_prompt_for_asset(
             if len(prompt) >= min_len or len(prompt) >= 80:
                 return prompt
             if strict_llm:
-                raise RuntimeError(f"场景「{name}」AI 提示词过短（{len(prompt)} 字）")
+                raise RuntimeError(_("场景「{name}」AI 提示词过短（{n} 字）", name=name, n=len(prompt)))
         except LlmUnavailableError:
             raise
         except Exception as exc:
             if strict_llm:
-                raise RuntimeError(f"场景「{name}」AI 提示词生成失败") from exc
+                raise RuntimeError(_("场景「{name}」AI 提示词生成失败", name=name)) from exc
             logger.exception("场景视觉提示词 LLM 失败 asset_id=%s", asset.id)
         return rule_prompt
 
@@ -371,12 +387,12 @@ async def resolve_visual_prompt_for_asset(
             if len(prompt) >= 60:
                 return prompt
             if strict_llm:
-                raise RuntimeError(f"「{name}」AI 提示词过短（{len(prompt)} 字）")
+                raise RuntimeError(_("「{name}」AI 提示词过短（{n} 字）", name=name, n=len(prompt)))
         except LlmUnavailableError:
             raise
         except Exception as exc:
             if strict_llm:
-                raise RuntimeError(f"「{name}」AI 提示词生成失败") from exc
+                raise RuntimeError(_("「{name}」AI 提示词生成失败", name=name)) from exc
             logger.exception("%s 视觉提示词 LLM 失败 asset_id=%s", kind, asset.id)
         return rule_prompt
 

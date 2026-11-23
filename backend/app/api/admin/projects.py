@@ -4,6 +4,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_admin
 from app.models import Project, Shot, User
@@ -95,7 +96,7 @@ async def get_project(
         )
     ).first()
     if not row:
-        raise HTTPException(status_code=404, detail="项目不存在")
+        raise HTTPException(status_code=404, detail=_("项目不存在"))
     project, email, scount = row
     base = AdminProjectOut.model_validate(project)
     payload = base.model_dump()
