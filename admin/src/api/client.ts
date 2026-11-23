@@ -703,6 +703,8 @@ export type AdminRoutingSettings = {
   default_models: AdminDefaultModels;
   validation_errors: string[];
   updated_at?: string | null;
+  /** true = 开源锁定只允许 TokenFree；false = 多渠道 failover */
+  upstream_locked?: boolean;
 };
 
 export type AdminTemplate = {

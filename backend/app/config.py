@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     db_pool_timeout_sec: int = 30
     redis_url: str = "redis://127.0.0.1:6379/0"
 
+    # 开源版行为：只允许 TokenFree 一个上游。商业版默认 false，可配多渠道 + failover
+    upstream_lock_tokenfree: bool = False
     ark_api_key: str = ""
     ark_base_url: str = "https://www.tokenfree.com/v1"
     # 文字模型：开源版固定 TokenFree New API，后台选模型

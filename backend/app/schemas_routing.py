@@ -94,6 +94,8 @@ class AdminRoutingSettingsOut(BaseModel):
     default_models: DefaultModels = Field(default_factory=DefaultModels)
     validation_errors: list[str] = Field(default_factory=list)
     updated_at: datetime | None = None
+    # true = 开源版锁定只允许 TokenFree；false = 多渠道 + failover
+    upstream_locked: bool = False
 
 
 class AdminRoutingSettingsPatch(BaseModel):

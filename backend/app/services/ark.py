@@ -82,6 +82,14 @@ from app.services.kepu_locale import (
     truncate_words,
 )
 from app.services import seedance_segments as segplan
+from app.services.upstream_channels import (
+    is_failover_exception,
+    is_failover_status,
+    record_channel_failure,
+    record_channel_success,
+    split_channel_task_id,
+    tag_channel_task_id,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -549,6 +557,72 @@ class ArkGateway:
             return f"{base}{path}"
         return self._url(path)
 
+    async def _post_tracked(
+        self,
+        client: httpx.AsyncClient,
+        path: str,
+        route: ResolvedModelRoute | None,
+        *,
+        json: dict[str, Any],
+    ) -> httpx.Response:
+        """POST 到路由渠道并记录熔断：网络异常 / 5xx / 429 记故障，下次请求自动降级该渠道。"""
+        channel_id = (route.channel_id if route else "") or ""
+        try:
+            resp = await client.post(
+                self._route_url(path, route),
+                headers=self._route_headers(route),
+                json=json,
+            )
+        except httpx.HTTPError as exc:
+            if is_failover_exception(exc):
+                record_channel_failure(channel_id)
+            raise
+        if is_failover_status(resp.status_code):
+            record_channel_failure(channel_id)
+        elif resp.status_code < 400:
+            record_channel_success(channel_id)
+        return resp
+
+    def _tag_task_id(self, route: ResolvedModelRoute | None, raw_task_id: str) -> str:
+        """非主渠道创建的视频任务 ID 带上渠道前缀，保证轮询回到同一渠道。"""
+        from app.services.tokenfree_gateway import primary_channel_id
+
+        return tag_channel_task_id(
+            route.channel_id if route else None,
+            raw_task_id,
+            primary_id=primary_channel_id(),
+        )
+
+    def _route_for_task(self, task_id: str) -> tuple[ResolvedModelRoute | None, str]:
+        """拆出任务所属渠道；无前缀（主渠道 / 存量数据）返回 (None, 原 ID)。"""
+        channel_id, raw = split_channel_task_id(task_id)
+        if not channel_id:
+            return None, raw
+        try:
+            from app.services.model_settings import get_routing_snapshot
+
+            channels = get_routing_snapshot().channels
+        except Exception:  # noqa: BLE001
+            channels = []
+        channel = next((ch for ch in channels if ch.id == channel_id), None)
+        if channel is None:
+            logger.warning("视频任务所属渠道 %s 已不存在，回落主渠道轮询 task=%s", channel_id, raw)
+            return None, raw
+        return (
+            ResolvedModelRoute(
+                capability="video",
+                logical_model_id="",
+                upstream_model="",
+                channel_id=channel.id,
+                channel_name=channel.name,
+                base_url=(channel.base_url or "").rstrip("/"),
+                api_key=channel.api_key or "",
+                protocol=channel.protocol,
+                api_format=channel.api_format,
+            ),
+            raw,
+        )
+
     def _video_json(
         self,
         body: dict[str, Any],
@@ -559,13 +633,21 @@ class ArkGateway:
         channel_id = (route.channel_id if route else "") or ""
         return prepare_video_create_body(body, base_url=base, channel_id=channel_id)
 
-    def _finalize_video_result(self, result: TaskResult, task_id: str) -> TaskResult:
-        """TokenFree 成功但无公网 URL 时，改用 GET /videos/{id}/content。"""
+    def _finalize_video_result(
+        self,
+        result: TaskResult,
+        task_id: str,
+        route: ResolvedModelRoute | None = None,
+    ) -> TaskResult:
+        """TokenFree 成功但无公网 URL 时，改用 GET /videos/{id}/content。
+
+        task_id 保留渠道前缀写回 provider_task_id；拼 content URL 用原始 ID。
+        """
         result.provider_task_id = task_id
-        if result.status == "succeeded" and not result.url and uses_tokenfree_video(
-            base_url=self.settings.ark_base_url
-        ):
-            result.url = tokenfree_video_content_url(self.settings.ark_base_url, task_id)
+        _cid, raw_id = split_channel_task_id(task_id)
+        base = (route.base_url if route and route.base_url else self.settings.ark_base_url) or ""
+        if result.status == "succeeded" and not result.url and uses_tokenfree_video(base_url=base):
+            result.url = tokenfree_video_content_url(base, raw_id)
         return result
 
     async def download_result_media(self, url: str, dest: Path) -> None:
@@ -977,9 +1059,10 @@ class ArkGateway:
             async with httpx.AsyncClient(timeout=_upstream_timeout(IMAGE_GEN_READ_SEC)) as client:
                 async def _post():
                     # 单次上游 POST，限流重试由外层包住
-                    return await client.post(
-                        self._route_url(path, route),
-                        headers=self._route_headers(route),
+                    return await self._post_tracked(
+                        client,
+                        path,
+                        route,
                         json=body,
                     )
 
@@ -1282,17 +1365,19 @@ class ArkGateway:
 
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_CREATE_READ_SEC)) as client:
-                resp = await client.post(
-                    self._route_url("/contents/generations/tasks", route),
-                    headers=self._route_headers(route),
+                resp = await self._post_tracked(
+                    client,
+                    "/contents/generations/tasks",
+                    route,
                     json=self._video_json(body, route),
                 )
                 if resp.status_code >= 400 and prompt_as_json:
                     # Fallback: plain text prompt
                     body["content"][0]["text"] = plain
-                    resp = await client.post(
-                        self._route_url("/contents/generations/tasks", route),
-                        headers=self._route_headers(route),
+                    resp = await self._post_tracked(
+                        client,
+                        "/contents/generations/tasks",
+                        route,
                         json=self._video_json(body, route),
                     )
                 # 文案策略：在 ratio/adaptive 结构回退前，对当前意图 body 追加 CG 重试
@@ -1305,9 +1390,10 @@ class ArkGateway:
                         if cg_content is not None:
                             logger.warning("Seedance i2v text policy hit; retrying with CG style")
                             body = {**body, "content": cg_content}
-                            resp = await client.post(
-                                self._route_url("/contents/generations/tasks", route),
-                                headers=self._route_headers(route),
+                            resp = await self._post_tracked(
+                                client,
+                                "/contents/generations/tasks",
+                                route,
                                 json=self._video_json(body, route),
                             )
                         if resp.status_code >= 400:
@@ -1323,18 +1409,20 @@ class ArkGateway:
                         and "ratio" in body
                     ):
                         body.pop("ratio", None)
-                        resp = await client.post(
-                            self._route_url("/contents/generations/tasks", route),
-                            headers=self._route_headers(route),
+                        resp = await self._post_tracked(
+                            client,
+                            "/contents/generations/tasks",
+                            route,
                             json=self._video_json(body, route),
                         )
                 if resp.status_code >= 400 and not target_ratio:
                     # 无目标画幅时的兼容回退；有竖屏目标时禁止 adaptive，避免再次出横屏
                     body["content"][1].pop("role", None)
                     body["ratio"] = "adaptive"
-                    resp = await client.post(
-                        self._route_url("/contents/generations/tasks", route),
-                        headers=self._route_headers(route),
+                    resp = await self._post_tracked(
+                        client,
+                        "/contents/generations/tasks",
+                        route,
                         json=self._video_json(body, route),
                     )
                 if resp.status_code >= 400:
@@ -1346,7 +1434,7 @@ class ArkGateway:
         task_id = extract_video_task_id(data)
         if not task_id:
             raise RuntimeError(f"Seedance missing task id: {data}")
-        return task_id
+        return self._tag_task_id(route, task_id)
 
     async def _resolve_media_ref(self, media_url: str, *, prefer_https: bool = False) -> str:
         """解析图片/音频 URL 供 Seedance 拉取。"""
@@ -1410,9 +1498,10 @@ class ArkGateway:
 
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_CREATE_READ_SEC)) as client:
-                resp = await client.post(
-                    self._route_url("/contents/generations/tasks", route),
-                    headers=self._route_headers(route),
+                resp = await self._post_tracked(
+                    client,
+                    "/contents/generations/tasks",
+                    route,
                     json=self._video_json(payload, route),
                 )
                 if resp.status_code >= 400:
@@ -1435,9 +1524,10 @@ class ArkGateway:
                             project_id,
                         )
                         payload = {**payload, "content": cg_content}
-                        resp = await client.post(
-                            self._route_url("/contents/generations/tasks", route),
-                            headers=self._route_headers(route),
+                        resp = await self._post_tracked(
+                            client,
+                            "/contents/generations/tasks",
+                            route,
                             json=self._video_json(payload, route),
                         )
                     if resp.status_code >= 400:
@@ -1455,7 +1545,7 @@ class ArkGateway:
         task_id = extract_video_task_id(data)
         if not task_id:
             raise RuntimeError(f"Seedance missing task id: {data}")
-        return task_id
+        return self._tag_task_id(route, task_id)
 
     async def gen_and_wait_seedance_body(
         self,
@@ -1558,13 +1648,14 @@ class ArkGateway:
                 last_frame_url=f"/static/mock/last_{task_id[-8:]}.jpg",
             )
 
+        task_route, raw_task_id = self._route_for_task(task_id)
         deadline = time.monotonic() + self.settings.ark_video_poll_timeout
         async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_POLL_READ_SEC, connect=15.0)) as client:
             while time.monotonic() < deadline:
                 try:
                     resp = await client.get(
-                        self._url(f"/contents/generations/tasks/{task_id}"),
-                        headers=self._headers(),
+                        self._route_url(f"/contents/generations/tasks/{raw_task_id}", task_route),
+                        headers=self._route_headers(task_route),
                     )
                 except httpx.HTTPError as exc:
                     # 单次网络抖动：退避后继续轮询，由 deadline 收敛，不直接判失败
@@ -1590,7 +1681,9 @@ class ArkGateway:
                         continue
                     return TaskResult(status="failed", error=resp.text[:500])
                 data = resp.json()
-                result = self._finalize_video_result(_build_task_result_from_payload(data), task_id)
+                result = self._finalize_video_result(
+                    _build_task_result_from_payload(data), task_id, task_route
+                )
                 if result.status == "succeeded":
                     return result
                 if result.status == "failed":
@@ -1606,11 +1699,12 @@ class ArkGateway:
                 url=f"/static/mock/video_{task_id[-8:]}.mp4",
                 last_frame_url=f"/static/mock/last_{task_id[-8:]}.jpg",
             )
+        task_route, raw_task_id = self._route_for_task(task_id)
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_FETCH_READ_SEC, connect=15.0)) as client:
                 resp = await client.get(
-                    self._url(f"/contents/generations/tasks/{task_id}"),
-                    headers=self._headers(),
+                    self._route_url(f"/contents/generations/tasks/{raw_task_id}", task_route),
+                    headers=self._route_headers(task_route),
                 )
         except httpx.HTTPError as exc:
             # 网络抖动对 poller 是下轮重试、对同步端点是继续转圈，均优于 500/误判失败
@@ -1625,7 +1719,9 @@ class ArkGateway:
                 )
                 return TaskResult(status="running", provider_task_id=task_id)
             return TaskResult(status="failed", error=resp.text[:500], provider_task_id=task_id)
-        return self._finalize_video_result(_build_task_result_from_payload(resp.json()), task_id)
+        return self._finalize_video_result(
+            _build_task_result_from_payload(resp.json()), task_id, task_route
+        )
 
     async def save_video_assets_from_result(
         self,

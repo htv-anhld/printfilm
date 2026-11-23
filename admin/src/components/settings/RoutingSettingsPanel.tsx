@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
-import { api, type AdminRoutingSettings } from "@/api/client";
+import { api, type AdminRoutingChannel, type AdminRoutingSettings } from "@/api/client";
+import { RoutingChannelFields, RoutingChannelTabs } from "@/components/settings/RoutingChannelList";
+import { TOKENFREE_BASE_URL, TOKENFREE_CHANNEL_ID } from "@/lib/routingChannels";
 import {
   LabeledControl,
   SettingsLoading,
@@ -25,17 +27,12 @@ type Capability = "text" | "image" | "video" | "audio";
 type CapabilityFilter = Capability | "all";
 
 const CAPABILITY_ORDER: Capability[] = ["text", "image", "video", "audio"];
-
-const TOKENFREE_CHANNEL_ID = "tokenfree";
-const TOKENFREE_BASE_URL = "https://www.tokenfree.com/v1";
-const TOKENFREE_CONSOLE_URL = "https://www.tokenfree.com/channels";
+const DEFAULT_KEYS = ["text_model", "image_model", "video_model", "audio_model"] as const;
 
 // 能力显示名（按当前语言）
 function capLabel(cap: Capability): string {
   return tr(`settings.routing.cap.${cap}`);
 }
-
-const DEFAULT_KEYS = ["text_model", "image_model", "video_model", "audio_model"] as const;
 
 // 与后端 infer_model_capability 对齐
 function inferCapability(model: string): Capability {
@@ -49,7 +46,6 @@ function inferCapability(model: string): Capability {
   }
   if (
     mid.includes("seedream") ||
-    mid.includes("nano-banana") ||
     mid.includes("banana") ||
     mid.includes("dream") ||
     mid.includes("image") ||
@@ -69,20 +65,24 @@ function modelCapability(model: UpstreamModelOption): Capability {
   return inferCapability(model.id);
 }
 
-// 渠道已选模型收到规范 id，避免 Seedance 2.0 三档并存
-function canonicalizeRoutingSettings(settings: AdminRoutingSettings): AdminRoutingSettings {
+// 渠道已选模型收成规范 id，并按 sort_order（= failover 顺序）排好
+function normalizeSettings(settings: AdminRoutingSettings): AdminRoutingSettings {
   return {
     ...settings,
-    system_channels: settings.system_channels.map((item) =>
-      item.id === TOKENFREE_CHANNEL_ID
-        ? { ...item, models: canonicalizeChannelModels(item.models || []) }
-        : item,
-    ),
+    system_channels: [...settings.system_channels]
+      .sort((a, b) => a.sort_order - b.sort_order || a.id.localeCompare(b.id))
+      .map((item) =>
+        item.id === TOKENFREE_CHANNEL_ID ? { ...item, models: canonicalizeChannelModels(item.models || []) } : item,
+      ),
   };
 }
 
-function buildReadiness(data: AdminRoutingSettings | null, hasKey: boolean) {
+// 就绪条：至少一个可用渠道 + 四种能力都有默认模型
+function buildReadiness(data: AdminRoutingSettings | null, keyInputs: Record<string, string>) {
   const defaults = data?.default_models;
+  const hasKey = (data?.system_channels ?? []).some(
+    (ch) => ch.enabled && (ch.has_api_key || Boolean((keyInputs[ch.id] || "").trim())),
+  );
   return [
     { id: "secret", label: "API Key", ready: hasKey },
     { id: "text", label: tr("settings.routing.textModel"), ready: Boolean(defaults?.text_model) },
@@ -92,30 +92,40 @@ function buildReadiness(data: AdminRoutingSettings | null, hasKey: boolean) {
   ] as const;
 }
 
-// 开源版模型配置：固定 TokenFree，只填 Key、拉取并选择模型
+// 模型路由配置：多个上游渠道（顺序 = failover 顺序），每个渠道填 Key、拉取并勾选模型
 export function RoutingSettingsPanel() {
   const { t } = useI18n();
+  /* 服务端配置 + 本地未保存的编辑 */
   const [data, setData] = useState<AdminRoutingSettings | null>(null);
-  const [apiKeyInput, setApiKeyInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [upstreamModels, setUpstreamModels] = useState<UpstreamModelOption[]>([]);
+  /* 按渠道 ID 存的临时状态：新 Key、上游目录、本次新建（ID 可改） */
+  const [keyInputs, setKeyInputs] = useState<Record<string, string>>({});
+  const [catalogs, setCatalogs] = useState<Record<string, UpstreamModelOption[]>>({});
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const [activeId, setActiveId] = useState("");
+  /* 模型目录的筛选输入 */
   const [fetchingModels, setFetchingModels] = useState(false);
   const [manualModel, setManualModel] = useState("");
   const [modelSearch, setModelSearch] = useState("");
   const [modelCapFilter, setModelCapFilter] = useState<CapabilityFilter>("all");
 
-  const channel = data?.system_channels.find((item) => item.id === TOKENFREE_CHANNEL_ID) ?? data?.system_channels[0];
-  const hasSavedKey = Boolean(channel?.has_api_key);
-  const hasKey = hasSavedKey || Boolean(apiKeyInput.trim());
+  const locked = Boolean(data?.upstream_locked);
+  const channels = data?.system_channels ?? [];
+  const channel = channels.find((item) => item.id === activeId) ?? channels[0];
+  const keyInput = channel ? keyInputs[channel.id] || "" : "";
+  const hasKey = Boolean(channel?.has_api_key) || Boolean(keyInput.trim());
+  const upstreamModels = useMemo(() => (channel ? catalogs[channel.id] || [] : []), [catalogs, channel]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api<AdminRoutingSettings>("/api/admin/settings/routing");
-      setData(canonicalizeRoutingSettings(res));
-      setApiKeyInput("");
-      setUpstreamModels([]);
+      const res = normalizeSettings(await api<AdminRoutingSettings>("/api/admin/settings/routing"));
+      setData(res);
+      setKeyInputs({});
+      setCatalogs({});
+      setNewIds(new Set());
+      setActiveId((prev) => (res.system_channels.some((ch) => ch.id === prev) ? prev : res.system_channels[0]?.id || ""));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tr("settings.routing.loadFailed"));
     } finally {
@@ -127,7 +137,7 @@ export function RoutingSettingsPanel() {
     void load();
   }, [load]);
 
-  const selectedModels = channel?.models ?? [];
+  const selectedModels = useMemo(() => channel?.models ?? [], [channel]);
   const catalogModels = useMemo(() => {
     const raw: UpstreamModelOption[] = [];
     const seen = new Set<string>();
@@ -145,35 +155,56 @@ export function RoutingSettingsPanel() {
   }, [selectedModels, upstreamModels]);
 
   const capCounts = useMemo(() => {
-    const counts: Record<CapabilityFilter, number> = {
-      all: catalogModels.length,
-      text: 0,
-      image: 0,
-      video: 0,
-      audio: 0,
-    };
-    for (const model of catalogModels) {
-      counts[modelCapability(model)] += 1;
-    }
+    const counts: Record<CapabilityFilter, number> = { all: catalogModels.length, text: 0, image: 0, video: 0, audio: 0 };
+    for (const model of catalogModels) counts[modelCapability(model)] += 1;
     return counts;
   }, [catalogModels]);
 
   const filteredCatalogModels = useMemo(() => {
     const q = modelSearch.trim().toLowerCase();
     return catalogModels.filter((model) => {
-      const cap = modelCapability(model);
-      if (modelCapFilter !== "all" && cap !== modelCapFilter) {
-        return false;
-      }
+      if (modelCapFilter !== "all" && modelCapability(model) !== modelCapFilter) return false;
       if (!q) return true;
-      const hay = `${model.id} ${model.label || ""}`.toLowerCase();
-      return hay.includes(q);
+      return `${model.id} ${model.label || ""}`.toLowerCase().includes(q);
     });
   }, [catalogModels, modelCapFilter, modelSearch]);
 
-  const readiness = buildReadiness(data, hasKey);
+  const readiness = buildReadiness(data, keyInputs);
 
-  // 勾选短名单，并把 Seedance 2.0 三档别名收成 2.5 / 2.0 Mini
+  // 改某个渠道；新建渠道改 ID 时同步迁移按 ID 存的临时状态
+  function patchChannel(id: string, patch: Partial<AdminRoutingChannel>) {
+    const nextId = patch.id;
+    setData((prev) =>
+      prev
+        ? { ...prev, system_channels: prev.system_channels.map((ch) => (ch.id === id ? { ...ch, ...patch } : ch)) }
+        : prev,
+    );
+    if (nextId !== undefined && nextId !== id) {
+      const rename = <T,>(map: Record<string, T>) => {
+        const { [id]: value, ...rest } = map;
+        return value === undefined ? rest : { ...rest, [nextId]: value };
+      };
+      setKeyInputs(rename);
+      setCatalogs(rename);
+      setNewIds((prev) => new Set([...[...prev].filter((x) => x !== id), nextId]));
+      setActiveId(nextId);
+    }
+  }
+
+  // 列表增删 / 排序
+  function replaceChannels(next: AdminRoutingChannel[]) {
+    const prevIds = new Set(channels.map((ch) => ch.id));
+    const added = next.filter((ch) => !prevIds.has(ch.id)).map((ch) => ch.id);
+    if (added.length) setNewIds((prev) => new Set([...prev, ...added]));
+    setData((prev) => (prev ? { ...prev, system_channels: next } : prev));
+  }
+
+  function setSelectedModels(models: string[]) {
+    if (!channel) return;
+    patchChannel(channel.id, { models: canonicalizeChannelModels(models) });
+  }
+
+  // 勾选短名单，并把未设置的能力默认模型补上推荐值
   function applyRecommendedSelection(models: UpstreamModelOption[]) {
     const picks = pickRecommendedDefaults(models);
     setSelectedModels(mergeRecommendedSelection(selectedModels, models));
@@ -183,41 +214,14 @@ export function RoutingSettingsPanel() {
       for (const key of DEFAULT_KEYS) {
         const cap = key.replace("_model", "") as Capability;
         if ((nextDefaults[key] || "").trim()) continue;
-        const upstream = picks[cap];
-        if (!upstream) continue;
-        nextDefaults[key] = upstream;
+        if (picks[cap]) nextDefaults[key] = picks[cap];
       }
       return { ...prev, default_models: nextDefaults };
     });
   }
 
-  function setSelectedModels(models: string[]) {
-    const nextModels = canonicalizeChannelModels(models);
-    setData((prev) => {
-      if (!prev) return prev;
-      const channels = prev.system_channels.length
-        ? prev.system_channels.map((item) =>
-            item.id === (channel?.id || TOKENFREE_CHANNEL_ID) ? { ...item, models: nextModels } : item,
-          )
-        : [
-            {
-              id: TOKENFREE_CHANNEL_ID,
-              name: "TokenFree New API",
-              base_url: TOKENFREE_BASE_URL,
-              api_key: "",
-              has_api_key: hasSavedKey,
-              api_format: "openai" as const,
-              protocol: "auto" as const,
-              models: nextModels,
-              enabled: true,
-              sort_order: 0,
-            },
-          ];
-      return { ...prev, system_channels: channels };
-    });
-  }
-
   async function fetchUpstreamModels() {
+    if (!channel) return;
     if (!hasKey) {
       toast.error(t("settings.routing.keyRequired"));
       return;
@@ -227,21 +231,19 @@ export function RoutingSettingsPanel() {
       const res = await api<{ models: UpstreamModelOption[] }>("/api/admin/settings/upstream/models", {
         method: "POST",
         body: JSON.stringify({
-          channel_id: TOKENFREE_CHANNEL_ID,
-          protocol: "auto",
-          base_url: TOKENFREE_BASE_URL,
-          api_key: apiKeyInput.trim() || undefined,
+          // 新建未保存的渠道后端查不到，只按表单里的 Base URL + Key 拉
+          channel_id: newIds.has(channel.id) ? undefined : channel.id,
+          protocol: channel.protocol || "auto",
+          base_url: channel.id === TOKENFREE_CHANNEL_ID ? TOKENFREE_BASE_URL : channel.base_url,
+          api_key: keyInput.trim() || undefined,
           capability: "all",
         }),
       });
       const catalog = collapseCatalogModels(res.models);
-      setUpstreamModels(catalog);
+      setCatalogs((prev) => ({ ...prev, [channel.id]: catalog }));
       const shouldAutoPick = selectedModels.length === 0;
-      if (shouldAutoPick) {
-        applyRecommendedSelection(catalog);
-      } else {
-        setSelectedModels([...selectedModels, ...pickRecommendedModelIds(catalog)]);
-      }
+      if (shouldAutoPick) applyRecommendedSelection(catalog);
+      else setSelectedModels([...selectedModels, ...pickRecommendedModelIds(catalog)]);
       toast.success(
         shouldAutoPick
           ? t("settings.routing.fetchedPicked", { n: res.models.length })
@@ -255,10 +257,9 @@ export function RoutingSettingsPanel() {
   }
 
   function toggleModel(modelId: string, checked: boolean) {
-    const next = checked
-      ? [...new Set([...selectedModels, modelId])]
-      : selectedModels.filter((id) => id !== modelId);
-    setSelectedModels(next);
+    setSelectedModels(
+      checked ? [...new Set([...selectedModels, modelId])] : selectedModels.filter((id) => id !== modelId),
+    );
   }
 
   function addManualModel() {
@@ -275,24 +276,24 @@ export function RoutingSettingsPanel() {
       const res = await api<{ settings: AdminRoutingSettings }>("/api/admin/settings/routing", {
         method: "PATCH",
         body: JSON.stringify({
-          system_channels: [
-            {
-              id: TOKENFREE_CHANNEL_ID,
-              name: "TokenFree New API",
-              base_url: TOKENFREE_BASE_URL,
-              api_key: apiKeyInput.trim() || undefined,
-              api_format: "openai",
-              protocol: "auto",
-              models: selectedModels,
-              enabled: true,
-              sort_order: 0,
-            },
-          ],
+          system_channels: data.system_channels.map((ch, index) => ({
+            id: ch.id,
+            name: ch.name,
+            base_url: ch.id === TOKENFREE_CHANNEL_ID ? TOKENFREE_BASE_URL : ch.base_url,
+            api_key: (keyInputs[ch.id] || "").trim() || undefined,
+            api_format: ch.api_format,
+            protocol: ch.protocol,
+            models: ch.models,
+            enabled: ch.enabled,
+            sort_order: index,
+          })),
           default_models: data.default_models,
         }),
       });
-      setData(canonicalizeRoutingSettings(res.settings));
-      setApiKeyInput("");
+      const next = normalizeSettings(res.settings);
+      setData(next);
+      setKeyInputs({});
+      setNewIds(new Set());
       toast.success(t("settings.routing.saved"));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("common.toast.saveFailed"));
@@ -332,164 +333,140 @@ export function RoutingSettingsPanel() {
       ) : null}
 
       <SettingsPanel
-        title="TokenFree New API"
-        description={t("settings.routing.desc")}
+        title={t("settings.routing.channel.title")}
+        description={locked ? t("settings.routing.descLocked") : t("settings.routing.desc")}
       >
-        <div className="settings-field-grid">
-          <LabeledControl label={t("settings.routing.endpoint")} className="settings-field-span-full">
-            <input className="settings-input" value={TOKENFREE_BASE_URL} readOnly />
-            <p className="mt-1 text-xs text-[#909399]">
-              {t("settings.routing.console")}
-              <a className="ml-1 text-[#409eff] hover:underline" href={TOKENFREE_CONSOLE_URL} target="_blank" rel="noreferrer">
-                {TOKENFREE_CONSOLE_URL}
-              </a>
-            </p>
-          </LabeledControl>
-          <LabeledControl
-            label="API Key"
-            hint={hasSavedKey ? t("settings.routing.savedKeyHint") : t("settings.routing.notConfigured")}
-            className="settings-field-span-full"
-          >
-            <div className="settings-secret-row">
-              <input
-                className="settings-input is-secret"
-                type="password"
-                placeholder={hasSavedKey ? t("settings.routing.savedKeyPlaceholder") : t("settings.routing.pasteKey")}
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-              />
-              {apiKeyInput ? (
+        <RoutingChannelTabs
+          channels={channels}
+          activeId={channel?.id || ""}
+          locked={locked}
+          onSelect={setActiveId}
+          onChange={replaceChannels}
+        />
+      </SettingsPanel>
+
+      {channel ? (
+        <SettingsPanel title={channel.name || channel.id} description={t("settings.routing.channel.editDesc")}>
+          <div className="settings-field-grid">
+            <RoutingChannelFields
+              channel={channel}
+              isNew={newIds.has(channel.id)}
+              locked={locked}
+              keyInput={keyInput}
+              onKeyInput={(value) => setKeyInputs((prev) => ({ ...prev, [channel.id]: value }))}
+              onChange={(patch) => patchChannel(channel.id, patch)}
+            />
+
+            <LabeledControl
+              className="settings-field-span-full"
+              label={t("settings.routing.models")}
+              hint={t("settings.routing.modelsHint")}
+            >
+              <div className="settings-model-toolbar">
                 <button
                   type="button"
                   className="admin-btn admin-btn-secondary settings-mini-btn"
-                  onClick={() => setApiKeyInput("")}
+                  disabled={fetchingModels || !hasKey}
+                  onClick={() => void fetchUpstreamModels()}
                 >
-                  {t("common.clear")}
+                  {fetchingModels ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                  {t("settings.routing.fetchModels")}
                 </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary settings-mini-btn"
+                  disabled={upstreamModels.length === 0}
+                  onClick={() => applyRecommendedSelection(upstreamModels)}
+                >
+                  {t("settings.routing.pickRecommended")}
+                </button>
+                <span className="settings-model-count">
+                  {t("settings.routing.selected", { n: selectedModels.length })}
+                  {upstreamModels.length > 0 ? t("settings.routing.upstreamCount", { n: upstreamModels.length }) : ""}
+                  {filteredCatalogModels.length !== catalogModels.length
+                    ? t("settings.routing.currentList", { n: filteredCatalogModels.length })
+                    : ""}
+                </span>
+              </div>
+              {catalogModels.length > 0 ? (
+                <>
+                  <div className="settings-model-cap-row">
+                    {(["all", ...CAPABILITY_ORDER] as CapabilityFilter[]).map((cap) => (
+                      <button
+                        key={cap}
+                        type="button"
+                        className={cn("settings-model-cap-chip", modelCapFilter === cap && "is-active", cap !== "all" && `is-${cap}`)}
+                        onClick={() => setModelCapFilter(cap)}
+                      >
+                        {cap === "all" ? t("common.all") : capLabel(cap)}
+                        <span>{capCounts[cap]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="settings-model-search">
+                    <Search className="h-3.5 w-3.5 shrink-0 text-[#909399]" aria-hidden />
+                    <input
+                      className="settings-input"
+                      value={modelSearch}
+                      onChange={(e) => setModelSearch(e.target.value)}
+                      placeholder={t("settings.routing.searchPlaceholder")}
+                    />
+                    {modelSearch ? (
+                      <button type="button" className="admin-btn admin-btn-secondary settings-mini-btn" onClick={() => setModelSearch("")}>
+                        {t("common.clear")}
+                      </button>
+                    ) : null}
+                  </div>
+                </>
               ) : null}
-            </div>
-          </LabeledControl>
-
-          <LabeledControl
-            className="settings-field-span-full"
-            label={t("settings.routing.models")}
-            hint={t("settings.routing.modelsHint")}
-          >
-            <div className="settings-model-toolbar">
-              <button
-                type="button"
-                className="admin-btn admin-btn-secondary settings-mini-btn"
-                disabled={fetchingModels || !hasKey}
-                onClick={() => void fetchUpstreamModels()}
-              >
-                {fetchingModels ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                {t("settings.routing.fetchModels")}
-              </button>
-              <button
-                type="button"
-                className="admin-btn admin-btn-secondary settings-mini-btn"
-                disabled={upstreamModels.length === 0}
-                onClick={() => applyRecommendedSelection(upstreamModels)}
-              >
-                {t("settings.routing.pickRecommended")}
-              </button>
-              <span className="settings-model-count">
-                {t("settings.routing.selected", { n: selectedModels.length })}
-                {upstreamModels.length > 0 ? t("settings.routing.upstreamCount", { n: upstreamModels.length }) : ""}
-                {filteredCatalogModels.length !== catalogModels.length
-                  ? t("settings.routing.currentList", { n: filteredCatalogModels.length })
-                  : ""}
-              </span>
-            </div>
-            {catalogModels.length > 0 ? (
-              <>
-                <div className="settings-model-cap-row">
-                  {(["all", ...CAPABILITY_ORDER] as CapabilityFilter[]).map((cap) => (
-                    <button
-                      key={cap}
-                      type="button"
-                      className={cn(
-                        "settings-model-cap-chip",
-                        modelCapFilter === cap && "is-active",
-                        cap !== "all" && `is-${cap}`,
-                      )}
-                      onClick={() => setModelCapFilter(cap)}
-                    >
-                      {cap === "all" ? t("common.all") : capLabel(cap)}
-                      <span>{capCounts[cap]}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="settings-model-search">
-                  <Search className="h-3.5 w-3.5 shrink-0 text-[#909399]" aria-hidden />
-                  <input
-                    className="settings-input"
-                    value={modelSearch}
-                    onChange={(e) => setModelSearch(e.target.value)}
-                    placeholder={t("settings.routing.searchPlaceholder")}
-                  />
-                  {modelSearch ? (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-secondary settings-mini-btn"
-                      onClick={() => setModelSearch("")}
-                    >
-                      {t("common.clear")}
-                    </button>
-                  ) : null}
-                </div>
-              </>
-            ) : null}
-            <div className="settings-model-catalog">
-              {catalogModels.length === 0 ? (
-                <div className="settings-empty-hint">{t("settings.routing.emptyFetch")}</div>
-              ) : filteredCatalogModels.length === 0 ? (
-                <div className="settings-empty-hint">{t("settings.routing.noMatch")}</div>
-              ) : (
-                filteredCatalogModels.map((model) => {
-                  const checked = selectedModels.includes(model.id);
-                  const cap = modelCapability(model);
-                  return (
-                    <label key={model.id} className={cn("settings-model-option", checked && "is-checked")}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => toggleModel(model.id, e.target.checked)}
-                      />
-                      <span className="font-mono text-xs">{model.label || model.id}</span>
-                      <em className={cn("settings-cap-tag", `is-${cap}`)}>{capLabel(cap) || cap}</em>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-            <div className="settings-model-manual">
-              <input
-                className="settings-input"
-                value={manualModel}
-                onChange={(e) => setManualModel(e.target.value)}
-                placeholder={t("settings.routing.manualPlaceholder")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addManualModel();
-                  }
-                }}
-              />
-              <button type="button" className="admin-btn admin-btn-secondary settings-mini-btn" onClick={addManualModel}>
-                {t("settings.routing.add")}
-              </button>
-            </div>
-          </LabeledControl>
-        </div>
-      </SettingsPanel>
+              <div className="settings-model-catalog">
+                {catalogModels.length === 0 ? (
+                  <div className="settings-empty-hint">{t("settings.routing.emptyFetch")}</div>
+                ) : filteredCatalogModels.length === 0 ? (
+                  <div className="settings-empty-hint">{t("settings.routing.noMatch")}</div>
+                ) : (
+                  filteredCatalogModels.map((model) => {
+                    const checked = selectedModels.includes(model.id);
+                    const cap = modelCapability(model);
+                    return (
+                      <label key={model.id} className={cn("settings-model-option", checked && "is-checked")}>
+                        <input type="checkbox" checked={checked} onChange={(e) => toggleModel(model.id, e.target.checked)} />
+                        <span className="font-mono text-xs">{model.label || model.id}</span>
+                        <em className={cn("settings-cap-tag", `is-${cap}`)}>{capLabel(cap) || cap}</em>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              <div className="settings-model-manual">
+                <input
+                  className="settings-input"
+                  value={manualModel}
+                  onChange={(e) => setManualModel(e.target.value)}
+                  placeholder={t("settings.routing.manualPlaceholder")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addManualModel();
+                    }
+                  }}
+                />
+                <button type="button" className="admin-btn admin-btn-secondary settings-mini-btn" onClick={addManualModel}>
+                  {t("settings.routing.add")}
+                </button>
+              </div>
+            </LabeledControl>
+          </div>
+        </SettingsPanel>
+      ) : null}
 
       <SettingsPanel title={t("settings.routing.useModels")} description={t("settings.routing.useModelsDesc")}>
         <div className="settings-field-grid settings-field-grid--2">
           {DEFAULT_KEYS.map((key) => {
             const cap = key.replace("_model", "") as Capability;
             const options = (data?.logical_models ?? []).filter((model) => model.capability === cap);
-            const fallback = selectedModels.filter((id) => inferCapability(id) === cap);
+            const allSelected = channels.flatMap((ch) => (ch.enabled ? ch.models : []));
+            const fallback = [...new Set(allSelected.filter((id) => inferCapability(id) === cap))];
             const ids = options.length > 0 ? options.map((m) => m.id) : fallback;
             return (
               <LabeledControl key={key} label={t("settings.routing.capDefault", { cap: capLabel(cap) })}>
@@ -498,9 +475,7 @@ export function RoutingSettingsPanel() {
                   value={data?.default_models[key] ?? ""}
                   onChange={(e) =>
                     setData((prev) =>
-                      prev
-                        ? { ...prev, default_models: { ...prev.default_models, [key]: e.target.value } }
-                        : prev,
+                      prev ? { ...prev, default_models: { ...prev.default_models, [key]: e.target.value } } : prev,
                     )
                   }
                 >

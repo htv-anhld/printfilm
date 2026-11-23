@@ -11,7 +11,17 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
-from app.services.logical_model_router import resolve_logical_model, resolve_logical_model_id
+from app.services.logical_model_router import (
+    resolve_logical_model,
+    resolve_logical_model_candidates,
+    resolve_logical_model_id,
+)
+from app.services.upstream_channels import (
+    is_failover_exception,
+    is_failover_status,
+    record_channel_failure,
+    record_channel_success,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +76,11 @@ def _message_content(data: dict[str, Any]) -> str:
     return str(reasoning or "")
 
 
-# 调用 OpenAI 兼容 chat/completions
+class _ChannelFailover(RuntimeError):
+    """当前渠道故障（网络 / 5xx / 429），可以换下一个渠道重试。"""
+
+
+# 调用 OpenAI 兼容 chat/completions（多渠道按优先级 failover）
 async def chat_completions(
     system: str,
     user: str,
@@ -78,19 +92,66 @@ async def chat_completions(
 ) -> str:
     settings = get_settings()
     logical_id = resolve_logical_model_id("text", None)
-    route = resolve_logical_model("text", logical_id)
-    if route:
-        api_key = route.api_key
-        model = (route.upstream_model or "").strip()
-        base = route.base_url.rstrip("/") or resolve_llm_base_url()
-    else:
-        api_key = resolve_llm_api_key()
+    routes = resolve_logical_model_candidates("text", logical_id)
+    if not routes:
+        single = resolve_logical_model("text", logical_id)
+        routes = [single] if single else []
+    attempts: list[tuple[str, str, str, str]] = [
+        (
+            route.api_key,
+            (route.upstream_model or "").strip(),
+            route.base_url.rstrip("/") or resolve_llm_base_url(),
+            route.channel_id,
+        )
+        for route in routes
+    ]
+    if not attempts:
         model = (settings.model_llm or "").strip()
-        base = resolve_llm_base_url()
-    if not model:
+        if model:
+            attempts = [(resolve_llm_api_key(), model, resolve_llm_base_url(), "")]
+    if not attempts or not attempts[0][1]:
         raise LlmUnavailableError(
             _("未解析到可用文字模型。请在管理后台填写 TokenFree API Key，拉取并选择文本模型。")
         )
+    last_exc: Exception | None = None
+    for index, (api_key, model, base, channel_id) in enumerate(attempts):
+        try:
+            content = await _chat_once(
+                api_key,
+                model,
+                base,
+                system,
+                user,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=timeout,
+                response_format=response_format,
+            )
+        except _ChannelFailover as exc:
+            record_channel_failure(channel_id)
+            last_exc = exc
+            if index + 1 < len(attempts):
+                logger.warning("文字 LLM 渠道 %s 故障，切换下一渠道：%s", channel_id or base, exc)
+                continue
+            raise RuntimeError(str(exc)) from exc
+        record_channel_success(channel_id)
+        return content
+    raise RuntimeError(str(last_exc) if last_exc else "LLM failed")
+
+
+async def _chat_once(
+    api_key: str,
+    model: str,
+    base: str,
+    system: str,
+    user: str,
+    *,
+    temperature: float,
+    max_tokens: int,
+    timeout: float,
+    response_format: dict[str, Any] | None,
+) -> str:
+    """单渠道单次调用；渠道级故障抛 _ChannelFailover，业务错误抛 RuntimeError。"""
     # kimi 系列仅允许 temperature=0.6，其它值会 400
     effective_temperature = 0.6 if model.lower().startswith("kimi") else temperature
 
@@ -117,14 +178,21 @@ async def chat_completions(
         max_tokens,
     )
     async with httpx.AsyncClient(timeout=timeout) as client:
-        res = await client.post(
-            f"{base}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        )
+        try:
+            res = await client.post(
+                f"{base}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+        except httpx.HTTPError as exc:
+            if is_failover_exception(exc):
+                raise _ChannelFailover(f"LLM network error ({type(exc).__name__}): {exc}") from exc
+            raise
+        if is_failover_status(res.status_code):
+            raise _ChannelFailover(f"LLM error {res.status_code}: {res.text[:800]}")
         if res.status_code >= 400:
             raise RuntimeError(f"LLM error {res.status_code}: {res.text[:800]}")
         body = (res.text or "").strip()

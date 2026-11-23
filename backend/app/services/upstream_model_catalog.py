@@ -124,7 +124,11 @@ async def list_upstream_models(
     if proto == "volc_tts":
         raise RuntimeError(_("豆包 TTS 暂不支持从上游拉取模型目录，请手动填写 speaker / 音色 ID"))
 
-    if proto == "kie" or proto == "ark" or "volces.com" in base.lower() or "kie.ai" in base.lower():
+    from app.services.tokenfree_gateway import upstream_locked
+
+    locked_vendor = proto == "kie" or proto == "ark" or "volces.com" in base.lower() or "kie.ai" in base.lower()
+    if locked_vendor and upstream_locked():
+        # 开源锁定模式：方舟 / Kie 目录统一走 TokenFree 聚合
         from app.services.tokenfree_gateway import TOKENFREE_BASE_URL, resolve_tokenfree_api_key
 
         base = TOKENFREE_BASE_URL

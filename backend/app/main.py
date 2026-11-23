@@ -342,6 +342,17 @@ async def health() -> dict:
 
     runtime = runtime_summary()
     runtime_ok = bool(runtime.get("healthy"))
+    from app.services.logical_model_router import resolve_logical_model
+    from app.services.upstream_channels import channel_health_snapshot
+
+    # 每种能力当前实际会命中的渠道（含熔断降级后的结果），不回传 Key
+    active: dict[str, str | None] = {}
+    for capability in ("text", "image", "video", "audio"):
+        try:
+            route = resolve_logical_model(capability, "")
+        except Exception:  # noqa: BLE001
+            route = None
+        active[capability] = route.channel_id if route else None
     return {
         "ok": runtime_ok,
         "ark_mock": s.ark_mock,
@@ -356,6 +367,11 @@ async def health() -> dict:
         "quality": {
             "image_size": s.ark_image_size,
             "video_resolution": s.ark_video_resolution,
+        },
+        "upstream": {
+            "locked": s.upstream_lock_tokenfree,
+            "active_channels": active,
+            "breaker": channel_health_snapshot(),
         },
         "app": s.app_name,
     }

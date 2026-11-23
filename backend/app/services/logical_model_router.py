@@ -9,6 +9,7 @@ from app.services.model_routing_config import (
     infer_model_capability,
 )
 from app.services.model_settings import get_routing_snapshot
+from app.services.upstream_channels import demote_cooling
 
 
 # 解析某逻辑模型的可用路由
@@ -38,7 +39,8 @@ def _routes_for_logical_model(
         route = _build_route(capability, logical.id, binding.upstream_model, channel)
         if route:
             routes.append(route)
-    return routes
+    # 熔断中的渠道挪到末尾：首选自动落到健康的备用渠道
+    return demote_cooling(routes, lambda r: r.channel_id)
 
 
 # 解析逻辑模型到运行时路由（含 failover 候选列表）
@@ -140,7 +142,7 @@ def _direct_channel_routes(
         route = _build_route(capability, requested, requested, channel)
         if route:
             routes.append(route)
-    return routes
+    return demote_cooling(routes, lambda r: r.channel_id)
 
 
 # 解析首选逻辑模型路由
