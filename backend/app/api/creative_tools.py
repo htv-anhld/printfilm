@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -108,3 +108,40 @@ async def video_script(body: VideoScriptBody, db: AsyncSession = Depends(get_db)
 @router.get("/marketing/presets")
 async def marketing_presets() -> dict:
     return {"presets": ct.marketing_presets()}
+
+
+# ── 画质放大（FFmpeg，非 AI，不计费） ──────────────────
+
+
+@router.get("/drama/upscale/options")
+async def upscale_options() -> dict:
+    from app.services.upscale import options
+
+    return options()
+
+
+@router.post("/drama/upscale")
+async def upscale_media(
+    kind: Literal["image", "video"] = Form(...),
+    scale: int = Form(2),
+    target: str = Form("1080p", max_length=8),
+    url: str = Form("", max_length=1024),
+    file: UploadFile | None = File(default=None),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """上传文件或本站媒体链接 → 放大后的文件地址。"""
+    from app.services import upscale as up
+    from app.services.studio_tools import save_upload
+
+    upload = None
+    if file is not None:
+        raw = await file.read()
+        if len(raw) > 200 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail=ct._("文件过大"))
+        if raw:
+            upload = save_upload(user.id, raw, file.filename or "upload.bin")
+    try:
+        src = await up.resolve_source(url or None, upload)
+        return await up.upscale(user, src, kind=kind, scale=scale, target=target)
+    except up.UpscaleError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

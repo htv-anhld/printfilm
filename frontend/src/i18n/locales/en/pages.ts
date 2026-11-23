@@ -639,6 +639,22 @@ export const enPages = {
       project: "Series character",
     },
   },
+  upscale: {
+    title: "Upscale",
+    lead: "Upscale images 2× / 4× or videos to 1080p–4K (up to {n} seconds).",
+    file: "Upload a file",
+    orUrl: "Or paste a link to media from this site",
+    scale: "Scale",
+    target: "Target resolution",
+    run: "Upscale",
+    working: "Processing…",
+    note: "Upscaled with an algorithm (lanczos + sharpening), not AI, so no new detail is invented. Free.",
+    card: "Increase image and video resolution",
+    kind: {
+      image: "Image",
+      video: "Video",
+    },
+  },
   pricing: {
     plans: {
       title: 'Subscription plans',

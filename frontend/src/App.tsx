@@ -9,6 +9,7 @@ import TeamInvitePage from './pages/TeamInvitePage'
 import PartnersPage from './pages/PartnersPage'
 import OAuthAuthorizePage from './pages/OAuthAuthorizePage'
 import TextToolPage from './pages/TextToolPage'
+import UpscalePage from './pages/UpscalePage'
 import LibraryPage from './pages/LibraryPage'
 import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/tools/text/:kind" element={<TextToolPage />} />
+        <Route path="/tools/upscale" element={<UpscalePage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/tools/:toolId" element={<ToolDetailPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />

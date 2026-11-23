@@ -574,6 +574,22 @@ export const zhPages = {
       project: "漫剧角色",
     },
   },
+  upscale: {
+    title: "画质放大",
+    lead: "图片放大 2× / 4×，视频放大到 1080p–4K（最长 {n} 秒）。",
+    file: "上传文件",
+    orUrl: "或粘贴本站媒体链接",
+    scale: "倍数",
+    target: "目标分辨率",
+    run: "放大",
+    working: "处理中…",
+    note: "使用算法放大（lanczos + 锐化），非 AI，不会凭空生成细节。免费。",
+    card: "提升图片与视频分辨率",
+    kind: {
+      image: "图片",
+      video: "视频",
+    },
+  },
   pricing: {
     plans: {
       title: '订阅套餐',

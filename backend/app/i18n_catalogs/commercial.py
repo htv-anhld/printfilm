@@ -115,6 +115,22 @@ EN: dict[str, str] = {
     "音频不能超过 25MB": "Audio must be under 25MB",
     "素材数量已达上限": "You've reached the library limit",
     "素材不存在": "Item not found",
+    # ── 画质放大 ──
+    "处理超时，请换更短的视频": "Processing timed out. Try a shorter video",
+    "服务器未安装 FFmpeg": "FFmpeg is not installed on the server",
+    "放大失败：{detail}": "Upscale failed: {detail}",
+    "无法读取媒体尺寸": "Couldn't read the media size",
+    "请上传文件或填写本站媒体链接": "Upload a file or paste a link to media from this site",
+    "只能放大本站生成的媒体": "Only media from this site can be upscaled",
+    "文件不存在": "File not found",
+    "放大倍数无效": "Invalid scale",
+    "放大后超过 {n} 像素上限": "The result would exceed the {n}-pixel limit",
+    "仅支持 MP4 / MOV / WebM": "Only MP4 / MOV / WebM are supported",
+    "目标分辨率无效": "Invalid target resolution",
+    "视频不能超过 {n} 秒": "Videos must be {n} seconds or shorter",
+    "视频已达到该分辨率": "The video is already at this resolution",
+    "类型无效": "Invalid type",
+    "文件过大": "File too large",
 }
 
 VI: dict[str, str] = {
@@ -229,4 +245,20 @@ VI: dict[str, str] = {
     "音频不能超过 25MB": "Âm thanh không được vượt quá 25MB",
     "素材数量已达上限": "Đã đạt giới hạn số lượng tư liệu",
     "素材不存在": "Tư liệu không tồn tại",
+    # ── 画质放大 ──
+    "处理超时，请换更短的视频": "Xử lý quá thời gian, hãy thử video ngắn hơn",
+    "服务器未安装 FFmpeg": "Máy chủ chưa cài FFmpeg",
+    "放大失败：{detail}": "Phóng to thất bại: {detail}",
+    "无法读取媒体尺寸": "Không đọc được kích thước tệp",
+    "请上传文件或填写本站媒体链接": "Hãy tải tệp lên hoặc dán link tư liệu trên trang này",
+    "只能放大本站生成的媒体": "Chỉ phóng to được tư liệu trên trang này",
+    "文件不存在": "Tệp không tồn tại",
+    "放大倍数无效": "Hệ số phóng to không hợp lệ",
+    "放大后超过 {n} 像素上限": "Kết quả vượt giới hạn {n} pixel",
+    "仅支持 MP4 / MOV / WebM": "Chỉ hỗ trợ MP4 / MOV / WebM",
+    "目标分辨率无效": "Độ phân giải đích không hợp lệ",
+    "视频不能超过 {n} 秒": "Video không được dài quá {n} giây",
+    "视频已达到该分辨率": "Video đã đạt độ phân giải này",
+    "类型无效": "Loại không hợp lệ",
+    "文件过大": "Tệp quá lớn",
 }

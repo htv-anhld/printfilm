@@ -652,6 +652,22 @@ export const viPages = {
       project: "Nhân vật trong phim",
     },
   },
+  upscale: {
+    title: "Phóng to chất lượng",
+    lead: "Phóng ảnh 2× / 4× hoặc nâng video lên 1080p–4K (tối đa {n} giây).",
+    file: "Tải tệp lên",
+    orUrl: "Hoặc dán link tư liệu trên trang này",
+    scale: "Hệ số",
+    target: "Độ phân giải đích",
+    run: "Phóng to",
+    working: "Đang xử lý…",
+    note: "Phóng to bằng thuật toán (lanczos + làm nét), không dùng AI, nên không tạo thêm chi tiết mới. Miễn phí.",
+    card: "Tăng độ phân giải ảnh và video",
+    kind: {
+      image: "Ảnh",
+      video: "Video",
+    },
+  },
   pricing: {
     plans: {
       title: 'Gói thuê bao',

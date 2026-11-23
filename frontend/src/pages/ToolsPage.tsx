@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Captions, FileText, Megaphone, MonitorPlay } from 'lucide-react'
+import { ArrowRight, Captions, FileText, Maximize2, Megaphone, MonitorPlay } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import ComingSoon from '../components/ui/ComingSoon'
 import { useI18n } from '../i18n'
@@ -71,6 +71,18 @@ export default function ToolsPage() {
             <p>{t(`textTools.${id}.lead`)}</p>
           </Link>
         ))}
+        <Link to="/tools/upscale" className="pf-tools-card pf-tools-card-lg">
+          <div className="pf-tools-card-top">
+            <span className="pf-ws-tool-icon" aria-hidden>
+              <Maximize2 size={22} strokeWidth={1.6} />
+            </span>
+            <span className="pf-tools-arrow" aria-hidden>
+              <ArrowRight size={14} strokeWidth={2} />
+            </span>
+          </div>
+          <h3>{t('upscale.title')}</h3>
+          <p>{t('upscale.card')}</p>
+        </Link>
       </div>
       <h2 className="pf-tools-section-title">{t('marketing.sectionTitle')}</h2>
       <p className="pf-muted">{t('marketing.sectionLead')}</p>

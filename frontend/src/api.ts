@@ -605,6 +605,30 @@ export const api = {
   deleteLibraryItem(id: number | string) {
     return request<{ ok: boolean }>(`/api/library/items/${id}`, { method: 'DELETE' })
   },
+  upscaleOptions() {
+    return request<{ engine: string; ai: boolean; image: { scales: number[] }; video: { targets: string[]; max_seconds: number } }>(
+      '/api/drama/upscale/options',
+    )
+  },
+  async upscale(body: { kind: 'image' | 'video'; scale?: number; target?: string; url?: string; file?: File | null }) {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('kind', body.kind)
+    form.append('scale', String(body.scale ?? 2))
+    form.append('target', body.target ?? '1080p')
+    form.append('url', body.url ?? '')
+    if (body.file) form.append('file', body.file)
+    const res = await fetch(`${API_BASE}/api/drama/upscale`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throwApiError(res.status, err.detail, res.statusText)
+    }
+    return (await res.json()) as { url: string; width: number; height: number; engine: string }
+  },
   partnerMe() {
     return request<PartnerInfo>('/api/partner-program/me')
   },

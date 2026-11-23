@@ -351,3 +351,18 @@ Bảng `library_items` (kind `avatar` | `bgm` | `sfx`): mục **toàn hệ thố
 
 Lưu ý bản quyền: chỉ tải lên nhạc bạn có quyền dùng thương mại (nhạc mua license hoặc royalty-free).
 Hai thư mục `backend/static/bgm/` và `backend/static/library/` đã thêm vào `.gitignore`.
+
+## 14. Phóng to chất lượng (upscale)
+
+`GET /api/drama/upscale/options`, `POST /api/drama/upscale` (multipart: `kind`, `scale`, `target`,
+`url` hoặc `file`); trang `/tools/upscale`.
+
+**Không dùng AI, ghi rõ trên giao diện.** Model ảnh hiện có (Seedream Pro, gpt-image qua TokenFree) giới hạn ở
+2K, code cũng ép 3K/4K về 2K, nên không thể upscale bằng AI vượt mức đó. Hệ thống dùng FFmpeg (lanczos +
+unsharp) chạy trên CPU máy chủ: ảnh 2×/4× (tối đa 8192 px), video lên 1080p/1440p/2160p (tối đa 60 giây, x264
+crf 18). **Miễn phí** vì không tốn chi phí upstream. Nếu sau này có upstream upscale AI, thêm engine mới vào
+`services/upscale.py`.
+
+**Chặn SSRF và đọc file tuỳ ý:** chỉ nhận file tải lên, URL `/static/…` của chính hệ thống (đã chặn `../`) hoặc
+URL thuộc domain OSS đã cấu hình. **Video 4K tốn nhiều CPU**: nếu máy chủ yếu, nên giảm `VIDEO_TARGETS` hoặc chuyển
+sang chạy nền qua task runtime.
