@@ -1,8 +1,11 @@
-import { Clapperboard, Image, Images, Play, ShoppingBag, Sparkles, Video } from 'lucide-react'
+import { Clapperboard, Film, Image, Images, Play, ShoppingBag, Sparkles, Video } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Messages } from '../i18n'
 
-export type ToolId = 't2i' | 'i2i' | 'i2p' | 't2v' | 'v2v' | 'ecom'
+export type ToolId = 't2i' | 'i2i' | 'i2p' | 't2v' | 'v2v' | 'ecom' | 'cinema'
+
+/** cinema-look 调色预设（值与后端 CINEMA_LOOKS 的 key 一致） */
+export const CINEMA_LOOK_IDS = ['teal_orange', 'noir', 'wes', 'kodak', 'cyberpunk', 'golden_hour', 'bleach', 'anime']
 
 export type ToolField = {
   key: string
@@ -117,6 +120,21 @@ export const TOOL_DEFS: ToolDef[] = [
     cta: '开始制作',
   },
 ]
+
+TOOL_DEFS.push({
+  id: 'cinema',
+  title: '电影调色',
+  desc: '一键把照片调成电影质感',
+  soon: false,
+  icon: Film,
+  panelHint: '上传照片，选择电影风格，构图与主体保持不变。',
+  fields: [
+    { key: 'ref', label: '照片', kind: 'upload', accept: 'image/*' },
+    { key: 'mode', label: '风格', kind: 'chips', options: CINEMA_LOOK_IDS },
+    { key: 'prompt', label: '补充描述（可选）', kind: 'textarea', placeholder: '下雨的夜晚、霓虹反光…' },
+  ],
+  cta: '调色',
+})
 
 // 按 id 查找工具定义
 export function getToolDef(id: string | undefined): ToolDef | undefined {

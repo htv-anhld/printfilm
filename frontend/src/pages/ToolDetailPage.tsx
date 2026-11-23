@@ -136,7 +136,7 @@ function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
       setError(t('tools.errors.fillPrompt'))
       return
     }
-    if ((tool.id === 'i2i' || tool.id === 'i2p') && !files.length) {
+    if ((tool.id === 'i2i' || tool.id === 'i2p' || tool.id === 'cinema') && !files.length) {
       setError(t('tools.errors.uploadRef'))
       return
     }

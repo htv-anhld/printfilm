@@ -272,6 +272,24 @@ export const viPages = {
       notLoggedIn: 'Chưa đăng nhập',
     },
     items: {
+      cinema: {
+        title: "Màu phim điện ảnh",
+        desc: "Biến ảnh thường thành khung hình điện ảnh chỉ một chạm",
+        panelHint: "Tải ảnh lên, chọn tông màu phim; bố cục và chủ thể giữ nguyên.",
+        cta: "Đổi tông màu",
+        fields: {
+          ref: {
+            label: "Ảnh",
+          },
+          mode: {
+            label: "Tông màu",
+          },
+          prompt: {
+            label: "Mô tả thêm (tuỳ chọn)",
+            placeholder: "Đêm mưa, phản chiếu đèn neon…",
+          },
+        },
+      },
       t2i: {
         title: 'Tạo ảnh từ văn bản',
         desc: 'Mô tả bằng chữ để tạo hình ảnh chất lượng cao',
@@ -383,6 +401,14 @@ export const viPages = {
       },
     },
     chips: {
+      teal_orange: "Xanh – cam điện ảnh",
+      noir: "Phim đen trắng",
+      wes: "Pastel Wes Anderson",
+      kodak: "Phim Kodak Portra",
+      cyberpunk: "Neon cyberpunk",
+      golden_hour: "Giờ vàng",
+      bleach: "Bleach bypass",
+      anime: "Anime điện ảnh",
       低: 'Thấp',
       中: 'Vừa',
       高: 'Cao',
@@ -508,6 +534,101 @@ export const viPages = {
     deleteApp: 'Xoá',
     logsTitle: 'Lịch sử gọi MCP',
     noLogs: 'Chưa có lượt gọi nào',
+  },
+  textTools: {
+    sectionTitle: "Văn bản & kịch bản",
+    fileTooLarge: "Tệp quá lớn (tối đa 2 MB)",
+    youtube: "Liên kết YouTube",
+    subtitleInput: "Dán nội dung SRT / VTT",
+    scriptInput: "Dán câu chuyện / bản nháp",
+    materialInput: "Ghi chú hoặc tư liệu (tuỳ chọn nếu đã có link)",
+    upload: "Hoặc tải tệp .srt / .vtt lên",
+    targetLang: "Dịch sang",
+    outputLang: "Ngôn ngữ đầu ra",
+    format: "Định dạng",
+    duration: "Thời lượng (giây)",
+    style: "Phong cách",
+    stylePlaceholder: "Giải thích vui nhộn, kể chuyện…",
+    result: "Kết quả",
+    resultEmpty: "Kết quả sẽ hiện ở đây",
+    download: "Tải xuống",
+    subtitle: {
+      title: "Dịch phụ đề",
+      lead: "Dịch phụ đề SRT/VTT, giữ nguyên số thứ tự và mốc thời gian.",
+      cta: "Dịch phụ đề",
+    },
+    script: {
+      title: "Định dạng kịch bản",
+      lead: "Biến bản nháp thành kịch bản chuẩn, shot list, lời dẫn hoặc dàn ý nhiều tập.",
+      cta: "Định dạng",
+    },
+    "video-script": {
+      title: "Kịch bản từ YouTube",
+      lead: "Lấy chủ đề từ một video YouTube và viết kịch bản video ngắn mới, không sao chép nội dung gốc.",
+      cta: "Viết kịch bản",
+    },
+    formats: {
+      screenplay: "Kịch bản phim",
+      shotlist: "Shot list",
+      narration: "Lời dẫn + hình ảnh",
+      episodes: "Dàn ý nhiều tập",
+    },
+    langs: {
+      vi: "Tiếng Việt",
+      en: "Tiếng Anh",
+      zh: "Tiếng Trung",
+      ja: "Tiếng Nhật",
+      ko: "Tiếng Hàn",
+      th: "Tiếng Thái",
+      id: "Tiếng Indonesia",
+      es: "Tiếng Tây Ban Nha",
+    },
+  },
+  marketing: {
+    sectionTitle: "Mẫu video marketing",
+    sectionLead: "Chọn một mẫu để mở trình tạo video với kịch bản điền sẵn.",
+    presets: {
+      product_hero: {
+        title: "Ra mắt sản phẩm",
+        desc: "Ánh sáng ấn tượng, xoay quanh sản phẩm, cận chất liệu",
+        script: "Cảnh 1: Phòng tối, một luồng sáng chiếu vào sản phẩm.\nCảnh 2: Máy quay xoay chậm quanh sản phẩm, cận cảnh chất liệu và chi tiết.\nCảnh 3: Sản phẩm trong tay người dùng, ánh sáng ấm.\nCảnh 4: Logo và khẩu hiệu thương hiệu.",
+      },
+      ugc_testimonial: {
+        title: "Đánh giá kiểu UGC",
+        desc: "Khách hàng nói chuyện với camera điện thoại",
+        script: "Cảnh 1: Một bạn trẻ quay selfie trong phòng khách: “Mình dùng thử được hai tuần rồi…”\nCảnh 2: Cận cảnh dùng sản phẩm hằng ngày.\nCảnh 3: Kết quả trước – sau.\nCảnh 4: “Thật sự đáng tiền, link ở dưới nhé!”",
+      },
+      unboxing: {
+        title: "Mở hộp",
+        desc: "Quay từ trên xuống, mở hộp và giới thiệu tính năng",
+        script: "Cảnh 1: Hộp sản phẩm trên bàn gỗ, quay từ trên xuống.\nCảnh 2: Đôi tay mở hộp, lấy sản phẩm ra.\nCảnh 3: Cắt nhanh 3 tính năng nổi bật.\nCảnh 4: Sản phẩm đặt cạnh hộp, chữ “Có ngay hôm nay”.",
+      },
+      flash_sale: {
+        title: "Flash sale",
+        desc: "Chữ động mạnh, giá giảm, đếm ngược",
+        script: "Cảnh 1: Chữ lớn “FLASH SALE” bung ra trên nền màu nổi.\nCảnh 2: Giá cũ bị gạch, giá mới nhảy ra.\nCảnh 3: Đồng hồ đếm ngược 24 giờ.\nCảnh 4: Nút “Mua ngay”.",
+      },
+      before_after: {
+        title: "Trước & sau",
+        desc: "Chia đôi màn hình: vấn đề và kết quả",
+        script: "Cảnh 1: Màn hình chia đôi, bên trái là vấn đề (nhãn “Trước”).\nCảnh 2: Dùng sản phẩm.\nCảnh 3: Bên phải là kết quả (nhãn “Sau”).\nCảnh 4: Tên sản phẩm và lời kêu gọi hành động.",
+      },
+      how_to: {
+        title: "Hướng dẫn 3 bước",
+        desc: "Ba bước đánh số, nền studio sạch",
+        script: "Cảnh 1: Giới thiệu: “3 bước để…”\nCảnh 2: Bước 1, chữ số lớn trên màn hình.\nCảnh 3: Bước 2.\nCảnh 4: Bước 3 và kết quả cuối cùng.",
+      },
+      brand_story: {
+        title: "Câu chuyện thương hiệu",
+        desc: "Lời người sáng lập, xưởng làm việc, nhạc cảm xúc",
+        script: "Cảnh 1: Người sáng lập kể lại ngày đầu khởi nghiệp.\nCảnh 2: Cảnh xưởng làm việc, đôi tay tỉ mỉ.\nCảnh 3: Khách hàng sử dụng sản phẩm.\nCảnh 4: Sứ mệnh thương hiệu trên nền logo.",
+      },
+      app_demo: {
+        title: "Demo ứng dụng",
+        desc: "Mockup điện thoại, thao tác chạm, lợi ích",
+        script: "Cảnh 1: Điện thoại hiện màn hình chính của ứng dụng.\nCảnh 2: Ngón tay chạm vào tính năng chính, chú thích lợi ích.\nCảnh 3: Kết quả hiện ra nhanh.\nCảnh 4: “Tải ngay” kèm biểu tượng cửa hàng ứng dụng.",
+      },
+    },
   },
   pricing: {
     plans: {

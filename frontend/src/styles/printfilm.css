@@ -7529,3 +7529,55 @@ button.pf-shot-editable:disabled {
   display: grid;
   gap: 0.3rem;
 }
+
+/* ── 文本工具 / 工具页分区 ── */
+.pf-tools-section-title {
+  margin: 2.25rem 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.pf-text-tool {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 16px 3rem;
+}
+
+.pf-text-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.pf-text-tool-grid label {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+
+.pf-text-tool-grid textarea {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.pf-text-tool-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pf-text-tool-out-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+@media (max-width: 860px) {
+  .pf-text-tool-grid {
+    grid-template-columns: 1fr;
+  }
+}

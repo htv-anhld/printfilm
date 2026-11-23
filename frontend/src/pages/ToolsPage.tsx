@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Captions, FileText, Megaphone, MonitorPlay } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import ComingSoon from '../components/ui/ComingSoon'
 import { useI18n } from '../i18n'
 import { PRODUCT_ICONS, localizeToolDefs } from '../lib/toolsCatalog'
+import { MARKETING_PRESET_IDS } from '../lib/marketingPresets'
+
+const TEXT_TOOL_CARDS = [
+  { id: 'subtitle', icon: Captions },
+  { id: 'script', icon: FileText },
+  { id: 'video-script', icon: MonitorPlay },
+] as const
 
 export default function ToolsPage() {
   const { t, m } = useI18n()
@@ -44,6 +51,38 @@ export default function ToolsPage() {
             </Link>
           )
         })}
+      </div>
+      <h2 className="pf-tools-section-title">{t('textTools.sectionTitle')}</h2>
+      <div className="pf-tools-grid pf-tools-grid-lg">
+        {TEXT_TOOL_CARDS.map(({ id, icon: Icon }) => (
+          <Link key={id} to={`/tools/text/${id}`} className="pf-tools-card pf-tools-card-lg">
+            <div className="pf-tools-card-top">
+              <span className="pf-ws-tool-icon" aria-hidden>
+                <Icon size={22} strokeWidth={1.6} />
+              </span>
+              <span className="pf-tools-arrow" aria-hidden>
+                <ArrowRight size={14} strokeWidth={2} />
+              </span>
+            </div>
+            <h3>{t(`textTools.${id}.title`)}</h3>
+            <p>{t(`textTools.${id}.lead`)}</p>
+          </Link>
+        ))}
+      </div>
+      <h2 className="pf-tools-section-title">{t('marketing.sectionTitle')}</h2>
+      <p className="pf-muted">{t('marketing.sectionLead')}</p>
+      <div className="pf-tools-grid">
+        {MARKETING_PRESET_IDS.map((id) => (
+          <Link key={id} to={`/studio/new?preset=${id}`} className="pf-tools-card">
+            <div className="pf-tools-card-top">
+              <span className="pf-ws-tool-icon" aria-hidden>
+                <Megaphone size={20} strokeWidth={1.6} />
+              </span>
+            </div>
+            <h3>{t(`marketing.presets.${id}.title`)}</h3>
+            <p>{t(`marketing.presets.${id}.desc`)}</p>
+          </Link>
+        ))}
       </div>
       <section className="pf-ws-products" style={{ marginTop: '2.5rem' }}>
         <Link to="/drama" className="pf-ws-product pf-ws-product-drama">

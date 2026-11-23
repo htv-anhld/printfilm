@@ -542,6 +542,24 @@ export const api = {
       `/api/mcp/requests?page=${page}&page_size=20`,
     )
   },
+  subtitleTranslate(body: { content: string; target_lang: string; source_lang?: string }) {
+    return request<{ content: string; cues: number; task_id: number }>('/api/tools/subtitle-translate', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  scriptFormat(body: { content: string; format: string; lang: string }) {
+    return request<{ content: string; task_id: number }>('/api/tools/script-format', { method: 'POST', body: JSON.stringify(body) })
+  },
+  videoScript(body: { url?: string; material?: string; lang: string; duration: number; style: string }) {
+    return request<{ title: string; script: string; source_title: string; task_id: number }>('/api/tools/video-script', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  marketingPresets() {
+    return request<{ presets: { id: string; ratio: string; duration: number; prompt: string }[] }>('/api/marketing/presets')
+  },
   partnerMe() {
     return request<PartnerInfo>('/api/partner-program/me')
   },

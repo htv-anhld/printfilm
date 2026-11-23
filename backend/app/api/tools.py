@@ -28,7 +28,7 @@ from app.services.studio_tools import (
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
-IMAGE_TOOLS = {"t2i", "i2i", "i2p", "ecom"}
+IMAGE_TOOLS = {"t2i", "i2i", "i2p", "ecom", "cinema"}
 VIDEO_TOOLS = {"t2v", "v2v"}
 
 

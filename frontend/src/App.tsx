@@ -8,6 +8,7 @@ import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import TeamInvitePage from './pages/TeamInvitePage'
 import PartnersPage from './pages/PartnersPage'
 import OAuthAuthorizePage from './pages/OAuthAuthorizePage'
+import TextToolPage from './pages/TextToolPage'
 import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
 import MethodPage from './pages/MethodPage'
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/tools" element={<ToolsPage />} />
+        <Route path="/tools/text/:kind" element={<TextToolPage />} />
         <Route path="/tools/:toolId" element={<ToolDetailPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
         <Route path="/help" element={<HelpPage />} />

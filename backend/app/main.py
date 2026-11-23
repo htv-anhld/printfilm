@@ -15,6 +15,7 @@ from app.api import error_reports as error_reports_api
 from app.api import teams as teams_api
 from app.api import partners as partners_api
 from app.api import oauth as oauth_api
+from app.api import creative_tools as creative_tools_api
 from app.api.drama import router as drama_router
 from app.config import get_settings
 from app.database import AsyncSessionLocal, engine, init_db
@@ -107,6 +108,7 @@ app.include_router(error_reports_api.router, prefix="/api")
 app.include_router(teams_api.router, prefix="/api")
 app.include_router(partners_api.router, prefix="/api")
 app.include_router(oauth_api.router, prefix="/api")
+app.include_router(creative_tools_api.router, prefix="/api")
 app.include_router(oauth_api.well_known)
 app.include_router(admin_router, prefix="/api")
 

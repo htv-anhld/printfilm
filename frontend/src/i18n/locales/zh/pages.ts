@@ -194,6 +194,24 @@ export const zhPages = {
       notLoggedIn: '未登录',
     },
     items: {
+      cinema: {
+        title: "电影调色",
+        desc: "一键把照片调成电影质感",
+        panelHint: "上传照片，选择电影风格，构图与主体保持不变。",
+        cta: "调色",
+        fields: {
+          ref: {
+            label: "照片",
+          },
+          mode: {
+            label: "风格",
+          },
+          prompt: {
+            label: "补充描述（可选）",
+            placeholder: "下雨的夜晚、霓虹反光…",
+          },
+        },
+      },
       t2i: {
         title: '文生图',
         desc: '用文字描述生成高质量画面',
@@ -305,6 +323,14 @@ export const zhPages = {
       },
     },
     chips: {
+      teal_orange: "青橙电影",
+      noir: "黑白黑色电影",
+      wes: "韦斯·安德森粉彩",
+      kodak: "柯达 Portra 胶片",
+      cyberpunk: "霓虹赛博朋克",
+      golden_hour: "黄金时刻",
+      bleach: "漂白效果",
+      anime: "动画电影",
       低: '低',
       中: '中',
       高: '高',
@@ -430,6 +456,101 @@ export const zhPages = {
     deleteApp: '删除',
     logsTitle: 'MCP 调用记录',
     noLogs: '暂无调用',
+  },
+  textTools: {
+    sectionTitle: "文本与剧本",
+    fileTooLarge: "文件过大（最多 2 MB）",
+    youtube: "YouTube 链接",
+    subtitleInput: "粘贴 SRT / VTT 内容",
+    scriptInput: "粘贴故事 / 草稿",
+    materialInput: "笔记或素材（已填链接时可选）",
+    upload: "或上传 .srt / .vtt 文件",
+    targetLang: "翻译为",
+    outputLang: "输出语言",
+    format: "格式",
+    duration: "时长（秒）",
+    style: "风格",
+    stylePlaceholder: "轻松科普、讲故事…",
+    result: "结果",
+    resultEmpty: "结果会显示在这里",
+    download: "下载",
+    subtitle: {
+      title: "字幕翻译",
+      lead: "翻译 SRT/VTT 字幕，保留序号与时间轴。",
+      cta: "翻译字幕",
+    },
+    script: {
+      title: "剧本格式化",
+      lead: "把草稿整理成标准剧本、分镜表、旁白稿或分集大纲。",
+      cta: "格式化",
+    },
+    "video-script": {
+      title: "YouTube 生成脚本",
+      lead: "以 YouTube 视频主题为灵感写全新的短视频脚本，不照搬原内容。",
+      cta: "生成脚本",
+    },
+    formats: {
+      screenplay: "标准剧本",
+      shotlist: "分镜表",
+      narration: "旁白 + 画面",
+      episodes: "分集大纲",
+    },
+    langs: {
+      vi: "越南语",
+      en: "英语",
+      zh: "中文",
+      ja: "日语",
+      ko: "韩语",
+      th: "泰语",
+      id: "印尼语",
+      es: "西班牙语",
+    },
+  },
+  marketing: {
+    sectionTitle: "营销视频模板",
+    sectionLead: "选择一个模板，打开创作页并自动填好脚本。",
+    presets: {
+      product_hero: {
+        title: "产品亮相",
+        desc: "戏剧光效、环绕产品、材质特写",
+        script: "镜头1：暗室中一束光打在产品上。\n镜头2：镜头缓慢环绕产品，材质与细节特写。\n镜头3：产品在用户手中，暖光。\n镜头4：品牌 Logo 与口号。",
+      },
+      ugc_testimonial: {
+        title: "用户口碑",
+        desc: "顾客对着手机镜头讲述",
+        script: "镜头1：年轻人在家自拍：“我已经用了两周……”\n镜头2：日常使用特写。\n镜头3：使用前后对比。\n镜头4：“真的值，链接在下面！”",
+      },
+      unboxing: {
+        title: "开箱",
+        desc: "俯拍开箱并展示卖点",
+        script: "镜头1：木桌上的产品包装，俯拍。\n镜头2：双手打开包装取出产品。\n镜头3：快剪 3 个核心卖点。\n镜头4：产品放在盒子旁，字幕“今日上市”。",
+      },
+      flash_sale: {
+        title: "限时秒杀",
+        desc: "动感大字、降价、倒计时",
+        script: "镜头1：亮色背景上“限时秒杀”大字弹出。\n镜头2：原价划掉，新价格跳出。\n镜头3：24 小时倒计时。\n镜头4：“立即购买”按钮。",
+      },
+      before_after: {
+        title: "前后对比",
+        desc: "分屏：问题与效果",
+        script: "镜头1：分屏，左侧展示问题（标注“使用前”）。\n镜头2：使用产品。\n镜头3：右侧展示效果（标注“使用后”）。\n镜头4：产品名与行动号召。",
+      },
+      how_to: {
+        title: "三步教程",
+        desc: "编号步骤、干净背景",
+        script: "镜头1：开场：“三步搞定……”\n镜头2：第一步，大号数字。\n镜头3：第二步。\n镜头4：第三步与最终效果。",
+      },
+      brand_story: {
+        title: "品牌故事",
+        desc: "创始人旁白、工坊、动人音乐",
+        script: "镜头1：创始人讲述创业第一天。\n镜头2：工坊空镜，双手精心制作。\n镜头3：顾客使用产品。\n镜头4：Logo 上叠加品牌使命。",
+      },
+      app_demo: {
+        title: "App 演示",
+        desc: "手机样机、点击、利益点",
+        script: "镜头1：手机显示 App 首页。\n镜头2：手指点击核心功能，配利益点字幕。\n镜头3：结果瞬间出现。\n镜头4：“立即下载”与应用商店标识。",
+      },
+    },
   },
   pricing: {
     plans: {

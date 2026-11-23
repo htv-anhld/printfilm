@@ -279,6 +279,8 @@ TASK_HANDLERS: dict[tuple[str, str], TaskHandler] = {
     ("api", "v1_seedance"): TaskHandler("api", "v1_seedance", _noop_ephemeral),
     ("studio", "tool_image"): TaskHandler("studio", "tool_image", _noop_ephemeral),
     ("studio", "tool_video"): TaskHandler("studio", "tool_video", _noop_ephemeral),
+    # 文本类工具（字幕翻译 / 剧本格式化 / 视频脚本）：请求内联执行，TaskRun 仅计费留痕
+    ("studio", "tool_text"): TaskHandler("studio", "tool_text", _noop_ephemeral),
     ("kepu", "project_pipeline"): TaskHandler("kepu", "project_pipeline", _run_kepu_project_pipeline),
     ("kepu", "shot_regen_image"): TaskHandler("kepu", "shot_regen_image", _run_kepu_shot_image),
     ("kepu", "shot_regen_video"): TaskHandler("kepu", "shot_regen_video", _run_kepu_shot_video),

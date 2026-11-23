@@ -11,6 +11,7 @@ import { CATEGORY_ORDER } from '../../lib/categories'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
 import { messages, useI18n, type Locale } from '../../i18n'
 import { categoryLabel } from './categoryLabel'
+import { isMarketingPreset } from '../../lib/marketingPresets'
 
 type Inspiration = {
   title: string
@@ -64,6 +65,16 @@ export default function CreateProjectPage() {
   const [aiBusy, setAiBusy] = useState(false)
   const [error, setError] = useState('')
   const untitled = t('studio.create.untitled')
+
+  // 营销预设（/studio/new?preset=…）：脚本模式 + 预设脚本与标题
+  useEffect(() => {
+    const preset = params.get('preset')
+    if (!isMarketingPreset(preset)) return
+    setInputTab('script')
+    setSourceText(t(`marketing.presets.${preset}.script`))
+    setTitle(t(`marketing.presets.${preset}.title`))
+    setTitleTouched(true)
+  }, [params, t])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {

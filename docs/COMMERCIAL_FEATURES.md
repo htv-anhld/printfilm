@@ -314,3 +314,23 @@ tool `generate_image`, `generate_video`, `get_video_task`, `get_balance`, gọi 
 
 **Cũng thêm trong commit này:** `frontend/nginx.conf` đặt `Cache-Control: no-store` cho `index.html`
 và cache dài hạn cho `/assets/` (roadmap mục 1.3: tránh trình duyệt giữ bundle cũ sau khi deploy).
+
+## 12. Công cụ lẻ: cinema-look, dịch phụ đề, định dạng kịch bản, kịch bản từ YouTube, preset marketing
+
+| Công cụ | Endpoint | Cách tính tiền |
+|---|---|---|
+| **Cinema look** (8 tông màu phim) | `POST /api/tools/run` với `tool_id=cinema`, `mode=<preset>`; `GET /api/tools/cinema-look/presets` | Như tool ảnh (theo lượt) |
+| **Dịch phụ đề** SRT/VTT | `POST /api/tools/subtitle-translate` | LLM, mỗi 60 dòng một lần gọi |
+| **Định dạng kịch bản** (screenplay / shot list / lời dẫn / dàn ý tập) | `POST /api/tools/script-format` | LLM, 1 lần gọi |
+| **Kịch bản từ YouTube** | `POST /api/tools/video-script` | LLM, 1 lần gọi |
+| **Preset marketing** (8 mẫu) | `GET /api/marketing/presets` | Không tính (chỉ điền sẵn `/studio/new?preset=…`) |
+
+Các công cụ văn bản dùng task type mới `("studio", "tool_text")` (đã đăng ký trong `TASK_HANDLERS` và có
+ước tính giá theo số lần gọi LLM).
+
+**Dịch phụ đề:** chỉ dịch dòng thoại, giữ nguyên số thứ tự và mốc thời gian; dòng nào model bỏ sót thì giữ
+bản gốc (không làm vỡ file).
+
+**Kịch bản từ YouTube:** chỉ đọc **thông tin công khai** (tiêu đề và kênh qua oEmbed, mô tả trong meta của
+trang), **không tải video, không lấy phụ đề**. Prompt bắt model viết kịch bản **mới hoàn toàn**, chỉ lấy chủ
+đề làm cảm hứng, để tránh vấn đề bản quyền. Nếu YouTube chặn IP máy chủ thì vẫn dùng được với văn bản tư liệu.

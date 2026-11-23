@@ -173,6 +173,14 @@ async def run_image_tool(
                 size = RATIO_SIZE["9:16"]
             elif mode == "场景图":
                 size = RATIO_SIZE["16:9"]
+    elif tool_id == "cinema":
+        # cinema-look：保持构图，只换电影调色（mode = 预设 id）
+        if not files:
+            raise ValueError(_("请上传参考图"))
+        from app.services.creative_tools import cinema_prompt
+
+        refs = [publish_public(files[0])]
+        full_prompt = cinema_prompt(mode, full_prompt)
     elif tool_id == "ecom":
         pack_name = pack or "主图拼接"
         if pack_name == "卖点海报":

@@ -254,6 +254,11 @@ async def estimate_task_fen(db: AsyncSession, task: TaskRun, settings: Settings 
     if domain in {"api", "studio"}:
         if task_type in {"v1_image", "tool_image"}:
             return _catalog_image_fen(s, payload=payload)
+        if task_type == "tool_text":
+            # 文本工具可能分批多次调用 LLM（字幕每 60 条一批）
+            calls = max(1, int(payload.get("llm_calls") or 1))
+            c = charge_fen_official_llm(s.billing_est_llm_tokens * calls, s)
+            return _buffered_fen(c, s)
         if task_type in {"v1_video", "v1_seedance", "tool_video"}:
             dur = float(payload.get("duration") or 5)
             c = charge_fen_official_video(

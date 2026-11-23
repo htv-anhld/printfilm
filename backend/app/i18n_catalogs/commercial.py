@@ -99,6 +99,14 @@ EN: dict[str, str] = {
     "授权码已过期": "Authorization code expired",
     "PKCE 校验失败": "PKCE verification failed",
     "刷新令牌无效或已过期": "Invalid or expired refresh token",
+    # ── 创作工具 ──
+    "字幕过长，请拆分后再翻译": "The subtitle file is too long. Split it and try again",
+    "未识别到 SRT / VTT 字幕": "No SRT / VTT subtitles found",
+    "不支持的格式": "Unsupported format",
+    "内容太短": "The content is too short",
+    "请填写有效的 YouTube 链接": "Please enter a valid YouTube link",
+    "无法读取该视频信息（可能是私密或已删除）": "Couldn't read this video (it may be private or removed)",
+    "请填写 YouTube 链接或素材文本": "Enter a YouTube link or some source text",
 }
 
 VI: dict[str, str] = {
@@ -197,4 +205,12 @@ VI: dict[str, str] = {
     "授权码已过期": "Mã uỷ quyền đã hết hạn",
     "PKCE 校验失败": "Xác minh PKCE thất bại",
     "刷新令牌无效或已过期": "Refresh token không hợp lệ hoặc đã hết hạn",
+    # ── 创作工具 ──
+    "字幕过长，请拆分后再翻译": "Phụ đề quá dài, vui lòng tách nhỏ rồi dịch",
+    "未识别到 SRT / VTT 字幕": "Không nhận diện được phụ đề SRT / VTT",
+    "不支持的格式": "Định dạng không được hỗ trợ",
+    "内容太短": "Nội dung quá ngắn",
+    "请填写有效的 YouTube 链接": "Vui lòng nhập liên kết YouTube hợp lệ",
+    "无法读取该视频信息（可能是私密或已删除）": "Không đọc được thông tin video (có thể là riêng tư hoặc đã bị xoá)",
+    "请填写 YouTube 链接或素材文本": "Vui lòng nhập liên kết YouTube hoặc văn bản tư liệu",
 }

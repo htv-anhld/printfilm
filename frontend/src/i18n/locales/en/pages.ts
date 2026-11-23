@@ -259,6 +259,24 @@ export const enPages = {
       notLoggedIn: 'Not signed in',
     },
     items: {
+      cinema: {
+        title: "Cinema look",
+        desc: "Turn any photo into a film still in one click",
+        panelHint: "Upload a photo and pick a film look; composition and subject stay the same.",
+        cta: "Apply look",
+        fields: {
+          ref: {
+            label: "Photo",
+          },
+          mode: {
+            label: "Look",
+          },
+          prompt: {
+            label: "Extra notes (optional)",
+            placeholder: "Rainy night, neon reflections…",
+          },
+        },
+      },
       t2i: {
         title: 'Text to image',
         desc: 'Describe a scene and generate a still',
@@ -370,6 +388,14 @@ export const enPages = {
       },
     },
     chips: {
+      teal_orange: "Teal & orange",
+      noir: "Film noir",
+      wes: "Wes Anderson pastel",
+      kodak: "Kodak Portra",
+      cyberpunk: "Neon cyberpunk",
+      golden_hour: "Golden hour",
+      bleach: "Bleach bypass",
+      anime: "Anime film",
       低: 'Low',
       中: 'Medium',
       高: 'High',
@@ -495,6 +521,101 @@ export const enPages = {
     deleteApp: 'Delete',
     logsTitle: 'MCP call history',
     noLogs: 'No calls yet',
+  },
+  textTools: {
+    sectionTitle: "Text & scripts",
+    fileTooLarge: "File too large (max 2 MB)",
+    youtube: "YouTube link",
+    subtitleInput: "Paste SRT / VTT content",
+    scriptInput: "Paste your story / draft",
+    materialInput: "Notes or material (optional if you added a link)",
+    upload: "Or upload an .srt / .vtt file",
+    targetLang: "Translate to",
+    outputLang: "Output language",
+    format: "Format",
+    duration: "Duration (seconds)",
+    style: "Style",
+    stylePlaceholder: "Fun explainer, storytelling…",
+    result: "Result",
+    resultEmpty: "The result will appear here",
+    download: "Download",
+    subtitle: {
+      title: "Subtitle translator",
+      lead: "Translate SRT/VTT subtitles while keeping numbering and timestamps.",
+      cta: "Translate",
+    },
+    script: {
+      title: "Script formatter",
+      lead: "Turn a rough draft into a screenplay, shot list, narration or episode outline.",
+      cta: "Format",
+    },
+    "video-script": {
+      title: "Script from YouTube",
+      lead: "Take the topic of a YouTube video and write a new short-video script, without copying the original.",
+      cta: "Write script",
+    },
+    formats: {
+      screenplay: "Screenplay",
+      shotlist: "Shot list",
+      narration: "Narration + visuals",
+      episodes: "Episode outline",
+    },
+    langs: {
+      vi: "Vietnamese",
+      en: "English",
+      zh: "Chinese",
+      ja: "Japanese",
+      ko: "Korean",
+      th: "Thai",
+      id: "Indonesian",
+      es: "Spanish",
+    },
+  },
+  marketing: {
+    sectionTitle: "Marketing video presets",
+    sectionLead: "Pick a preset to open the video creator with a ready-made script.",
+    presets: {
+      product_hero: {
+        title: "Product hero",
+        desc: "Dramatic light, product orbit, material close-ups",
+        script: "Scene 1: Dark room, a beam of light hits the product.\nScene 2: Slow camera orbit, macro shots of materials and details.\nScene 3: The product in a user’s hands, warm light.\nScene 4: Logo and brand tagline.",
+      },
+      ugc_testimonial: {
+        title: "UGC testimonial",
+        desc: "A customer talks to their phone camera",
+        script: "Scene 1: A young person films a selfie at home: “I’ve been using this for two weeks…”\nScene 2: Close-ups of everyday use.\nScene 3: Before vs after.\nScene 4: “Totally worth it, link below!”",
+      },
+      unboxing: {
+        title: "Unboxing",
+        desc: "Top-down unboxing and key features",
+        script: "Scene 1: Product box on a wooden table, top-down.\nScene 2: Hands open the box and lift the product out.\nScene 3: Quick cuts of 3 key features.\nScene 4: Product next to the box, “Available today”.",
+      },
+      flash_sale: {
+        title: "Flash sale",
+        desc: "Bold kinetic type, price drop, countdown",
+        script: "Scene 1: Big “FLASH SALE” text bursts on a bright background.\nScene 2: Old price struck through, new price pops in.\nScene 3: 24-hour countdown timer.\nScene 4: “Shop now” button.",
+      },
+      before_after: {
+        title: "Before & after",
+        desc: "Split screen: problem then result",
+        script: "Scene 1: Split screen, left shows the problem (label “Before”).\nScene 2: Using the product.\nScene 3: Right shows the result (label “After”).\nScene 4: Product name and call to action.",
+      },
+      how_to: {
+        title: "3-step how-to",
+        desc: "Numbered steps, clean studio",
+        script: "Scene 1: Intro: “3 steps to…”\nScene 2: Step 1 with a big number on screen.\nScene 3: Step 2.\nScene 4: Step 3 and the final result.",
+      },
+      brand_story: {
+        title: "Brand story",
+        desc: "Founder voice-over, workshop, emotional music",
+        script: "Scene 1: The founder recalls day one.\nScene 2: Workshop b-roll, careful hands at work.\nScene 3: Customers using the product.\nScene 4: Brand mission over the logo.",
+      },
+      app_demo: {
+        title: "App demo",
+        desc: "Phone mockup, taps, benefits",
+        script: "Scene 1: Phone showing the app home screen.\nScene 2: A finger taps the main feature, benefit caption.\nScene 3: The result appears instantly.\nScene 4: “Download now” with app store badges.",
+      },
+    },
   },
   pricing: {
     plans: {
