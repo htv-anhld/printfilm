@@ -34,7 +34,11 @@ export const enPages = {
     dramaSteps: ['AI script', 'Cast & scenes', 'Episode boards', 'Export'],
     kepuSteps: ['Pick a style', 'Write boards', 'Voice & compose', 'Batch output'],
     pipeline: [
-      { step: '01', title: 'Write the idea', desc: 'A one-line story, a knowledge point, or a full script — any of these can start a project.' },
+      {
+        step: '01',
+        title: 'Write the idea',
+        desc: 'A one-line story, a knowledge point, or a full script — any of these can start a project.',
+      },
       { step: '02', title: 'Build assets', desc: 'Characters, scenes, props, and voices stay consistent across later shots.' },
       { step: '03', title: 'Board and ship', desc: 'Split episodes, cite assets, generate stills and video, then export a playable film.' },
     ],
@@ -42,7 +46,10 @@ export const enPages = {
       { title: '19 film looks', desc: 'From mythic epics to urban realism and neon cyberpunk — one style carries the whole piece.' },
       { title: 'Reusable assets', desc: 'Generate a character once, reuse it across the series instead of redrawing every shot.' },
       { title: 'Editable boards', desc: '@-mention assets, set duration and camera moves, and see the shot before you generate.' },
-      { title: 'Two output paths', desc: 'Drama for episodic stories, AI short video for the storyboard pipeline — one account and one wallet.' },
+      {
+        title: 'Two output paths',
+        desc: 'Drama for episodic stories, AI short video for the storyboard pipeline — one account and one wallet.',
+      },
     ],
     audiences: [
       { title: 'Short-drama creators', desc: 'Break a story into shootable episodes. Assets first, film second.' },
@@ -65,7 +72,7 @@ export const enPages = {
     moreMid2: '. You can also read the',
     terms: 'Terms',
     privacy: 'Privacy Policy',
-    moreOr: ', or',
+    moreOr: ', or ',
     contact: 'contact us',
     moreSuffix: '.',
     fullPage: 'Full help page',
@@ -149,10 +156,10 @@ export const enPages = {
       { id: 'faq', title: 'FAQ', desc: 'Download · generate · billing' },
       { id: 'tools', title: 'Tools', desc: 'Images and short video' },
     ],
-    toolsNote:
-      'The tool hub includes text-to-image, image-to-image, product shots, text-to-video, video-to-video, and e-commerce collages. Results are stored in the cloud and can be viewed or downloaded under Account → Tool runs.',
+    toolsNote: 'The tool hub includes text-to-image, image-to-image, product shots, text-to-video, video-to-video, and e-commerce collages. Results are stored in the cloud and can be viewed or downloaded under Account → Tool runs.',
     openTools: 'Open tools',
     toolRecords: 'Run history',
+    and: ' and ',
   },
   contact: {
     crumb: 'Contact',
@@ -258,9 +265,17 @@ export const enPages = {
         panelHint: 'Describe the frame, pick an aspect ratio, then generate.',
         cta: 'Generate',
         fields: {
-          prompt: { label: 'Prompt', placeholder: 'Subject, scene, light, and style…' },
-          negative: { label: 'Negative prompt', placeholder: 'What to avoid, e.g. text, watermark…' },
-          ratio: { label: 'Aspect ratio' },
+          prompt: {
+            label: 'Prompt',
+            placeholder: 'Subject, scene, light, and style…',
+          },
+          negative: {
+            label: 'Negative prompt',
+            placeholder: 'What to avoid, e.g. text, watermark…',
+          },
+          ratio: {
+            label: 'Aspect ratio',
+          },
         },
       },
       i2i: {
@@ -269,9 +284,16 @@ export const enPages = {
         panelHint: 'Upload a reference and describe what to keep or change.',
         cta: 'Generate',
         fields: {
-          ref: { label: 'Reference' },
-          prompt: { label: 'Prompt', placeholder: 'Keep the subject, night cinematic lighting…' },
-          strength: { label: 'Similarity' },
+          ref: {
+            label: 'Reference',
+          },
+          prompt: {
+            label: 'Prompt',
+            placeholder: 'Keep the subject, night cinematic lighting…',
+          },
+          strength: {
+            label: 'Similarity',
+          },
         },
       },
       i2p: {
@@ -280,9 +302,16 @@ export const enPages = {
         panelHint: 'Upload a product photo, then pick white, scene, or long-detail.',
         cta: 'Generate product shot',
         fields: {
-          product: { label: 'Product image' },
-          mode: { label: 'Output' },
-          prompt: { label: 'Extra notes (optional)', placeholder: 'Material, placement, setting…' },
+          product: {
+            label: 'Product image',
+          },
+          mode: {
+            label: 'Output',
+          },
+          prompt: {
+            label: 'Extra notes (optional)',
+            placeholder: 'Material, placement, setting…',
+          },
         },
       },
       t2v: {
@@ -291,9 +320,16 @@ export const enPages = {
         panelHint: 'Write a script, generate a still first, then a short video (about 1–3 min).',
         cta: 'Generate video',
         fields: {
-          script: { label: 'Script', placeholder: 'Camera move, action, and mood…' },
-          duration: { label: 'Duration' },
-          ratio: { label: 'Aspect ratio' },
+          script: {
+            label: 'Script',
+            placeholder: 'Camera move, action, and mood…',
+          },
+          duration: {
+            label: 'Duration',
+          },
+          ratio: {
+            label: 'Aspect ratio',
+          },
         },
       },
       v2v: {
@@ -302,9 +338,16 @@ export const enPages = {
         panelHint: 'Upload a source video or first frame, then describe style and motion.',
         cta: 'Transform',
         fields: {
-          source: { label: 'Source / first frame' },
-          prompt: { label: 'Transform', placeholder: 'Cyberpunk night, slow push-in…' },
-          motion: { label: 'Motion' },
+          source: {
+            label: 'Source / first frame',
+          },
+          prompt: {
+            label: 'Transform',
+            placeholder: 'Cyberpunk night, slow push-in…',
+          },
+          motion: {
+            label: 'Motion',
+          },
         },
       },
       ecom: {
@@ -313,9 +356,16 @@ export const enPages = {
         panelHint: 'Collage needs at least 2 images. Selling posters need 1 product photo.',
         cta: 'Start',
         fields: {
-          pack: { label: 'Tool' },
-          images: { label: 'Images' },
-          prompt: { label: 'Selling points (poster, optional)', placeholder: 'Material and use case…' },
+          pack: {
+            label: 'Tool',
+          },
+          images: {
+            label: 'Images',
+          },
+          prompt: {
+            label: 'Selling points (poster, optional)',
+            placeholder: 'Material and use case…',
+          },
         },
       },
     },
@@ -467,5 +517,58 @@ export const enPages = {
   legal: {
     updatedAt: 'Updated {date}',
     related: 'Related pages',
+  },
+  toolRuns: {
+    title: 'Tool runs',
+    lead: 'Generation history for standalone tools like text-to-image, image-to-image, and video',
+    goCreate: 'Create',
+    empty: 'No tool runs yet',
+    view: 'View',
+    pagination: 'Tool run pages',
+    detailTitle: 'Run details',
+    again: 'Run again',
+    downloadResult: 'Download result',
+    resultAlt: 'Generated result',
+    notReady: 'Result not ready yet',
+    status: 'Status',
+    time: 'Time',
+    prompt: 'Prompt',
+    ratio: 'Aspect ratio',
+    mode: 'Output',
+    pack: 'Tool',
+    error: 'Error',
+    downloadFile: 'Download file {n}',
+    loadDetailFailed: 'Could not load details',
+    statuses: {
+      queued: 'Generating',
+      running: 'Generating',
+      succeeded: 'Done',
+      failed: 'Failed',
+    },
+  },
+  apiKeys: {
+    lead: 'Use an API key to call image generation, video generation, and the Seedance relay. Usage is charged to your balance',
+    defaultName: 'Default key',
+    createFailed: 'Could not create key',
+    revokeTitle: 'Revoke API key',
+    revokeMessage: 'Revoke “{name}” ({prefix}…)? This cannot be undone.',
+    revoke: 'Revoke',
+    revokeFailed: 'Could not revoke key',
+    namePlaceholder: 'Key name, e.g. “Production”',
+    create: 'Create key',
+    copyNow: 'Copy and store it now — you will not see it again:',
+    copyKey: 'Copy key',
+    createdAt: 'Created {time}',
+    lastUsed: 'Last used {time}',
+    empty: 'No API keys yet',
+    docsTitle: 'How to call',
+    docsAuth: 'Auth: use either header',
+    docsImage: 'Image generation (Seedream)',
+    docsVideo: 'Video generation (Seedance first-frame image-to-video)',
+    docsRelay: 'Seedance relay (multimodal body)',
+    docsTask: 'Query a video task',
+    exampleImage: 'Cyberpunk city at night',
+    exampleVideo: 'Slow push-in, flickering neon',
+    exampleText: 'Describe...',
   },
 } as const

@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { applyLocale, detectLocale, type Locale } from './detect'
-import { interpolate, lookupMessage, type TVars } from './lookup'
+import type { TVars } from './lookup'
 import { messages, type Messages } from './messages'
+import { translateIn } from './translate'
 
 export type TFunction = (path: string, vars?: TVars) => string
 
@@ -42,18 +43,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLocaleState(next)
   }, [])
 
-  const t = useCallback<TFunction>(
-    (path, vars) => {
-      const raw = lookupMessage(m, path)
-      if (!raw) return path
-      return interpolate(raw, vars)
-    },
-    [m],
-  )
+  const t = useCallback<TFunction>((path, vars) => translateIn(locale, path, vars), [locale])
 
   const value = useMemo(() => ({ locale, setLocale, t, m }), [locale, setLocale, t, m])
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
+  // key=locale：切换语言时重挂子树，让 lib/ 里 tr() 算出的文案与模块外缓存一起刷新
+  return (
+    <I18nContext.Provider value={value}>
+      <Fragment key={locale}>{children}</Fragment>
+    </I18nContext.Provider>
+  )
 }
 
 export function useI18n(): I18nValue {
