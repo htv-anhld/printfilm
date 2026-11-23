@@ -50,6 +50,7 @@ from app.services.tokenfree_image import (
     tokenfree_image_slot,
     tokenfree_image_user_error,
     tokenfree_working_image_model,
+    tokenfree_uses_responses_api,
     uses_tokenfree_image,
 )
 from app.services.voices import edge_tts_voice_for_speaker
@@ -1051,9 +1052,9 @@ class ArkGateway:
             # Kie / gpt-image 实际按 1K·2K 档；3K/4K 钳到 2K，与计费一致
             if str(resolved_size or "").strip().upper() in {"3K", "4K"}:
                 resolved_size = "2K"
-        if on_tokenfree:
+        if on_tokenfree and tokenfree_uses_responses_api(chosen):
             if chosen != (upstream_model or "").strip():
-                logger.warning("TokenFree 将 %s 改走 %s，避免 Seedream task_protocol_error", upstream_model, chosen)
+                logger.info("TokenFree 生图模型 %s → %s（/responses）", upstream_model, chosen)
             path = "/responses"
             body = build_tokenfree_image_body(
                 model=chosen,
@@ -1065,7 +1066,7 @@ class ArkGateway:
         else:
             path = "/images/generations"
             body = {
-                "model": upstream_model,
+                "model": chosen,
                 "prompt": full_prompt,
                 "size": resolved_size,
                 "response_format": "url",
