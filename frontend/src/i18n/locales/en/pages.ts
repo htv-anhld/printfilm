@@ -695,6 +695,25 @@ export const enPages = {
       light: "Light",
     },
   },
+  creative: {
+    title: "Creative boards",
+    lead: "Collect images, videos, copy and links per campaign. Click a recent tool result to add it quickly.",
+    namePlaceholder: "Campaign name, e.g. Holiday sale",
+    create: "Create board",
+    add: "Add",
+    textPlaceholder: "Tagline, VO, notes…",
+    recent: "Recent tool results (click to add)",
+    empty: "This board is empty",
+    noBoards: "No boards yet. Create your first one",
+    deleteBoard: "Delete board “{name}”?",
+    card: "Organise results by campaign",
+    kinds: {
+      text: "Text",
+      image: "Image",
+      video: "Video",
+      link: "Link",
+    },
+  },
   pricing: {
     plans: {
       title: 'Subscription plans',

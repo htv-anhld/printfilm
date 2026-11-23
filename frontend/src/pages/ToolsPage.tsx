@@ -25,9 +25,14 @@ export default function ToolsPage() {
           <h1>{t('tools.title')}</h1>
           <p className="pf-muted">{t('tools.lead')}</p>
         </div>
-        <Link to="/library" className="pf-btn pf-btn-ghost pf-btn-sm">
-          {t('library.title')}
-        </Link>
+        <span className="pf-team-actions">
+          <Link to="/creative" className="pf-btn pf-btn-ghost pf-btn-sm">
+            {t('creative.title')}
+          </Link>
+          <Link to="/library" className="pf-btn pf-btn-ghost pf-btn-sm">
+            {t('library.title')}
+          </Link>
+        </span>
       </div>
       <div className="pf-tools-grid pf-tools-grid-lg">
         {tools.map((tool) => {

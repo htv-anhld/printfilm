@@ -630,6 +630,25 @@ export const zhPages = {
       light: "灯光",
     },
   },
+  creative: {
+    title: "创意看板",
+    lead: "按活动归档图片、视频、文案与链接；点击最近的工具产出可快速加入。",
+    namePlaceholder: "活动名称，例如：春节促销",
+    create: "新建看板",
+    add: "添加",
+    textPlaceholder: "口号、旁白、备注…",
+    recent: "最近的工具产出（点击加入）",
+    empty: "看板还是空的",
+    noBoards: "还没有看板，先创建一个",
+    deleteBoard: "删除看板「{name}」？",
+    card: "按活动整理产出",
+    kinds: {
+      text: "文案",
+      image: "图片",
+      video: "视频",
+      link: "链接",
+    },
+  },
   pricing: {
     plans: {
       title: '订阅套餐',

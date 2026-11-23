@@ -236,6 +236,26 @@ export type McpRequestRow = {
   created_at?: string | null
 }
 
+export type CreativeItem = {
+  id: string
+  kind: 'image' | 'video' | 'text' | 'link'
+  url?: string | null
+  text?: string | null
+  note?: string
+  source?: string
+  added_at?: string
+}
+
+export type CreativeBoard = {
+  id: number
+  name: string
+  description: string
+  item_count: number
+  cover?: string | null
+  updated_at?: string | null
+  items?: CreativeItem[]
+}
+
 export type LibraryKind = 'avatar' | 'bgm' | 'sfx'
 
 export type LibraryItem = {
@@ -657,6 +677,24 @@ export const api = {
       throwApiError(res.status, err.detail, res.statusText)
     }
     return (await res.json()) as { url: string }
+  },
+  creativeBoards() {
+    return request<{ items: CreativeBoard[] }>('/api/creative/projects')
+  },
+  creativeBoard(id: number) {
+    return request<CreativeBoard>(`/api/creative/projects/${id}`)
+  },
+  createCreativeBoard(name: string, description = '') {
+    return request<CreativeBoard>('/api/creative/projects', { method: 'POST', body: JSON.stringify({ name, description }) })
+  },
+  deleteCreativeBoard(id: number) {
+    return request<{ ok: boolean }>(`/api/creative/projects/${id}`, { method: 'DELETE' })
+  },
+  addCreativeItem(id: number, item: { kind: CreativeItem['kind']; url?: string; text?: string; note?: string; source?: string }) {
+    return request<CreativeBoard>(`/api/creative/projects/${id}/items`, { method: 'POST', body: JSON.stringify(item) })
+  },
+  removeCreativeItem(id: number, itemId: string) {
+    return request<CreativeBoard>(`/api/creative/projects/${id}/items/${itemId}`, { method: 'DELETE' })
   },
   partnerMe() {
     return request<PartnerInfo>('/api/partner-program/me')

@@ -14,6 +14,7 @@ import UpscalePage from './pages/UpscalePage'
 // three.js 较大，3D 工作室按需加载
 const Studio3DPage = lazy(() => import('./pages/Studio3DPage'))
 import LibraryPage from './pages/LibraryPage'
+import CreativeBoardsPage from './pages/CreativeBoardsPage'
 import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
 import MethodPage from './pages/MethodPage'
@@ -64,6 +65,7 @@ export default function App() {
           }
         />
         <Route path="/library" element={<LibraryPage />} />
+        <Route path="/creative" element={<CreativeBoardsPage />} />
         <Route path="/tools/:toolId" element={<ToolDetailPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
         <Route path="/help" element={<HelpPage />} />

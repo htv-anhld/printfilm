@@ -708,6 +708,25 @@ export const viPages = {
       light: "Đèn",
     },
   },
+  creative: {
+    title: "Bảng sáng tạo",
+    lead: "Gom ảnh, video, lời quảng cáo và link theo từng chiến dịch. Bấm vào kết quả công cụ gần đây để thêm nhanh.",
+    namePlaceholder: "Tên chiến dịch, ví dụ: Khuyến mãi Tết",
+    create: "Tạo bảng",
+    add: "Thêm",
+    textPlaceholder: "Slogan, lời dẫn, ghi chú…",
+    recent: "Kết quả công cụ gần đây (bấm để thêm)",
+    empty: "Bảng này chưa có gì",
+    noBoards: "Chưa có bảng nào, hãy tạo bảng đầu tiên",
+    deleteBoard: "Xoá bảng “{name}”?",
+    card: "Gom kết quả theo chiến dịch",
+    kinds: {
+      text: "Văn bản",
+      image: "Ảnh",
+      video: "Video",
+      link: "Liên kết",
+    },
+  },
   pricing: {
     plans: {
       title: 'Gói thuê bao',

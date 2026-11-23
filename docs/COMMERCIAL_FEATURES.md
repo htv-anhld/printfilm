@@ -381,3 +381,16 @@ API: `GET /api/drama/layout3d/options`, `GET/POST /api/studio3d/scenes`,
 **Giới hạn hiện tại:** ảnh chụp chưa tự điền vào tool tạo ảnh hay canvas phim truyện; người dùng phải sao chép
 link hoặc tải ảnh về rồi tải lên. Mô hình 3D là khối hình học cơ bản (chưa có model nhân vật có khớp để
 tạo dáng). **Chưa kiểm thử bằng trình duyệt thật** trong lần làm này: mới qua typecheck, build, và test API.
+
+## 16. Bảng sáng tạo (creative boards)
+
+Tôi **không có tài liệu** về ngữ nghĩa chính xác của `/api/creative/projects` bên Dravelio (roadmap ghi
+"một phần"). Đây là cách diễn giải của tôi, phù hợp nhất với sản phẩm: **bảng gom kết quả theo chiến dịch**
+gồm ảnh, video, văn bản, link; trang `/creative` cho phép thêm nhanh bằng một cú bấm từ kết quả tool gần đây.
+Nếu bạn biết Dravelio làm khác, đây là phần dễ chỉnh nhất.
+
+API: `GET/POST /api/creative/projects`, `GET/PATCH/DELETE /api/creative/projects/{id}`,
+`POST /api/creative/projects/{id}/items`, `DELETE …/items/{item_id}`, `PUT …/order`. URL mục chỉ nhận
+`http(s)` hoặc `/static/` (chặn `javascript:`); ≤ 100 bảng, ≤ 300 mục mỗi bảng.
+
+`/api/content/expand` (mở rộng chủ đề thành kịch bản) **đã có sẵn** từ trước, không cần làm thêm.

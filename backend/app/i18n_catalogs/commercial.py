@@ -131,6 +131,14 @@ EN: dict[str, str] = {
     "视频已达到该分辨率": "The video is already at this resolution",
     "类型无效": "Invalid type",
     "文件过大": "File too large",
+    # ── 3D 布局 / 创意看板 ──
+    "场景不存在": "Scene not found",
+    "场景数量已达上限": "You've reached the scene limit",
+    "截图须为 PNG": "Snapshots must be PNG",
+    "截图过大": "Snapshot too large",
+    "看板不存在": "Board not found",
+    "看板数量已达上限": "You've reached the board limit",
+    "看板内容已达上限": "This board is full",
 }
 
 VI: dict[str, str] = {
@@ -261,4 +269,12 @@ VI: dict[str, str] = {
     "视频已达到该分辨率": "Video đã đạt độ phân giải này",
     "类型无效": "Loại không hợp lệ",
     "文件过大": "Tệp quá lớn",
+    # ── 3D 布局 / 创意看板 ──
+    "场景不存在": "Cảnh không tồn tại",
+    "场景数量已达上限": "Đã đạt giới hạn số cảnh",
+    "截图须为 PNG": "Ảnh chụp phải là PNG",
+    "截图过大": "Ảnh chụp quá lớn",
+    "看板不存在": "Bảng không tồn tại",
+    "看板数量已达上限": "Đã đạt giới hạn số bảng",
+    "看板内容已达上限": "Bảng đã đầy",
 }

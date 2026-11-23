@@ -18,6 +18,7 @@ from app.api import oauth as oauth_api
 from app.api import creative_tools as creative_tools_api
 from app.api import library as library_api
 from app.api import studio3d as studio3d_api
+from app.api import creative as creative_api
 from app.api.drama import router as drama_router
 from app.config import get_settings
 from app.database import AsyncSessionLocal, engine, init_db
@@ -113,6 +114,7 @@ app.include_router(oauth_api.router, prefix="/api")
 app.include_router(creative_tools_api.router, prefix="/api")
 app.include_router(library_api.router, prefix="/api")
 app.include_router(studio3d_api.router, prefix="/api")
+app.include_router(creative_api.router, prefix="/api")
 app.include_router(oauth_api.well_known)
 app.include_router(admin_router, prefix="/api")
 
