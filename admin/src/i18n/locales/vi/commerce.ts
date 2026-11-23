@@ -63,4 +63,19 @@ export const viCommerce = {
     url: "Nội dung",
     rewardPrompt: "Thưởng bao nhiêu (đơn vị tiền chính, ví dụ 5 = $5)?",
   },
+  library: {
+    nav: "Thư viện tư liệu",
+    desc: "Tư liệu dùng chung cho mọi người dùng. Nhạc nền gắn mood sẽ được dùng tự động khi ghép video.",
+    name: "Tên",
+    upload: "Tải lên",
+    empty: "Chưa có tư liệu",
+    delete: "Xoá",
+    deleteConfirm: "Xoá “{name}”?",
+    bgmHint: "Mood khớp với nhạc nền mà AI chọn cho từng project (tense, warm, tech, epic, upbeat, calm); “default” dùng khi không khớp mood nào.",
+    kinds: {
+      bgm: "Nhạc nền",
+      sfx: "Hiệu ứng âm thanh",
+      avatar: "Avatar",
+    },
+  },
 };

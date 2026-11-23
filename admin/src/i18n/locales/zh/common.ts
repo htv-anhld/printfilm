@@ -117,6 +117,7 @@ export const zhCommon = {
       teams: "团队",
       partners: "合作伙伴",
       partnerSubmissions: "推广内容",
+      library: "素材库",
       errorReports: "前端错误",
       settings: "系统设置",
     },

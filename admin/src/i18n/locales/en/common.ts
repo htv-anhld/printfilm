@@ -117,6 +117,7 @@ export const enCommon = {
       teams: "Teams",
       partners: "Partners",
       partnerSubmissions: "Partner content",
+      library: "Media library",
       errorReports: "Client errors",
       settings: "System settings",
     },

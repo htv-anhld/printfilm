@@ -84,3 +84,6 @@ frontend/dist/
 .playwright-mcp/
 # 机器本地说明（不上库）
 CLAUDE.local.md
+# 素材库上传（全站 BGM / 音效 / 头像）属于运行时数据
+backend/static/bgm/
+backend/static/library/

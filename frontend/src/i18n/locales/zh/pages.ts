@@ -552,6 +552,28 @@ export const zhPages = {
       },
     },
   },
+  library: {
+    title: "素材库",
+    lead: "角色头像、背景音乐、音效以及你生成过的片段。上传私有素材，可在所有项目中复用。",
+    namePlaceholder: "素材名称（可选）",
+    upload: "上传",
+    empty: "暂无素材",
+    copy: "复制链接",
+    copied: "已复制",
+    delete: "删除",
+    deleteConfirm: "删除「{name}」？",
+    tabs: {
+      avatar: "头像",
+      bgm: "背景音乐",
+      sfx: "音效",
+      clips: "我的片段",
+    },
+    scope: {
+      mine: "我的",
+      global: "公共素材",
+      project: "漫剧角色",
+    },
+  },
   pricing: {
     plans: {
       title: '订阅套餐',

@@ -630,6 +630,28 @@ export const viPages = {
       },
     },
   },
+  library: {
+    title: "Thư viện tư liệu",
+    lead: "Avatar nhân vật, nhạc nền, hiệu ứng âm thanh và clip bạn đã tạo. Tải tư liệu riêng lên để dùng lại ở mọi dự án.",
+    namePlaceholder: "Tên tư liệu (tuỳ chọn)",
+    upload: "Tải lên",
+    empty: "Chưa có tư liệu",
+    copy: "Sao chép link",
+    copied: "Đã sao chép",
+    delete: "Xoá",
+    deleteConfirm: "Xoá “{name}”?",
+    tabs: {
+      avatar: "Avatar",
+      bgm: "Nhạc nền",
+      sfx: "Hiệu ứng âm thanh",
+      clips: "Clip của tôi",
+    },
+    scope: {
+      mine: "Của tôi",
+      global: "Thư viện chung",
+      project: "Nhân vật trong phim",
+    },
+  },
   pricing: {
     plans: {
       title: 'Gói thuê bao',

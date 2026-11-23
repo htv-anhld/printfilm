@@ -63,4 +63,19 @@ export const zhCommerce = {
     url: "内容",
     rewardPrompt: "奖励金额（主单位，如 5 = $5）？",
   },
+  library: {
+    nav: "素材库",
+    desc: "全站共用素材。带情绪标签的背景音乐会在成片合成时自动使用。",
+    name: "名称",
+    upload: "上传",
+    empty: "暂无素材",
+    delete: "删除",
+    deleteConfirm: "删除「{name}」？",
+    bgmHint: "情绪对应 AI 为每个项目选的配乐（tense、warm、tech、epic、upbeat、calm）；都不匹配时使用 default。",
+    kinds: {
+      bgm: "背景音乐",
+      sfx: "音效",
+      avatar: "头像",
+    },
+  },
 };

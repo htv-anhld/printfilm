@@ -236,6 +236,19 @@ export type McpRequestRow = {
   created_at?: string | null
 }
 
+export type LibraryKind = 'avatar' | 'bgm' | 'sfx'
+
+export type LibraryItem = {
+  id: number | string
+  kind: LibraryKind
+  name: string
+  url: string
+  tags?: string[]
+  duration_sec?: number | null
+  scope: 'mine' | 'global' | 'project'
+  project?: string
+}
+
 export type PartnerInfo = {
   status: 'none' | 'pending' | 'approved' | 'rejected' | 'suspended'
   ref_code?: string | null
@@ -559,6 +572,38 @@ export const api = {
   },
   marketingPresets() {
     return request<{ presets: { id: string; ratio: string; duration: number; prompt: string }[] }>('/api/marketing/presets')
+  },
+  avatarLibrary() {
+    return request<{ items: LibraryItem[]; characters: LibraryItem[] }>('/api/avatars/library')
+  },
+  timelineLibrary() {
+    return request<{
+      bgm: LibraryItem[]
+      sfx: LibraryItem[]
+      clips: { id: string; url: string; cover?: string | null; duration_sec?: number | null; project: string }[]
+      moods: string[]
+    }>('/api/drama/timeline/library')
+  },
+  async uploadLibraryItem(kind: LibraryKind, file: File, name: string, tags = '') {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('kind', kind)
+    form.append('name', name)
+    form.append('tags', tags)
+    form.append('file', file)
+    const res = await fetch(`${API_BASE}/api/library/items`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throwApiError(res.status, err.detail, res.statusText)
+    }
+    return (await res.json()) as LibraryItem
+  },
+  deleteLibraryItem(id: number | string) {
+    return request<{ ok: boolean }>(`/api/library/items/${id}`, { method: 'DELETE' })
   },
   partnerMe() {
     return request<PartnerInfo>('/api/partner-program/me')

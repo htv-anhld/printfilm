@@ -271,3 +271,22 @@ class McpRequest(Base):
     summary: Mapped[str | None] = mapped_column(String(500), nullable=True)
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class LibraryItem(Base):
+    """素材库条目：头像 / 背景音乐 / 音效。owner 为空 = 管理员维护的全站素材，否则为用户私有。"""
+
+    __tablename__ = "library_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # avatar | bgm | sfx
+    kind: Mapped[str] = mapped_column(String(16), index=True)
+    owner_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(128))
+    url: Mapped[str] = mapped_column(String(1024))
+    # 本地文件（FFmpeg 合成取 BGM 用）；OSS 公网地址在 url
+    local_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    # bgm 的情绪标签（tense / warm / tech / epic / upbeat / calm / default）；avatar 的风格 / 性别等
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    duration_sec: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

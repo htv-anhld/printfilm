@@ -21,6 +21,7 @@ import { UsersPage } from "@/pages/UsersPage";
 import { WorksPage } from "@/pages/WorksPage";
 import { ErrorReportsPage } from "@/pages/ErrorReportsPage";
 import { SubscriptionsPage, TeamsPage } from "@/pages/CommercePages";
+import { LibraryAdminPage } from "@/pages/LibraryAdminPage";
 import { PartnerSubmissionsPage, PartnersAdminPage } from "@/pages/PartnerPages";
 
 // Guard: require JWT + admin role
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="error-reports" element={<ErrorReportsPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="teams" element={<TeamsPage />} />
+          <Route path="library" element={<LibraryAdminPage />} />
           <Route path="partners" element={<PartnersAdminPage />} />
           <Route path="partner-submissions" element={<PartnerSubmissionsPage />} />
         </Route>

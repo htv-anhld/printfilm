@@ -617,6 +617,28 @@ export const enPages = {
       },
     },
   },
+  library: {
+    title: "Media library",
+    lead: "Character avatars, background music, sound effects and clips you generated. Upload your own media to reuse across projects.",
+    namePlaceholder: "Name (optional)",
+    upload: "Upload",
+    empty: "Nothing here yet",
+    copy: "Copy link",
+    copied: "Copied",
+    delete: "Delete",
+    deleteConfirm: "Delete “{name}”?",
+    tabs: {
+      avatar: "Avatars",
+      bgm: "Music",
+      sfx: "Sound effects",
+      clips: "My clips",
+    },
+    scope: {
+      mine: "Mine",
+      global: "Shared library",
+      project: "Series character",
+    },
+  },
   pricing: {
     plans: {
       title: 'Subscription plans',

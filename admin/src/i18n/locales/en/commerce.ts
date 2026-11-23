@@ -63,4 +63,19 @@ export const enCommerce = {
     url: "Content",
     rewardPrompt: "Reward amount (major units, e.g. 5 = $5)?",
   },
+  library: {
+    nav: "Media library",
+    desc: "Media shared with all users. Background music tagged with a mood is used automatically when composing videos.",
+    name: "Name",
+    upload: "Upload",
+    empty: "No media yet",
+    delete: "Delete",
+    deleteConfirm: "Delete “{name}”?",
+    bgmHint: "Moods match the background music the AI picks per project (tense, warm, tech, epic, upbeat, calm); “default” is used when nothing matches.",
+    kinds: {
+      bgm: "Music",
+      sfx: "Sound effects",
+      avatar: "Avatars",
+    },
+  },
 };

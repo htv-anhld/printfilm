@@ -334,3 +334,20 @@ bản gốc (không làm vỡ file).
 **Kịch bản từ YouTube:** chỉ đọc **thông tin công khai** (tiêu đề và kênh qua oEmbed, mô tả trong meta của
 trang), **không tải video, không lấy phụ đề**. Prompt bắt model viết kịch bản **mới hoàn toàn**, chỉ lấy chủ
 đề làm cảm hứng, để tránh vấn đề bản quyền. Nếu YouTube chặn IP máy chủ thì vẫn dùng được với văn bản tư liệu.
+
+## 13. Thư viện tư liệu (avatar, nhạc nền, hiệu ứng âm thanh, clip)
+
+Bảng `library_items` (kind `avatar` | `bgm` | `sfx`): mục **toàn hệ thống** do admin tải lên
+(Admin → Thư viện tư liệu) và mục **riêng** do người dùng tự tải lên (trang `/library`, tối đa 200 mục).
+
+- `GET /api/avatars/library`: avatar chung + avatar riêng + **ảnh nhân vật đã tạo trong phim truyện**
+- `GET /api/drama/timeline/library`: nhạc nền / hiệu ứng âm thanh + **clip phân cảnh đã tạo**
+- `POST/DELETE /api/library/items`; admin `GET/POST/DELETE /api/admin/library`
+
+**Nhạc nền được dùng thật khi ghép phim:** repo không kèm file nhạc nào (thư mục `static/bgm` trống), nên trước
+đây video ghép ra **không có nhạc nền**. Nhạc admin tải lên kèm mood (`tense`, `warm`, `tech`, `epic`,
+`upbeat`, `calm`, `default`) được lưu vào `static/bgm/<mood>/`, và `bgm.resolve_bgm_path` ưu tiên lấy từ đó.
+**Hãy tải ít nhất một bài `default`** để video luôn có nhạc nền.
+
+Lưu ý bản quyền: chỉ tải lên nhạc bạn có quyền dùng thương mại (nhạc mua license hoặc royalty-free).
+Hai thư mục `backend/static/bgm/` và `backend/static/library/` đã thêm vào `.gitignore`.

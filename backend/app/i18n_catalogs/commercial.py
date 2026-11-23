@@ -107,6 +107,14 @@ EN: dict[str, str] = {
     "请填写有效的 YouTube 链接": "Please enter a valid YouTube link",
     "无法读取该视频信息（可能是私密或已删除）": "Couldn't read this video (it may be private or removed)",
     "请填写 YouTube 链接或素材文本": "Enter a YouTube link or some source text",
+    # ── 素材库 ──
+    "素材类型无效": "Invalid library item type",
+    "仅支持 JPG / PNG / WebP": "Only JPG / PNG / WebP are supported",
+    "图片不能超过 10MB": "Images must be under 10MB",
+    "仅支持 MP3 / M4A / WAV / AAC": "Only MP3 / M4A / WAV / AAC are supported",
+    "音频不能超过 25MB": "Audio must be under 25MB",
+    "素材数量已达上限": "You've reached the library limit",
+    "素材不存在": "Item not found",
 }
 
 VI: dict[str, str] = {
@@ -213,4 +221,12 @@ VI: dict[str, str] = {
     "请填写有效的 YouTube 链接": "Vui lòng nhập liên kết YouTube hợp lệ",
     "无法读取该视频信息（可能是私密或已删除）": "Không đọc được thông tin video (có thể là riêng tư hoặc đã bị xoá)",
     "请填写 YouTube 链接或素材文本": "Vui lòng nhập liên kết YouTube hoặc văn bản tư liệu",
+    # ── 素材库 ──
+    "素材类型无效": "Loại tư liệu không hợp lệ",
+    "仅支持 JPG / PNG / WebP": "Chỉ hỗ trợ JPG / PNG / WebP",
+    "图片不能超过 10MB": "Ảnh không được vượt quá 10MB",
+    "仅支持 MP3 / M4A / WAV / AAC": "Chỉ hỗ trợ MP3 / M4A / WAV / AAC",
+    "音频不能超过 25MB": "Âm thanh không được vượt quá 25MB",
+    "素材数量已达上限": "Đã đạt giới hạn số lượng tư liệu",
+    "素材不存在": "Tư liệu không tồn tại",
 }

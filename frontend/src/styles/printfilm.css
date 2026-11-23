@@ -7581,3 +7581,51 @@ button.pf-shot-editable:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── 素材库 ── */
+.pf-library {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 16px 3rem;
+}
+
+.pf-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.pf-library-card {
+  margin: 0;
+  border: 1px solid var(--pf-line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  display: grid;
+}
+
+.pf-library-card img,
+.pf-library-card video {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #f2f3f5;
+}
+
+.pf-library-card audio {
+  width: 100%;
+  margin: 0.75rem 0 0;
+}
+
+.pf-library-card figcaption {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem 0.75rem;
+  font-size: 0.82rem;
+}
+
+.pf-library-card figcaption em {
+  display: block;
+  font-style: normal;
+}

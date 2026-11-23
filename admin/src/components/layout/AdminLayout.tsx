@@ -9,6 +9,7 @@ import {
   Handshake,
   Image,
   Layers,
+  Library,
   LayoutDashboard,
   ListVideo,
   LogOut,
@@ -74,6 +75,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/templates", labelKey: "layout.nav.templates", icon: Shapes },
       { to: "/queues", labelKey: "layout.nav.queues", icon: Layers },
+      { to: "/library", labelKey: "layout.nav.library", icon: Library },
     ],
   },
   {
@@ -102,6 +104,7 @@ const titleKeys: Record<string, string> = {
   "/error-reports": "layout.nav.errorReports",
   "/subscriptions": "layout.nav.subscriptions",
   "/teams": "layout.nav.teams",
+  "/library": "layout.nav.library",
   "/partners": "layout.nav.partners",
   "/partner-submissions": "layout.nav.partnerSubmissions",
 };
