@@ -189,3 +189,24 @@ tokeninfo (`aud`, `iss`, `exp`, `email_verified`). Nếu email trùng tài kho�
 
 **Sửa lỗi có sẵn:** link đặt lại mật khẩu trước đây dùng `PUBLIC_BASE_URL` (địa chỉ API), nên
 trong email trỏ về `:8000/auth` và không mở được. Giờ dùng `APP_PUBLIC_URL`.
+
+## 7. SEO và thu thập lỗi client
+
+**SEO** (`frontend/vite.seo.ts`, `frontend/index.html`):
+
+- Khi build, đặt `VITE_SITE_URL=https://www.<domain>` để plugin thay `__SITE_URL__` trong
+  canonical, OG, hreflang, JSON-LD, đồng thời sinh `robots.txt` và `sitemap.xml`
+- `robots.txt` chặn các trang trong app (`/studio`, `/drama`, `/settings`, `/history`, `/auth`,
+  `/api/`). **Không chặn `/assets`**, vì đó là thư mục JS/CSS của Vite, chặn thì Google không render được
+- Một bản build phục vụ hai domain giống Dravelio: host bắt đầu bằng `app.` tự gắn `noindex,nofollow`
+- Script inline đổi `lang`/title/description/OG theo ngôn ngữ **trước khi render**;
+  `?lang=vi|en|zh` dùng cho hreflang và được ghi nhớ làm ngôn ngữ ưu tiên
+- JSON-LD `Organization` + `SoftwareApplication` (giá $9–$459); ảnh OG `public/og-image.jpg`
+  1200×630 hiện chỉ là ảnh tạm, **cần thay bằng ảnh có chữ khi đổi thương hiệu**
+- Khối `.seo-fallback` nằm trong `#root`: bot không chạy JS đọc được; người dùng thật không thấy vì React
+  thay nội dung ngay, còn khối này chỉ hiện sau 3 giây
+
+**Thu thập lỗi** (`/api/error-reports`): frontend gửi `window.onerror` và promise bị từ chối
+(chỉ ở build production, tối đa 20 lỗi mỗi lần tải trang, không gửi trùng). Backend giới hạn 30 lần/phút
+mỗi IP, gom lỗi theo fingerprint (bỏ số dòng/hash bundle) và đếm số lần.
+Admin → Hệ thống → **Lỗi phía client** để xem.

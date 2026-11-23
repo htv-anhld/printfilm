@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -72,3 +72,23 @@ class SubscriptionGrant(Base):
     credit_fen: Mapped[int] = mapped_column(Integer)
     expired_fen: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ClientErrorReport(Base):
+    """前端运行时错误上报：按 fingerprint 聚合，重复出现只累加次数。"""
+
+    __tablename__ = "client_error_reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    message: Mapped[str] = mapped_column(String(1000))
+    stack: Mapped[str | None] = mapped_column(Text, nullable=True)
+    url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    source: Mapped[str] = mapped_column(String(32), default="window")
+    user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    release: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # 最近一次上报的用户（可空）
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    count: Mapped[int] = mapped_column(Integer, default=1)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

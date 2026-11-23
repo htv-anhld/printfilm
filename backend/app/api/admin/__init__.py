@@ -8,6 +8,7 @@ from app.api.admin import (
     drama_episodes,
     drama_fragments,
     drama_projects,
+    error_reports,
     ledger,
     orders,
     projects,
@@ -37,3 +38,4 @@ router.include_router(drama_projects.router)
 router.include_router(drama_assets.router)
 router.include_router(drama_episodes.router)
 router.include_router(drama_fragments.router)
+router.include_router(error_reports.router)

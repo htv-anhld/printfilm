@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
+  Bug,
   Clapperboard,
   FileVideo,
   Film,
@@ -69,7 +70,10 @@ const navGroups: NavGroup[] = [
   },
   {
     labelKey: "layout.groups.system",
-    items: [{ to: "/settings", labelKey: "layout.nav.settings", icon: Settings }],
+    items: [
+      { to: "/settings", labelKey: "layout.nav.settings", icon: Settings },
+      { to: "/error-reports", labelKey: "layout.nav.errorReports", icon: Bug },
+    ],
   },
 ];
 
@@ -87,6 +91,7 @@ const titleKeys: Record<string, string> = {
   "/templates": "layout.nav.templates",
   "/settings": "layout.nav.settings",
   "/queues": "layout.nav.queues",
+  "/error-reports": "layout.nav.errorReports",
 };
 
 function resolveTitle(pathname: string, t: TFunction): string {

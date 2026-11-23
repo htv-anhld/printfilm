@@ -12,7 +12,7 @@ function defaultApiBase() {
 
 // Empty string = same-origin (nginx proxies /api). Undefined = LAN default :8000.
 const _viteApiBase = import.meta.env.VITE_API_BASE
-const API_BASE =
+export const API_BASE =
   _viteApiBase === undefined || _viteApiBase === null ? defaultApiBase() : String(_viteApiBase)
 
 function authHeaders(): HeadersInit {

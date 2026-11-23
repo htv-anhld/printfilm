@@ -37,6 +37,16 @@ async def get_current_user(
     return user
 
 
+async def get_optional_user(
+    creds: HTTPAuthorizationCredentials | None = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """可选登录：带有效 token 返回用户，否则 None（不报错）。"""
+    if not creds:
+        return None
+    return await _user_from_bearer(db, creds.credentials)
+
+
 async def get_api_user(
     creds: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),

@@ -6,6 +6,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PRINTFILM · Nền tảng video ngắn AI</title>
     <meta name="description" content="PRINTFILM: biến kịch bản thành phim truyện AI nhiều tập, hoặc biến điểm bán hàng thành video ngắn AI." />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="__SITE_URL__/" />
+    <link rel="alternate" hreflang="vi" href="__SITE_URL__/?lang=vi" />
+    <link rel="alternate" hreflang="en" href="__SITE_URL__/?lang=en" />
+    <link rel="alternate" hreflang="zh" href="__SITE_URL__/?lang=zh" />
+    <link rel="alternate" hreflang="x-default" href="__SITE_URL__/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PRINTFILM" />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:title" content="PRINTFILM · Nền tảng video ngắn AI" />
+    <meta property="og:description" content="PRINTFILM: biến kịch bản thành phim truyện AI nhiều tập, hoặc biến điểm bán hàng thành video ngắn AI." />
+    <meta property="og:image" content="__SITE_URL__/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="__SITE_URL__/og-image.jpg" />
+    <script>
+      // 渲染前按语言改 <html lang>、title、description、og（爬虫与首屏都拿到对应语言）；
+      // ?lang= 用于 hreflang 链接并写入本地偏好；app.* 子域一律 noindex（与 www 同一份构建）
+      ;(function () {
+        var META = {
+          vi: {
+            lang: 'vi',
+            title: 'PRINTFILM · Nền tảng video ngắn AI',
+            desc: 'PRINTFILM: biến kịch bản thành phim truyện AI nhiều tập, hoặc biến điểm bán hàng thành video ngắn AI.',
+          },
+          en: {
+            lang: 'en',
+            title: 'PRINTFILM · AI series & short video studio',
+            desc: 'PRINTFILM turns scripts into multi-episode AI series and selling points into short AI videos.',
+          },
+          zh: {
+            lang: 'zh-CN',
+            title: 'PRINTFILM · AI 漫剧与短视频平台',
+            desc: 'PRINTFILM：把剧本变成多集 AI 漫剧，把卖点变成 AI 短视频。',
+          },
+        }
+        var KEY = 'printfilm.locale'
+        var loc = 'vi'
+        try {
+          var q = new URLSearchParams(location.search).get('lang')
+          if (q && META[q]) {
+            loc = q
+            localStorage.setItem(KEY, q)
+          } else {
+            var saved = localStorage.getItem(KEY)
+            if (saved && META[saved]) loc = saved
+            else {
+              var nav = (navigator.language || '').toLowerCase()
+              loc = nav.indexOf('zh') === 0 ? 'zh' : nav.indexOf('en') === 0 ? 'en' : 'vi'
+            }
+          }
+        } catch (e) {}
+        var m = META[loc]
+        document.documentElement.lang = m.lang
+        document.title = m.title
+        var set = function (sel, attr, value) {
+          var el = document.querySelector(sel)
+          if (el) el.setAttribute(attr, value)
+        }
+        set('meta[name="description"]', 'content', m.desc)
+        set('meta[property="og:title"]', 'content', m.title)
+        set('meta[property="og:description"]', 'content', m.desc)
+        if (/^app\./i.test(location.hostname)) set('meta[name="robots"]', 'content', 'noindex,nofollow')
+      })()
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "__SITE_URL__/#org",
+            "name": "PRINTFILM",
+            "url": "__SITE_URL__/",
+            "logo": "__SITE_URL__/logo.png"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "PRINTFILM",
+            "applicationCategory": "MultimediaApplication",
+            "operatingSystem": "Web",
+            "url": "__SITE_URL__/",
+            "publisher": { "@id": "__SITE_URL__/#org" },
+            "offers": {
+              "@type": "AggregateOffer",
+              "priceCurrency": "USD",
+              "lowPrice": "9",
+              "highPrice": "459",
+              "offerCount": "9"
+            }
+          }
+        ]
+      }
+    </script>
+    <style>
+      /* 无 JS 的爬虫能读到的兜底内容；JS 正常时 React 立即替换掉，3 秒后才显示避免闪烁 */
+      .seo-fallback {
+        max-width: 760px;
+        margin: 48px auto;
+        padding: 0 16px;
+        font-family: system-ui, sans-serif;
+        line-height: 1.6;
+        color: #1f2329;
+        opacity: 0;
+        animation: seo-fallback-in 0.2s ease 3s forwards;
+      }
+      @keyframes seo-fallback-in {
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,7 +127,27 @@
     />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="seo-fallback">
+        <h1>PRINTFILM: phim truyện AI nhiều tập và video ngắn AI</h1>
+        <p>
+          Viết hoặc dán kịch bản, PRINTFILM tự chia tập, dựng nhân vật, phân cảnh, tạo hình ảnh, video và lồng tiếng.
+          Hỗ trợ tiếng Việt, tiếng Anh và tiếng Trung.
+        </p>
+        <p lang="en">
+          PRINTFILM turns scripts into multi-episode AI series and selling points into short AI videos: episodes,
+          characters, storyboards, images, video and voice-over in one place.
+        </p>
+        <ul>
+          <li><a href="/pricing">Bảng giá · Pricing</a></li>
+          <li><a href="/method">Cách hoạt động · How it works</a></li>
+          <li><a href="/templates">Mẫu video · Templates</a></li>
+          <li><a href="/tools">Công cụ AI · Tools</a></li>
+          <li><a href="/terms">Điều khoản · Terms</a> · <a href="/privacy">Quyền riêng tư · Privacy</a></li>
+          <li><a href="/refund">Hoàn tiền · Refunds</a> · <a href="/acceptable-use">Chính sách sử dụng · Acceptable use</a></li>
+        </ul>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

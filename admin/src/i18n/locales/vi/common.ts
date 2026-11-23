@@ -113,6 +113,7 @@ export const viCommon = {
       dramaFragments: "Quản lý phân cảnh",
       templates: "Quản lý mẫu",
       queues: "Trung tâm tác vụ",
+      errorReports: "Lỗi phía client",
       settings: "Cài đặt hệ thống",
     },
     titles: {
