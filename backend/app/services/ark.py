@@ -67,6 +67,7 @@ from app.services.tokenfree_video import (
     uses_tokenfree_video,
 )
 from app.services import storage
+from app.services.remote_source import fresh_remote_source, remember_remote_source
 from app.services.drama.seedance_i2v_role import resolve_seedance_i2v_image_role
 from app.services.ffmpeg_compose import is_near_silent_audio
 from app.services.drama.llm import _extract_json
@@ -1133,6 +1134,9 @@ class ArkGateway:
         if is_tokenfree_image_url(remote) or is_tokenfree_content_url(remote):
             dl_headers = {"Authorization": f"Bearer {self._ark_api_key()}"}
         await storage.download_to(remote, dest, headers=dl_headers)
+        if dl_headers is None:
+            # 未开 OSS 时 Seedance 可直接用这个公网原图（有效期内）
+            remember_remote_source(dest, remote)
         merged_usage = dict(raw_usage or {})
         if resolved_size:
             merged_usage.setdefault("size", str(resolved_size))
@@ -2317,6 +2321,9 @@ class ArkGateway:
                 public = storage.republish_url(raw, sync=True)
                 if public and str(public).startswith("https://"):
                     return str(public)
+                upstream = fresh_remote_source(local)
+                if upstream:
+                    return upstream
                 raise RuntimeError(
                     _(
                         "Seedance 需要公网可访问的图片 URL（请启用 OSS 并确保参考图已上传），"

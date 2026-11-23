@@ -415,3 +415,12 @@ Code tự xử lý khác biệt tham số giữa các nhà cung cấp (`backend/
 Giới hạn hiện tại: **ảnh và video chưa chạy qua OpenAI** (code đang theo định dạng Seedream/Seedance và TokenFree). Claude không sinh ảnh / video.
 
 **Thử LLM thật khi chưa có key ảnh/video:** trong `deploy/.env.docker` đặt `ARK_MOCK=true` và `ARK_MOCK_TEXT=false`. Ảnh/video vẫn là file giả lập, còn kịch bản (storyboard, mở rộng chủ đề) gọi LLM thật. Mặc định `ARK_MOCK_TEXT=true` (giữ hành vi cũ: mock toàn bộ).
+
+## 18. Sinh ảnh / video thật qua TokenFree (cập nhật 23/11/2026)
+
+- Tắt giả lập ở **cả hai nơi**: Admin → Mô hình → `ark_mock` = tắt (DB, được ưu tiên) và `ARK_MOCK=false` trong `deploy/.env.docker`.
+- TokenFree đã đổi tên model sang dạng ngắn có dấu chấm. Code tự chuẩn hoá khi gọi TokenFree:
+  `doubao-seedream-5-0-260128` → `seedream-5.0`, `seedance-2-5` → `seedance-2.5`.
+- `gpt-image-2.5` hiện không có kênh ở nhóm `default`, nên Seedream gọi thẳng `/images/generations`, không ép sang gpt-image nữa.
+- **Chưa bật OSS vẫn chạy được video**: Seedance cần ảnh khung đầu có URL công khai. Ảnh Seedream vốn có URL CDN ký số (hạn ~24h); code lưu URL này vào file `<ảnh>.src` cạnh ảnh và dùng lại trong vòng 20 giờ (`backend/app/services/remote_source.py`). Ảnh **do người dùng tải lên** hoặc ảnh cũ hơn 20 giờ vẫn **bắt buộc bật OSS**. Khi chạy production phải bật OSS.
+- Đã thử thật: ảnh 1440×2560 ~25s; video Seedance 2.5 5s 720×1280 ~3 phút.
