@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, Header, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.database import get_db
 from app.models import User
 from app.services.api_keys import API_KEY_PREFIX, user_from_api_key
@@ -29,10 +30,10 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     if not creds:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未登录")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_("未登录"))
     user = await _user_from_bearer(db, creds.credentials)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="登录已失效")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_("登录已失效"))
     return user
 
 
@@ -46,15 +47,15 @@ async def get_api_user(
     if not token and creds:
         token = creds.credentials
     if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="缺少 API Key")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_("缺少 API Key"))
     user = await _user_from_bearer(db, token)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API Key 无效或已撤销")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_("API Key 无效或已撤销"))
     return user
 
 
 async def get_current_admin(user: User = Depends(get_current_user)) -> User:
     # Require role=admin for /api/admin routes
     if (user.role or "user") != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_("需要管理员权限"))
     return user
