@@ -109,3 +109,14 @@ async def test_script_format_endpoint_bills(db_session, monkeypatch):
     assert out["content"] == "formatted"
     task = await db_session.get(TaskRun, out["task_id"])
     assert (task.domain, task.task_type, task.billing_status) == ("studio", "tool_text", "settled")
+
+
+def test_video_estimate_accepts_chip_duration():
+    """工具页时长芯片传 "5s"，估价不能因 float('5s') 报 500。"""
+    from app.services.billing.estimates import _payload_duration
+
+    assert _payload_duration({"duration": "5s"}) == 5.0
+    assert _payload_duration({"duration": "10秒"}) == 10.0
+    assert _payload_duration({"duration": 8}) == 8.0
+    assert _payload_duration({"duration": "abc"}) == 5.0
+    assert _payload_duration({}) == 5.0

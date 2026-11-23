@@ -220,11 +220,19 @@ async def run_image_tool(
     return {"kind": "image", "urls": [url], "status": "succeeded"}
 
 
+# 后台生图协程的强引用：asyncio 只弱引用 task，不保存会被 GC 回收，导致 tool_runs 永远停在 running
+_IMAGE_TOOL_TASKS: set = set()
+# 超过该时长仍 queued / running 视为中断（进程重启、协程丢失），轮询时判失败
+IMAGE_TOOL_STALE_SEC = 600
+
+
 def _dispatch_tool_image(run_id: int) -> str:
-    """启动工具生图后台任务。"""
+    """启动工具生图后台任务（调用前 tool_runs 行必须已提交，否则新会话读不到）。"""
     import asyncio
 
-    asyncio.create_task(execute_image_tool_run(run_id))
+    task = asyncio.create_task(execute_image_tool_run(run_id))
+    _IMAGE_TOOL_TASKS.add(task)
+    task.add_done_callback(_IMAGE_TOOL_TASKS.discard)
     return f"local-{run_id}"
 
 
@@ -274,9 +282,10 @@ async def enqueue_image_tool(
     )
     db.add(row)
     await db.flush()
+    row.task_id = f"local-{row.id}"
+    # 先提交再派发：后台协程用新会话读取 tool_runs，未提交时读不到行会直接返回、任务永远卡在 queued
+    await db.commit()
     task_id = _dispatch_tool_image(row.id)
-    row.task_id = task_id
-    await db.flush()
     return {
         "kind": "image",
         "urls": [],
@@ -370,6 +379,19 @@ async def poll_image_tool_task(db: AsyncSession, user: User, task_id: str) -> di
             "urls": [],
             "error": row.error or _("生成失败"),
         }
+
+    # 卡住保护：长时间 queued / running（进程重启丢了协程）→ 判失败，前端不再无限转圈
+    from datetime import UTC, datetime
+
+    started = row.updated_at or row.created_at
+    if started is not None:
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=UTC)
+        if (datetime.now(UTC) - started).total_seconds() > IMAGE_TOOL_STALE_SEC:
+            row.status = "failed"
+            row.error = _("任务中断，请重新生成")
+            await db.commit()
+            return {"status": "failed", "kind": "image", "urls": [], "error": row.error}
 
     return {"status": "running", "kind": "image", "urls": []}
 

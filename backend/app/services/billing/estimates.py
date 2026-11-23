@@ -154,6 +154,16 @@ def estimate_phase_fen(project: Project, phase: str, settings: Settings | None =
     return _estimate_assets_fen(project, s)
 
 
+def _payload_duration(payload: dict) -> float:
+    """时长参数可能是数字或前端芯片值 "5s" / "10秒"；解析失败按 5 秒。"""
+    raw = str(payload.get("duration") or "5").strip().lower()
+    digits = "".join(ch for ch in raw if ch.isdigit() or ch == ".")
+    try:
+        return float(digits) if digits else 5.0
+    except ValueError:
+        return 5.0
+
+
 async def estimate_task_fen(db: AsyncSession, task: TaskRun, settings: Settings | None = None) -> int:
     """按 domain + task_type 估算单任务预扣（分）。"""
     s = settings or get_settings()
@@ -181,7 +191,7 @@ async def estimate_task_fen(db: AsyncSession, task: TaskRun, settings: Settings 
         if task_type in {"shot_regen_image"}:
             return _catalog_image_fen(s, payload=payload)
         if task_type in {"shot_regen_video"}:
-            dur = float(payload.get("duration") or 5)
+            dur = _payload_duration(payload)
             project_id = task.project_id or payload.get("project_id")
             project = await db.get(Project, int(project_id)) if project_id else None
             c = charge_fen_official_video(
@@ -260,7 +270,7 @@ async def estimate_task_fen(db: AsyncSession, task: TaskRun, settings: Settings 
             c = charge_fen_official_llm(s.billing_est_llm_tokens * calls, s)
             return _buffered_fen(c, s)
         if task_type in {"v1_video", "v1_seedance", "tool_video"}:
-            dur = float(payload.get("duration") or 5)
+            dur = _payload_duration(payload)
             c = charge_fen_official_video(
                 max(dur, 2.0),
                 s,

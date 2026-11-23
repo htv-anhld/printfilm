@@ -139,6 +139,8 @@ EN: dict[str, str] = {
     "看板不存在": "Board not found",
     "看板数量已达上限": "You've reached the board limit",
     "看板内容已达上限": "This board is full",
+    # ── 工具生图 ──
+    "任务中断，请重新生成": "The task was interrupted. Please generate again",
 }
 
 VI: dict[str, str] = {
@@ -277,4 +279,6 @@ VI: dict[str, str] = {
     "看板不存在": "Bảng không tồn tại",
     "看板数量已达上限": "Đã đạt giới hạn số bảng",
     "看板内容已达上限": "Bảng đã đầy",
+    # ── 工具生图 ──
+    "任务中断，请重新生成": "Tác vụ bị gián đoạn, vui lòng tạo lại",
 }
