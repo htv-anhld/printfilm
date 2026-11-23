@@ -1,6 +1,7 @@
 /** 漫剧全局生成队列：图片 / 视频等任务统一展示与恢复 */
 import { useSyncExternalStore } from 'react'
 import type { DramaTaskBrief } from '../api/drama'
+import { tr } from '../i18n'
 
 export type DramaGenJobKind = 'image' | 'video'
 
@@ -23,6 +24,19 @@ export type DramaGenJob = {
   error?: string
   createdAt: number
   finishedAt?: number
+}
+
+/** 分镜视频任务 subtype（内部标识，勿翻译；展示用 formatDramaGenJobSubtype） */
+export const DRAMA_GEN_SUBTYPE_FRAGMENT_VIDEO = '分镜视频'
+
+/** 画布视频资产任务 subtype（内部标识） */
+export const DRAMA_GEN_SUBTYPE_CANVAS_VIDEO = '画布视频'
+
+/** 视频任务 subtype 的当前语言展示名；其它 subtype 原样返回 */
+export function formatDramaGenJobSubtype(subtype: string): string {
+  if (subtype === DRAMA_GEN_SUBTYPE_FRAGMENT_VIDEO) return tr('lib.genQueue.fragmentVideo')
+  if (subtype === DRAMA_GEN_SUBTYPE_CANVAS_VIDEO) return tr('lib.genQueue.canvasVideo')
+  return subtype
 }
 
 type Listener = () => void
@@ -219,16 +233,16 @@ export function syncImageJobToUnified(input: {
     kind: 'image',
     projectId: input.projectId,
     targetId: input.assetId,
-    title: input.assetName || `资产 ${input.assetId}`,
+    title: input.assetName || tr('lib.genQueue.assetTitle', { id: input.assetId }),
     subtype: input.assetType || 'image',
     status: input.status,
     taskId: input.taskId,
     error: input.error,
     message:
       input.status === 'running'
-        ? '生图中'
+        ? tr('lib.genQueue.imageRunning')
         : input.status === 'queued'
-          ? '排队中'
+          ? tr('lib.genQueue.queued')
           : undefined,
   })
 }
@@ -251,15 +265,15 @@ export function syncAssetVideoJobToUnified(input: {
     kind: 'video',
     projectId: input.projectId,
     targetId: input.assetId,
-    title: input.assetName || `视频 ${input.assetId}`,
-    subtype: '画布视频',
+    title: input.assetName || tr('lib.genQueue.videoTitle', { id: input.assetId }),
+    subtype: DRAMA_GEN_SUBTYPE_CANVAS_VIDEO,
     status: input.status,
     error: input.error,
     message:
       input.status === 'running'
-        ? '生视频中'
+        ? tr('lib.genQueue.videoRunning')
         : input.status === 'queued'
-          ? '排队中'
+          ? tr('lib.genQueue.queued')
           : undefined,
   })
 }
@@ -281,14 +295,14 @@ function resolveFragmentLabel(
 ): string | null {
   const frag = fragments.find((f) => f.id === fragId)
   if (frag && typeof frag.sort_order === 'number' && frag.sort_order >= 0) {
-    return `片段 ${String(frag.sort_order + 1).padStart(2, '0')}`
+    return tr('lib.genQueue.segmentLabel', { n: String(frag.sort_order + 1).padStart(2, '0') })
   }
   // 仅当列表里已有可靠 sort_order 时，才允许用下标兜底（完整有序列表）
   const hasAnySortOrder = fragments.some((f) => typeof f.sort_order === 'number' && f.sort_order >= 0)
   if (!hasAnySortOrder) return null
   const idx = fragments.findIndex((f) => f.id === fragId)
   if (idx < 0) return null
-  return `片段 ${String(idx + 1).padStart(2, '0')}`
+  return tr('lib.genQueue.segmentLabel', { n: String(idx + 1).padStart(2, '0') })
 }
 
 // 组装队列标题：有可靠镜序时写入/纠正；否则保留已有标题
@@ -308,7 +322,8 @@ function resolveVideoJobTitle(
   }
   if (existing?.title) return existing.title
   const prefix = (episodeName || '').trim()
-  return prefix ? `${prefix} · 分镜视频` : '分镜视频'
+  const label = tr('lib.genQueue.fragmentVideo')
+  return prefix ? `${prefix} · ${label}` : label
 }
 
 type FragmentTaskItem = DramaTaskBrief
@@ -370,14 +385,14 @@ export function syncEpisodeVideoJobs(input: {
             episodeId: input.episodeId,
             taskId: activeTask.id,
             title: resolveVideoJobTitle(existing, input.episodeName, fragLabel(item.fragment_id)),
-            subtype: '分镜视频',
+            subtype: DRAMA_GEN_SUBTYPE_FRAGMENT_VIDEO,
             status: activeTask.status === 'pending' || activeTask.status === 'leased' ? 'queued' : 'running',
             message:
               activeTask.current_step_key === 'assets'
-                ? '生成参考图…'
+                ? tr('lib.genQueue.refImages')
                 : activeTask.status === 'pending' || activeTask.status === 'leased'
-                  ? '排队中'
-                  : '生成中',
+                  ? tr('lib.genQueue.queued')
+                  : tr('lib.genQueue.generating'),
           },
           { silent: true },
         )
@@ -395,7 +410,7 @@ export function syncEpisodeVideoJobs(input: {
             title: existing.title,
             subtype: existing.subtype,
             status: 'failed',
-            error: latestTask?.error_message || '任务已中断，请重新生成',
+            error: latestTask?.error_message || tr('lib.genQueue.interrupted'),
           },
           { silent: true },
         )
@@ -417,14 +432,14 @@ export function syncEpisodeVideoJobs(input: {
       (raw === 'cancelled' || status === 'failed'
         ? latestTask?.error_message || undefined
         : undefined) ||
-      (raw === 'cancelled' ? '已取消' : undefined)
+      (raw === 'cancelled' ? tr('lib.genQueue.cancelled') : undefined)
 
     const messageFromTask =
       activeTask && status === 'running'
         ? activeTask.current_step_key === 'assets'
-          ? '生成参考图…'
-          : item.message || (item.phase === 'assets' ? '生成参考图…' : '生成中')
-        : item.message || (item.phase === 'assets' ? '生成参考图…' : undefined)
+          ? tr('lib.genQueue.refImages')
+          : item.message || (item.phase === 'assets' ? tr('lib.genQueue.refImages') : tr('lib.genQueue.generating'))
+        : item.message || (item.phase === 'assets' ? tr('lib.genQueue.refImages') : undefined)
 
     upsertDramaGenJob(
       {
@@ -435,9 +450,9 @@ export function syncEpisodeVideoJobs(input: {
         episodeId: input.episodeId,
         taskId: boundTaskId,
         title: resolveVideoJobTitle(existing, input.episodeName, fragLabel(item.fragment_id)),
-        subtype: '分镜视频',
+        subtype: DRAMA_GEN_SUBTYPE_FRAGMENT_VIDEO,
         status,
-        message: status === 'queued' ? item.message || '排队中' : messageFromTask,
+        message: status === 'queued' ? item.message || tr('lib.genQueue.queued') : messageFromTask,
         error: errText,
       },
       { silent: true },
@@ -464,7 +479,7 @@ export function enqueueEpisodeVideoJobs(input: {
     .map((f) => ({
       fragment_id: f.id,
       status: 'queued',
-      message: '已入队',
+      message: tr('lib.genQueue.enqueued'),
     }))
   syncEpisodeVideoJobs({
     projectId: input.projectId,
@@ -513,7 +528,7 @@ async function pollActiveEpisodeVideoJobs(): Promise<void> {
   const active = jobs.filter(
     (job) =>
       job.kind === 'video' &&
-      job.subtype === '分镜视频' &&
+      job.subtype === DRAMA_GEN_SUBTYPE_FRAGMENT_VIDEO &&
       (job.status === 'queued' || job.status === 'running') &&
       typeof job.episodeId === 'number',
   )
@@ -536,7 +551,7 @@ async function pollActiveEpisodeVideoJobs(): Promise<void> {
         const tracked = jobs.filter(
           (job) =>
             job.kind === 'video' &&
-            job.subtype === '分镜视频' &&
+            job.subtype === DRAMA_GEN_SUBTYPE_FRAGMENT_VIDEO &&
             job.episodeId === episodeId,
         )
         const trackedIds = new Set(tracked.map((job) => job.targetId))
@@ -607,7 +622,7 @@ export function markVideoJobsCancelled(fragmentIds?: number[]): void {
     return {
       ...job,
       status: 'failed' as const,
-      error: '已取消',
+      error: tr('lib.genQueue.cancelled'),
       finishedAt: Date.now(),
     }
   })

@@ -15,6 +15,7 @@ import { CanvasNodeGeneratePanel } from './nodes/CanvasNodeGeneratePanel'
 import { CanvasNodePreviewModal } from './CanvasNodePreviewModal'
 import { CanvasNodeUploadBar } from './nodes/CanvasNodeUploadBar'
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../../lib/dramaVoiceBinding'
+import { tr } from '../../../i18n'
 
 /** 画布视频缩略：仅展示封面，不拦截单击（单击要选中并显示提示词面板） */
 function CanvasAssetVideoPreview({ src }: { src: string }) {
@@ -59,8 +60,8 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
   const footerLabel =
     data.kind === 'character'
       ? DRAMA_VOICE_BINDING_ENABLED && voiceLabel
-        ? `基础形象 · ${voiceLabel}`
-        : '基础形象'
+        ? `${tr('episode.canvas.baseLook')} · ${voiceLabel}`
+        : tr('episode.canvas.baseLook')
       : data.kind === 'scene'
         ? displayName
         : null
@@ -151,13 +152,13 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
             onBlur={commitRename}
             onKeyDown={handleRenameKeyDown}
             onMouseDown={(e) => e.stopPropagation()}
-            aria-label="节点名称"
+            aria-label={tr('episode.canvas.nodeName')}
           />
         ) : (
           <button
             type="button"
             className="fc-node-title nodrag nopan"
-            title="双击重命名"
+            title={tr('episode.canvas.dblClickRename')}
             onDoubleClick={startRename}
           >
             {displayName}
@@ -167,7 +168,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
 
       <div
         className={`fc-asset-card${canPreview ? ' is-previewable' : ''}`}
-        title={canPreview ? '双击放大预览' : undefined}
+        title={canPreview ? tr('episode.canvas.dblClickPreview') : undefined}
         onDoubleClick={handleCardDoubleClick}
       >
         <div className={`fc-asset-body is-${data.kind}`}>
@@ -177,16 +178,16 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
                 className="fc-text-editor nodrag nowheel"
                 value={data.textContent || ''}
                 onChange={handleTextChange}
-                placeholder="输入文本…"
+                placeholder={tr('episode.canvas.enterText')}
                 rows={4}
               />
             ) : (
-              <span>{data.textContent || data.label || '文本'}</span>
+              <span>{data.textContent || data.label || tr('episode.common.kind.text')}</span>
             )
           ) : data.generating ? (
             <div className="fc-generating">
               <Loader2 size={28} className="fc-spin" />
-              <span>生成中…</span>
+              <span>{tr('episode.canvas.generating')}</span>
             </div>
           ) : mediaSrc && data.kind === 'video' && isPlayableVideoUrl(mediaSrc) ? (
             <CanvasAssetVideoPreview src={mediaSrc} />
@@ -212,8 +213,8 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
             <button
               type="button"
               className="fc-asset-expand nodrag nopan nowheel"
-              title="放大预览"
-              aria-label={`放大预览 ${displayName}`}
+              title={tr('episode.canvas.zoomPreview')}
+              aria-label={tr('episode.canvas.zoomPreviewN', { name: displayName })}
               onClick={handleExpandClick}
               onPointerDown={(event) => event.stopPropagation()}
             >

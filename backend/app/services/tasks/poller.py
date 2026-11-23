@@ -11,6 +11,7 @@ from sqlalchemy import or_, select
 
 from app.config import get_settings
 from app.database import AsyncSessionLocal
+from app.i18n import _, use_locale
 from app.models_tasks import TaskRun
 from app.services.billing.settlement import settle_task
 from app.services.tasks.service import append_task_event
@@ -162,8 +163,15 @@ async def _select_and_poll_due() -> None:
     await asyncio.gather(*[_guarded_poll(task_id) for task_id in task_ids])
 
 
-# 对单条已注册上游任务执行一次非阻塞状态查询。
+# 对单条已注册上游任务执行一次非阻塞状态查询（按任务发起人界面语言写文案）。
 async def _poll_one_task(task_id: int) -> None:
+    from app.services.tasks.executor import _load_task_locale
+
+    with use_locale(await _load_task_locale(task_id)):
+        await _poll_one_task_in_locale(task_id)
+
+
+async def _poll_one_task_in_locale(task_id: int) -> None:
     from app.services.drama.jobs import poll_fragment_video_task
 
     async with AsyncSessionLocal() as db:
@@ -173,7 +181,7 @@ async def _poll_one_task(task_id: int) -> None:
         if not task.provider_task_id:
             task.status = "failed"
             task.error_code = "missing_provider_task_id"
-            task.error_message = "缺少上游任务 ID，无法轮询"
+            task.error_message = _("缺少上游任务 ID，无法轮询")
             task.finished_at = datetime.now(UTC)
             await append_task_event(
                 db,
@@ -234,7 +242,8 @@ async def _poll_ephemeral_deferred_tasks() -> None:
     for row in rows:
         task_id = int(row.id)
         try:
-            await _poll_one_ephemeral_task(task_id, now=now, timeout_sec=timeout_sec)
+            with use_locale(getattr(row, "locale", None)):
+                await _poll_one_ephemeral_task(task_id, now=now, timeout_sec=timeout_sec)
         except asyncio.CancelledError:
             raise
         except Exception:  # noqa: BLE001
@@ -259,7 +268,7 @@ async def _poll_one_ephemeral_task(task_id: int, *, now, timeout_sec: float) -> 
         if started and (now - started).total_seconds() > timeout_sec:
             task.status = "failed"
             task.error_code = "poll_timeout"
-            task.error_message = "视频轮询超时，预扣已退回"
+            task.error_message = _("视频轮询超时，预扣已退回")
             task.finished_at = now
             await append_task_event(
                 db,

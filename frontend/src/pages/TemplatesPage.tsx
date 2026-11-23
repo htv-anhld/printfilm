@@ -6,9 +6,12 @@ import BillingErrorNotice from '../components/billing/BillingErrorNotice'
 import AppShell from '../components/layout/AppShell'
 import PillTabs from '../components/ui/PillTabs'
 import { CATEGORY_ORDER, HOME_CATEGORY_LABELS } from '../lib/categories'
+import { useI18n } from '../i18n'
+import { categoryLabel } from './studio/categoryLabel'
 
 export default function TemplatesPage() {
   const nav = useNavigate()
+  const { t } = useI18n()
   const [templates, setTemplates] = useState<Template[]>([])
   const [error, setError] = useState('')
   const [category, setCategory] = useState('全部')
@@ -23,28 +26,27 @@ export default function TemplatesPage() {
 
   const categoryKeys = useMemo(() => {
     const found = new Set<string>()
-    for (const t of templates) {
-      for (const c of t.category || []) {
+    for (const tpl of templates) {
+      for (const c of tpl.category || []) {
         if (CATEGORY_ORDER.includes(c)) found.add(c)
       }
     }
     return ['全部', ...CATEGORY_ORDER.filter((c) => found.has(c))]
   }, [templates])
 
-  const categoryLabels = categoryKeys.map((k) => HOME_CATEGORY_LABELS[k] || k)
-  const labelToKey = useMemo(() => {
-    const m = new Map<string, string>()
-    for (const k of categoryKeys) m.set(HOME_CATEGORY_LABELS[k] || k, k)
-    return m
-  }, [categoryKeys])
+  // 筛选 key 保持中文原值，只翻译展示名
+  const labelOf = (k: string) => (k === '全部' ? t('studio.category.all') : HOME_CATEGORY_LABELS[k] || k)
+  const categoryLabels = categoryKeys.map(labelOf)
+  const labelToKey = new Map<string, string>()
+  for (const k of categoryKeys) labelToKey.set(labelOf(k), k)
 
   const filtered = useMemo(() => {
     let list = templates
-    if (category !== '全部') list = list.filter((t) => (t.category || []).includes(category))
+    if (category !== '全部') list = list.filter((tpl) => (tpl.category || []).includes(category))
     if (q.trim()) {
       const s = q.trim().toLowerCase()
       list = list.filter(
-        (t) => t.name.toLowerCase().includes(s) || t.description.toLowerCase().includes(s),
+        (tpl) => tpl.name.toLowerCase().includes(s) || tpl.description.toLowerCase().includes(s),
       )
     }
     return list
@@ -62,41 +64,41 @@ export default function TemplatesPage() {
     <AppShell active="templates">
       <div className="pf-section-head">
         <div>
-          <h2>模板库</h2>
-          <p>为科普与知识短片挑选画面语言</p>
+          <h2>{t('studio.templates.title')}</h2>
+          <p>{t('studio.templates.subtitle')}</p>
         </div>
       </div>
       <div className="pf-search" style={{ maxWidth: 420, marginBottom: '1rem' }}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="搜索模板名称或描述"
+          placeholder={t('studio.templates.searchPlaceholder')}
         />
       </div>
       <PillTabs
         items={categoryLabels}
-        value={HOME_CATEGORY_LABELS[category] || category}
+        value={labelOf(category)}
         onChange={(label) => setCategory(labelToKey.get(label) || '全部')}
-        ariaLabel="模板分类"
+        ariaLabel={t('studio.templates.categoryAria')}
       />
       {error ? <BillingErrorNotice message={error} /> : null}
       <div className="pf-template-grid" style={{ marginTop: '1rem' }}>
-        {filtered.map((t) => (
-          <button key={t.id} type="button" className="pf-template-card" onClick={() => openTemplate(t)}>
-            <img src={api.assetUrl(t.preview_cover)} alt="" />
+        {filtered.map((tpl) => (
+          <button key={tpl.id} type="button" className="pf-template-card" onClick={() => openTemplate(tpl)}>
+            <img src={api.assetUrl(tpl.preview_cover)} alt="" />
             <div className="body">
-              <h3>{t.name}</h3>
-              <p>{t.description}</p>
+              <h3>{tpl.name}</h3>
+              <p>{tpl.description}</p>
               <div className="pf-tags">
-                {t.category.map((c) => (
-                  <span key={c}>{c}</span>
+                {tpl.category.map((c) => (
+                  <span key={c}>{categoryLabel(t, c)}</span>
                 ))}
               </div>
             </div>
           </button>
         ))}
       </div>
-      {filtered.length === 0 ? <p className="pf-muted">没有匹配的模板。</p> : null}
+      {filtered.length === 0 ? <p className="pf-muted">{t('studio.templates.empty')}</p> : null}
     </AppShell>
   )
 }

@@ -10,6 +10,7 @@ import { getViewportCenterNodePosition } from './canvasNormalize'
 import { CANVAS_NODE_SIZE, type CanvasNodeKind } from './canvasTypes'
 import { FreeCanvasFlow } from './FreeCanvasFlow'
 import './canvas.css'
+import { tr } from '../../../i18n'
 
 type CanvasWorkspaceProps = {
   projectId: number
@@ -75,7 +76,7 @@ function CanvasWorkspaceContent({
       ) : null}
       {loading ? (
         <p className="fc-error-toast" style={{ background: '#fff', color: '#64748b' }}>
-          加载画布…
+          {tr('episode.canvas.loading')}
         </p>
       ) : null}
     </div>

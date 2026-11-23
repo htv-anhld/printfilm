@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { tr } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { formatAccountId } from "@/lib/admin-account";
 
@@ -35,15 +36,15 @@ function defaultLabel(kind: EntityKind, id: number): string {
     case "user":
       return `ID：${formatAccountId(id)}`;
     case "project":
-      return `科普#${id}`;
+      return tr("common.entity.project", { id });
     case "drama":
-      return `漫剧#${id}`;
+      return tr("common.entity.drama", { id });
     case "drama_asset":
-      return `资产#${id}`;
+      return tr("common.entity.asset", { id });
     case "task":
-      return `任务#${id}`;
+      return tr("common.entity.task", { id });
     case "order":
-      return `订单#${id}`;
+      return tr("common.entity.order", { id });
     default:
       return String(id);
   }

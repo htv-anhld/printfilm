@@ -8,6 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_admin
 from app.models import User
@@ -165,7 +166,7 @@ async def get_drama_fragment(
         )
     ).first()
     if not row:
-        raise HTTPException(status_code=404, detail="漫剧分镜不存在")
+        raise HTTPException(status_code=404, detail=_("漫剧分镜不存在"))
     frag, episode, project, email = row
     asset_ids = [int(ref.asset_id) for ref in (frag.asset_references or [])]
     return AdminDramaFragmentDetailOut(

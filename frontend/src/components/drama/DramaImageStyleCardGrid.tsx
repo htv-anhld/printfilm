@@ -2,6 +2,7 @@
 import { Check } from 'lucide-react'
 import { DramaImageStylePreviewImg } from './DramaImageStylePreviewImg'
 import { IMAGE_STYLE_OPTIONS, type ImageStyleId } from '../../lib/dramaImageStyles'
+import { useI18n } from '../../i18n'
 
 type Props = {
   value: ImageStyleId | ''
@@ -16,9 +17,11 @@ export function DramaImageStyleCardGrid({
   value,
   onChange,
   allowNone = true,
-  noneLabel = '无风格',
+  noneLabel: noneLabelProp,
   className,
 }: Props) {
+  const { t } = useI18n()
+  const noneLabel = noneLabelProp ?? t('drama.styleModal.none')
   return (
     <div className={['drama-style-modal-grid', className].filter(Boolean).join(' ')}>
       {allowNone ? (

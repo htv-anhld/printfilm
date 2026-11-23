@@ -12,6 +12,13 @@ from app.services.seedance_segments import (
     classify_voice_body,
     is_production_meta_line,
 )
+from app.services.drama.content_locale import (
+    EMPTY_SHOT_ALIAS_RE,
+    is_narrator_name,
+    is_visual_label_alias_line,
+    is_zh,
+    text_units,
+)
 from app.services.drama.fragment_asset_limit import (
     FRAGMENT_MAX_CHARACTERS,
     FRAGMENT_MAX_PROPS,
@@ -19,17 +26,26 @@ from app.services.drama.fragment_asset_limit import (
     strip_unlisted_asset_mentions,
 )
 
-# 场次标题：### 场1-2 / ### 场景1-2
-SCENE_HEADER_RE = re.compile(r"^###\s*场(?:景)?\s*\d+\s*[-－—]\s*\d+\s*$")
+# 场次标题：### 场1-2 / ### 场景1-2（兼容 LLM 译成 ### Scene 1-2 / ### Cảnh 1-2）
+SCENE_HEADER_RE = re.compile(r"^###\s*(?:场(?:景)?|(?i:scene|cảnh))\s*\d+\s*[-－—]\s*\d+\s*$")
 # 兼容无空格、或标题后带说明
-SCENE_HEADER_LOOSE_RE = re.compile(r"^###\s*场(?:景)?\s*\d+\s*[-－—]\s*\d+")
-# 时间内外景行
+SCENE_HEADER_LOOSE_RE = re.compile(r"^###\s*(?:场(?:景)?|(?i:scene|cảnh))\s*\d+\s*[-－—]\s*\d+")
+# 时间内外景行（兼容英/越：INT. 教室 / NGÀY - NỘI - Phòng học）
 SCENE_LOCATION_RE = re.compile(
-    r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?\s*(?:内|外|内外)\s+(.+)$"
+    r"^(?:"
+    r"(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?\s*(?:内|外|内外)"
+    r"|(?i:(?:(?:day|night|morning|evening|dawn|dusk|ngày|đêm|sáng|trưa|chiều|tối)\s*[-–—.,/]?\s*)?"
+    r"(?:int\.?\s*/\s*ext|int|ext|nội|ngoại)\.?(?:\s*cảnh)?\s*[-–—.,/]?)"
+    r")\s+(.+)$"
 )
-# 出场人物行
-CAST_LINE_RE = re.compile(r"^出场人物[：:]\s*(.+)$")
-EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。"}
+# 出场人物行（兼容 Characters: / Cast: / Nhân vật:）
+CAST_LINE_RE = re.compile(r"^(?:出场人物|(?i:characters|cast|nhân vật(?: xuất hiện)?))[：:]\s*(.+)$")
+EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。", "none", "None", "không", "Không", "không có", "Không có"}
+# 英文场头尾部时段（INT. HALL - NIGHT）
+_LOCATION_TIME_SUFFIX_RE = re.compile(
+    r"\s*[-–—,]\s*(?:day|night|morning|evening|dawn|dusk|ngày|đêm|sáng|trưa|chiều|tối)\.?$",
+    re.IGNORECASE,
+)
 
 FRAGMENT_DURATION_MIN = 3
 # 单行/单块 @duration 上限（对白、空镜等；整镜硬上限见 FRAGMENT_TOTAL_MAX）
@@ -42,9 +58,17 @@ FRAGMENT_TOTAL_MAX = 15
 EPISODE_FRAGMENT_MAX = 10
 EPISODE_DURATION_BUDGET_SEC = 90
 # 重要角色：roleType / title / tags 命中则需要人物介绍叠字
-IMPORTANT_ROLE_RE = re.compile(r"主角|男主|女主|重要|反派|BOSS|核心|主人公")
+IMPORTANT_ROLE_RE = re.compile(
+    r"主角|男主|女主|重要|反派|BOSS|核心|主人公"
+    r"|(?i:protagonist|main character|\blead\b|heroine|\bhero\b|antagonist|villain"
+    r"|nhân vật chính|nam chính|nữ chính|phản diện|quan trọng)"
+)
 # 次要定位：默认不介绍
-MINOR_ROLE_RE = re.compile(r"群演|路人|群众|龙套|配角|出场人物|兵丁|侍卫|士兵")
+MINOR_ROLE_RE = re.compile(
+    r"群演|路人|群众|龙套|配角|出场人物|兵丁|侍卫|士兵"
+    r"|(?i:\bextras?\b|passer-?by|crowd|supporting|minor|soldier|guard"
+    r"|quần chúng|người qua đường|vai phụ|nhân vật phụ|binh lính|thị vệ|lính gác)"
+)
 # 群体/无名角色名：不介绍
 MINOR_NAME_RE = re.compile(r"(兵|百姓|群众|路人|侍从|侍卫|士兵|甲|乙|众人|百姓们)$")
 # 无意义 intro 占位文案
@@ -80,6 +104,7 @@ def normalize_scene_location_name(raw: str) -> str:
     # 去掉斜杠说明、压缩空白
     primary = re.split(r"[／/]", raw)[0].strip()
     cleaned = re.sub(r"\s+", " ", primary).strip()
+    cleaned = _LOCATION_TIME_SUFFIX_RE.sub("", cleaned).strip()
     if len(cleaned) < 2 or len(cleaned) > 40:
         return ""
     return cleaned
@@ -391,6 +416,9 @@ def _is_visual_description_line(line: str) -> bool:
         return True
     if body.startswith("空镜") or body.startswith("△"):
         return True
+    # 前端 en/vi 景别标签（Wide shot: / Viễn cảnh: …）
+    if is_visual_label_alias_line(body):
+        return True
     return False
 
 
@@ -412,7 +440,7 @@ def _split_dialogue_action_line(line: str) -> list[str]:
     speaker = action_match.group("speaker").strip()
     action = action_match.group("action").strip()
     text = action_match.group("text").strip()
-    if speaker == "旁白" or VOICE_TYPE_ACTION_RE.match(action):
+    if speaker == "旁白" or is_narrator_name(speaker) or VOICE_TYPE_ACTION_RE.match(action):
         return [trimmed]
     visual = f"{speaker}（{action}）。"
     dialogue = f"{speaker}：{text}"
@@ -475,6 +503,8 @@ def _format_narrative_line(line: str) -> str:
         return trimmed
     if trimmed.startswith("【空镜"):
         return f"【空镜·可仅环境音与 BGM】{trimmed}"
+    if EMPTY_SHOT_ALIAS_RE.match(trimmed):
+        return f"【空镜·可仅环境音与 BGM】{trimmed}"
     if _is_visual_description_line(trimmed):
         if trimmed.startswith("△") or trimmed.startswith("Δ"):
             body = trimmed.replace("Δ", "△", 1) if trimmed.startswith("Δ") else trimmed
@@ -494,6 +524,8 @@ def _format_narrative_line(line: str) -> str:
         return f"{DIALOGUE_PREFIX}{trimmed}"
     colon_speaker = re.match(r"^([^：:\n]{1,16})[：:](.+)$", trimmed)
     if colon_speaker and not VISUAL_SHOT_LABEL_RE.match(trimmed):
+        if is_narrator_name(colon_speaker.group(1)) and colon_speaker.group(1).strip() != "旁白":
+            return f"【旁白·慢速清晰·同步字幕】{colon_speaker.group(2).strip()}"
         return f"{DIALOGUE_PREFIX}{trimmed}"
     # 纯画面/动作描述：明确禁止配音，避免被全局字幕 cue 误读为旁白
     return f"{VISUAL_PREFIX}{trimmed}"
@@ -514,18 +546,18 @@ def _estimate_line_duration(line: str) -> int:
         return 0
     if trimmed.startswith("【画面") or trimmed.startswith(VISUAL_PREFIX):
         body = re.sub(r"^【[^】]*】", "", trimmed).strip()
-        return min(8, max(2, len(re.sub(r"\s+", "", body)) // 14))
+        return min(8, max(2, text_units(body) // 14))
     if trimmed.startswith("△"):
         return 2
     if trimmed.startswith("【空镜"):
-        return min(6, max(3, len(re.sub(r"\s+", "", _speakable_body(trimmed))) // 16))
+        return min(6, max(3, text_units(_speakable_body(trimmed)) // 16))
     if "旁白" in trimmed and trimmed.startswith("【旁白"):
-        chars = len(re.sub(r"\s+", "", _speakable_body(trimmed)))
+        chars = text_units(_speakable_body(trimmed))
         return min(12, max(3, (chars + 3) // 4))
     if trimmed.startswith("【对白") or "内心独白" in trimmed:
-        chars = len(re.sub(r"\s+", "", _speakable_body(trimmed)))
+        chars = text_units(_speakable_body(trimmed))
         return min(12, max(3, (chars + 3) // 4))
-    chars = len(re.sub(r"\s+", "", _speakable_body(trimmed)))
+    chars = text_units(_speakable_body(trimmed))
     return min(8, max(2, (chars + 3) // 5))
 
 
@@ -585,6 +617,27 @@ def _infer_bgm_mood(hints: str) -> str:
     return "贴合剧情氛围的轻量配乐，情绪随画面起伏"
 
 
+def _generic_intro_variants() -> tuple[frozenset[str], tuple[str, ...]]:
+    """占位文案的 en/vi 译文（stub 角色按内容语言写入，需同样识别为占位）。"""
+    from app.i18n import translate
+
+    words: set[str] = set()
+    prefixes: list[str] = []
+    for loc in ("en", "vi"):
+        for src in GENERIC_INTRO_TEXTS:
+            val = translate(src, loc)
+            if val != src:
+                words.add(re.sub(r"\s+", "", val).lower())
+        stub = translate("剧本分集出场人物「{name}」", loc, name="\x00")
+        head = stub.split("\x00", 1)[0]
+        if head and head != "剧本分集出场人物「":
+            prefixes.append(re.sub(r"\s+", "", head).lower())
+        arc = translate("出场 -> 卷入冲突 -> 结局余韵", loc)
+        if arc != "出场 -> 卷入冲突 -> 结局余韵":
+            prefixes.append(re.sub(r"\s+", "", arc).lower())
+    return frozenset(words), tuple(p for p in prefixes if p)
+
+
 def _is_generic_intro_text(text: str) -> bool:
     cleaned = re.sub(r"\s+", "", (text or "").strip())
     if not cleaned:
@@ -595,11 +648,29 @@ def _is_generic_intro_text(text: str) -> bool:
         return True
     if STUB_CAST_INTRO_RE.search(cleaned):
         return True
+    if not any("\u4e00" <= ch <= "\u9fff" for ch in cleaned):
+        words, prefixes = _generic_intro_variants()
+        low = cleaned.lower()
+        if low in words or any(low.startswith(p) for p in prefixes):
+            return True
     return False
 
 
 def _shorten_intro(text: str, max_len: int = 24) -> str:
     # 叠字描述截断：去空白、取首句、限长
+    if not is_zh():
+        # 拉丁文字：保留词间空格，按西文句读切首句，字符上限放宽
+        spaced = re.sub(r"\s+", " ", (text or "").strip())
+        if not spaced:
+            return ""
+        first_sent = re.split(r"[。！？；;!?]|\.(?=\s|$)", spaced, maxsplit=1)[0].strip() or spaced
+        limit = int(max_len * 2.5)
+        if len(first_sent) > limit:
+            cut = first_sent[: limit - 1]
+            if " " in cut:
+                cut = cut.rsplit(" ", 1)[0]
+            return cut.rstrip(" ,;:-") + "…"
+        return first_sent
     cleaned = re.sub(r"\s+", "", (text or "").strip())
     if not cleaned:
         return ""
@@ -647,10 +718,12 @@ def _extract_intro_sentence_for_name(name: str, text: str) -> str | None:
     if not char_name or char_name not in blob:
         return None
     candidates: list[str] = []
-    for sent in re.split(r"[。！？\n]", blob):
+    zh = is_zh()
+    splitter = r"[。！？\n]" if zh else r"[。！？!?\n]|\.(?=\s|$)"
+    for sent in re.split(splitter, blob):
         if char_name not in sent:
             continue
-        cleaned = re.sub(r"\s+", "", sent.strip())
+        cleaned = re.sub(r"\s+", "", sent.strip()) if zh else re.sub(r"\s+", " ", sent.strip())
         if len(cleaned) < 6:
             continue
         if CAST_LINE_RE.match(cleaned) or cleaned.startswith("出场人物"):
@@ -661,7 +734,8 @@ def _extract_intro_sentence_for_name(name: str, text: str) -> str | None:
     if not candidates:
         return None
     # 叠字宜短：优先 12~36 字的句子
-    best = min(candidates, key=lambda s: abs(len(s) - 22))
+    ideal = 22 if zh else 55
+    best = min(candidates, key=lambda s: abs(len(s) - ideal))
     return _shorten_intro(best, max_len=28)
 
 

@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { AgentSkillPicker } from './AgentSkillPicker'
 import { useAgentSkillSelection } from '../../hooks/useAgentSkillSelection'
+import { useI18n } from '../../i18n'
 
 type FragmentPlanSkillModalProps = {
   open: boolean
@@ -16,12 +17,15 @@ type FragmentPlanSkillModalProps = {
 /** 覆盖分镜前让用户勾选 Skill */
 export function FragmentPlanSkillModal({
   open,
-  title = 'AI 重新分镜',
+  title: titleProp,
   message,
-  confirmText = '开始分镜',
+  confirmText: confirmTextProp,
   onCancel,
   onConfirm,
 }: FragmentPlanSkillModalProps) {
+  const { t } = useI18n()
+  const title = titleProp ?? t('drama.planSkill.title')
+  const confirmText = confirmTextProp ?? t('drama.outlineEp.startStoryboard')
   const { skills, selectedIds, toggleSkill, selectAll, selectNone, uploadSkill, uploading, uploadError } =
     useAgentSkillSelection()
 
@@ -67,7 +71,7 @@ export function FragmentPlanSkillModal({
           </div>
         </div>
         <div className="pf-dialog-skill-block">
-          <div className="pf-dialog-skill-label">本次使用的 Skill</div>
+          <div className="pf-dialog-skill-label">{t('drama.planSkill.label')}</div>
           <AgentSkillPicker
             skills={skills}
             selectedIds={selectedIds}
@@ -77,12 +81,12 @@ export function FragmentPlanSkillModal({
             onUpload={(file) => void uploadSkill(file)}
             uploading={uploading}
             uploadError={uploadError}
-            emptyText="还没有 Skill，可上传 .md"
+            emptyText={t('drama.planSkill.empty')}
           />
         </div>
         <div className="pf-dialog-actions">
           <button type="button" className="pf-dialog-btn pf-dialog-btn-ghost" onClick={onCancel}>
-            取消
+            {t('drama.common.cancel')}
           </button>
           <button type="submit" className="pf-dialog-btn pf-dialog-btn-danger">
             {confirmText}

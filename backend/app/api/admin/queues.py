@@ -22,7 +22,7 @@ async def admin_queues(
     db: AsyncSession = Depends(get_db),
 ) -> AdminQueuesOut:
     # 兼容旧路径：返回 task_runs 聚合统计，不再暴露历史 worker 控制项
-    _ = detail
+    del detail
     settings = get_settings()
     stats = await get_task_stats_admin(db)
     runtime = runtime_summary()

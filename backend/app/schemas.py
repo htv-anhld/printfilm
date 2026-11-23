@@ -3,15 +3,27 @@ from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.i18n import SUPPORTED_LOCALES, normalize_locale
 from app.schemas_common import PageMeta
 from app.schemas_tasks import TaskRunBriefOut
+
+
+def _validate_content_locale(value: str | None) -> str | None:
+    """内容语言 zh | en | vi（兼容 zh-CN / vi-VN 等写法）；空值视为未指定。"""
+    if value is None or not str(value).strip():
+        return None
+    loc = normalize_locale(str(value), fallback="")
+    if loc not in SUPPORTED_LOCALES:
+        raise ValueError("content_locale must be one of: zh, en, vi")
+    return loc
 
 
 # ---- Auth ----
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6, max_length=64)
-    nickname: str = Field(default="创作者", max_length=64)
+    # 为空时由注册接口按请求语言填默认昵称
+    nickname: str | None = Field(default=None, max_length=64)
 
 
 class LoginRequest(BaseModel):
@@ -132,7 +144,8 @@ class ShotUpdate(BaseModel):
 
 class ProjectCreate(BaseModel):
     template_id: str
-    title: str = "未命名作品"
+    # 为空时由创建接口按请求语言填「未命名作品」
+    title: str | None = None
     source_type: str = Field(default="theme", pattern="^(theme|script)$")
     source_text: str = Field(min_length=2, max_length=20000)
     resolution_mode: str = Field(default="preview", pattern="^(preview|hd)$")
@@ -149,6 +162,10 @@ class ProjectCreate(BaseModel):
     image_model: str | None = Field(default=None, max_length=64)
     video_model: str | None = Field(default=None, max_length=64)
     ref_image_url: str | None = None
+    # AI 产出内容语言（剧本/旁白/字幕）；不传则取请求界面语言
+    content_locale: str | None = Field(default=None, max_length=16)
+
+    _norm_content_locale = field_validator("content_locale")(_validate_content_locale)
 
 
 class ProjectUpdate(BaseModel):
@@ -173,6 +190,9 @@ class ProjectUpdate(BaseModel):
     subtitle_preset: str | None = Field(default=None, max_length=32)
     ref_image_url: str | None = None
     cover_url: str | None = Field(default=None, max_length=1024)
+    content_locale: str | None = Field(default=None, max_length=16)
+
+    _norm_content_locale = field_validator("content_locale")(_validate_content_locale)
 
 
 class ProjectOut(BaseModel):
@@ -199,6 +219,7 @@ class ProjectOut(BaseModel):
     image_model: str = ""
     video_model: str = ""
     ref_image_url: str | None
+    content_locale: str | None = "zh"
     created_at: datetime
     updated_at: datetime
     shots: list[ShotOut] = []
@@ -218,6 +239,7 @@ class ProjectListItem(BaseModel):
     error_msg: str | None = None
     pipeline_mode: str = "full"
     output_ratio: str = ""
+    content_locale: str | None = "zh"
     published: bool = False
     created_at: datetime
     updated_at: datetime | None = None
@@ -233,6 +255,8 @@ class ProjectDownloadRequest(BaseModel):
 class ContentExpandRequest(BaseModel):
     topic: str = Field(default="", max_length=2000)
     mode: str = Field(default="theme", pattern="^(theme|script)$")
+    # 生成内容所用语言（zh | en | vi）；缺省跟随界面语言
+    content_locale: str | None = Field(default=None, pattern="^(zh|en|vi)$")
 
 
 class ContentExpandOut(BaseModel):

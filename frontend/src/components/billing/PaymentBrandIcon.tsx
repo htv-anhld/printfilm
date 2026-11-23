@@ -1,3 +1,5 @@
+import { tr } from '../../i18n'
+
 type PayBrand = 'alipay' | 'wxpay' | 'unionpay'
 
 type Props = {
@@ -7,10 +9,25 @@ type Props = {
   className?: string
 }
 
-const BRAND_META: Record<PayBrand, { src: string; alt: string }> = {
-  alipay: { src: '/payment/alipay.svg', alt: '支付宝' },
-  wxpay: { src: '/payment/wechatpay.svg', alt: '微信支付' },
-  unionpay: { src: '/payment/unionpay.svg', alt: '银联支付' },
+const BRAND_META: Record<PayBrand, { src: string; readonly alt: string }> = {
+  alipay: {
+    src: '/payment/alipay.svg',
+    get alt() {
+      return tr('billing.brand.alipay')
+    },
+  },
+  wxpay: {
+    src: '/payment/wechatpay.svg',
+    get alt() {
+      return tr('billing.brand.wxpay')
+    },
+  },
+  unionpay: {
+    src: '/payment/unionpay.svg',
+    get alt() {
+      return tr('billing.brand.unionpay')
+    },
+  },
 }
 
 /** 支付渠道品牌图标 */

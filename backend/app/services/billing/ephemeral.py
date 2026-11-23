@@ -14,6 +14,7 @@ from app.schemas_tasks import TaskCreateRequest, TaskEventCreate, TaskStepCreate
 from sqlalchemy import select
 
 from app.config import get_settings
+from app.i18n import _, get_locale
 from app.services.billing.context import billing_scope
 from app.services.billing.settlement import freeze_for_task, settle_task
 from app.services.billing.usage import record_line
@@ -60,6 +61,7 @@ async def create_ephemeral_task_row(
         fragment_id=fragment_id,
         asset_id=asset_id,
         episode_id=episode_id,
+        locale=get_locale(),
     )
     db.add(task)
     await db.flush()
@@ -72,7 +74,7 @@ async def create_ephemeral_task_row(
                 event_type="task.created",
                 status=task.status,
                 phase=task.current_step_key,
-                message=f"轻量任务 {task_type}",
+                message=_("轻量任务 {task_type}", task_type=task_type),
                 payload={"ephemeral": True},
             ),
         )
@@ -119,7 +121,7 @@ async def run_billed_ephemeral(
     except ValueError:
         task.status = "failed"
         task.error_code = "insufficient_balance"
-        task.error_message = "余额不足"
+        task.error_message = _("余额不足")
         # 未预扣成功，保持 none，勿标 skipped（skipped 表示全局关闭计费）
         task.billing_status = "none"
         await db.flush()
@@ -133,7 +135,7 @@ async def run_billed_ephemeral(
         task.id,
         event_type="task.started",
         status=task.status,
-        message="轻量任务开始",
+        message=_("轻量任务开始"),
     )
     await db.flush()
 
@@ -150,7 +152,7 @@ async def run_billed_ephemeral(
             task.id,
             event_type="task.completed",
             status=task.status,
-            message="轻量任务完成",
+            message=_("轻量任务完成"),
         )
     except Exception as exc:
         task.status = "failed"
@@ -222,7 +224,7 @@ async def run_billed_ephemeral_deferred(
     except ValueError:
         task.status = "failed"
         task.error_code = "insufficient_balance"
-        task.error_message = "余额不足"
+        task.error_message = _("余额不足")
         task.billing_status = "none"
         await db.flush()
         raise
@@ -235,7 +237,7 @@ async def run_billed_ephemeral_deferred(
         task.id,
         event_type="task.started",
         status=task.status,
-        message="轻量视频任务开始",
+        message=_("轻量视频任务开始"),
     )
     await db.flush()
 
@@ -245,7 +247,7 @@ async def run_billed_ephemeral_deferred(
             result = await executor()
         provider_id = _extract_provider_task_id(result)
         if not provider_id:
-            raise RuntimeError("上游未返回 task_id")
+            raise RuntimeError(_("上游未返回 task_id"))
         task.status = "awaiting_poll"
         task.provider_task_id = provider_id
         task.progress_percent = 30
@@ -256,7 +258,7 @@ async def run_billed_ephemeral_deferred(
             task.id,
             event_type="task.submitted",
             status=task.status,
-            message="已提交上游，等待轮询",
+            message=_("已提交上游，等待轮询"),
             payload={"provider_task_id": provider_id},
         )
     except Exception as exc:
@@ -373,12 +375,12 @@ async def settle_deferred_video_poll(
             task.id,
             event_type="task.completed",
             status=task.status,
-            message="视频生成完成",
+            message=_("视频生成完成"),
         )
     else:
         task.status = "failed"
         task.error_code = "upstream_failed"
-        task.error_message = (error or "生成失败")[:500]
+        task.error_message = (error or _("生成失败"))[:500]
         task.finished_at = now
         await append_task_event(
             db,

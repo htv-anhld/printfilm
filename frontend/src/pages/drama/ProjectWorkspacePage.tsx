@@ -19,6 +19,7 @@ import { isCanvasWorkflow } from '../../lib/dramaWorkflow'
 import { AssetsStep } from './AssetsStep'
 import { OutlineStep } from './OutlineStep'
 import RequireAuth from './RequireAuth'
+import { tr, useI18n } from '../../i18n'
 import './drama.css'
 
 export default function ProjectWorkspacePage() {
@@ -35,6 +36,7 @@ function WorkspaceInner() {
   const id = Number(projectId)
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useI18n()
   /*
    * project 项目详情
    * activeStep 当前步骤（大纲 / 分集）
@@ -62,7 +64,7 @@ function WorkspaceInner() {
     if (normalized && isEpisodesRouteStep(normalized)) {
       void resolveStoryboardPath(id)
         .then((path) => navigate(path, { replace: true }))
-        .catch((err) => setError(err instanceof Error ? err.message : '无法进入分镜'))
+        .catch((err) => setError(err instanceof Error ? err.message : tr('drama.workspace.enterStoryboardFailed')))
       return
     }
     if (normalized && isProjectStepKey(normalized)) {
@@ -97,7 +99,7 @@ function WorkspaceInner() {
             if (isEpisodesRouteStep(initial)) {
               void resolveStoryboardPath(id)
                 .then((path) => navigate(path, { replace: true }))
-                .catch((err) => setError(err instanceof Error ? err.message : '无法进入分镜'))
+                .catch((err) => setError(err instanceof Error ? err.message : tr('drama.workspace.enterStoryboardFailed')))
               return
             }
             setActiveStep(initial)
@@ -105,7 +107,7 @@ function WorkspaceInner() {
           locationApplied.current = true
         }
       })
-      .catch((err) => setError(err instanceof Error ? err.message : '加载失败'))
+      .catch((err) => setError(err instanceof Error ? err.message : tr('drama.common.loadFailed')))
       .finally(() => setLoading(false))
   }, [id])
 
@@ -138,7 +140,7 @@ function WorkspaceInner() {
       setProject(updated)
       setTitleDraft(updated.title)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '标题保存失败')
+      setError(err instanceof Error ? err.message : tr('drama.workspace.titleSaveFailed'))
     } finally {
       setEditingTitle(false)
     }
@@ -147,7 +149,7 @@ function WorkspaceInner() {
   if (!Number.isFinite(id) || id <= 0) {
     return (
       <AppShell active="drama" flush>
-        <div className="drama-workspace-status">项目 ID 无效</div>
+        <div className="drama-workspace-status">{t('drama.workspace.invalidId')}</div>
       </AppShell>
     )
   }
@@ -155,7 +157,7 @@ function WorkspaceInner() {
   if (loading) {
     return (
       <AppShell active="drama" flush>
-        <div className="drama-workspace-status">加载中…</div>
+        <div className="drama-workspace-status">{t('drama.common.loading')}</div>
       </AppShell>
     )
   }
@@ -171,7 +173,7 @@ function WorkspaceInner() {
   if (!project) {
     return (
       <AppShell active="drama" flush>
-        <div className="drama-workspace-status">项目不存在</div>
+        <div className="drama-workspace-status">{t('drama.workspace.notFound')}</div>
       </AppShell>
     )
   }
@@ -184,7 +186,7 @@ function WorkspaceInner() {
             <button
               type="button"
               className="drama-icon-btn"
-              aria-label="返回"
+              aria-label={t('drama.workspace.back')}
               onClick={() => navigate('/drama/dramas')}
             >
               <ChevronLeft size={20} strokeWidth={1.75} />
@@ -213,7 +215,7 @@ function WorkspaceInner() {
 
           <div className="drama-workspace-top-right">
             {project.usage ? (
-              <span className="drama-usage-chip" title="本剧累计费用与生成次数">
+              <span className="drama-usage-chip" title={t('drama.list.usageTitle')}>
                 {formatDramaUsageBrief(project.usage)}
               </span>
             ) : null}
@@ -223,7 +225,7 @@ function WorkspaceInner() {
               onClick={() => setAssetsOpen((open) => !open)}
             >
               <Boxes size={15} strokeWidth={2} aria-hidden />
-              资产库
+              {t('drama.workspace.assetLibrary')}
             </button>
           </div>
         </header>

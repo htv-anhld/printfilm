@@ -79,3 +79,8 @@ frontend/dist/
 .claude/
 .cursor/
 .work/
+
+# Playwright MCP scratch output（本地调试产物）
+.playwright-mcp/
+# 机器本地说明（不上库）
+CLAUDE.local.md

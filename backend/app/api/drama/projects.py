@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.i18n import _, get_locale, normalize_locale
 from app.deps import get_current_user
 from app.models import UsageEvent, User
 from app.models_drama import DramaAsset, DramaEpisode, DramaProject, DramaScript
@@ -21,6 +22,7 @@ from app.schemas_drama import (
     DramaScriptOut,
 )
 from app.services.drama.access import get_owned_drama_project
+from app.services.drama.content_locale import content_text, project_content_locale, set_content_locale
 from app.services.drama.generation import project_link_last_frame_enabled
 from app.services.drama.project_cover import resolve_drama_project_cover
 from app.services.drama.usage_stats import (
@@ -52,6 +54,7 @@ def _project_out(project: DramaProject, usage: DramaProjectUsageStats | None = N
         asset_count=len(project.assets) if project.assets is not None else 0,
         episode_count=len(project.episodes) if project.episodes is not None else 0,
         workflow=resolve_drama_workflow(project),
+        content_locale=project_content_locale(project),
         usage=usage or empty_usage_stats(),
     )
 
@@ -92,6 +95,7 @@ async def list_projects(
                 cover_url=cover_url,
                 cover_pending=cover_pending and not cover_url,
                 workflow=resolve_drama_workflow(p),
+                content_locale=project_content_locale(p),
                 usage=usage_map.get(p.id) or empty_usage_stats(),
             )
         )
@@ -107,8 +111,13 @@ async def create_project(
     # Create project + empty script draft from creative source
     source = (body.source or "").strip()
     if len(source) < 20:
-        raise HTTPException(status_code=400, detail="原始创意至少需要 20 个字")
+        raise HTTPException(status_code=400, detail=_("原始创意至少需要 20 个字"))
+    content_locale = normalize_locale(body.content_locale, normalize_locale(get_locale()))
+    set_content_locale(content_locale)
     title = (body.title or "").strip()
+    if title == "未命名漫剧":
+        # schema 默认占位按内容语言显示
+        title = content_text("未命名漫剧", content_locale)
     if not title:
         title = source[:40] + ("…" if len(source) > 40 else "")
     workflow = (body.workflow or "script").strip().lower()
@@ -122,9 +131,11 @@ async def create_project(
     )
     project = DramaProject(
         user_id=user.id,
-        title=title or ("自由画布项目" if workflow == "canvas" else "未命名漫剧"),
+        title=title
+        or content_text("自由画布项目" if workflow == "canvas" else "未命名漫剧", content_locale),
         description=body.description,
         params=project_params,
+        content_locale=content_locale,
     )
     db.add(project)
     await db.flush()
@@ -178,6 +189,9 @@ async def update_project(
         project.content = body.content
     if body.params is not None:
         project.params = body.params
+    if body.content_locale is not None and body.content_locale.strip():
+        project.content_locale = normalize_locale(body.content_locale, project_content_locale(project))
+        set_content_locale(project.content_locale)
     await db.commit()
 
     # 镜间衔接开关变化时，动态重排仍排队的分镜视频任务

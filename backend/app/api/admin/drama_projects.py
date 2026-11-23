@@ -8,6 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_admin
 from app.models import User
@@ -187,7 +188,7 @@ async def get_drama_project(
         )
     ).first()
     if not row:
-        raise HTTPException(status_code=404, detail="漫剧项目不存在")
+        raise HTTPException(status_code=404, detail=_("漫剧项目不存在"))
     project, email = row
 
     usage = await aggregate_usage_summary(db, drama_project_id=project_id)
@@ -211,7 +212,7 @@ async def get_drama_project(
     data.episodes = [
         AdminDramaEpisodeBriefOut(
             id=ep.id,
-            name=ep.name or f"集 #{ep.id}",
+            name=ep.name or _("集 #{id}", id=ep.id),
             fragment_count=len(ep.fragments or []),
             fragment_plan_status=(
                 str((ep.params or {}).get("fragment_plan_status"))

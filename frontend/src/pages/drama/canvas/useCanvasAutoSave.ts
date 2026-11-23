@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { Edge, Node } from '@xyflow/react'
 import { dramaApi } from '../../../api/drama'
 import { CANVAS_AUTO_SAVE_MS, type CanvasAssetNodeData } from './canvasTypes'
+import { tr } from '../../../i18n'
 
 type UseCanvasAutoSaveArgs = {
   projectId: number
@@ -60,7 +61,7 @@ export function useCanvasAutoSave({
         })
         onSaved()
       } catch (err) {
-        onError(err instanceof Error ? err.message : '自动保存失败')
+        onError(err instanceof Error ? err.message : tr('episode.canvas.autoSaveFailed'))
       } finally {
         savingRef.current = false
       }

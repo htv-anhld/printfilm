@@ -16,6 +16,8 @@ from app.models_drama import (
     DramaProject,
 )
 from app.models_tasks import TaskRun
+from app.i18n import _
+from app.services.drama.content_locale import set_content_locale, set_project_content_locale
 
 
 async def get_owned_drama_project(
@@ -41,7 +43,9 @@ async def get_owned_drama_project(
     result = await db.execute(q)
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="漫剧项目不存在")
+        raise HTTPException(status_code=404, detail=_("漫剧项目不存在"))
+    # 本请求后续的 AI 调用 / 时长估算按项目内容语言
+    set_project_content_locale(project)
     return project
 
 
@@ -61,16 +65,18 @@ async def get_owned_episode(
             .selectinload(DramaFragmentAssetRef.asset)
         )
     q = (
-        select(DramaEpisode)
+        select(DramaEpisode, DramaProject.content_locale)
         .join(DramaProject, DramaEpisode.project_id == DramaProject.id)
         .where(DramaEpisode.id == episode_id, DramaProject.user_id == user.id)
     )
     if opts:
         q = q.options(*opts)
     result = await db.execute(q)
-    episode = result.scalar_one_or_none()
-    if not episode:
-        raise HTTPException(status_code=404, detail="分集不存在")
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail=_("分集不存在"))
+    episode, content_locale = row[0], row[1]
+    set_content_locale(content_locale or "zh")
     return episode
 
 

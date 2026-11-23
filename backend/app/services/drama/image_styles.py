@@ -139,9 +139,27 @@ IMAGE_STYLE_LABELS: dict[str, str] = {
 }
 
 
-# 根据风格 ID 返回展示名称
+# 根据风格 ID 返回展示名称（中文原名；拼进 LLM 提示词时用这个）
 def get_image_style_label(style_id: str) -> str:
     return IMAGE_STYLE_LABELS.get(style_id, style_id)
+
+
+# 面向用户展示的风格名：按当前界面语言翻译（译文见 app/i18n_catalogs/drama_styles.py）
+def get_image_style_display_label(style_id: str, locale: str | None = None) -> str:
+    from app.i18n import translate
+
+    label = IMAGE_STYLE_LABELS.get(style_id)
+    if not label:
+        return style_id
+    return translate(label, locale)
+
+
+# 序列化内置风格列表（id + 本地化名称），供接口返回
+def list_image_styles(locale: str | None = None) -> list[dict[str, str]]:
+    return [
+        {"id": sid, "label": get_image_style_display_label(sid, locale)}
+        for sid in IMAGE_STYLE_IDS
+    ]
 
 
 # 根据风格 ID 返回生图提示词片段，无效 ID 返回空字符串

@@ -1,0 +1,17 @@
+export const enWorks = {
+  desc: "Adjust visibility and review status",
+  searchPlaceholder: "Search title",
+  allAudit: "All review statuses",
+  allVisibility: "All visibility",
+  visibility: "Visibility",
+  audit: "Review",
+  publishedAt: "Published at",
+  approve: "Approve",
+  reject: "Reject",
+  setPrivate: "Make private",
+  setPublic: "Make public",
+  detailTitle: "Work details",
+  workId: "Work #{id}",
+  relatedProject: "Related project",
+  openVideo: "Open video in new window",
+};

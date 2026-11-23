@@ -7,6 +7,7 @@ import logging
 import smtplib
 from email.message import EmailMessage
 
+from app.i18n import _
 from app.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
@@ -35,10 +36,10 @@ def _send_email_sync(
 ) -> None:
     s = settings or get_settings()
     if not _smtp_configured(s):
-        raise RuntimeError("SMTP 未配置或未启用")
+        raise RuntimeError(_("SMTP 未配置或未启用"))
     recipients = [addr.strip() for addr in to_addrs if addr and addr.strip()]
     if not recipients:
-        raise RuntimeError("无有效收件人")
+        raise RuntimeError(_("无有效收件人"))
 
     msg = EmailMessage()
     msg["Subject"] = subject

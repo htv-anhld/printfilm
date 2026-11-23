@@ -1,5 +1,6 @@
 /** 分集分镜 → 共享资产节点连线到各分镜视频节点 */
 import type { Edge, Node } from '@xyflow/react'
+import { tr } from '../../../i18n'
 import {
   resolveDramaMediaUrl,
   type DramaAsset,
@@ -159,10 +160,10 @@ export function buildEpisodeFragmentFlow(
         assetId,
         linkedFragments: fragmentIds.map((fragmentId) => ({
           fragmentId,
-          label: fragLabels.get(fragmentId) || `镜 ${fragmentId}`,
+          label: fragLabels.get(fragmentId) || tr('episode.storyboard.shotN', { id: fragmentId }),
         })),
-        name: asset?.name || `资产 ${assetId}`,
-        typeLabel: tab || asset?.type || '资产',
+        name: asset?.name || tr('episode.common.assetN', { id: assetId }),
+        typeLabel: tab ? tr(`episode.common.kind.${tab}`) : asset?.type || tr('episode.common.kind.asset'),
         previewUrl: resolveDramaMediaUrl(asset?.cover || asset?.url) || '',
       },
       draggable: true,

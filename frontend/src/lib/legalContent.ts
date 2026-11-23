@@ -296,45 +296,149 @@ export const LEGAL_DOCS_EN: Record<'terms' | 'privacy', LegalDoc> = {
   },
 }
 
+export const LEGAL_DOCS_VI: Record<'terms' | 'privacy', LegalDoc> = {
+  terms: {
+    slug: 'terms',
+    title: 'Điều khoản sử dụng',
+    updatedAt: '2026-08-17',
+    intro:
+      'Chào mừng bạn đến với PRINTFILM (sau đây gọi là “Nền tảng”). Vui lòng đọc kỹ điều khoản này trước khi đăng ký hoặc sử dụng dịch vụ. Khi bắt đầu sử dụng, bạn được xem là đã đọc và đồng ý với các điều khoản dưới đây.',
+    sections: [
+      {
+        title: '1. Mô tả dịch vụ',
+        paragraphs: [
+          'PRINTFILM cung cấp các dịch vụ phim truyện AI, video ngắn AI và công cụ sáng tạo (gồm tạo ảnh từ văn bản, tạo ảnh từ ảnh, tạo video từ văn bản…). Nội dung dịch vụ có thể thay đổi theo quá trình phát triển sản phẩm; chúng tôi sẽ cố gắng thông báo các thay đổi quan trọng trên trang hoặc qua thông báo.',
+          'Nền tảng tính phí theo mức sử dụng mô hình thực tế phía nhà cung cấp; số dư sau khi nạp tiền có hiệu lực vĩnh viễn, không bắt buộc đăng ký gói. Giá và quy tắc tặng thêm theo trang Bảng giá và thông tin hiển thị khi đặt hàng.',
+        ],
+      },
+      {
+        title: '2. Tài khoản và bảo mật',
+        bullets: [
+          'Bạn cần đăng ký bằng thông tin thật, hợp lệ và chịu trách nhiệm về mọi hoạt động dưới tài khoản của mình.',
+          'Vui lòng bảo quản thông tin đăng nhập; tổn thất do lộ hoặc dùng chung tài khoản do bạn tự chịu.',
+          'Nếu phát hiện việc sử dụng trái phép, hãy báo cho chúng tôi qua trang “Liên hệ”.',
+          'Chúng tôi có quyền hạn chế, đóng băng hoặc xóa tài khoản khi phát hiện vi phạm, gian lận hoặc lạm dụng.',
+        ],
+      },
+      {
+        title: '3. Nội dung và quyền sở hữu trí tuệ',
+        paragraphs: [
+          'Prompt, kịch bản, tư liệu bạn nhập vẫn thuộc về bạn hoặc chủ sở hữu quyền ban đầu. Bạn cam kết có quyền hợp pháp với nội dung tải lên và không xâm phạm quyền sở hữu trí tuệ, quyền hình ảnh, quyền riêng tư… của bên thứ ba.',
+          'Nội dung do AI tạo có thể không chính xác, không đầy đủ hoặc khác kỳ vọng; vui lòng tự kiểm tra trước khi đăng chính thức. Tranh chấp phát sinh từ việc bạn công bố hoặc sử dụng thương mại nội dung được tạo do bạn tự chịu trách nhiệm.',
+          'Giao diện, nhãn hiệu, phần mềm và tài liệu của Nền tảng thuộc quyền sở hữu của PRINTFILM hoặc bên có quyền liên quan; không được sao chép, dịch ngược hoặc dùng cho mục đích thương mại không liên quan đến dịch vụ khi chưa được phép.',
+        ],
+      },
+      {
+        title: '4. Tính phí và nạp tiền',
+        bullets: [
+          'Các tác vụ tạo nội dung được tính phí theo chi phí chính thức của TokenFree (giống phía nhà cung cấp, không cộng thêm); khi bắt đầu tác vụ có thể tạm trừ số tiền ước tính, sau khi kết thúc sẽ quyết toán theo mức dùng thực tế (thừa hoàn, thiếu bù).',
+          'Việc nạp tiền được thực hiện qua Alipay, WeChat Pay và các kênh tương tự; tiền vào tài khoản theo ghi nhận của hệ thống.',
+          'Trừ khi pháp luật có quy định khác hoặc Nền tảng có thỏa thuận rõ ràng, số dư đã nạp thành công thường không được hoàn lại.',
+          'Nếu lỗi hệ thống gây trừ tiền trùng hoặc tiền chưa vào tài khoản, vui lòng giữ mã đơn hàng và liên hệ bộ phận hỗ trợ để xác minh xử lý.',
+        ],
+      },
+      {
+        title: '5. Hành vi bị cấm',
+        bullets: [
+          'Dùng dịch vụ để tạo, phát tán nội dung vi phạm pháp luật, khiêu dâm, bạo lực, thù ghét, lừa đảo hoặc xâm phạm quyền lợi của người khác.',
+          'Tấn công, thu thập dữ liệu tự động, lách tính phí, lạm dụng API hoặc gây ảnh hưởng đến người dùng khác.',
+          'Bán lại tài khoản trái phép, đăng ký hàng loạt hoặc có hành vi khác làm tổn hại sự vận hành công bằng của Nền tảng.',
+        ],
+      },
+      {
+        title: '6. Miễn trừ và giới hạn trách nhiệm',
+        paragraphs: [
+          'Trong phạm vi pháp luật cho phép, Nền tảng không chịu trách nhiệm về gián đoạn dịch vụ hoặc mất dữ liệu do sự cố mạng, gián đoạn dịch vụ bên thứ ba hoặc bất khả kháng.',
+          'Đầu ra của AI chỉ là công cụ hỗ trợ sáng tạo, không phải tư vấn chuyên môn. Với tổn thất trực tiếp hoặc gián tiếp do dựa vào nội dung được tạo, Nền tảng không chịu trách nhiệm vượt quá phí dịch vụ bạn đã thanh toán (trừ khi pháp luật có quy định bắt buộc khác).',
+        ],
+      },
+      {
+        title: '7. Thay đổi và chấm dứt',
+        paragraphs: [
+          'Chúng tôi có thể sửa đổi điều khoản này khi cần; phiên bản sửa đổi sẽ được công bố trên trang này, căn cứ theo “ngày cập nhật”. Nếu bạn tiếp tục sử dụng dịch vụ, bạn được xem là chấp nhận điều khoản đã sửa đổi.',
+          'Bạn có thể ngừng sử dụng và yêu cầu xóa tài khoản bất cứ lúc nào; chúng tôi cũng có thể ngừng cung cấp dịch vụ khi bạn vi phạm nghiêm trọng điều khoản này.',
+        ],
+      },
+      {
+        title: '8. Liên hệ',
+        paragraphs: [
+          'Nếu có thắc mắc về điều khoản này, vui lòng gửi phản hồi qua trang “Liên hệ” hoặc email tới support@printfilm.com.',
+        ],
+      },
+    ],
+  },
+  privacy: {
+    slug: 'privacy',
+    title: 'Chính sách quyền riêng tư',
+    updatedAt: '2026-08-17',
+    intro:
+      'PRINTFILM tôn trọng quyền riêng tư của bạn. Chính sách này giải thích cách chúng tôi thu thập, sử dụng, lưu trữ và bảo vệ thông tin cá nhân của bạn. Việc sử dụng Nền tảng đồng nghĩa với việc bạn hiểu cách xử lý được mô tả trong chính sách này.',
+    sections: [
+      {
+        title: '1. Thông tin chúng tôi thu thập',
+        bullets: [
+          'Thông tin tài khoản: email đăng ký, tên hiển thị, ảnh đại diện, dữ liệu đăng nhập và xác thực.',
+          'Dữ liệu sử dụng: dự án sáng tạo, prompt, trạng thái tác vụ tạo, lịch sử chạy công cụ, nội dung thư viện tài nguyên và các dữ liệu nghiệp vụ khác.',
+          'Thông tin tính phí: số dư, số tiền tạm giữ, đơn nạp tiền, chi tiết sử dụng và trừ phí (thanh toán do kênh bên thứ ba xử lý, chúng tôi không lưu số thẻ ngân hàng đầy đủ hay thông tin thanh toán nhạy cảm khác).',
+          'Nhật ký kỹ thuật: IP, loại trình duyệt, thời gian truy cập… là nhật ký cần thiết cho bảo mật và khắc phục sự cố.',
+        ],
+      },
+      {
+        title: '2. Mục đích sử dụng thông tin',
+        bullets: [
+          'Cung cấp, duy trì và cải thiện các dịch vụ sáng tạo như phim truyện AI, video ngắn AI và công cụ.',
+          'Xác thực danh tính, quyết toán phí, tra cứu đơn hàng và hỗ trợ khách hàng.',
+          'Bảo đảm an toàn tài khoản và hệ thống, phòng chống gian lận và lạm dụng.',
+          'Gửi thông báo dịch vụ hoặc cập nhật sản phẩm khi có sự đồng ý của bạn hoặc pháp luật cho phép.',
+        ],
+      },
+      {
+        title: '3. Lưu trữ và bên thứ ba',
+        paragraphs: [
+          'Tệp media và tệp sáng tạo của bạn có thể được lưu trong kho lưu trữ đối tượng trên đám mây (như Alibaba Cloud OSS) để xem trước và tải xuống.',
+          'Thanh toán do đối tác như Epay xử lý; suy luận mô hình lớn do nhà cung cấp mô hình phía trên thực hiện. Chúng tôi chỉ cung cấp cho họ dữ liệu cần thiết để hoàn thành dịch vụ và yêu cầu họ bảo vệ thông tin theo thỏa thuận.',
+          'Trừ khi pháp luật yêu cầu, có sự đồng ý rõ ràng của bạn hoặc cần thiết để bảo vệ quyền lợi hợp pháp của Nền tảng và người dùng, chúng tôi không bán thông tin cá nhân của bạn cho bên thứ ba không liên quan.',
+        ],
+      },
+      {
+        title: '4. Cookie và lưu trữ cục bộ',
+        paragraphs: [
+          'Để duy trì trạng thái đăng nhập và cài đặt ưa thích, chúng tôi có thể dùng Cookie hoặc bộ nhớ cục bộ của trình duyệt (như token). Bạn có thể xóa chúng trong trình duyệt, nhưng khi đó có thể phải đăng nhập lại.',
+        ],
+      },
+      {
+        title: '5. Quyền của bạn',
+        bullets: [
+          'Xem và chỉnh sửa thông tin tài khoản (thực hiện trong trang Tài khoản).',
+          'Xuất hoặc tải xuống thành quả sáng tạo bạn có quyền truy cập (trong phạm vi tính năng sản phẩm cho phép).',
+          'Yêu cầu xóa tài khoản; sau khi xóa, chúng tôi sẽ xóa hoặc ẩn danh thông tin cá nhân liên quan theo quy định, trừ dữ liệu pháp luật yêu cầu lưu giữ.',
+          'Hỏi đáp hoặc khiếu nại về các vấn đề quyền riêng tư.',
+        ],
+      },
+      {
+        title: '6. Bảo vệ người chưa thành niên',
+        paragraphs: [
+          'Nền tảng chủ yếu hướng tới người dùng có đầy đủ năng lực hành vi dân sự. Nếu bạn là người chưa thành niên, vui lòng đọc chính sách này và sử dụng dịch vụ dưới sự hướng dẫn của người giám hộ.',
+        ],
+      },
+      {
+        title: '7. Cập nhật chính sách',
+        paragraphs: [
+          'Chúng tôi có thể cập nhật chính sách này và công bố phiên bản mới nhất cùng ngày cập nhật trên trang này. Khi có thay đổi quan trọng, chúng tôi sẽ cố gắng thông báo cho bạn qua thông báo trong trang hoặc cách thức tương tự.',
+        ],
+      },
+      {
+        title: '8. Liên hệ',
+        paragraphs: [
+          'Nếu có bất kỳ thắc mắc nào về chính sách này, vui lòng truy cập trang “Liên hệ” hoặc gửi email tới support@printfilm.com.',
+        ],
+      },
+    ],
+  },
+}
+
 // 按界面语言取用户协议 / 隐私政策
 export function getLegalDoc(slug: 'terms' | 'privacy', locale: string): LegalDoc {
-  const pack = locale === 'en' ? LEGAL_DOCS_EN : LEGAL_DOCS
+  const pack = locale === 'en' ? LEGAL_DOCS_EN : locale === 'vi' ? LEGAL_DOCS_VI : LEGAL_DOCS
   return pack[slug]
 }
-
-export type ContactChannel = {
-  title: string
-  desc: string
-  href?: string
-  actionLabel?: string
-}
-
-export const CONTACT_CHANNELS: ContactChannel[] = [
-  {
-    title: '邮箱支持',
-    desc: '工作日一般 1–2 个工作日内回复；请附上账号邮箱与订单号（如有）。',
-    href: 'mailto:support@printfilm.com',
-    actionLabel: 'support@printfilm.com',
-  },
-  {
-    title: '帮助中心',
-    desc: '充值、下载、漫剧与工具等常见问题可先在帮助中心自助查询。',
-    href: '/help',
-    actionLabel: '前往帮助中心',
-  },
-  {
-    title: '企业合作 / 对公转账',
-    desc: '企业批量充值、API 合作或发票需求，请邮件说明公司名称与需求，我们会安排对接。',
-    href: 'mailto:support@printfilm.com?subject=PRINTFILM%20企业合作',
-    actionLabel: '发送合作邮件',
-  },
-]
-
-export const CONTACT_TOPICS = [
-  '账号与登录',
-  '充值与到账',
-  '创作任务异常',
-  '下载与素材',
-  '隐私与账号注销',
-  '其他',
-] as const

@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.config import get_settings
+from app.services.kepu_locale import find_latin_font, is_zh, latin_text, truncate_words
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,13 @@ _CAPTION_PUNCT_RE = re.compile(
     r"[，。！？；：、,.!?;:…··〜～「」『』【】（）\(\)\[\]\"'“”‘’《》〈〉"
     r"—_\-/\\|@#$%^&*+=<>{}]+"
 )
+
+# 越南语/英语字幕：只去掉断句标点，保留词内撇号/连字符与越南语声调字母
+_LATIN_CAPTION_PUNCT_RE = re.compile(
+    r"[，。！？；：、,.!?;:…·〜～「」『』【】（）\(\)\[\]\"“”‘’《》〈〉—_/\\|@#$%^&*+=<>{}]+"
+)
+# 拉丁文字字符宽约为中文一半：同一行可容纳的字符数放大倍数
+_LATIN_CHARS_PER_CJK = 2.2
 
 # Output sizes keyed by aspect ratio
 _RATIO_SIZE = {
@@ -64,6 +72,8 @@ class ComposeOptions:
     # 保留镜头视频里的操作音效，后期与 TTS 叠轨（科普 full）
     keep_video_sfx: bool = False
     sfx_volume: float = 0.22
+    # 内容语言（zh | en | vi）：非中文选用含越南语声调符号的拉丁字体
+    content_locale: str = "zh"
 
 
 def allocate_durations_by_narration(
@@ -403,6 +413,15 @@ def _find_cjk_font() -> str | None:
     return None
 
 
+def find_caption_font(content_locale: str | None = "zh") -> str | None:
+    """叠字/字幕字体：中文用 CJK 字体；越南语/英语优先 DejaVu Sans（声调符号完整）。"""
+    if not is_zh(content_locale):
+        latin = find_latin_font()
+        if latin:
+            return latin
+    return _find_cjk_font()
+
+
 def _escape_drawtext(text: str) -> str:
     """Escape text for ffmpeg drawtext filter."""
     t = (text or "").replace("\n", " ").replace("\r", " ").strip()
@@ -415,8 +434,47 @@ def _escape_drawtext(text: str) -> str:
 
 def _strip_caption_punct(text: str) -> str:
     """Remove punctuation/symbols from on-screen subtitle text."""
+    if latin_text(text):
+        # 拉丁文字：标点换成空格，避免两词粘连；保留 don't / e-mail
+        t = _LATIN_CAPTION_PUNCT_RE.sub(" ", text or "")
+        t = re.sub(r"(?<!\w)['\-]+|['\-]+(?!\w)", " ", t)
+        return re.sub(r"\s+", " ", t).strip()
     t = _CAPTION_PUNCT_RE.sub("", text or "")
     return re.sub(r"\s+", " ", t).strip()
+
+
+def _split_caption_chunks_latin(raw: str, *, max_chars: int) -> list[str]:
+    """越南语/英语字幕：按标点分句，再按空格断行（绝不拆开单词）。"""
+    pieces: list[str] = []
+    for part in re.split(r"(?<=[,.!?;:…])\s+|\n+", raw):
+        body = _strip_caption_punct(part)
+        if body:
+            pieces.append(body)
+    if not pieces:
+        return []
+    chunks: list[str] = []
+    for piece in pieces:
+        if len(piece) <= max_chars:
+            chunks.append(piece)
+            continue
+        cur = ""
+        for word in piece.split():
+            cand = f"{cur} {word}".strip()
+            if cur and len(cand) > max_chars:
+                chunks.append(cur)
+                cur = word
+            else:
+                cur = cand
+        if cur:
+            chunks.append(cur)
+    # 单个短词并入上一条
+    merged: list[str] = []
+    for c in chunks:
+        if merged and len(c.split()) <= 1 and len(merged[-1]) + 1 + len(c) <= max_chars + 8:
+            merged[-1] = f"{merged[-1]} {c}"
+        else:
+            merged.append(c)
+    return merged
 
 
 def _escape_fontfile(path: str) -> str:
@@ -440,6 +498,8 @@ def _split_caption_chunks(text: str, *, max_chars: int = 18) -> list[str]:
     raw = (text or "").replace("\n", " ").replace("\r", " ").strip()
     if not raw:
         return []
+    if latin_text(raw):
+        return _split_caption_chunks_latin(raw, max_chars=int(max_chars * _LATIN_CHARS_PER_CJK))
 
     # Prefer clause breaks on Chinese/English punctuation
     pieces: list[str] = []
@@ -517,7 +577,7 @@ def _timed_caption_windows(
         windows.append((cursor, end, chunk))
         cursor = end
     if windows:
-        s0, _, t0 = windows[-1]
+        s0, _end, t0 = windows[-1]
         windows[-1] = (s0, start + total, t0)
     return windows
 
@@ -639,9 +699,13 @@ def _overlay_drawtext(
     subtitle = _strip_caption_punct(subtitle)
     title_cap = 14 if layout == "split" else 12
     sub_cap = 24 if layout == "split" else 18
-    if len(title) > title_cap:
+    if latin_text(title):
+        title = truncate_words(title, int(title_cap * _LATIN_CHARS_PER_CJK))
+    elif len(title) > title_cap:
         title = title[:title_cap]
-    if len(subtitle) > sub_cap:
+    if latin_text(subtitle):
+        subtitle = truncate_words(subtitle, int(sub_cap * _LATIN_CHARS_PER_CJK))
+    elif len(subtitle) > sub_cap:
         subtitle = subtitle[:sub_cap]
     title_e = _escape_drawtext(title)
     sub_e = _escape_drawtext(subtitle)
@@ -1102,7 +1166,7 @@ def compose_project(
     w, h = _canvas(opts)
     ffmpeg = _which("ffmpeg")
     output.parent.mkdir(parents=True, exist_ok=True)
-    font = _find_cjk_font()
+    font = find_caption_font(opts.content_locale)
     if not font:
         logger.error(
             "未找到中文字体，叠字/口播字幕会显示为方框；"

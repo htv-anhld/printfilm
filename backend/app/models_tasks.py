@@ -8,6 +8,12 @@ from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Tex
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.i18n import get_locale
+
+
+def _task_locale_default() -> str:
+    """插入时取当前请求/任务语言，后台执行按发起人语言写错误与事件文案。"""
+    return get_locale()
 
 
 class TaskRun(Base):
@@ -36,6 +42,8 @@ class TaskRun(Base):
     progress_percent: Mapped[int] = mapped_column(Integer, default=0)
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 发起任务时的界面语言（zh | en | vi）；与项目 content_locale（AI 产出语言）无关
+    locale: Mapped[str | None] = mapped_column(String(8), nullable=True, default=_task_locale_default)
     payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     result_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     project_id: Mapped[int | None] = mapped_column(

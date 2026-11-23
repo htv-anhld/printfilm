@@ -1,3 +1,4 @@
+import { LOCALES, tr, translateIn } from '../i18n'
 import type { DramaProject, DramaProjectListItem } from '../api/drama'
 
 export type DramaWorkflow = 'script' | 'canvas'
@@ -21,6 +22,7 @@ export function resolveDramaWorkflow(item: WorkflowSource | null | undefined): D
 
   const title = String(item?.title || '')
   if (title.includes(CANVAS_TITLE_MARKER)) return 'canvas'
+  if (LOCALES.some((l) => title.includes(translateIn(l, 'lib.workflow.freeCanvas')))) return 'canvas'
 
   const source = String(item?.script?.source || '')
   if (source.includes(CANVAS_SOURCE_MARKER)) return 'canvas'
@@ -48,10 +50,10 @@ export function dramaProjectEntryPath(
 /** 列表卡片 meta 文案 */
 export function formatDramaCardMeta(item: DramaProjectListItem): string {
   if (isCanvasWorkflow(item)) {
-    return `自由画布 · ${item.asset_count || 0} 节点资产`
+    return tr('lib.workflow.cardCanvas', { n: item.asset_count || 0 })
   }
   if (item.has_script) {
-    return `已写剧本 · ${item.episode_count || 0} 集 · ${item.asset_count || 0} 资产`
+    return tr('lib.workflow.cardScript', { episodes: item.episode_count || 0, assets: item.asset_count || 0 })
   }
-  return `草稿 · 待写剧本 · ${item.asset_count || 0} 资产`
+  return tr('lib.workflow.cardDraft', { n: item.asset_count || 0 })
 }

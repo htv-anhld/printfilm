@@ -1,0 +1,17 @@
+export const zhWorks = {
+  desc: "调整可见性与审核状态",
+  searchPlaceholder: "搜索标题",
+  allAudit: "全部审核",
+  allVisibility: "全部可见性",
+  visibility: "可见性",
+  audit: "审核",
+  publishedAt: "发布时间",
+  approve: "通过",
+  reject: "拒绝",
+  setPrivate: "设私密",
+  setPublic: "设公开",
+  detailTitle: "作品详情",
+  workId: "作品 #{id}",
+  relatedProject: "关联项目",
+  openVideo: "新窗口打开视频",
+};

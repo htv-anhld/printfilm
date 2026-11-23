@@ -3,6 +3,8 @@
  * 对齐 docs/EPISODE_RULES.md §10 P3
  */
 
+import { tr } from '../i18n'
+
 export type DramaEditRhythmId =
   | 'breath'
   | 'heartbeat'
@@ -19,43 +21,27 @@ export type DramaEditRhythmPreset = {
   weights: number[]
 }
 
+// 名称 / 说明取 lib.rhythm.<id>.*（getter，随当前语言）
+function rhythmPreset(id: DramaEditRhythmId, weights: number[]): DramaEditRhythmPreset {
+  return {
+    id,
+    get label() {
+      return tr(`lib.rhythm.${id}.label`)
+    },
+    get hint() {
+      return tr(`lib.rhythm.${id}.hint`)
+    },
+    weights,
+  }
+}
+
 export const DRAMA_EDIT_RHYTHM_PRESETS: DramaEditRhythmPreset[] = [
-  {
-    id: 'breath',
-    label: '呼吸式',
-    hint: '缓入—展开—回落，适合建立与抒情',
-    weights: [3, 5, 4, 3],
-  },
-  {
-    id: 'heartbeat',
-    label: '心跳式',
-    hint: '短促加速，适合冲突与对峙',
-    weights: [2, 2, 3, 2, 4],
-  },
-  {
-    id: 'wave',
-    label: '海浪式',
-    hint: '层层推高再泄力，适合高潮戏',
-    weights: [3, 4, 5, 6, 3],
-  },
-  {
-    id: 'elastic',
-    label: '弹性时间',
-    hint: '关键动作拉长，其余压缩',
-    weights: [2, 6, 2, 3],
-  },
-  {
-    id: 'pulse',
-    label: '脉冲式',
-    hint: '规律跳动，适合卡点与群像',
-    weights: [3, 3, 3, 3],
-  },
-  {
-    id: 'silence_hammer',
-    label: '静默锤击',
-    hint: '蓄势静场后猛切，适合反转',
-    weights: [5, 2, 6],
-  },
+  rhythmPreset('breath', [3, 5, 4, 3]),
+  rhythmPreset('heartbeat', [2, 2, 3, 2, 4]),
+  rhythmPreset('wave', [3, 4, 5, 6, 3]),
+  rhythmPreset('elastic', [2, 6, 2, 3]),
+  rhythmPreset('pulse', [3, 3, 3, 3]),
+  rhythmPreset('silence_hammer', [5, 2, 6]),
 ]
 
 const SEGMENT_MIN = 3

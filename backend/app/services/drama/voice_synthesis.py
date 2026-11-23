@@ -19,8 +19,25 @@ from app.services.drama.voice_design import (
 )
 from app.services.drama.voice_reference_audio import finalize_voice_reference_url
 from app.services.voices import infer_drama_speaker_from_prompt
+from app.services.kepu_locale import default_voice_for_locale, speaker_supports_locale
+from app.i18n import _
+from app.services.drama.content_locale import content_text, get_content_locale
 logger = logging.getLogger(__name__)
-NAME_SUFFIX_PATTERN = re.compile(r"(音色|的声音|语音)$")
+NAME_SUFFIX_PATTERN = re.compile(r"(音色|的声音|语音|\s*(?:voice|giọng(?: đọc| nói)?))$", re.IGNORECASE)
+# 英/越音色描述里的性别词 → 中文提示词（infer_drama_speaker_from_prompt 只认中文关键词）
+_GENDER_HINT_PATTERNS = (
+    (re.compile(r"\b(?:female|woman|girl|lady)\b|\bnữ\b|cô gái|thiếu nữ|phụ nữ|bà\b", re.IGNORECASE), "女声"),
+    (re.compile(r"\b(?:male|man|boy|gentleman)\b|\bnam\b|chàng trai|thiếu niên|đàn ông|ông\b", re.IGNORECASE), "男"),
+)
+
+
+def speaker_inference_text(voice_prompt: str) -> str:
+    """为音色推断补中文性别关键词（中文描述原样返回）。"""
+    text = voice_prompt or ""
+    hints = [hint for pattern, hint in _GENDER_HINT_PATTERNS if pattern.search(text)]
+    if not hints:
+        return text
+    return f"{text} {' '.join(hints)}"
 # 从 voice 资产名还原角色名（如「禹音色」→「禹」）
 def normalize_character_name(name: str | None) -> str:
     raw = (name or "我").strip() or "我"
@@ -29,9 +46,12 @@ def normalize_character_name(name: str | None) -> str:
 def build_voice_sample_line_short(character_name: str | None = None) -> str:
     name = normalize_character_name(character_name)
     display = name[:8] if len(name) > 8 else name
-    return (
-        f"你好，我是{display}。"
-        "请听我的语气与声线，之后我会用这样的声音来讲述故事。"
+    if get_content_locale() != "zh":
+        display = name[:24]
+    # 试听句按项目内容语言（TTS 念出来的就是这句）
+    return content_text(
+        "你好，我是{name}。请听我的语气与声线，之后我会用这样的声音来讲述故事。",
+        name=display,
     )
 # 生成角色差异化试听台词
 def build_voice_sample_text(
@@ -45,23 +65,25 @@ def build_voice_sample_text(
     name = normalize_character_name(character_name)
     prompt = (voice_prompt or "").strip()
     blob = f"{name} {prompt}"
+    t = content_text
     if any(k in blob for k in ("老", "翁", "族老", "首领", "青叔")):
-        line = f"{name}：诸位且听我说，此事关乎两岸百姓，不可延误。"
+        line = t("{name}：诸位且听我说，此事关乎两岸百姓，不可延误。", name=name)
     elif any(k in blob for k in ("禹", "治水", "领袖", "帝王", "君主")):
-        line = f"{name}：疏堵并举，通川达海，方能安民。"
+        line = t("{name}：疏堵并举，通川达海，方能安民。", name=name)
     elif any(k in blob for k in ("伯益", "谋士", "儒雅", "书生")):
-        line = f"{name}：依我之见，当先察水势，再定工段。"
+        line = t("{name}：依我之见，当先察水势，再定工段。", name=name)
     elif any(k in blob for k in ("青壮", "少年", "青年", "小伙")):
-        line = f"{name}：跟我上，这点工程算不了什么！"
+        line = t("{name}：跟我上，这点工程算不了什么！", name=name)
     elif any(k in blob for k in ("百姓", "群众", "平民", "妇人")):
-        line = f"{name}：只求河道通畅，我们也好安心过日子。"
+        line = t("{name}：只求河道通畅，我们也好安心过日子。", name=name)
     elif any(k in blob for k in ("女", "姑娘", "少女")):
-        line = f"{name}：请放心，我会把情况说明白。"
-    elif prompt:
+        line = t("{name}：请放心，我会把情况说明白。", name=name)
+    elif prompt and get_content_locale() == "zh":
         snippet = prompt[:36].rstrip("，。；、 ")
         line = f"{name}：{snippet}。"
     else:
-        line = f"{name}：请听我的语气与声线。"
+        # 非中文项目不拿音色描述当台词（描述是选角说明，念出来不自然）
+        line = t("{name}：请听我的语气与声线。", name=name)
     return line[:180]
 # 解析可用于 voice_design image_prompt 的公网角色图 URL
 def resolve_character_image_url(character: DramaAsset | None) -> str | None:
@@ -141,7 +163,7 @@ async def synthesize_voice_asset(
     ark = get_ark()
     prompt = (voice_prompt or "").strip()
     if not prompt:
-        raise ValueError("缺少音色描述 prompt")
+        raise ValueError(_("缺少音色描述 prompt"))
     display_name = normalize_character_name(character_name or asset.name)
     # Seedance reference_audio 须 ≥1.8s（落盘目标 ≥2s）；默认用较长试听句
     text = (sample_text or "").strip() or build_voice_sample_text(prompt, display_name, short=False)
@@ -177,10 +199,16 @@ async def synthesize_voice_asset(
     if not audio_url:
         if not resolved_speaker or not resolved_speaker.startswith("S_"):
             resolved_speaker = infer_drama_speaker_from_prompt(
-                prompt,
+                speaker_inference_text(prompt),
                 character_name=display_name,
                 asset_id=asset.id,
             )
+        content_loc = get_content_locale()
+        if not speaker_supports_locale(resolved_speaker, content_loc):
+            # 非中文项目：中文音色念不了越南语/英语试听句，换成该语言的默认音色
+            low = resolved_speaker.lower()
+            gender = "male" if "_male_" in low or low.startswith("male") else "female"
+            resolved_speaker = default_voice_for_locale(content_loc, gender) or resolved_speaker
         logger.info(
             "合成音色资产(TTS) project_id=%s asset_id=%s speaker=%s name=%s",
             project.id,

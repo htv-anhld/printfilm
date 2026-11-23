@@ -10,6 +10,8 @@ from app.config import get_settings
 from app.services.logical_model_router import resolve_logical_model_id, resolve_upstream_model
 from app.models_drama import DramaAsset
 from app.services.drama.build_fragments import rewrite_dialogue_action_lines
+from app.services.drama.content_locale import get_content_locale
+from app.i18n import content_language_name, normalize_locale
 from app.services.drama.fragment_content_duration import (
     replace_duration_mentions_with_time_ranges,
     resolve_seedance_duration_from_content,
@@ -78,6 +80,8 @@ class BuildSeedanceGenerateBodyInput(TypedDict, total=False):
     burn_subtitles: bool
     # True=角色身旁人物介绍叠字；False=禁止人物介绍字卡
     character_intro: bool
+    # 项目内容语言 zh | en | vi（口播/字幕语言）；缺省取当前内容语言上下文
+    content_locale: str | None
 
 
 # 兼容历史布尔 / 字符串，解析分集 params 开关
@@ -497,6 +501,35 @@ def build_reference_index_section(
     return "\n".join([header, *lines])
 
 
+# 非中文项目：口播与字幕语言约束（中文项目不加，保持原提示词）
+_SPEECH_LANG_ZH_NAMES = {"en": "英语", "vi": "越南语"}
+
+
+def build_speech_language_section(content_locale: str | None, *, burn_subtitles: bool = True) -> str | None:
+    loc = normalize_locale(content_locale, "zh")
+    if loc == "zh":
+        return None
+    zh_name = _SPEECH_LANG_ZH_NAMES.get(loc, loc)
+    en_name = content_language_name(loc)
+    subtitle_zh = f"画面字幕（如有）使用{zh_name}，与口播逐句一致；" if burn_subtitles else ""
+    subtitle_en = f" Any on-screen subtitles must be in {en_name}, matching the speech line by line." if burn_subtitles else ""
+    return (
+        f"【强制约束：语言】所有对白、旁白与口播必须用{zh_name}说出，逐字按脚本原文，禁止翻译成中文或其他语言；"
+        f"{subtitle_zh}画面内出现的文字（人物介绍、片头集名等）也使用{zh_name}。\n"
+        f"All dialogue, narration and voice-over must be spoken in {en_name}, exactly as written in the script; "
+        f"do not translate it into Chinese.{subtitle_en}"
+    )
+
+
+def _localize_language_cues(text: str, content_locale: str | None) -> str:
+    """把分镜 cue 里写死的「简体中文」换成内容语言（仅非中文项目）。"""
+    loc = normalize_locale(content_locale, "zh")
+    if loc == "zh" or not text:
+        return text
+    zh_name = _SPEECH_LANG_ZH_NAMES.get(loc, loc)
+    return text.replace("简体中文", zh_name).replace("中文字幕", f"{zh_name}字幕")
+
+
 # 将分镜脚本转为正文提示词
 def _normalize_body_whitespace(text: str) -> str:
     lines = [
@@ -529,7 +562,9 @@ def build_seedance_prompt_text(
     burn_subtitles: bool = True,
     character_intro: bool = True,
     has_style_board: bool = False,
+    content_locale: str | None = None,
 ) -> str:
+    loc = normalize_locale(content_locale, "zh") if content_locale else get_content_locale()
     # 提交前拆分对白舞台指示并纠正空镜误标，保证强制约束与正文一致
     normalized = rewrite_dialogue_action_lines(content or "")
     normalized = rewrite_misclassified_visual_voice_lines(normalized)
@@ -541,6 +576,7 @@ def build_seedance_prompt_text(
     resolved_catalog = catalog or build_seedance_reference_catalog(reference, script=normalized)
     sections = [
         build_visual_style_section(video_style_id, has_style_board=has_style_board),
+        build_speech_language_section(loc, burn_subtitles=burn_subtitles),
         build_seedance_production_section(
             normalized,
             burn_subtitles=burn_subtitles,
@@ -594,7 +630,7 @@ def build_seedance_prompt_text(
         ),
         build_seedance_body_text(normalized, reference, resolved_catalog),
     ]
-    return "\n\n".join(section for section in sections if section)
+    return _localize_language_cues("\n\n".join(section for section in sections if section), loc)
 
 
 # 从引用资产组装 Seedance content 多模态数组
@@ -607,6 +643,7 @@ def build_seedance_content_items(
     burn_subtitles: bool = True,
     character_intro: bool = True,
     style_board_url: str | None = None,
+    content_locale: str | None = None,
 ) -> list[dict[str, Any]]:
     catalog = build_seedance_reference_catalog(reference, script=content)
     # 无角色/场景图时不挂画风板，避免板子变成唯一画面参考
@@ -619,6 +656,7 @@ def build_seedance_content_items(
         burn_subtitles=burn_subtitles,
         character_intro=character_intro,
         has_style_board=bool(board),
+        content_locale=content_locale,
     )
     items: list[dict[str, Any]] = []
 
@@ -735,6 +773,7 @@ def build_seedance_generate_body(input_params: BuildSeedanceGenerateBodyInput) -
             burn_subtitles=bool(burn_subtitles),
             character_intro=bool(character_intro),
             style_board_url=style_board_url,
+            content_locale=input_params.get("content_locale"),
         ),
         "duration": resolve_seedance_duration_from_content(content, fallback=fallback),
         "resolution": resolve_seedance_resolution(input_params.get("resolution")),

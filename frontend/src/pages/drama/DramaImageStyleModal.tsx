@@ -5,6 +5,7 @@ import { DramaImageStyleCardGrid } from '../../components/drama/DramaImageStyleC
 import { DramaImageStylePreviewImg } from '../../components/drama/DramaImageStylePreviewImg'
 import Modal from '../../components/ui/Modal'
 import { getImageStyleLabel, type ImageStyleId } from '../../lib/dramaImageStyles'
+import { useI18n } from '../../i18n'
 
 type Props = {
   value: ImageStyleId | ''
@@ -26,13 +27,16 @@ export function DramaImageStyleModal({
   onChange,
   disabled = false,
   variant = 'toolbar',
-  fieldLabel = '项目风格',
-  title = '画面风格',
+  fieldLabel: fieldLabelProp,
+  title: titleProp,
   emptyLabel,
 }: Props) {
+  const { t } = useI18n()
+  const fieldLabel = fieldLabelProp ?? t('drama.styleModal.fieldLabel')
+  const title = titleProp ?? t('drama.styleModal.title')
   const [open, setOpen] = useState(false)
   const styleLabel = getImageStyleLabel(value)
-  const triggerLabel = styleLabel || emptyLabel || (variant === 'field' ? '选择风格' : '风格库')
+  const triggerLabel = styleLabel || emptyLabel || (variant === 'field' ? t('drama.styleModal.pick') : t('drama.styleModal.library'))
   const active = Boolean(value) || open
 
   // 选中风格并关闭
@@ -81,9 +85,9 @@ export function DramaImageStyleModal({
       <Modal open={open} onClose={() => setOpen(false)} title={title} size="md" className="drama-style-modal">
         {/* 封面即画风参考图，避免用户以为只是缩略预览 */}
         <p className="drama-style-modal-hint">
-          封面图会作为画风参考一并提交。模型只借色调、笔触和光影，不会照抄封面里的人物或构图。
+          {t('drama.styleModal.coverNote')}
         </p>
-        <DramaImageStyleCardGrid value={value} onChange={select} noneLabel="无风格" />
+        <DramaImageStyleCardGrid value={value} onChange={select} noneLabel={t('drama.styleModal.none')} />
       </Modal>
     </>
   )

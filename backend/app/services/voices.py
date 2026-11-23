@@ -5,6 +5,9 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
+from app.i18n import _, get_locale, normalize_locale
+from app.services.kepu_locale import edge_voice_locale, is_edge_voice
+
 # id used in API / project.voice_id; speaker is openspeech speaker id
 VOICE_PRESETS: list[dict[str, Any]] = [
     {
@@ -66,6 +69,35 @@ VOICE_PRESETS: list[dict[str, Any]] = [
         "label": "霸气青叔 · 男声",
         "gender": "male",
         "speaker": "zh_male_baqiqingshu_uranus_bigtts",
+    },
+    # 越南语 / 英语内容：微软 edge-tts neural 音色（豆包 uranus 音色仅中文）
+    {
+        "id": "vi-VN-HoaiMyNeural",
+        "label": "Hoài My · 越南语女声",
+        "gender": "female",
+        "speaker": "vi-VN-HoaiMyNeural",
+        "locale": "vi",
+    },
+    {
+        "id": "vi-VN-NamMinhNeural",
+        "label": "Nam Minh · 越南语男声",
+        "gender": "male",
+        "speaker": "vi-VN-NamMinhNeural",
+        "locale": "vi",
+    },
+    {
+        "id": "en-US-JennyNeural",
+        "label": "Jenny · 英语女声",
+        "gender": "female",
+        "speaker": "en-US-JennyNeural",
+        "locale": "en",
+    },
+    {
+        "id": "en-US-GuyNeural",
+        "label": "Guy · 英语男声",
+        "gender": "male",
+        "speaker": "en-US-GuyNeural",
+        "locale": "en",
     },
 ]
 
@@ -166,8 +198,21 @@ VOICE_ALIASES: dict[str, str] = {
 }
 
 
+def voice_locale(preset: dict[str, Any]) -> str:
+    """音色适用的内容语言；未标注的豆包音色为 zh。"""
+    return str(preset.get("locale") or "zh")
+
+
 def list_voices() -> list[dict[str, Any]]:
-    return list(VOICE_PRESETS)
+    """音色列表（label 按界面语言翻译）；非中文界面把该语言音色排在前面。"""
+    loc = normalize_locale(get_locale())
+    out = [
+        {**p, "label": _(str(p["label"])), "locale": voice_locale(p)}
+        for p in VOICE_PRESETS
+    ]
+    if loc != "zh":
+        out.sort(key=lambda p: 0 if p["locale"] == loc else 1)
+    return out
 
 
 def infer_speaker_gender(speaker: str) -> str | None:
@@ -179,11 +224,16 @@ def infer_speaker_gender(speaker: str) -> str | None:
         return "female"
     if s.startswith("zh_male_") or s.startswith("saturn_male"):
         return "male"
+    for preset in VOICE_PRESETS:
+        if str(preset["speaker"]).lower() == s:
+            return str(preset.get("gender") or "") or None
     return None
 
 
 def edge_tts_voice_for_speaker(speaker: str) -> str:
     """edge-tts 兜底：按豆包 speaker 映射不同中文 neural，避免全员同一条 Yunxi。"""
+    if is_edge_voice(speaker):
+        return (speaker or "").strip()
     mapped = EDGE_TTS_BY_SPEAKER.get((speaker or "").strip())
     if mapped:
         return mapped
@@ -258,6 +308,11 @@ def infer_speaker_from_voice_prompt(voice_prompt: str, *, character_name: str = 
 
 
 PREVIEW_TEXT = "大家好，这是当前音色的试听效果，适合科普短视频旁白讲解。"
+# 越南语 / 英语音色的试听文案（按音色语言，而非界面语言）
+PREVIEW_TEXT_BY_LOCALE = {
+    "vi": "Xin chào, đây là bản nghe thử giọng đọc này, phù hợp làm lời dẫn cho video ngắn AI.",
+    "en": "Hello, this is a preview of this voice, suited for narrating AI short videos.",
+}
 # 试听缓存文件名后缀：TTS 路由/edge 性别修复后递增，避免继续播放旧错误样例
 PREVIEW_CACHE_TAG = "v3"
 
@@ -280,7 +335,8 @@ async def ensure_voice_preview(voice_id: str) -> str:
 
     ark = get_ark()
     shot_no = int(hashlib.md5(speaker.encode()).hexdigest()[:4], 16) % 800 + 100
-    url = await ark.tts(PREVIEW_TEXT, speaker, project_id=0, shot_no=shot_no)
+    preview_text = PREVIEW_TEXT_BY_LOCALE.get(edge_voice_locale(speaker) or "", PREVIEW_TEXT)
+    url = await ark.tts(preview_text, speaker, project_id=0, shot_no=shot_no)
     src = storage.local_path_from_url(url)
     if src and src.exists():
         dest.write_bytes(src.read_bytes())

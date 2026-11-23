@@ -1,10 +1,11 @@
 import { dialog } from './dialog'
+import { tr } from '../i18n'
 
 export const PRICING_PATH = '/pricing'
 
 /** 是否为余额不足 / 计费拦截类错误 */
 export function isBillingError(message: string) {
-  return /余额不足|请先充值|402|insufficient_balance/i.test(message)
+  return /余额不足|请先充值|402|insufficient_balance|insufficient balance|số dư không đủ|vui lòng nạp tiền|please top up/i.test(message)
 }
 
 /** 跳转定价页充值 */
@@ -25,10 +26,10 @@ export async function handleBillingError(
   const message = err instanceof Error ? err.message : String(err || '')
   if (!isBillingError(message)) return false
   const go = await dialog.confirm({
-    title: '余额不足',
-    message: message || '当前余额不足以开始生成，请先充值。',
-    confirmText: '去充值',
-    cancelText: '知道了',
+    title: tr('billing.insufficient.title'),
+    message: message || tr('billing.insufficient.message'),
+    confirmText: tr('billing.insufficient.confirm'),
+    cancelText: tr('billing.insufficient.cancel'),
     tone: 'danger',
   })
   if (go) {

@@ -70,6 +70,17 @@ from app.services.drama.seedance_i2v_role import resolve_seedance_i2v_image_role
 from app.services.ffmpeg_compose import is_near_silent_audio
 from app.services.drama.llm import _extract_json
 from app.services.llm_client import chat_completions
+from app.i18n import _
+from app.services.kepu_locale import (
+    contains_any_variant,
+    expand_content_language_addon,
+    is_edge_voice,
+    is_zh,
+    latin_text,
+    resolve_content_locale,
+    storyboard_language_addon,
+    truncate_words,
+)
 from app.services import seedance_segments as segplan
 
 logger = logging.getLogger(__name__)
@@ -92,15 +103,23 @@ def reraise_upstream_timeout(exc: BaseException, *, kind: str, read_sec: float) 
     """把 httpx 超时翻成可读 RuntimeError；ReadTimeout 表示已连通但等结果超时。"""
     if isinstance(exc, httpx.ReadTimeout):
         raise RuntimeError(
-            f"{kind}等待上游超时（ReadTimeout）：已连通 TokenFree，但 {read_sec:.0f} 秒内未返回结果，请稍后重试"
+            _(
+                "{kind}等待上游超时（ReadTimeout）：已连通 TokenFree，但 {sec} 秒内未返回结果，请稍后重试",
+                kind=_(kind),
+                sec=f"{read_sec:.0f}",
+            )
         ) from exc
     if isinstance(exc, httpx.WriteTimeout):
         raise RuntimeError(
-            f"{kind}发送请求超时（WriteTimeout）：已连通 TokenFree，但 {read_sec:.0f} 秒内未能发完请求，请稍后重试"
+            _(
+                "{kind}发送请求超时（WriteTimeout）：已连通 TokenFree，但 {sec} 秒内未能发完请求，请稍后重试",
+                kind=_(kind),
+                sec=f"{read_sec:.0f}",
+            )
         ) from exc
     name = type(exc).__name__
     raise RuntimeError(
-        f"{kind}无法连接上游（{name}）：请检查网络、代理或 TokenFree 是否可达"
+        _("{kind}无法连接上游（{name}）：请检查网络、代理或 TokenFree 是否可达", kind=_(kind), name=name)
     ) from exc
 
 
@@ -116,7 +135,7 @@ def _raise_seedream_http_error(
     if status_code == 403 and "AccountOverdueError" in snippet:
         logger.error("Seedream AccountOverdueError — upstream Ark account overdue: %s", snippet[:200])
         raise RuntimeError(
-            "上游 Seedream 账户欠费（AccountOverdueError），生图暂不可用，请联系管理员充值 TokenFree 账户"
+            _("上游 Seedream 账户欠费（AccountOverdueError），生图暂不可用，请联系管理员充值 TokenFree 账户")
         )
     logger.warning(
         "出图上游失败 model=%s tokenfree=%s status=%s body=%s",
@@ -128,35 +147,43 @@ def _raise_seedream_http_error(
     if tokenfree:
         if is_tokenfree_input_text_sensitive(status_code=status_code, body=snippet):
             raise RuntimeError(
-                "生图文案未通过内容审核（可能含敏感或历史名人相关表述），"
-                "请修改提示词后重试。"
-                f" 详情：{snippet[:240]}"
+                _("生图文案未通过内容审核（可能含敏感或历史名人相关表述），请修改提示词后重试。")
+                + _(" 详情：{detail}", detail=snippet[:240])
             )
         raise RuntimeError(tokenfree_image_user_error(model=model, status_code=status_code, body=snippet))
     if "InputTextSensitive" in snippet or "InputTextSensitiveContentDetected" in snippet:
         raise RuntimeError(
-            "生图文案未通过内容审核（可能含敏感或历史名人相关表述），"
-            "请修改提示词后重试。"
-            f" 详情：{snippet[:240]}"
+            _("生图文案未通过内容审核（可能含敏感或历史名人相关表述），请修改提示词后重试。")
+            + _(" 详情：{detail}", detail=snippet[:240])
         )
     raise RuntimeError(f"Seedream error {status_code}: {snippet}")
 
 
 def _fallback_overlay_title(text: str, shot_no: int) -> str:
     """Last resort when LLM omits title — never blind-slice mid-word (e.g. ERP→ER)."""
+    if latin_text(text):
+        # 越南语/英语：保留空格，取首个短句（≤6 词）
+        clause = re.split(r"[,.;:!?]", (text or "").strip(), maxsplit=1)[0].strip()
+        if 1 <= len(clause.split()) <= 6 and len(clause) <= 40:
+            return clause
+        return _("场景{n}", n=shot_no)
     raw = re.sub(r"\s+", "", (text or "").strip())
     if not raw:
-        return f"场景{shot_no}"
+        return _("场景{n}", n=shot_no)
     clause = re.split(r"[，。；！？、,:;]", raw, maxsplit=1)[0].strip()
     if 2 <= len(clause) <= 10 and not _looks_truncated_token(clause, raw):
         return clause
-    return f"场景{shot_no}"
+    return _("场景{n}", n=shot_no)
 
 
 def _fallback_overlay_subtitle(text: str) -> str:
     raw = (text or "").strip()
     if not raw:
         return ""
+    if latin_text(raw):
+        # 越南语/英语：首个分句，按词边界截到 ~60 字符
+        clause = re.split(r"[,.;:!?]", raw, maxsplit=1)[0].strip()
+        return truncate_words(clause or raw, 60)
     cleaned = re.sub(r"\s+", "", raw)
     clause = re.split(r"[，。；！？、,:;]", cleaned, maxsplit=1)[0].strip()
     if 4 <= len(clause) <= 22:
@@ -198,13 +225,18 @@ def _normalize_overlay_title(title: str, text: str, shot_no: int) -> str:
     t = (title or "").strip()
     if not t or _looks_truncated_token(t, text):
         return _fallback_overlay_title(text, shot_no)
+    if latin_text(t):
+        return truncate_words(t, 60)
     return t[:32]
 
 
 def _normalize_overlay_subtitle(subtitle: str, text: str) -> str:
     s = (subtitle or "").strip()
     if not s or _looks_truncated_token(s, text):
-        return _fallback_overlay_subtitle(text)[:64]
+        fb = _fallback_overlay_subtitle(text)
+        return truncate_words(fb, 120) if latin_text(fb) else fb[:64]
+    if latin_text(s):
+        return truncate_words(s, 120)
     return s[:64]
 
 
@@ -227,6 +259,26 @@ _SEEDREAM_SANITIZE: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"埃隆"), "航天企业家"),
     (re.compile(r"Space\s*X"), "民营商业航天公司"),
 ]
+
+# 英文版（vi / en 内容项目）
+_SEEDREAM_SANITIZE_EN: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"(?i)\bspace\s*x\b"), "a private commercial spaceflight company"),
+    (re.compile(r"(?i)\bfalcon\s*heavy\b"), "a heavy-lift launch rocket"),
+    (re.compile(r"(?i)\bfalcon\s*1\b"), "the first experimental launch rocket"),
+    (re.compile(r"(?i)\bfalcon\s*9\b"), "a reusable launch rocket"),
+    (re.compile(r"(?i)\bfalcon\b"), "an experimental launch rocket"),
+    (re.compile(r"(?i)\bstarship\b"), "a giant launch spacecraft"),
+    (re.compile(r"(?i)\belon\s*musk\b"), "a space entrepreneur"),
+    (re.compile(r"(?i)\btesla\b"), "an electric-car company"),
+]
+
+# 非中文项目：分镜系统提示里与「输出语言」冲突的中文硬规则 → 中性表述（zh 不替换）
+_STORYBOARD_ZH_ONLY_RULES: tuple[tuple[str, str], ...] = (
+    ("所有字段必须使用简体中文（包括 title、text、img_prompt、video_prompt、camera、bgm、segments）。", "各字段语言见文末【输出语言】与【字段语言分工】。"),
+    ("所有字段必须使用简体中文。", "各字段语言见文末【输出语言】与【字段语言分工】。"),
+    ("img_prompt 与 video_prompt 禁止英文句子，专有名词可保留原文。", "img_prompt 与 video_prompt 使用英文。"),
+    ("与首段 visual 一致的中文首帧提示词", "与首段 visual 一致的英文首帧提示词"),
+)
 
 # 真人 / 写实人脸审核命中后追加的画风引导，压低照片级真人触发概率
 _SEEDREAM_CG_STYLE = (
@@ -382,29 +434,35 @@ def _format_seedance_create_error(
     ):
         idx, label = _seedance_content_slot_label(text, content_labels)
         if label:
-            return (
-                f"参考图疑似真人：{label}（content[{idx}]，PrivacyInformation），"
-                "请更换该形象为动漫或插画后重试"
+            return _(
+                "参考图疑似真人：{label}（content[{idx}]，PrivacyInformation），请更换该形象为动漫或插画后重试",
+                label=label,
+                idx=idx,
             )
         if idx >= 0:
-            return (
-                f"参考图疑似真人（提交内容第 {idx + 1} 项 / content[{idx}]，PrivacyInformation），"
-                "请更换对应角色/场景形象为动漫或插画后重试"
+            return _(
+                "参考图疑似真人（提交内容第 {n} 项 / content[{idx}]，PrivacyInformation），请更换对应角色/场景形象为动漫或插画后重试",
+                n=idx + 1,
+                idx=idx,
             )
-        return "参考图疑似真人（PrivacyInformation），请更换角色/场景形象为动漫或插画后重试"
+        return _("参考图疑似真人（PrivacyInformation），请更换角色/场景形象为动漫或插画后重试")
     if "InputTextSensitive" in text or "text sensitive" in text.lower():
-        return "分镜文案未通过内容审核，请修改敏感表述后重试"
+        return _("分镜文案未通过内容审核，请修改敏感表述后重试")
     if "resource download failed" in text and "audio" in text.lower():
-        return "参考音频无法下载，请检查角色音色绑定后重试"
+        return _("参考音频无法下载，请检查角色音色绑定后重试")
     # Seedance r2v：reference_audio 时长须 ≥ 1.8 秒
     if re.search(r"audio duration.*(?:1\.8|greater than or equal)", text, re.I) or (
         "audio duration" in text.lower() and "content[" in text.lower()
     ):
         idx, label = _seedance_content_slot_label(text, content_labels)
-        who = label or (f"提交内容第 {idx + 1} 项 / content[{idx}]" if idx >= 0 else "某条参考音频")
-        return (
-            f"参考音频过短：{who}，Seedance 要求时长 ≥ 1.8 秒。"
-            "请打开对应角色/旁白，重新生成或上传更长的试听音频后再生成该分镜。"
+        who = label or (
+            _("提交内容第 {n} 项 / content[{idx}]", n=idx + 1, idx=idx)
+            if idx >= 0
+            else _("某条参考音频")
+        )
+        return _(
+            "参考音频过短：{who}，Seedance 要求时长 ≥ 1.8 秒。请打开对应角色/旁白，重新生成或上传更长的试听音频后再生成该分镜。",
+            who=who,
         )
     return f"Seedance create error {status_code}: {text}"
 
@@ -536,7 +594,10 @@ class ArkGateway:
         output_ratio: str = "16:9",
         shot_range_override: tuple[int, int] | None = None,
         allow_source_names: bool = False,
+        content_locale: str | None = None,
     ) -> StoryboardResult:
+        """科普分镜 LLM；content_locale 非 zh 时追加输出语言指令（口播/叠字用该语言，画面字段英文）。"""
+        locale = resolve_content_locale(content_locale)
         if self.mock:
             return await asyncio.to_thread(
                 self._mock_storyboard,
@@ -547,6 +608,7 @@ class ArkGateway:
                 duration_max,
                 pipeline_mode,
                 shot_range_override,
+                locale,
             )
 
         user_constraints = ""
@@ -691,6 +753,12 @@ class ArkGateway:
                 f"{segment_rules}"
                 f"{diversity_note}"
             )
+        # 内容语言：zh 为空串（提示词与旧版逐字一致）
+        if not is_zh(locale):
+            # 与文末【输出语言】冲突的「全中文 / 禁英文」硬要求在非中文项目里去掉
+            for zh_rule, neutral in _STORYBOARD_ZH_ONLY_RULES:
+                system = system.replace(zh_rule, neutral)
+        system += storyboard_language_addon(locale)
         user = (
             f"输入类型：{source_type}。请先理解内容与应用场景，再拆成精确到每一段的分镜"
             f"（{shot_range} 镜，短镜快切，禁止拖腔注水）：\n{source_text}"
@@ -733,7 +801,7 @@ class ArkGateway:
                 )
 
         if not (content or "").strip():
-            raise RuntimeError("分镜模型返回空内容，请检查文字模型渠道配置或稍后重试")
+            raise RuntimeError(_("分镜模型返回空内容，请检查文字模型渠道配置或稍后重试"))
 
         return self._parse_storyboard(
             content,
@@ -741,6 +809,7 @@ class ArkGateway:
             duration_min,
             duration_max,
             max_shot_duration,
+            content_locale=locale,
         )
 
     async def gen_image(
@@ -952,7 +1021,7 @@ class ArkGateway:
             remote = self._extract_image_url(data) or extract_tokenfree_image_url(data)
         if not remote:
             logger.warning("出图响应无图片地址: %s", json.dumps(data, ensure_ascii=False)[:500])
-            raise RuntimeError("出图未返回图片地址，请稍后重试")
+            raise RuntimeError(_("出图未返回图片地址，请稍后重试"))
 
         dest_dir = storage.project_dir(project_id or 0)
         name = f"shot_{(shot_no or 0):03d}_{uuid.uuid4().hex[:12]}.png"
@@ -981,7 +1050,7 @@ class ArkGateway:
         return (
             "InputTextSensitive" in text
             or "InputTextSensitiveContentDetected" in text
-            or "生图文案未通过内容审核" in text
+            or contains_any_variant(text, "生图文案未通过内容审核")
         )
 
     @staticmethod
@@ -1019,7 +1088,7 @@ class ArkGateway:
                 "参考图疑似真人",
                 "may contain real person",
             )
-        )
+        ) or contains_any_variant(text, "参考图疑似真人")
 
     @staticmethod
     def _is_seedance_text_policy_error(msg: str) -> bool:
@@ -1028,7 +1097,7 @@ class ArkGateway:
         if ArkGateway._is_seedance_input_privacy_error(text):
             return False
         lowered = text.lower()
-        if "分镜文案未通过内容审核" in text:
+        if contains_any_variant(text, "分镜文案未通过内容审核"):
             return True
         return any(
             k in lowered
@@ -1083,10 +1152,14 @@ class ArkGateway:
         return out if changed else None
 
     @staticmethod
-    def _sanitize_seedream_prompt(prompt: str) -> str:
-        """品牌/IP 软化（科普分镜等调用方可选使用；生图主路径不做兜底改写）。"""
+    def _sanitize_seedream_prompt(prompt: str, content_locale: str | None = None) -> str:
+        """品牌/IP 软化（科普分镜等调用方可选使用；生图主路径不做兜底改写）。
+
+        vi / en 内容项目用英文泛称，避免在英文提示词里插入中文。
+        """
         out = prompt or ""
-        for pat, repl in _SEEDREAM_SANITIZE:
+        table = _SEEDREAM_SANITIZE if is_zh(content_locale) else _SEEDREAM_SANITIZE_EN
+        for pat, repl in table:
             out = pat.sub(repl, out)
         return out
 
@@ -1826,14 +1899,19 @@ class ArkGateway:
             or self.settings.volc_tts_speaker
             or "zh_female_cancan_uranus_bigtts"
         )
-        clean = (text or "").strip() or "这一幕。"
+        clean = (text or "").strip() or _("这一幕。")
+        # vi-VN-* / en-US-* 等微软 neural 音色：豆包 openspeech 不认，直接走 edge-tts
+        edge_speaker = is_edge_voice(speaker)
 
         if self.mock:
             digest = hashlib.md5(f"{speaker}:{clean}".encode()).hexdigest()[:8]
             dest = Path(__file__).resolve().parents[2] / "static" / "mock" / f"audio_{digest}.mp3"
             dest.parent.mkdir(parents=True, exist_ok=True)
             if not dest.exists() or dest.stat().st_size < 1000:
-                await self._tts_edge(clean, dest)
+                if edge_speaker:
+                    await self._tts_edge(clean, dest, voice_hint=speaker)
+                else:
+                    await self._tts_edge(clean, dest)
             return f"/static/mock/audio_{digest}.mp3"
 
         dest_dir = storage.project_dir(project_id or 0)
@@ -1850,8 +1928,18 @@ class ArkGateway:
         audio_model = self._resolved_audio_model()
         on_tokenfree = uses_tokenfree_audio(base_url=self.settings.ark_base_url or "")
 
+        if edge_speaker:
+            try:
+                await self._tts_edge(clean, dest, voice_hint=speaker)
+                url = await _accept_if_audible("edge-tts")
+                if url:
+                    logger.info("TTS edge-tts ok shot=%s speaker=%s", shot_no, speaker)
+                    return url
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("edge-tts (%s) failed: %s", speaker, exc)
+
         # 豆包 openspeech：标准 speaker 优先，避免 /audio/speech 忽略音色 id
-        if self._openspeech_configured():
+        if self._openspeech_configured() and not edge_speaker:
             try:
                 ok = await self._tts_openspeech(clean, speaker, dest, emotion_hint=emotion_hint)
                 if ok:
@@ -1902,7 +1990,7 @@ class ArkGateway:
                 logger.warning("Ark TTS failed: %s", exc)
 
         logger.error("TTS all providers failed shot=%s", shot_no)
-        raise RuntimeError("配音失败：语音服务暂不可用，请稍后重试")
+        raise RuntimeError(_("配音失败：语音服务暂不可用，请稍后重试"))
 
     def _tts_resource_id(self, speaker: str) -> str:
         if speaker.startswith("S_"):
@@ -2096,11 +2184,13 @@ class ArkGateway:
                 if public and str(public).startswith("https://"):
                     return str(public)
                 raise RuntimeError(
-                    "Seedance 需要公网可访问的图片 URL（请启用 OSS 并确保参考图已上传），"
-                    "本地 /static 图无法被方舟拉取"
+                    _(
+                        "Seedance 需要公网可访问的图片 URL（请启用 OSS 并确保参考图已上传），"
+                        "本地 /static 图无法被方舟拉取"
+                    )
                 )
             if raw.startswith("data:"):
-                raise RuntimeError("Seedance 不支持 data URI 图片，请使用 Ark CDN https 链接")
+                raise RuntimeError(_("Seedance 不支持 data URI 图片，请使用 Ark CDN https 链接"))
         if raw.startswith("http://") or raw.startswith("https://") or raw.startswith("data:"):
             return raw
         local = storage.local_path_from_url(raw)
@@ -2159,19 +2249,21 @@ class ArkGateway:
         duration_max: int,
         pipeline_mode: str = "full",
         shot_range_override: tuple[int, int] | None = None,
+        content_locale: str | None = "zh",
     ) -> StoryboardResult:
+        zh = is_zh(content_locale)
         chunks = [c.strip() for c in re.split(r"[。！？\n\.\!\?]+", source_text) if c.strip()]
         if source_type == "theme" and len(chunks) <= 1:
             topic = source_text.strip()
             chunks = [
-                f"引入主题：{topic}",
-                f"核心概念解释：{topic}",
-                f"一个关键例子说明{topic}",
-                f"常见误解与澄清",
-                f"总结与启发",
+                _("引入主题：{topic}", topic=topic),
+                _("核心概念解释：{topic}", topic=topic),
+                _("一个关键例子说明{topic}", topic=topic),
+                _("常见误解与澄清"),
+                _("总结与启发"),
             ]
         if len(chunks) < 3:
-            chunks = chunks + ["补充画面过渡", "收尾总结"]
+            chunks = chunks + [_("补充画面过渡"), _("收尾总结")]
         # shot_lo/shot_hi 与正式拆镜区间一致，避免 mock 仍只出 5 镜
         if shot_range_override:
             shot_lo, shot_hi = shot_range_override
@@ -2179,45 +2271,69 @@ class ArkGateway:
             shot_lo, shot_hi = segplan.suggested_kepu_shot_range(source_text, pipeline_mode=pipeline_mode)
         chunks = chunks[:shot_hi]
         while len(chunks) < shot_lo:
-            chunks.append("补充画面过渡")
+            chunks.append(_("补充画面过渡"))
         mid = (duration_min + duration_max) // 2
         if pipeline_mode == "image_text":
             mid = min(mid, max(duration_min, 3))
-        bible = (
-            f"统一角色：与「{source_text.strip()[:24]}」相关的核心人物，"
-            "中等身材，简洁服饰配色固定，五官清晰可辨，全片外形不变"
-        )
-        bgm_lock = segplan.infer_bgm_mood(source_text, style_prefix)
+        if zh:
+            bible = (
+                f"统一角色：与「{source_text.strip()[:24]}」相关的核心人物，"
+                "中等身材，简洁服饰配色固定，五官清晰可辨，全片外形不变"
+            )
+        else:
+            bible = (
+                f"Consistent character: the key figure related to \"{truncate_words(source_text.strip(), 60)}\", "
+                "medium build, simple outfit with fixed colors, clearly recognizable features, same look throughout"
+            )
+        bgm_lock = segplan.infer_bgm_mood_for(content_locale, source_text, style_prefix)
         plans: list[ShotPlan] = []
         for i, text in enumerate(chunks, start=1):
             # Mock: invent short summary titles, do not slice narration mid-token
             topic_bit = re.sub(r"^(引入主题|核心概念解释|一个关键例子说明)[：:]?", "", text).strip()
-            title = f"要点{i}" if len(topic_bit) > 10 else (topic_bit[:8] or f"场景{i}")
-            if "：" in text or ":" in text:
-                title = text.split("：", 1)[0].split(":", 1)[0][-6:] or title
+            if zh:
+                title = _("要点{i}", i=i) if len(topic_bit) > 10 else (topic_bit[:8] or _("场景{n}", n=i))
+                if "：" in text or ":" in text:
+                    title = text.split("：", 1)[0].split(":", 1)[0][-6:] or title
+            else:
+                head = text.split(":", 1)[0].strip() if ":" in text else text
+                title = head if 1 <= len(head.split()) <= 6 else _("要点{i}", i=i)
+                title = truncate_words(title, 40) or _("场景{n}", n=i)
+                text = truncate_words(text, 300)
             subtitle = _fallback_overlay_subtitle(text)
-            img = f"{style_prefix}，{bible}，画面表现：{text[:80]}，竖屏构图，顶部留白，画面无文字"
+            if zh:
+                img = f"{style_prefix}，{bible}，画面表现：{text[:80]}，竖屏构图，顶部留白，画面无文字"
+            else:
+                img = (
+                    f"{style_prefix}, {bible}, visual: {truncate_words(text, 160)}, "
+                    "vertical composition, empty space at the top, no text in the frame"
+                )
             beats = [
                 segplan.SegmentBeat(duration=segplan.estimate_visual_duration(img), kind="visual", text=img),
                 segplan.SegmentBeat(
                     duration=segplan.estimate_narration_duration(text),
                     kind="narration",
-                    text=text[:120],
+                    text=text[:120] if zh else text,
                 ),
             ]
-            script = segplan.build_segment_script(beats, bgm_mood=bgm_lock, max_total=min(duration_max, 30))
+            script = segplan.build_segment_script(
+                beats, bgm_mood=bgm_lock, max_total=min(duration_max, 30), content_locale=content_locale
+            )
             dur = float(segplan.resolve_api_duration(script, fallback=mid, lo=duration_min, hi=duration_max))
             plans.append(
                 ShotPlan(
                     shot=i,
                     duration=dur,
-                    text=text[:120],
+                    text=text[:120] if zh else text,
                     overlay_title=_normalize_overlay_title(title, text, i),
                     overlay_subtitle=_normalize_overlay_subtitle(subtitle, text),
                     img_prompt=img,
                     video_prompt=script,
                     segment_script=script,
-                    camera="缓慢推近" if i % 2 else "轻拉远",
+                    camera=(
+                        ("缓慢推近" if i % 2 else "轻拉远")
+                        if zh
+                        else ("slow push-in" if i % 2 else "gentle pull-out")
+                    ),
                     bgm=bgm_lock,
                 )
             )
@@ -2230,14 +2346,16 @@ class ArkGateway:
         duration_min: int,
         duration_max: int,
         max_shot_duration: int,
+        content_locale: str | None = "zh",
     ) -> StoryboardResult:
+        zh = is_zh(content_locale)
         raw = (content or "").strip()
         if not raw:
-            raise RuntimeError("分镜 JSON 为空，无法解析")
+            raise RuntimeError(_("分镜 JSON 为空，无法解析"))
         try:
             data = _extract_json(raw)
         except json.JSONDecodeError as exc:
-            raise RuntimeError(f"分镜 JSON 解析失败：{exc}") from exc
+            raise RuntimeError(_("分镜 JSON 解析失败：{err}", err=exc)) from exc
         character_bible = ""
         bgm_lock = ""
         items = data
@@ -2248,26 +2366,30 @@ class ArkGateway:
             bgm_lock = str(data.get("bgm_lock") or data.get("bgm") or "").strip()
             items = data.get("shots") or data.get("storyboard") or data.get("scenes") or []
         if not isinstance(items, list):
-            raise RuntimeError("LLM storyboard JSON 格式无效：需要 shots 数组")
+            raise RuntimeError(_("LLM storyboard JSON 格式无效：需要 shots 数组"))
         if not items:
-            raise RuntimeError("分镜模型未返回任何镜头（shots 为空）")
+            raise RuntimeError(_("分镜模型未返回任何镜头（shots 为空）"))
         hi = min(duration_max, max_shot_duration)
         plans: list[ShotPlan] = []
         for i, item in enumerate(items, start=1):
             if not isinstance(item, dict):
                 continue
-            text = str(item.get("text") or item.get("audio_text") or f"镜头{i}")
+            text = str(item.get("text") or item.get("audio_text") or _("镜头{i}", i=i))
             title = str(item.get("title") or item.get("overlay_title") or "").strip()
             subtitle = str(item.get("subtitle") or item.get("overlay_subtitle") or "").strip()
             title = _normalize_overlay_title(title, text, i)
             subtitle = _normalize_overlay_subtitle(subtitle, text)
             img = str(item.get("img_prompt") or f"{text}")
-            camera = str(item.get("camera", "缓慢横移"))
-            bgm = str(item.get("bgm") or item.get("bgm_mood") or bgm_lock or "平稳")
+            camera = str(item.get("camera", "缓慢横移" if zh else "slow lateral move"))
+            bgm = str(item.get("bgm") or item.get("bgm_mood") or bgm_lock or ("平稳" if zh else "steady"))
             if not bgm_lock:
                 bgm_lock = bgm
-            beats = segplan.parse_beats_from_llm_shot(item, narration_fallback=text)
-            script = segplan.build_segment_script(beats, bgm_mood=bgm_lock or bgm, max_total=hi)
+            beats = segplan.parse_beats_from_llm_shot(
+                item, narration_fallback=text, content_locale=content_locale
+            )
+            script = segplan.build_segment_script(
+                beats, bgm_mood=bgm_lock or bgm, max_total=hi, content_locale=content_locale
+            )
             narr = segplan.narration_from_script(script) or text
             visual = segplan.first_visual_prompt(script) or img
             dur = float(
@@ -2297,15 +2419,25 @@ class ArkGateway:
         return StoryboardResult(
             shots=plans,
             character_bible=character_bible,
-            bgm_lock=bgm_lock or segplan.infer_bgm_mood(style_prefix),
+            bgm_lock=bgm_lock or segplan.infer_bgm_mood_for(content_locale, style_prefix),
         )
 
-    async def expand_content(self, topic: str, mode: str = "theme") -> dict[str, str]:
-        """Expand a short topic into title + theme brief or full narration script."""
-        topic = (topic or "").strip() or "人工智能如何改变日常生活"
+    async def expand_content(
+        self,
+        topic: str,
+        mode: str = "theme",
+        *,
+        content_locale: str | None = None,
+    ) -> dict[str, str]:
+        """Expand a short topic into title + theme brief or full narration script.
+
+        content_locale 缺省取当前请求语言；非 zh 时追加输出语言指令。
+        """
+        locale = resolve_content_locale(content_locale)
+        topic = (topic or "").strip() or _("人工智能如何改变日常生活")
         mode = "script" if mode == "script" else "theme"
         if self.mock:
-            return self._mock_expand_content(topic, mode)
+            return self._mock_expand_content(topic, mode, locale=locale)
 
         if mode == "script":
             system = (
@@ -2322,6 +2454,7 @@ class ArkGateway:
                 "title：8-18 字。"
                 "content：一句话主题，40-90 字，写清受众与要讲清的核心知识点；不要换行。"
             )
+        system += expand_content_language_addon(locale)
         content = await chat_completions(
             system,
             f"主题/素材：{topic}",
@@ -2329,9 +2462,11 @@ class ArkGateway:
             max_tokens=4096,
             timeout=90.0,
         )
-        return self._parse_expand_content(content or "{}", topic, mode)
+        return self._parse_expand_content(content or "{}", topic, mode, locale=locale)
 
-    def _mock_expand_content(self, topic: str, mode: str) -> dict[str, str]:
+    def _mock_expand_content(self, topic: str, mode: str, *, locale: str = "zh") -> dict[str, str]:
+        if not is_zh(locale):
+            return self._mock_expand_content_latin(topic, mode)
         short = topic[:18].rstrip("？?。.!！") or "科普短片"
         title = short if len(short) >= 4 else f"{short}的科普"
         if mode == "script":
@@ -2350,7 +2485,27 @@ class ArkGateway:
             )[:100]
         return {"title": title[:24], "content": content}
 
-    def _parse_expand_content(self, raw: str, topic: str, mode: str) -> dict[str, str]:
+    def _mock_expand_content_latin(self, topic: str, mode: str) -> dict[str, str]:
+        """越南语 / 英语 mock 扩写（按当前语言取译文）。"""
+        base = topic.strip().rstrip("？?。.!！")
+        title = truncate_words(base, 60) or _("科普短片")
+        if mode == "script":
+            content = _(
+                "你有没有想过：{topic}？\n\n今天我们用三分钟，把这件事讲清楚。"
+                "先从生活里最常见的现象说起，再拆开背后的原理，最后给你一个好记的结论。\n\n"
+                "记住：观察现象、追问机制、再用例子验证。",
+                topic=base,
+            )
+        else:
+            content = truncate_words(
+                _("{topic}：面向普通观众，用生活例子讲清核心原理与常见误区。", topic=base), 400
+            )
+        return {"title": truncate_words(title, 80), "content": content}
+
+    def _parse_expand_content(
+        self, raw: str, topic: str, mode: str, *, locale: str = "zh"
+    ) -> dict[str, str]:
+        zh = is_zh(locale)
         text = (raw or "").strip()
         if text.startswith("```"):
             text = re.sub(r"^```(?:json)?\s*", "", text)
@@ -2360,20 +2515,22 @@ class ArkGateway:
         except json.JSONDecodeError:
             m = re.search(r"\{[\s\S]*\}", text)
             if not m:
-                return self._mock_expand_content(topic, mode)
+                return self._mock_expand_content(topic, mode, locale=locale)
             try:
                 data = json.loads(m.group(0))
             except json.JSONDecodeError:
-                return self._mock_expand_content(topic, mode)
-        title = str(data.get("title") or "").strip() or topic[:18]
+                return self._mock_expand_content(topic, mode, locale=locale)
+        title = str(data.get("title") or "").strip() or (topic[:18] if zh else truncate_words(topic, 60))
         content = str(data.get("content") or "").strip()
         if not content:
-            return self._mock_expand_content(topic, mode)
+            return self._mock_expand_content(topic, mode, locale=locale)
         if mode == "theme":
-            content = content.replace("\n", " ").strip()[:100]
+            flat = content.replace("\n", " ").strip()
+            # 越南语/英语同样信息量字符数约为中文 3–4 倍，按词边界截断
+            content = flat[:100] if zh else truncate_words(flat, 400)
         else:
-            content = content[:8000]
-        return {"title": title[:24], "content": content}
+            content = content[:8000] if zh else content[:20000]
+        return {"title": title[:24] if zh else truncate_words(title, 80), "content": content}
 
 
 _gateway: ArkGateway | None = None

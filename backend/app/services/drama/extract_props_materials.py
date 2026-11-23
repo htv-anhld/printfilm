@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from app.services.drama.content_locale import is_zh, with_output_language
 from app.services.drama.llm import drama_chat_json
 
 SUMMARY_TEXT_MAX = 4000
@@ -88,7 +89,15 @@ async def extract_props_materials(
             "请抽取 props（不要输出 materials）。",
         ]
     )
-    raw = await drama_chat_json(SYSTEM_PROMPT, user, max_tokens=4096)
+    system = with_output_language(SYSTEM_PROMPT)
+    if not is_zh():
+        # 道具名按内容语言；visualPrompt 是生图提示词，用英文（Seedream 理解最好）
+        system += (
+            "\n例外：visualPrompt 是生图提示词，必须用英语书写；name 仍用上面指定的输出语言。\n"
+            "Exception: visualPrompt is an image-generation prompt and must be written in English; "
+            "name stays in the output language above."
+        )
+    raw = await drama_chat_json(system, user, max_tokens=4096)
     normalized = _normalize_payload(raw)
     return {
         "props": _dedupe_by_name(normalized["props"]),

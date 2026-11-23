@@ -6,6 +6,8 @@ POST /v1/videos、GET /v1/videos/:id、GET /v1/videos/:id/content。
 
 from __future__ import annotations
 
+from app.i18n import _
+
 from typing import Any
 
 from app.services.media_ref_limits import MAX_REFERENCE_IMAGES
@@ -249,9 +251,9 @@ def format_video_task_error(err: Any) -> str:
                 nested = format_video_task_error(value)
                 if nested:
                     return nested
-        return "视频生成失败"
+        return _("视频生成失败")
     text = str(err or "").strip()
-    return text or "视频生成失败"
+    return text or _("视频生成失败")
 
 
 def extract_video_result_url(data: dict[str, Any]) -> str | None:

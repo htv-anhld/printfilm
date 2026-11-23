@@ -8,7 +8,8 @@ from typing import Any
 
 from app.models_drama import DramaAsset, DramaProject
 from app.services.drama.llm import drama_chat_text
-from app.services.drama.voice_synthesis import build_voice_sample_text
+from app.services.drama.content_locale import content_text, is_zh
+from app.services.drama.voice_synthesis import build_voice_sample_text, speaker_inference_text
 from app.services.voices import infer_drama_speaker_from_prompt
 
 logger = logging.getLogger(__name__)
@@ -84,33 +85,39 @@ def normalize_voice_prompt_text(raw: str) -> str:
 def fallback_voice_prompt(asset: DramaAsset, summary_char: dict[str, Any] | None = None) -> str:
     params = asset.params if isinstance(asset.params, dict) else {}
     summary = summary_char or {}
-    name = asset.name or "角色"
+    # 与 LLM 一致：非中文项目的音色描述用英文
+    loc = "zh" if is_zh() else "en"
+
+    def t(src: str, **kw: object) -> str:
+        return content_text(src, loc, **kw)
+
+    name = asset.name or t("角色")
     role = str(params.get("roleType") or summary.get("roleType") or "").strip()
     personality = str(params.get("personality") or summary.get("personality") or "").strip()
     visual = str(params.get("visualImage") or summary.get("visualImage") or "").strip()
 
-    age_gender = "青年"
+    age_gender = t("青年")
     if any(k in f"{role}{personality}{visual}" for k in ("童", "少年", "幼")):
-        age_gender = "少年"
+        age_gender = t("少年")
     elif any(k in f"{role}{personality}{visual}" for k in ("老", "翁", "婆", "长")):
-        age_gender = "中老年"
+        age_gender = t("中老年")
     if any(k in f"{role}{personality}{visual}" for k in ("女", "娘", "妃", "后", "妹")):
-        tone = f"{age_gender}女声，吐字清晰，语速自然偏慢"
+        tone = t("{age}女声，吐字清晰，语速自然偏慢", age=age_gender)
     elif any(k in f"{role}{personality}{visual}" for k in ("男", "公", "王", "将", "伯", "禹")):
-        tone = f"{age_gender}男声，吐字清晰，语速沉稳"
+        tone = t("{age}男声，吐字清晰，语速沉稳", age=age_gender)
     else:
-        tone = f"{age_gender}声线，吐字清晰，语速适中"
+        tone = t("{age}声线，吐字清晰，语速适中", age=age_gender)
 
-    mood = "语气平和"
+    mood = t("语气平和")
     if personality:
         if any(k in personality for k in ("冷", "峻", "狠", "刚")):
-            mood = "语气冷峻克制"
+            mood = t("语气冷峻克制")
         elif any(k in personality for k in ("温", "柔", "善", "仁")):
-            mood = "语气温厚柔和"
+            mood = t("语气温厚柔和")
         elif any(k in personality for k in ("活", "皮", "俏", "灵")):
-            mood = "语气活泼清亮"
+            mood = t("语气活泼清亮")
 
-    return f"{name}：{tone}，{mood}，贴合{role or '角色'}身份。"
+    return t("{name}：{tone}，{mood}，贴合{role}身份。", name=name, tone=tone, mood=mood, role=role or t("角色"))
 
 
 async def suggest_voice_prompt_for_character(
@@ -136,11 +143,15 @@ async def suggest_voice_prompt_for_character(
         f"请为以下角色生成音色描述：\n\n{context}",
         temperature=0.6,
         max_tokens=512,
+        # 音色描述是给 TTS / 音色设计的选角说明：非中文项目用英文
+        language="visual",
     )
     prompt = normalize_voice_prompt_text(raw)
     if len(prompt) < 8:
         prompt = fallback_voice_prompt(asset, summary_char)
-    name = asset.name or "角色"
-    speaker = infer_drama_speaker_from_prompt(prompt, character_name=name, asset_id=asset.id)
+    name = asset.name or content_text("角色")
+    speaker = infer_drama_speaker_from_prompt(
+        speaker_inference_text(prompt), character_name=name, asset_id=asset.id
+    )
     sample_text = build_voice_sample_text(prompt, name, short=False)
     return prompt, speaker, sample_text

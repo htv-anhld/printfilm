@@ -16,6 +16,7 @@ from app.models_tasks import TaskRun
 from app.services.billing.settlement import reconcile_terminal_frozen_tasks
 from app.services.tasks.executor import execute_task_run
 from app.services.tasks.service import (
+    task_text,
     append_task_event,
     count_user_active_runtime_tasks,
     reconcile_sequential_batches,
@@ -215,7 +216,7 @@ async def _tick() -> None:
                 event_type="task.leased",
                 status=next_status,
                 phase=getattr(task, "current_step_key", None),
-                message="任务已被调度器领取",
+                message=task_text(task, "任务已被调度器领取"),
             )
             claimed_ids.append(task_id)
             user_active_cache[user_id] += 1
@@ -284,7 +285,7 @@ async def recover_orphaned_tasks() -> int:
                 event_type="task.recovered",
                 status=task.status,
                 phase=task.current_step_key,
-                message="检测到任务执行中断或租约过期，已重新排队",
+                message=task_text(task, "检测到任务执行中断或租约过期，已重新排队"),
             )
             changed += 1
         if changed:

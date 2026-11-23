@@ -8,6 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_admin
 from app.models import User
@@ -164,7 +165,7 @@ async def get_drama_asset(
         )
     ).first()
     if not row:
-        raise HTTPException(status_code=404, detail="漫剧资产不存在")
+        raise HTTPException(status_code=404, detail=_("漫剧资产不存在"))
     asset, project, email = row
     base = _asset_to_out(
         asset,

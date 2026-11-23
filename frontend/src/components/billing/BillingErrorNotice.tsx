@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { isBillingError, PRICING_PATH } from '../../lib/billingError'
+import { useI18n } from '../../i18n'
 
 type Props = {
   message: string | null | undefined
@@ -17,9 +18,10 @@ export default function BillingErrorNotice({
   message,
   className = 'pf-error',
   style,
-  linkText = '去充值 →',
+  linkText,
   inline = false,
 }: Props) {
+  const { t } = useI18n()
   const text = String(message || '').trim()
   if (!text) return null
   const Tag = inline ? 'span' : 'p'
@@ -34,7 +36,7 @@ export default function BillingErrorNotice({
     <Tag className={className} style={style} role={inline ? undefined : 'alert'}>
       {text}{' '}
       <Link to={PRICING_PATH} className="pf-link pf-billing-topup-link">
-        {linkText}
+        {linkText ?? t('billing.topupLink')}
       </Link>
     </Tag>
   )

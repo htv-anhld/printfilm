@@ -6,6 +6,11 @@
 
 from __future__ import annotations
 
+import re
+
+# 判断正文是否含中文（中文敏感词表只对中文正文有意义）
+_CJK_RE = re.compile(r"[\u3400-\u9fff]")
+
 # 长词优先，避免短词先替换破坏短语
 _SEEDREAM_TEXT_SOFTEN: list[tuple[str, str]] = [
     # 酒精 / 配饰
@@ -125,6 +130,12 @@ def compact_seedream_prompt_for_retry(prompt: str) -> str:
 # 仍审核失败时：简化三视图 + 只保留服装/风格线索
 def style_only_seedream_prompt_for_retry(prompt: str) -> str:
     body = _replace_sensitive_terms(extract_seedream_user_body(prompt) or prompt or "")
+    if body and not _CJK_RE.search(body):
+        # 越南语 / 英语描述：中文敏感词表不适用，不要硬套「古风书生」，保留原描述
+        return (
+            f"{_COMPACT_TURNAROUND_PREFIX}{body[:600]}，"
+            "轮廓清晰，禁止真实历史人物肖像。"
+        )
     style_bits: list[str] = []
     for key in (
         "羊毛毡",

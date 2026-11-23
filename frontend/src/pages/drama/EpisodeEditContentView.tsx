@@ -1,6 +1,7 @@
 /** 分镜正文只读渲染：把 @asset:id 显示为带缩略图的关联标签 */
 import { Fragment, useMemo } from 'react'
 import { resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
+import { useI18n } from '../../i18n'
 
 type Props = {
   content: string
@@ -37,9 +38,10 @@ function splitContentParts(content: string): Part[] {
 export function EpisodeEditContentView({ content, assets, onOpenAsset }: Props) {
   const byId = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets])
   const parts = useMemo(() => splitContentParts(content || ''), [content])
+  const { t } = useI18n()
 
   if (!content.trim()) {
-    return <p className="drama-ep-content-empty">暂无脚本内容，点击「编辑」开始填写</p>
+    return <p className="drama-ep-content-empty">{t('episode.contentView.empty')}</p>
   }
 
   return (
@@ -59,7 +61,7 @@ export function EpisodeEditContentView({ content, assets, onOpenAsset }: Props) 
         }
         const asset = byId.get(part.assetId)
         const preview = asset ? resolveDramaMediaUrl(asset.cover || asset.url) : ''
-        const label = asset?.name || `资产 ${part.assetId}`
+        const label = asset?.name || t('episode.common.assetN', { id: part.assetId })
         return (
           <button
             key={`a-${idx}-${part.assetId}`}

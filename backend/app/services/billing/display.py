@@ -9,6 +9,7 @@ from sqlalchemy import Integer, and_, cast, func, or_
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql.elements import ColumnElement
 
+from app.i18n import _
 from app.models import UsageEvent
 from app.services.billing.pricing import parse_upstream_cost_fen
 
@@ -56,7 +57,8 @@ def resolve_billing_basis(*, estimated: bool, raw_usage_json: str | None = None)
 
 
 def billing_basis_label(basis: str) -> str:
-    return _BASIS_LABELS.get(basis, basis or "—")
+    label = _BASIS_LABELS.get(basis)
+    return _(label) if label else (basis or "—")
 
 
 def _raw_usage_jsonb() -> ColumnElement[Any]:

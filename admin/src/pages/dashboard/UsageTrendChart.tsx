@@ -10,6 +10,7 @@ import {
 import type { AdminDailyUsage } from "@/api/client";
 import { fenToYuan } from "@/lib/utils";
 import type { DashboardMetric } from "./DashboardFilters";
+import { tr } from "@/i18n";
 
 type UsageTrendChartProps = {
   data: AdminDailyUsage[];
@@ -17,9 +18,9 @@ type UsageTrendChartProps = {
 };
 
 function metricLabel(metric: DashboardMetric): string {
-  if (metric === "cost") return "上游成本";
-  if (metric === "calls") return "调用次数";
-  return "扣费金额";
+  if (metric === "cost") return tr("dashboard.metricLong.cost");
+  if (metric === "calls") return tr("dashboard.metricLong.calls");
+  return tr("dashboard.metricLong.charge");
 }
 
 function readMetric(row: AdminDailyUsage, metric: DashboardMetric): number {
@@ -47,7 +48,7 @@ export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
   }));
 
   if (chartData.length === 0) {
-    return <div className="admin-chart-empty">暂无趋势数据</div>;
+    return <div className="admin-chart-empty">{tr("dashboard.emptyTrend")}</div>;
   }
 
   return (

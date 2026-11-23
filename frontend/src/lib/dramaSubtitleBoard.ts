@@ -1,6 +1,8 @@
 /** 分镜字幕板：从分镜正文提取口播字幕，供预览与导出。 */
 
 import type { DramaFragment } from '../api/drama'
+import { tr } from '../i18n'
+import { isVisualLabelAlias } from './dramaCameraLexicon'
 
 export type DramaSubtitleMode = 'model' | 'post'
 
@@ -92,13 +94,14 @@ export function buildDramaSubtitleBoard(fragments: DramaFragment[]): DramaSubtit
 // 导出字幕板纯文本（预览用）。
 export function exportDramaSubtitleBoardText(fragments: DramaFragment[]): string {
   const cues = buildDramaSubtitleBoard(fragments)
-  if (cues.length === 0) return '暂无可导出的字幕内容'
+  if (cues.length === 0) return tr('lib.subtitle.empty')
   return cues
     .map(
       (cue) =>
-        `${formatSubtitleClock(cue.startSec)}-${formatSubtitleClock(cue.endSec)} 片段 ${String(
-          cue.fragmentIndex + 1,
-        ).padStart(2, '0')} ${cue.speaker}：${cue.text}`,
+        `${formatSubtitleClock(cue.startSec)}-${formatSubtitleClock(cue.endSec)} ${tr(
+          'lib.genQueue.segmentLabel',
+          { n: String(cue.fragmentIndex + 1).padStart(2, '0') },
+        )} ${cue.speaker}${tr('lib.subtitle.speakerSep')}${cue.text}`,
     )
     .join('\n')
 }
@@ -150,6 +153,9 @@ function sanitizeSrtCaptionText(raw: string): string {
     .trim()
 }
 
+const LATIN_VOICE_PREFIX_RE =
+  /^(narration|narrator|voice-?over|vo|inner monologue|lời dẫn|người dẫn chuyện|thuyết minh|độc thoại nội tâm|độc thoại)\s*(?:\((?:vo|v\.o\.)\))?\s*[：:]/i
+
 function parseSubtitleLine(
   line: string,
 ): {
@@ -162,20 +168,33 @@ function parseSubtitleLine(
   const stripped = normalized.replace(/^【[^】]+】/, '').trim()
   if (!stripped) return null
   if (stripped.startsWith('旁白（VO）：')) {
-    return { speaker: '旁白', text: stripped.slice('旁白（VO）：'.length).trim() }
+    return { speaker: tr('lib.subtitle.narration'), text: stripped.slice('旁白（VO）：'.length).trim() }
   }
   if (stripped.startsWith('旁白：')) {
-    return { speaker: '旁白', text: stripped.slice('旁白：'.length).trim() }
+    return { speaker: tr('lib.subtitle.narration'), text: stripped.slice('旁白：'.length).trim() }
   }
   if (stripped.startsWith('内心独白：')) {
-    return { speaker: '内心独白', text: stripped.slice('内心独白：'.length).trim() }
+    return { speaker: tr('lib.subtitle.innerMonologue'), text: stripped.slice('内心独白：'.length).trim() }
   }
-  const dialogue = stripped.match(/^([^：]{1,24})：(.+)$/)
+  // 英文 / 越南语旁白、内心独白前缀（Narration: / VO: / Lời dẫn: …）
+  const latin = stripped.match(LATIN_VOICE_PREFIX_RE)
+  if (latin) {
+    const inner = /monologue|độc thoại/i.test(latin[1])
+    const text = stripped.slice(latin[0].length).trim()
+    if (!text) return null
+    return {
+      speaker: tr(inner ? 'lib.subtitle.innerMonologue' : 'lib.subtitle.narration'),
+      text,
+    }
+  }
+  // 中文全角冒号；英文 / 越南语脚本常用半角冒号
+  const dialogue = stripped.match(/^([^：:]{1,24})[：:](.+)$/)
   if (!dialogue) return null
   const speaker = dialogue[1].trim()
   const text = dialogue[2].trim()
   if (!speaker || !text) return null
   if (['空镜', '远景', '近景', '特写', '全景', '中景'].includes(speaker)) return null
+  if (isVisualLabelAlias(speaker) || /^(?:https?|@?duration|@?asset)$/i.test(speaker)) return null
   return { speaker, text }
 }
 

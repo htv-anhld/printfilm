@@ -6,7 +6,9 @@ import re
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import content_language_name
 from app.services.agent.runner import run_task_text
+from app.services.kepu_locale import is_zh, resolve_content_locale
 
 # ASSET_TOKEN_RE 画布/分镜里的资产引用
 ASSET_TOKEN_RE = re.compile(r"@asset:\d+")
@@ -63,11 +65,18 @@ def restore_asset_tokens(original: str, rewritten: str) -> str:
     return text
 
 
-def system_prompt_for_task(task: str) -> str:
-    # 按任务选优化系统提示
-    if task == "image_prompt":
-        return IMAGE_OPTIMIZE_SYSTEM
-    return VIDEO_OPTIMIZE_SYSTEM
+def system_prompt_for_task(task: str, content_locale: str | None = "zh") -> str:
+    # 按任务选优化系统提示；非中文内容：台词/口播/画面文字保持原语言，不翻译成中文
+    base = IMAGE_OPTIMIZE_SYSTEM if task == "image_prompt" else VIDEO_OPTIMIZE_SYSTEM
+    if is_zh(content_locale):
+        return base
+    lang = content_language_name(content_locale)
+    return (
+        f"{base}"
+        f"6. 提示词中的台词、对白、旁白、口播以及画面内需要显示的文字，必须保持 {lang} 原文，"
+        "不得翻译成中文；画面描述部分可用简体中文。\n"
+        f"Keep every spoken line / dialogue / on-screen text in {lang} exactly as the user wrote it.\n"
+    )
 
 
 async def optimize_prompt_with_skills(
@@ -77,8 +86,9 @@ async def optimize_prompt_with_skills(
     prompt: str,
     skill_ids: list[int],
     task: str = "video_prompt",
+    content_locale: str | None = None,
 ) -> str:
-    """用勾选 Skill 改写提示词；空 skill 时原样返回。"""
+    """用勾选 Skill 改写提示词；空 skill 时原样返回。content_locale 缺省取当前请求语言。"""
     source = (prompt or "").strip()
     if not source:
         return ""
@@ -88,7 +98,7 @@ async def optimize_prompt_with_skills(
         db,
         user_id,
         task=task,
-        system=system_prompt_for_task(task),
+        system=system_prompt_for_task(task, resolve_content_locale(content_locale)),
         user=source,
         temperature=0.4,
         max_tokens=2048,

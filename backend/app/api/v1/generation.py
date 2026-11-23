@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.database import get_db
 from app.deps import get_api_user
+from app.i18n import _
 from app.models import User
 from app.models_tasks import TaskRun
 from app.schemas_api import (
@@ -158,7 +159,7 @@ async def forward_seedance(
 ) -> V1GenerationOut:
     """转发 Seedance 多模态 body 到 TokenFree。"""
     if not body.content:
-        raise HTTPException(status_code=400, detail="content 不能为空")
+        raise HTTPException(status_code=400, detail=_("content 不能为空"))
     settings = get_settings()
     payload: dict = {
         "model": settings.model_video,
@@ -206,7 +207,7 @@ async def get_task(
 ) -> V1GenerationOut:
     """查询 Seedance 视频任务状态（仅可查询本人提交的任务）。"""
     if not task_id.strip():
-        raise HTTPException(status_code=400, detail="缺少 task_id")
+        raise HTTPException(status_code=400, detail=_("缺少 task_id"))
     tid = task_id.strip()
     # 归属校验：上游 task_id 本身是可传递的凭据，不校验会拖走他人视频
     owned = (
@@ -217,7 +218,7 @@ async def get_task(
         )
     ).scalar_one_or_none()
     if owned is None:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail=_("任务不存在"))
     data = await poll_video_task(user, tid)
     await settle_deferred_video_poll(
         db,

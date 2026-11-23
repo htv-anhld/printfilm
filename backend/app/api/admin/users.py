@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.database import get_db
 from app.deps import get_current_admin
 from app.models import User, WalletLedger
@@ -63,7 +64,7 @@ async def patch_user(
     # Update plan / role; balance changes write WalletLedger
     user = await db.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=404, detail=_("用户不存在"))
 
     if body.plan is not None:
         user.plan = body.plan.strip() or "free"
@@ -71,15 +72,15 @@ async def patch_user(
     if body.role is not None:
         role = body.role.strip()
         if role not in ("user", "admin"):
-            raise HTTPException(status_code=400, detail="role 仅支持 user 或 admin")
+            raise HTTPException(status_code=400, detail=_("role 仅支持 user 或 admin"))
         if user.id == admin.id and role != "admin":
-            raise HTTPException(status_code=400, detail="不能降低自己的管理员权限")
+            raise HTTPException(status_code=400, detail=_("不能降低自己的管理员权限"))
         user.role = role
 
     if body.balance_fen is not None:
         target = int(body.balance_fen)
         if target < 0:
-            raise HTTPException(status_code=400, detail="余额不能为负")
+            raise HTTPException(status_code=400, detail=_("余额不能为负"))
         current = int(user.balance_fen or 0)
         delta = target - current
         if delta != 0:

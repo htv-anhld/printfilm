@@ -9,6 +9,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.config import get_settings
 from app.services.auth import get_user_by_email, get_user_by_id, hash_password
 from app.services.email import send_email
@@ -66,7 +67,7 @@ def get_redis_client() -> Any:
         return client
     except Exception as exc:  # noqa: BLE001
         logger.warning("password reset redis unavailable: %s", exc)
-        raise RedisUnavailableError("服务暂时不可用，请稍后再试") from exc
+        raise RedisUnavailableError(_("服务暂时不可用，请稍后再试")) from exc
 
 
 def create_reset_token(redis_client: Any, user_id: int) -> str:
@@ -88,17 +89,17 @@ def consume_reset_token(redis_client: Any, token: str) -> int:
     """校验并删除 token，返回 user_id；无效则抛 InvalidTokenError。"""
     raw = (token or "").strip()
     if not raw:
-        raise InvalidTokenError("重置链接无效或已过期")
+        raise InvalidTokenError(_("重置链接无效或已过期"))
     th = _token_hash(raw)
     key = _token_key(th)
     # GETDEL 原子取删：并发的两次重置请求只有一次能拿到 user_id
     user_id_raw = redis_client.getdel(key)
     if not user_id_raw:
-        raise InvalidTokenError("重置链接无效或已过期")
+        raise InvalidTokenError(_("重置链接无效或已过期"))
     try:
         user_id = int(user_id_raw)
     except (TypeError, ValueError) as exc:
-        raise InvalidTokenError("重置链接无效或已过期") from exc
+        raise InvalidTokenError(_("重置链接无效或已过期")) from exc
 
     redis_client.delete(_user_key(user_id))
     return user_id
@@ -121,24 +122,27 @@ async def request_password_reset(db: AsyncSession, email: str) -> dict[str, Any]
 
     # 60 秒冷却：重复请求直接成功、不重发
     if redis_client.get(cd_key):
-        return {"ok": True, "message": GENERIC_OK_MESSAGE}
+        return {"ok": True, "message": _(GENERIC_OK_MESSAGE)}
 
     redis_client.setex(cd_key, COOLDOWN_SECONDS, "1")
 
     user = await get_user_by_email(db, email_norm)
     if not user:
-        return {"ok": True, "message": GENERIC_OK_MESSAGE}
+        return {"ok": True, "message": _(GENERIC_OK_MESSAGE)}
 
     token = create_reset_token(redis_client, int(user.id))
     link = build_reset_link(token)
+    # 邮件按发起找回请求的界面语言撰写
     body = (
-        "您正在重置 PRINTFILM 账号密码。\n\n"
-        f"请在 30 分钟内打开以下链接设置新密码：\n{link}\n\n"
-        "如非本人操作，请忽略本邮件。"
+        _("您正在重置 PRINTFILM 账号密码。")
+        + "\n\n"
+        + _("请在 30 分钟内打开以下链接设置新密码：")
+        + f"\n{link}\n\n"
+        + _("如非本人操作，请忽略本邮件。")
     )
     sent = await send_email(
         to_addrs=[email_norm],
-        subject="PRINTFILM 密码重置",
+        subject=_("PRINTFILM 密码重置"),
         body=body,
     )
     if not sent:
@@ -147,7 +151,7 @@ async def request_password_reset(db: AsyncSession, email: str) -> dict[str, Any]
             user.id,
             email_norm,
         )
-    return {"ok": True, "message": GENERIC_OK_MESSAGE}
+    return {"ok": True, "message": _(GENERIC_OK_MESSAGE)}
 
 
 async def apply_password_reset(
@@ -161,6 +165,6 @@ async def apply_password_reset(
     user_id = consume_reset_token(redis_client, token)
     user = await get_user_by_id(db, user_id)
     if not user:
-        raise InvalidTokenError("重置链接无效或已过期")
+        raise InvalidTokenError(_("重置链接无效或已过期"))
     user.hashed_password = hash_password(new_password)
     await db.commit()

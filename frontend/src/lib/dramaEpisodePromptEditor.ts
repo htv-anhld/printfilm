@@ -1,4 +1,6 @@
 /** 分集脚本编辑器：inline 时长/资产标签渲染与序列化 */
+import { tr } from '../i18n'
+
 export type DramaMentionChipData = {
   assetId: number
   label: string
@@ -215,7 +217,7 @@ export function createMentionChipElement(chip: DramaMentionChipData) {
     thumbEl.appendChild(image)
   } else {
     thumbEl.className += ' is-fallback'
-    thumbEl.textContent = chip.label[0] || '资'
+    thumbEl.textContent = chip.label[0] || tr('lib.promptEditor.assetInitial')
   }
   chipEl.appendChild(thumbEl)
 
@@ -233,7 +235,7 @@ export function createDurationChipElement(seconds: number) {
   chipEl.contentEditable = 'false'
   chipEl.dataset.mention = 'true'
   chipEl.dataset.durationSec = String(seconds)
-  chipEl.title = `时长 ${seconds}s，编辑时点击切换`
+  chipEl.title = tr('lib.promptEditor.durationChipTitle', { seconds })
 
   const labelEl = document.createElement('span')
   labelEl.dataset.durationLabel = 'true'
@@ -247,7 +249,7 @@ export function createDurationChipElement(seconds: number) {
 // 更新已有时长标签秒数
 export function updateDurationChipElement(chipEl: HTMLElement, seconds: number) {
   chipEl.dataset.durationSec = String(seconds)
-  chipEl.title = `时长 ${seconds}s，编辑时点击切换`
+  chipEl.title = tr('lib.promptEditor.durationChipTitle', { seconds })
   const labelEl = chipEl.querySelector<HTMLElement>('[data-duration-label]')
   if (labelEl) labelEl.textContent = `${seconds}s`
 }
@@ -491,7 +493,7 @@ export function resolveChipFromAsset(
 ): DramaMentionChipData {
   return {
     assetId: asset.id,
-    label: asset.name || `资产 ${asset.id}`,
+    label: asset.name || tr('lib.genQueue.assetTitle', { id: asset.id }),
     previewUrl: previewUrl || null,
   }
 }
