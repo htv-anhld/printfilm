@@ -75,7 +75,7 @@ function CanvasWorkspaceContent({
         </p>
       ) : null}
       {loading ? (
-        <p className="fc-error-toast" style={{ background: '#fff', color: '#64748b' }}>
+        <p className="fc-error-toast" style={{ background: 'var(--pf-card)', color: 'var(--pf-muted)' }}>
           {tr('episode.canvas.loading')}
         </p>
       ) : null}

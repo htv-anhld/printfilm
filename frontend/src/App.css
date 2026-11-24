@@ -14,7 +14,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 0.75rem;
-  background: #fff;
+  background: var(--pf-card);
 }
 
 .auth-panel-top {
@@ -41,7 +41,7 @@
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(circle at 30% 40%, rgba(182, 255, 0, 0.35), transparent 42%),
+    radial-gradient(circle at 30% 40%, color-mix(in srgb, var(--pf-lime) 35%, transparent), transparent 42%),
     radial-gradient(circle at 72% 58%, rgba(42, 111, 122, 0.35), transparent 38%),
     repeating-linear-gradient(
       -12deg,
@@ -81,7 +81,7 @@
 .btn.primary {
   background: var(--pf-lime);
   border-color: var(--pf-lime);
-  color: var(--pf-ink);
+  color: var(--pf-lime-ink);
 }
 
 .linkish {
@@ -133,7 +133,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e4e6ea;
+  background: var(--pf-surface-2);
 }
 
 .btn.auth-google {
@@ -142,14 +142,14 @@
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
-  background: #fff;
+  background: var(--pf-card);
   border: 1px solid #d5d8de;
   color: #1f2329;
   font-weight: 600;
 }
 
 .btn.auth-google:hover:not(:disabled) {
-  background: #f6f7f9;
+  background: var(--pf-surface-2);
 }
 
 /* 未验证邮箱提示条 */

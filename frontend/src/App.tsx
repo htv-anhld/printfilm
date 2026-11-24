@@ -39,6 +39,7 @@ import EpisodesPage from './pages/drama/EpisodesPage'
 import CanvasPage from './pages/drama/canvas/CanvasPage'
 import EpisodeStoryboardPage from './pages/drama/episodeCanvas/EpisodeStoryboardPage'
 import './styles/printfilm.css'
+import './styles/appShell.css'
 import './App.css'
 
 export default function App() {

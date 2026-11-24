@@ -22,6 +22,19 @@
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="__SITE_URL__/og-image.jpg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      // 首屏前应用明暗主题（与 src/lib/theme.ts 同一 key），避免闪白
+      ;(function () {
+        try {
+          var saved = localStorage.getItem('pf-theme')
+          var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+          if (dark) document.documentElement.classList.add('dark')
+        } catch (e) {}
+      })()
+    </script>
     <script>
       // 渲染前按语言改 <html lang>、title、description、og（爬虫与首屏都拿到对应语言）；
       // ?lang= 用于 hreflang 链接并写入本地偏好；app.* 子域一律 noindex（与 www 同一份构建）

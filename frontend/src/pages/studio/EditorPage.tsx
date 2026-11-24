@@ -207,7 +207,7 @@ export default function EditorPage() {
           justifyContent: 'space-between',
           padding: '0.75rem 1.25rem',
           borderBottom: '1px solid var(--pf-line)',
-          background: '#fff',
+          background: 'var(--pf-card)',
           flexWrap: 'wrap',
           gap: '0.5rem',
         }}
@@ -400,7 +400,7 @@ export default function EditorPage() {
                     style={{ width: 88, height: 50, objectFit: 'cover', display: 'block', borderRadius: 6 }}
                   />
                 ) : (
-                  <div style={{ width: 88, height: 50, background: '#eee', borderRadius: 6 }} />
+                  <div style={{ width: 88, height: 50, background: 'var(--pf-surface-2)', borderRadius: 6 }} />
                 )}
               </button>
             ))}
