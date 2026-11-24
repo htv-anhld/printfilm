@@ -1,7 +1,8 @@
 /** 视频生成设置组：视频模型 + 画幅 + 清晰度（模型列表来自后台启用的模型） */
-import { Monitor, RectangleHorizontal, RectangleVertical, Square } from 'lucide-react'
+import { Monitor, RectangleHorizontal, RectangleVertical, Square, Zap } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import {
+  isDraftCapableModel,
   useRatioOptions,
   useResolutionOptions,
   useVideoModelOptions,
@@ -15,6 +16,8 @@ export type VideoGenValue = {
   model: string
   ratio: VideoRatio
   resolution: VideoResolution
+  /** Draft 样片开关；undefined 表示该场景不提供 Draft */
+  draft?: boolean
 }
 
 type Props = {
@@ -64,7 +67,20 @@ export default function VideoGenSettings({ value, onChange, disabled, tone = 'de
         onChange={(ratio) => onChange({ ...value, ratio })}
         disabled={disabled}
       />
-      {hideResolution ? null : (
+      {value.draft !== undefined && isDraftCapableModel(value.model) ? (
+        <button
+          type="button"
+          className={`pf-picker pf-picker-toggle${tone === 'glass' ? ' is-glass' : ''}${value.draft ? ' is-on' : ''}`}
+          aria-pressed={value.draft}
+          title={t('genSettings.draftHint')}
+          disabled={disabled}
+          onClick={() => onChange({ ...value, draft: !value.draft })}
+        >
+          <Zap size={15} aria-hidden />
+          <span className="pf-picker-value">{t('genSettings.draft')}</span>
+        </button>
+      ) : null}
+      {hideResolution || (value.draft && isDraftCapableModel(value.model)) ? null : (
         <OptionPicker
           tone={tone}
           icon={<Monitor size={15} aria-hidden />}

@@ -355,6 +355,7 @@ export const viDrama = {
     copyFailed: 'Sao chép thất bại',
     tagManual: 'Thêm thủ công',
     tagAuto: 'Tạo tự động',
+    tagImport: 'Tải lên từ kịch bản',
     hintCreative: 'Ý tưởng {n} ký tự',
     hintSummary: 'Tóm tắt {n} ký tự',
     hintBody: 'Kịch bản {n} ký tự',

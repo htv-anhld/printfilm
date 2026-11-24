@@ -25,6 +25,8 @@ TARGET_EPISODE_CONTENT_CHARS = 550
 EPISODE_SCENE_COUNT_HINT = "2-3 场"
 # 手动加集标记；自动流水线不会填这些空集
 MANUAL_EPISODE_ORIGIN = "manual"
+# 上传剧本的集：原文即剧本，长短都算完成，自动流水线不得改写
+IMPORT_EPISODE_ORIGIN = "import"
 # 与创建项目上限对齐
 MAX_DRAMA_EPISODES = 120
 
@@ -545,8 +547,8 @@ def merge_episode_bodies(
             merged["creative"] = creative
         if summary:
             merged["summary"] = summary
-        if origin == MANUAL_EPISODE_ORIGIN:
-            merged["origin"] = MANUAL_EPISODE_ORIGIN
+        if origin in (MANUAL_EPISODE_ORIGIN, IMPORT_EPISODE_ORIGIN):
+            merged["origin"] = origin
         by_number[number] = merged
     return [by_number[n] for n in sorted(by_number)]
 
@@ -574,6 +576,8 @@ def auto_missing_episode_numbers(existing: list[dict[str, Any]], total: int) -> 
         if _content_char_len(body) >= MIN_EPISODE_CONTENT_CHARS:
             continue
         if str(item.get("origin") or "") == MANUAL_EPISODE_ORIGIN:
+            continue
+        if str(item.get("origin") or "") == IMPORT_EPISODE_ORIGIN and body.strip():
             continue
         missing.append(number)
     return missing
@@ -621,7 +625,8 @@ def count_completed_episodes(episodes: list[dict[str, Any]], total: int) -> int:
         except (TypeError, ValueError):
             continue
         body = str(item.get("body") or "").strip()
-        if 1 <= number <= total and _content_char_len(body) >= MIN_EPISODE_CONTENT_CHARS:
+        imported = str(item.get("origin") or "") == IMPORT_EPISODE_ORIGIN and bool(body)
+        if 1 <= number <= total and (imported or _content_char_len(body) >= MIN_EPISODE_CONTENT_CHARS):
             done += 1
     return done
 

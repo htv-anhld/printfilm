@@ -153,6 +153,9 @@ def wrap_seedance_payload_for_newapi(payload: dict[str, Any]) -> dict[str, Any]:
         meta_input["watermark"] = bool(src.get("watermark"))
     if "return_last_frame" in src:
         meta_input["return_last_frame"] = bool(src.get("return_last_frame"))
+    # Seedance 2.5 Draft 样片；正片通过 content[].draft_task 引用样片任务
+    if src.get("draft"):
+        meta_input["draft"] = True
     if isinstance(content, list) and content:
         if uses_reference_images:
             # 下游会把 content 里的图也算进参考图上限，多参考只留文案/音频

@@ -92,6 +92,13 @@ import RequireAuth from './RequireAuth'
 import { useI18n } from '../../i18n'
 import './drama.css'
 
+// 分镜 params.draft 存在样片任务 id 即视为 Draft 样片（7 天有效期由后端校验）
+function isDraftFragment(params: unknown): boolean {
+  if (!params || typeof params !== 'object') return false
+  const draft = (params as Record<string, unknown>).draft
+  return Boolean(draft && typeof draft === 'object' && (draft as Record<string, unknown>).task_id)
+}
+
 export default function EpisodeEditPage() {
   return (
     <RequireAuth>
@@ -250,6 +257,8 @@ function EpisodeEditInner() {
   const selectedIsGenerating = Boolean(selected?.id && generatingIds.has(selected.id))
   // selectedHasVideo 当前镜是否已有成片（用于「重新生成」文案）
   const selectedHasVideo = Boolean(selected?.video)
+  // 当前分镜是否有可转 1080p 的 Draft 样片
+  const selectedHasDraft = Boolean(selected?.video) && isDraftFragment(selected?.params)
   // selectedVersions 当前镜历史成片
   const selectedVersions = useMemo(() => readFragmentVideoVersions(selected), [selected])
   // previewVersion 当前选中待预览的历史成片
@@ -977,6 +986,49 @@ function EpisodeEditInner() {
     }
   }
 
+  // Draft 样片 → 1080p 正片：确认后入队，沿用分集视频轮询
+  async function finalizeSelectedDraft() {
+    if (!selected?.id || selectedIsGenerating || !eid || !pid) return
+    const ok = await dialog.confirm({
+      title: t('genSettings.finalizeConfirmTitle'),
+      message: t('genSettings.finalizeConfirmMessage'),
+      confirmText: t('genSettings.finalize'),
+    })
+    if (!ok) return
+    const fragId = selected.id
+    setBusy(true)
+    setError('')
+    try {
+      await dramaApi.finalizeDraft(fragId)
+      setFragments((prev) =>
+        prev.map((f) =>
+          f.id === fragId
+            ? {
+                ...f,
+                params: {
+                  ...(f.params || {}),
+                  generation: { status: 'queued', message: t('episode.edit.queuedMsg') },
+                },
+              }
+            : f,
+        ),
+      )
+      enqueueEpisodeVideoJobs({
+        projectId: pid,
+        episodeId: eid,
+        episodeName: episode?.name,
+        fragments: fragments.map((f, i) => ({ id: f.id, sort_order: f.sort_order ?? i })),
+        fragmentIds: [fragId],
+      })
+      setStatus(t('genSettings.finalizeQueued'))
+      ensureEpisodeVideoStatusPoll()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('episode.edit.generateFailed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // 切换历史成片为当前预览视频
   async function activateVideoVersion(versionId: string) {
     if (!selected?.id || selectedIsGenerating) return
@@ -1638,6 +1690,17 @@ function EpisodeEditInner() {
                 >
                   {t('episode.edit.edit')}
                 </button>
+                {selectedHasDraft ? (
+                  <button
+                    type="button"
+                    className="drama-ep-btn-lime"
+                    disabled={busy || selectedIsGenerating}
+                    title={t('genSettings.finalizeTitle')}
+                    onClick={() => void finalizeSelectedDraft()}
+                  >
+                    {t('genSettings.finalize')}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="drama-ep-btn-dark"
@@ -1814,6 +1877,9 @@ function EpisodeEditInner() {
                     </span>
                   )}
                   {badge ? <span className="drama-ep-clip-badge">{badge}</span> : null}
+                  {!badge && clipVideo && isDraftFragment(fragParams) ? (
+                    <span className="drama-ep-clip-draft">{t('genSettings.draftBadge')}</span>
+                  ) : null}
                   <em>
                     {formatFragLabel(index, frag.duration_sec)}
                     <DramaFragmentClipSpec

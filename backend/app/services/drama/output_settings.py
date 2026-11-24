@@ -84,6 +84,8 @@ def clean_project_generation_params(params: dict | None) -> dict | None:
         out.pop("aspect_ratio", None)
     if "resolution" in out and not _pick_resolution(out.get("resolution")):
         out.pop("resolution", None)
+    if "draft_mode" in out:
+        out["draft_mode"] = bool(out.get("draft_mode"))
     if "video_model" in out:
         model = str(out.get("video_model") or "").strip()
         if not model:

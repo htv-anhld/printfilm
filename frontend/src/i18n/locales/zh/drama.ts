@@ -355,6 +355,7 @@ export const zhDrama = {
     copyFailed: '复制失败',
     tagManual: '手动加集',
     tagAuto: '自动生成',
+    tagImport: '上传剧本',
     hintCreative: '创意 {n} 字',
     hintSummary: '摘要 {n} 字',
     hintBody: '剧本 {n} 字',

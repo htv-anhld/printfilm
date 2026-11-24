@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Clapperboard, Film, Layers, Loader2, Palette, Sparkles } from 'lucide-react'
 import OptionPicker from '../ui/OptionPicker'
 import VideoGenSettings, { type VideoGenValue } from '../ui/VideoGenSettings'
-import { useVideoModelOptions } from '../../lib/videoModelOptions'
+import { isDraftCapableModel, useVideoModelOptions } from '../../lib/videoModelOptions'
 import { dramaApi } from '../../api/drama'
 import { useI18n } from '../../i18n'
 import { IMAGE_STYLE_OPTIONS, type ImageStyleId } from '../../lib/dramaImageStyles'
@@ -43,7 +43,7 @@ export default function HomeComposer({ loggedIn }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   // gen 视频模型 / 画幅 / 清晰度（漫剧写入项目 params）
-  const [gen, setGen] = useState<VideoGenValue>({ model: '', ratio: '9:16', resolution: '480p' })
+  const [gen, setGen] = useState<VideoGenValue>({ model: '', ratio: '9:16', resolution: '480p', draft: false })
   const { defaultId } = useVideoModelOptions()
 
   // 目录到达后填入后台默认视频模型
@@ -84,6 +84,7 @@ export default function HomeComposer({ loggedIn }: Props) {
         params: {
           aspect_ratio: gen.ratio,
           resolution: gen.resolution,
+          draft_mode: Boolean(gen.draft && isDraftCapableModel(gen.model)),
           ...(gen.model ? { video_model: gen.model } : {}),
         },
       })

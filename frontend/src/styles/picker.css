@@ -204,3 +204,23 @@
 .pf-picker.pf-picker-block {
   width: 100%;
 }
+
+/* 开关型按钮（Draft 模式） */
+.pf-picker.pf-picker-toggle.is-on {
+  border-color: var(--pf-lime);
+  background: var(--pf-lime-soft);
+  color: var(--pf-ink);
+}
+
+.pf-picker.pf-picker-toggle.is-on > svg:first-child {
+  color: var(--pf-accent-strong);
+}
+
+.pf-picker.is-glass.pf-picker-toggle.is-on {
+  background: color-mix(in srgb, var(--pf-lime) 22%, transparent);
+  color: #fff;
+}
+
+.pf-picker.is-glass.pf-picker-toggle.is-on > svg:first-child {
+  color: var(--pf-lime);
+}

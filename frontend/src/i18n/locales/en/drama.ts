@@ -355,6 +355,7 @@ export const enDrama = {
     copyFailed: 'Copy failed',
     tagManual: 'Added manually',
     tagAuto: 'Auto-generated',
+    tagImport: 'Uploaded script',
     hintCreative: 'Idea {n} chars',
     hintSummary: 'Synopsis {n} chars',
     hintBody: 'Script {n} chars',

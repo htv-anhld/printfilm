@@ -83,7 +83,7 @@ export type DramaEpisodeBody = {
   /** 本集剧情摘要（集级，非全剧 summary） */
   summary?: string
   body?: string
-  origin?: 'auto' | 'manual'
+  origin?: 'auto' | 'manual' | 'import'
 }
 
 export type DramaProjectUsageStats = {
@@ -376,6 +376,41 @@ export const dramaApi = {
     }
     return res.json() as Promise<DramaAsset>
   },
+  /** 上传剧本文件建项目（.txt/.md/.docx/.pdf ≤ 5MB）；原文按集保留，只做分集 */
+  importScriptProject: async (
+    file: File,
+    fields: {
+      title?: string
+      image_style_id?: string
+      content_locale?: DramaContentLocale
+      params?: Record<string, unknown>
+    },
+  ) => {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('file', file)
+    form.append('title', fields.title || '')
+    form.append('image_style_id', fields.image_style_id || '')
+    form.append('content_locale', fields.content_locale || '')
+    form.append('params', fields.params ? JSON.stringify(fields.params) : '')
+    const res = await fetch(`${API_BASE}/api/drama/projects/import`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      const detail = err.detail
+      const message =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
+            : res.statusText
+      throw new Error(message || tr('common.uploadFailed'))
+    }
+    return res.json() as Promise<DramaProject>
+  },
   activateAssetImageVersion: (assetId: number, versionId: string) =>
     request<DramaAsset>(`/api/drama/assets/${assetId}/activate_image_version`, {
       method: 'POST',
@@ -506,6 +541,13 @@ export const dramaApi = {
       method: 'POST',
       body: JSON.stringify({ version_id: versionId }),
     }),
+
+  /** Draft 样片转 1080p 正片（Seedance 2.5，样片保留 7 天） */
+  finalizeDraft: (fragmentId: number) =>
+    request<{ ok: boolean; fragment_id: number; task_id: number; status: string }>(
+      `/api/drama/fragments/${fragmentId}/finalize_draft`,
+      { method: 'POST' },
+    ),
 
   cancelAllVideoJobs: () =>
     request<{ ok: boolean; purged: number; revoked: number; fragments: number }>(

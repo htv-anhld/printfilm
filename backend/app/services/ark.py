@@ -1327,8 +1327,9 @@ class ArkGateway:
         generate_audio: bool = False,
         extra_image_urls: list[str] | None = None,
         model: str | None = None,
+        draft: bool = False,
     ) -> str:
-        """提交 Seedance 图生视频；model 为前台逻辑模型 id（空 = 后台默认视频模型）。"""
+        """提交 Seedance 图生视频；model 为前台逻辑模型 id（空 = 后台默认视频模型）；draft=True 出 480p 样片。"""
         if self.mock:
             digest = hashlib.md5(f"{image_url}:{prompt}".encode()).hexdigest()[:10]
             return f"mock-task-{digest}"
@@ -1389,6 +1390,9 @@ class ArkGateway:
         }
         if target_ratio:
             body["ratio"] = target_ratio
+        if draft:
+            body["draft"] = True
+            body["resolution"] = "480p"
         # Do not send character_consistency — unknown fields have caused BodyFormat failures
         logger.info(
             "Seedance i2v create model=%s duration=%s resolution=%s ratio=%s role=%s generate_audio=%s",

@@ -34,6 +34,11 @@ export function isManualEpisode(ep: DramaEpisodeBody | undefined): boolean {
   return ep?.origin === 'manual'
 }
 
+// 上传剧本的集：原文即剧本，有正文就算完成（不论长短），自动流水线不改写
+export function isImportedEpisode(ep: DramaEpisodeBody | undefined): boolean {
+  return ep?.origin === 'import' && episodeBodyCharLen(ep.body) > 0
+}
+
 // 正文是否达到可进入下一步的长度
 export function isSubstantialEpisodeBody(body: string | undefined): boolean {
   return episodeBodyCharLen(body) >= MIN_EPISODE_BODY_CHARS
@@ -45,7 +50,7 @@ export function isSubstantialEpisodeCreative(creative: string | undefined): bool
 
 // 是否已有至少一集可用正文
 export function hasSubstantialEpisode(bodies: DramaEpisodeBody[]): boolean {
-  return bodies.some((ep) => isSubstantialEpisodeBody(ep.body))
+  return bodies.some((ep) => isSubstantialEpisodeBody(ep.body) || isImportedEpisode(ep))
 }
 
 // 自动流水线仍缺的集数（跳过手动空集）
@@ -64,7 +69,7 @@ export function autoMissingEpisodeCount(bodies: DramaEpisodeBody[], target: numb
       continue
     }
     if (isSubstantialEpisodeBody(ep.body)) continue
-    if (isManualEpisode(ep)) continue
+    if (isManualEpisode(ep) || isImportedEpisode(ep)) continue
     missing += 1
   }
   return missing

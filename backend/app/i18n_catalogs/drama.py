@@ -5,6 +5,15 @@ key 为中文原文；部分条目是写进剧本/字幕的「内容文案」（
 """
 
 EN: dict[str, str] = {
+    "仅支持 .txt / .md / .docx / .pdf 文件": "Only .txt / .md / .docx / .pdf files are supported",
+    "文件不能超过 5 MB": "The file must be 5 MB or smaller",
+    "无法读取 Word 文件，请另存为 .docx 后重试": "Can't read the Word file. Save it as .docx and try again",
+    "无法读取 PDF 文件": "Can't read the PDF file",
+    "剧本内容过短（至少 {n} 字），PDF 若是扫描件请先转成文字": "The script is too short (at least {n} characters). If the PDF is a scan, convert it to text first",
+    "剧本过长（最多 {n} 字），请拆分后分别上传": "The script is too long (at most {n} characters). Split it and upload the parts separately",
+    "params 必须是 JSON 对象": "params must be a JSON object",
+    "分镜不存在": "Shot not found",
+    "该分镜没有可用的样片（样片仅保留 7 天），请重新生成": "This shot has no usable draft (drafts are kept for 7 days). Generate it again",
     "视频模型不可用：{model}": "Video model is not available: {model}",
     # ---- 默认集名 / 标题（内容语言）----
     "第 {n} 集": "Episode {n}",
@@ -168,6 +177,15 @@ EN: dict[str, str] = {
 }
 
 VI: dict[str, str] = {
+    "仅支持 .txt / .md / .docx / .pdf 文件": "Chỉ hỗ trợ tệp .txt / .md / .docx / .pdf",
+    "文件不能超过 5 MB": "Tệp không được vượt quá 5 MB",
+    "无法读取 Word 文件，请另存为 .docx 后重试": "Không đọc được tệp Word, hãy lưu lại dạng .docx rồi thử lại",
+    "无法读取 PDF 文件": "Không đọc được tệp PDF",
+    "剧本内容过短（至少 {n} 字），PDF 若是扫描件请先转成文字": "Kịch bản quá ngắn (ít nhất {n} ký tự). Nếu PDF là bản scan, hãy chuyển sang dạng chữ trước",
+    "剧本过长（最多 {n} 字），请拆分后分别上传": "Kịch bản quá dài (tối đa {n} ký tự), hãy tách ra và tải lên từng phần",
+    "params 必须是 JSON 对象": "params phải là một đối tượng JSON",
+    "分镜不存在": "Không tìm thấy phân cảnh",
+    "该分镜没有可用的样片（样片仅保留 7 天），请重新生成": "Phân cảnh này không có bản nháp dùng được (bản nháp chỉ giữ 7 ngày), hãy tạo lại",
     "视频模型不可用：{model}": "Model video không khả dụng: {model}",
     # ---- 默认集名 / 标题（内容语言）----
     "第 {n} 集": "Tập {n}",

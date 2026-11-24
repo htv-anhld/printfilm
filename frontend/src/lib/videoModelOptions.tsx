@@ -13,6 +13,13 @@ export type VideoResolution = (typeof VIDEO_RESOLUTIONS)[number]
 
 type ModelTier = 'fast' | 'pro' | 'std' | 'other'
 
+/** 是否支持 Draft 样片（仅 Seedance 2.5 正式版，与后端 is_draft_capable_model 一致） */
+export function isDraftCapableModel(id: string | null | undefined): boolean {
+  const s = (id || '').toLowerCase()
+  if (!s.includes('seedance') || /fast|lite|flash|mini/.test(s)) return false
+  return /2[.-]5/.test(s)
+}
+
 // 按模型 id 判断档位（决定说明文案）
 function modelTier(id: string): ModelTier {
   const s = id.toLowerCase()

@@ -9,6 +9,7 @@ import {
   Search,
   Sparkles,
   Trash2,
+  Upload,
 } from 'lucide-react'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
@@ -25,13 +26,14 @@ import {
 } from '../../lib/dramaWorkflow'
 import RequireAuth from './RequireAuth'
 import VideoGenSettings, { type VideoGenValue } from '../../components/ui/VideoGenSettings'
-import { useVideoModelOptions } from '../../lib/videoModelOptions'
+import { isDraftCapableModel, useVideoModelOptions } from '../../lib/videoModelOptions'
 import { tr, useI18n } from '../../i18n'
 import { DramaContentLocaleSelect } from '../../components/drama/DramaContentLocaleSelect'
 import type { DramaContentLocale } from '../../components/drama/dramaContentLocale'
 import { DramaEpisodeCountPopover } from './DramaEpisodeCountPopover'
 import { DramaImageStyleModal } from './DramaImageStyleModal'
 import { DramaProjectCardMenu } from './DramaProjectCardMenu'
+import DramaScriptUpload from './DramaScriptUpload'
 import './drama.css'
 
 const CREATIVE_MIN_LENGTH = 20
@@ -110,7 +112,15 @@ function DramaListInner() {
   const [contentLocale, setContentLocale] = useState<DramaContentLocale>(locale)
   const location = useLocation()
   // genSettings 项目级视频设置（模型 / 画幅 / 清晰度），写入项目 params
-  const [genSettings, setGenSettings] = useState<VideoGenValue>({ model: '', ratio: '9:16', resolution: '480p' })
+  const [genSettings, setGenSettings] = useState<VideoGenValue>({
+    model: '',
+    ratio: '9:16',
+    resolution: '480p',
+    draft: false,
+  })
+  // createTab 新建方式：上传剧本 / AI 写剧本；scriptFile 待上传的剧本文件
+  const [createTab, setCreateTab] = useState<'upload' | 'ai'>('upload')
+  const [scriptFile, setScriptFile] = useState<File | null>(null)
   const { defaultId: defaultVideoModel } = useVideoModelOptions()
 
   // 目录到达后用后台默认视频模型填充
@@ -144,6 +154,37 @@ function DramaListInner() {
       .finally(() => setLoading(false))
   }, [])
 
+  // 项目级生成设置 → params（视频模型 / 画幅 / 清晰度 / Draft）
+  function projectGenParams(): Record<string, unknown> {
+    return {
+      aspect_ratio: genSettings.ratio,
+      resolution: genSettings.resolution,
+      draft_mode: Boolean(genSettings.draft && isDraftCapableModel(genSettings.model)),
+      ...(genSettings.model ? { video_model: genSettings.model } : {}),
+    }
+  }
+
+  // 上传剧本：建项目（原文按集保留）后进入大纲步骤，大纲会自动提取人物与梗概
+  async function handleImport() {
+    if (!scriptFile) {
+      setError(t('scriptImport.needFile'))
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      const project = await dramaApi.importScriptProject(scriptFile, {
+        image_style_id: imageStyleId || undefined,
+        content_locale: contentLocale,
+        params: projectGenParams(),
+      })
+      navigate(`/drama/projects/${project.id}`, { state: { activeStep: 'outline' } })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('drama.common.createFailed'))
+      setBusy(false)
+    }
+  }
+
   // AI 立即生成：创建项目并进入大纲步骤
   async function handleGenerate() {
     const source = storyText.trim()
@@ -165,11 +206,7 @@ function DramaListInner() {
         image_style_id: imageStyleId || undefined,
         title: source.slice(0, 40),
         content_locale: contentLocale,
-        params: {
-          aspect_ratio: genSettings.ratio,
-          resolution: genSettings.resolution,
-          ...(genSettings.model ? { video_model: genSettings.model } : {}),
-        },
+        params: projectGenParams(),
       }
       const project = await dramaApi.createProject(body)
       navigate(`/drama/projects/${project.id}`, { state: { activeStep: 'outline' } })
@@ -375,9 +412,25 @@ function DramaListInner() {
           <section className="drama-agent-panel pf-drama-create-panel" aria-label={t('dramaList.createAria')}>
             <div className="drama-agent-panel-head">
               <div className="drama-agent-tabs" role="tablist">
-                <button type="button" role="tab" aria-selected className="active">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={createTab === 'upload'}
+                  className={createTab === 'upload' ? 'active' : ''}
+                  onClick={() => setCreateTab('upload')}
+                >
+                  <Upload size={15} strokeWidth={1.75} aria-hidden />
+                  {t('scriptImport.tabUpload')}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={createTab === 'ai'}
+                  className={createTab === 'ai' ? 'active' : ''}
+                  onClick={() => setCreateTab('ai')}
+                >
                   <PenLine size={15} strokeWidth={1.75} aria-hidden />
-                  {t('dramaList.aiScript')}
+                  {t('scriptImport.tabAi')}
                 </button>
               </div>
               <button type="button" className="pf-link pf-drama-collapse" onClick={() => setShowCreate(false)}>
@@ -387,14 +440,20 @@ function DramaListInner() {
             <div className="drama-agent-tips" role="note">
               <Sparkles size={15} strokeWidth={1.75} aria-hidden />
               <span>
-                {t('dramaList.tipRest', {
-                  a: t('dramaList.tipStrong1'),
-                  b: t('dramaList.tipStrong2'),
-                  c: t('dramaList.tipStrong3'),
-                })}
+                {createTab === 'upload'
+                  ? t('scriptImport.uploadLead')
+                  : t('dramaList.tipRest', {
+                      a: t('dramaList.tipStrong1'),
+                      b: t('dramaList.tipStrong2'),
+                      c: t('dramaList.tipStrong3'),
+                    })}
               </span>
             </div>
             <div className="drama-agent-ai">
+              {createTab === 'upload' ? (
+                <DramaScriptUpload file={scriptFile} onFileChange={setScriptFile} onError={setError} disabled={busy} />
+              ) : (
+              <>
               <label className="drama-agent-ai-label" htmlFor="drama-agent-story">
                 {t('dramaList.storyLabel')}
               </label>
@@ -417,6 +476,8 @@ function DramaListInner() {
                   {CREATIVE_MAX_LENGTH}
                 </span>
               </div>
+              </>
+              )}
               <div className="drama-agent-gen-settings">
                 <span className="drama-agent-gen-label">{t('genSettings.title')}</span>
                 <VideoGenSettings value={genSettings} onChange={setGenSettings} disabled={busy} />
@@ -424,8 +485,12 @@ function DramaListInner() {
               <div className="drama-agent-ai-footer">
                 <div className="drama-agent-ai-options">
                   <DramaImageStyleModal value={imageStyleId} onChange={setImageStyleId} disabled={busy} />
-                  <span className="drama-agent-opt-divider" aria-hidden />
-                  <DramaEpisodeCountPopover value={episodeCount} onChange={setEpisodeCount} disabled={busy} />
+                  {createTab === 'ai' ? (
+                    <>
+                      <span className="drama-agent-opt-divider" aria-hidden />
+                      <DramaEpisodeCountPopover value={episodeCount} onChange={setEpisodeCount} disabled={busy} />
+                    </>
+                  ) : null}
                   <span className="drama-agent-opt-divider" aria-hidden />
                   <DramaContentLocaleSelect value={contentLocale} onChange={setContentLocale} disabled={busy} />
                 </div>
@@ -433,11 +498,21 @@ function DramaListInner() {
                   variant="lime"
                   size="md"
                   className="drama-agent-generate-btn"
-                  disabled={!canGenerate}
-                  onClick={() => void handleGenerate()}
+                  disabled={createTab === 'ai' ? !canGenerate : busy || !scriptFile}
+                  onClick={() => void (createTab === 'ai' ? handleGenerate() : handleImport())}
                 >
-                  <Sparkles size={16} strokeWidth={1.75} aria-hidden />
-                  {busy ? t('drama.common.creating') : t('drama.list.generateNow')}
+                  {createTab === 'ai' ? (
+                    <Sparkles size={16} strokeWidth={1.75} aria-hidden />
+                  ) : (
+                    <Upload size={16} strokeWidth={1.75} aria-hidden />
+                  )}
+                  {createTab === 'ai'
+                    ? busy
+                      ? t('drama.common.creating')
+                      : t('drama.list.generateNow')
+                    : busy
+                      ? t('scriptImport.creating')
+                      : t('scriptImport.create')}
                 </Button>
               </div>
             </div>

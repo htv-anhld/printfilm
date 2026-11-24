@@ -42,11 +42,13 @@ from app.services.drama.agents import (
     run_script_summary,
 )
 from app.services.drama.asset_video import generate_asset_video
+from app.services.drama.output_settings import resolve_episode_video_output
 from app.services.drama.generation import (
     apply_fragment_video_assets,
     build_failed_generation_params,
     deserialize_fragment_video_prepared,
     generate_asset_image,
+    prepare_fragment_finalize,
     prepare_fragment_video_for_submit,
     serialize_fragment_video_prepared,
     submit_prepared_fragment_video,
@@ -223,6 +225,9 @@ async def dispatch_script_summary_job(db: AsyncSession, user: User, project_id: 
     return task_id
 
 
+IMPORT_SUMMARY_CHARS = 16000
+
+
 async def run_script_summary_job(project_id: int) -> dict[str, Any]:
     # Worker：生成剧本摘要并写库
     async with AsyncSessionLocal() as db:
@@ -237,6 +242,9 @@ async def run_script_summary_job(project_id: int) -> dict[str, Any]:
         set_project_content_locale(project)
         script = project.script
         creative = (script.source or "").strip()
+        # 上传的完整剧本可能很长：摘要只需开头部分来提取人物与梗概
+        if (script.params or {}).get("source_mode") == "import":
+            creative = creative[:IMPORT_SUMMARY_CHARS]
         episode_count = (project.params or {}).get("episode_count")
         image_style_id = (project.params or {}).get("image_style_id")
         try:
@@ -1052,6 +1060,31 @@ async def run_episode_fragment_plan_job(
 # ---------- episode video (task platform) ----------
 
 # 任务平台（NIO）：Worker 短生命周期 — prepare → submit → 注册 awaiting_poll，由 Selector 轮询。
+async def _prepare_fragment_or_finalize(db, user, project, frag, payload: dict):
+    """普通分镜走完整准备；带 finalize_draft_task_id 时直接用样片任务 id 组 1080p 正片请求。"""
+    draft_task_id = str(payload.get("finalize_draft_task_id") or "").strip()
+    if draft_task_id:
+        episode = await db.get(DramaEpisode, frag.episode_id)
+        ratio, _res = resolve_episode_video_output(
+            episode.params if episode else None,
+            project.params,
+        )
+        return prepare_fragment_finalize(
+            project,
+            frag,
+            draft_task_id=draft_task_id,
+            model_id=(payload.get("model_id") or None),
+            aspect_ratio=ratio,
+        )
+    return await prepare_fragment_video_for_submit(
+        db,
+        user,
+        project,
+        frag,
+        model_id=(payload.get("model_id") or None),
+    )
+
+
 async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
     from app.services.tasks.service import append_task_event, get_task_for_runtime, set_task_step_state
 
@@ -1141,13 +1174,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
             task_row.current_step_status = "preparing"
             await db.commit()
 
-            prepared = await prepare_fragment_video_for_submit(
-                db,
-                user,
-                project,
-                frag,
-                model_id=(payload.get("model_id") or None),
-            )
+            prepared = await _prepare_fragment_or_finalize(db, user, project, frag, payload)
             now = datetime.now(UTC)
             next_payload = dict(payload)
             next_payload["nio_phase"] = "submit"
@@ -1177,13 +1204,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
         # nio_phase == submit：仅 HTTP 注册上游，立即释放 Worker
         prepared_raw = payload.get("prepared")
         if not isinstance(prepared_raw, dict):
-            prepared = await prepare_fragment_video_for_submit(
-                db,
-                user,
-                project,
-                frag,
-                model_id=(payload.get("model_id") or None),
-            )
+            prepared = await _prepare_fragment_or_finalize(db, user, project, frag, payload)
         else:
             prepared = deserialize_fragment_video_prepared(prepared_raw)
 
@@ -1200,6 +1221,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
         await db.commit()
 
         provider_task_id = await submit_prepared_fragment_video(prepared, project_id=project.id)
+        # 收尾时据此写入样片标记 / 成片清晰度
         poll_interval = max(1.0, float(get_settings().ark_video_poll_interval or 8.0))
         now = datetime.now(UTC)
         # 提交成功后立刻写成 running/polling，避免前端长期停在「排队」
@@ -1222,6 +1244,8 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
         task_row.lease_until = None
         next_payload = dict(payload)
         next_payload.pop("prepared", None)
+        next_payload["draft"] = bool(prepared.draft)
+        next_payload["output_resolution"] = prepared.resolution
         next_payload["nio_phase"] = "poll"
         next_payload["generation_attempts"] = attempts
         next_payload["attempt_limit"] = max_attempts
@@ -1502,6 +1526,9 @@ async def poll_fragment_video_task(task_id: int) -> None:
                     attempt_limit=attempt_limit,
                     task_result=result,
                     provider_task_id=task.provider_task_id,
+                    draft=bool(payload.get("draft")),
+                    output_resolution=(payload.get("output_resolution") or None),
+                    model_id=(payload.get("model_id") or None),
                 )
                 # apply 已 commit：行锁复查。下载期间用户可能已取消（status=cancel_requested），
                 # 此时不能走常规 complete，也不能放任 frozen 全额退款，按实际用量结算为 cancelled。
