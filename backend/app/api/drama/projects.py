@@ -30,6 +30,7 @@ from app.services.drama.usage_stats import (
     empty_usage_stats,
     get_drama_project_usage,
 )
+from app.services.drama.output_settings import clean_project_generation_params
 from app.services.drama.workflow import build_project_params, resolve_drama_workflow
 from app.services.tasks.service import cancel_tasks_for_scope, rebalance_project_fragment_video_queue
 
@@ -102,6 +103,14 @@ async def list_projects(
     return items
 
 
+def _clean_generation_params(params: dict | None) -> dict | None:
+    """校验项目生成设置（视频模型 / 画幅 / 清晰度）；模型不在后台目录时返回 400。"""
+    try:
+        return clean_project_generation_params(params)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=_("视频模型不可用：{model}", model=str(exc))) from exc
+
+
 @router.post("/projects", response_model=DramaProjectOut)
 async def create_project(
     body: DramaProjectCreate,
@@ -127,7 +136,7 @@ async def create_project(
         workflow=workflow,
         episode_count=body.episode_count,
         image_style_id=body.image_style_id,
-        extra=body.params,
+        extra=_clean_generation_params(body.params),
     )
     project = DramaProject(
         user_id=user.id,
@@ -188,7 +197,7 @@ async def update_project(
     if body.content is not None:
         project.content = body.content
     if body.params is not None:
-        project.params = body.params
+        project.params = _clean_generation_params(body.params)
     if body.content_locale is not None and body.content_locale.strip():
         project.content_locale = normalize_locale(body.content_locale, project_content_locale(project))
         set_content_locale(project.content_locale)

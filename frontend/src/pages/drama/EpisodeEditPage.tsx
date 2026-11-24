@@ -154,6 +154,8 @@ function EpisodeEditInner() {
   const [editing, setEditing] = useState(false)
   const [videoStyleId, setVideoStyleId] = useState<ImageStyleId | ''>('')
   const [modelId, setModelId] = useState('')
+  // 用户是否手动改过模型（改过后不再被项目默认覆盖）
+  const modelTouchedRef = useRef(false)
   const mediaCatalog = useMediaModelsCatalog()
   const [aspectRatio, setAspectRatio] = useState<(typeof RATIO_OPTIONS)[number]>('9:16')
   // subtitleMode 本集字幕方式：模型自出 / 后期拼接（默认后期）
@@ -199,8 +201,14 @@ function EpisodeEditInner() {
     if (!mediaCatalog) return
     const ids = mediaCatalog.video_models.map((m) => m.id)
     if (!ids.length) return
-    setModelId((prev) => (ids.includes(prev) ? prev : mediaCatalog.defaults.video_model || ids[0]))
-  }, [mediaCatalog])
+    // 优先项目创建时选的视频模型，其次后台默认
+    const projectModel = String(projectParams.video_model || '')
+    const preferred = ids.includes(projectModel) ? projectModel : mediaCatalog.defaults.video_model || ids[0]
+    setModelId((prev) => {
+      if (!modelTouchedRef.current && ids.includes(projectModel)) return projectModel
+      return ids.includes(prev) ? prev : preferred
+    })
+  }, [mediaCatalog, projectParams.video_model])
 
   const selected = fragments[selectedIndex] || null
   const selectedDuration = selected?.duration_sec ?? 8
@@ -1433,7 +1441,10 @@ function EpisodeEditInner() {
             subtitleMode={subtitleMode}
             characterIntroMode={characterIntroMode}
             onStyleChange={setVideoStyleId}
-            onModelChange={setModelId}
+            onModelChange={(id) => {
+              modelTouchedRef.current = true
+              setModelId(id)
+            }}
             onEpisodeOutputChange={handleEpisodeOutputChange}
             onLinkLastFrameChange={(enabled) => void handleLinkLastFrameChange(enabled)}
             onSubtitleModeChange={(mode) => void handleEpisodeSubtitleChange(mode)}

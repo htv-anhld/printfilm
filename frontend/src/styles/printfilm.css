@@ -12,15 +12,22 @@
 .pf-shell-main {
   flex: 1 0 auto;
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 1.25rem 1.5rem 3.5rem;
+  /* 内容铺满侧栏右侧全部宽度 */
+  max-width: none;
+  margin: 0;
+  padding: 1.25rem 2rem 3.5rem;
   box-sizing: border-box;
   overflow-x: clip;
 }
 
 .pf-shell-main.wide {
-  max-width: 1440px;
+  max-width: none;
+}
+
+@media (max-width: 960px) {
+  .pf-shell-main {
+    padding: 1rem 1rem 3rem;
+  }
 }
 
 .pf-shell-main.flush {
@@ -1823,7 +1830,7 @@
 }
 
 .pf-tool-detail {
-  max-width: 1100px;
+  max-width: none;
 }
 
 .pf-tool-back {
@@ -7369,9 +7376,9 @@ button.pf-shot-editable:disabled {
 }
 
 .pf-text-tool {
-  max-width: 1200px;
+  max-width: none;
   margin: 0 auto;
-  padding: 1.5rem 16px 3rem;
+  padding: 0.25rem 0 3rem;
 }
 
 .pf-text-tool-grid {
@@ -7416,9 +7423,9 @@ button.pf-shot-editable:disabled {
 
 /* ── 素材库 ── */
 .pf-library {
-  max-width: 1200px;
+  max-width: none;
   margin: 0 auto;
-  padding: 1.5rem 16px 3rem;
+  padding: 0.25rem 0 3rem;
 }
 
 .pf-library-grid {

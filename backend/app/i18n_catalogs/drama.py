@@ -5,6 +5,7 @@ key 为中文原文；部分条目是写进剧本/字幕的「内容文案」（
 """
 
 EN: dict[str, str] = {
+    "视频模型不可用：{model}": "Video model is not available: {model}",
     # ---- 默认集名 / 标题（内容语言）----
     "第 {n} 集": "Episode {n}",
     "第{n}集": "Episode {n}",
@@ -167,6 +168,7 @@ EN: dict[str, str] = {
 }
 
 VI: dict[str, str] = {
+    "视频模型不可用：{model}": "Model video không khả dụng: {model}",
     # ---- 默认集名 / 标题（内容语言）----
     "第 {n} 集": "Tập {n}",
     "第{n}集": "Tập {n}",

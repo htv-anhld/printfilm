@@ -263,6 +263,8 @@ export const dramaApi = {
     image_style_id?: string
     workflow?: 'script' | 'canvas'
     content_locale?: DramaContentLocale
+    /** 项目级生成设置：video_model / aspect_ratio / resolution 等 */
+    params?: Record<string, unknown>
   }) =>
     request<DramaProject>('/api/drama/projects', { method: 'POST', body: JSON.stringify(body) }),
   getProject: (id: number) => request<DramaProject>(`/api/drama/projects/${id}`),

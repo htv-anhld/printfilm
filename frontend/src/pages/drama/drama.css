@@ -8,13 +8,13 @@
   --drama-muted: var(--pf-muted, #6b7280);
   --drama-line: var(--pf-line, #e5e7eb);
   --drama-bg: var(--pf-bg, #f7f7f5);
-  max-width: 1100px;
+  max-width: none;
   margin: 0 auto;
-  padding: 28px 20px 64px;
+  padding: 8px 0 64px;
 }
 
 .drama-agent-page {
-  max-width: 960px;
+  max-width: none;
 }
 
 .drama-agent-hero {
@@ -295,6 +295,28 @@
   border-color: rgba(180, 35, 24, 0.22);
   background: #fff5f4;
   font-weight: 600;
+}
+
+/* 项目级视频设置（模型 / 画幅 / 清晰度） */
+.drama-agent-gen-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--pf-line);
+  border-radius: 14px;
+  background: var(--pf-surface-2);
+}
+
+.drama-agent-gen-label {
+  margin-right: 4px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
 }
 
 .drama-agent-ai-footer {

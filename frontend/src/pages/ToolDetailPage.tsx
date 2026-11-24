@@ -8,6 +8,9 @@ import Button from '../components/ui/Button'
 import { pollStudioToolTask, resolveToolMediaUrl, runStudioTool } from '../api/tools'
 import { defaultToolChips, getToolDef, localizeToolDef, chipDisplayLabel, type ToolDef } from '../lib/toolsCatalog'
 import { useI18n } from '../i18n'
+import ModelTile from '../components/ui/ModelTile'
+import OptionPicker from '../components/ui/OptionPicker'
+import { useVideoModelOptions } from '../lib/videoModelOptions'
 
 const VIDEO_POLL_MS = 3000
 
@@ -42,6 +45,11 @@ function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
    */
   const [text, setText] = useState<Record<string, string>>({})
   const [chips, setChips] = useState(() => defaultToolChips(tool))
+  // videoModel 视频工具选择的模型（来自后台启用列表）
+  const isVideoTool = tool.id === 't2v' || tool.id === 'v2v'
+  const { options: videoModelOptions, defaultId: defaultVideoModel } = useVideoModelOptions()
+  const [videoModel, setVideoModel] = useState('')
+  const effectiveVideoModel = videoModel || defaultVideoModel
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
@@ -173,6 +181,7 @@ function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
         pack: chips.pack,
         duration: chips.duration,
         motion: chips.motion,
+        model: isVideoTool ? effectiveVideoModel : undefined,
         files,
       })
       setStatus(data.status)
@@ -283,6 +292,20 @@ function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
                 ) : null}
               </label>
             ))}
+            {isVideoTool && videoModelOptions.length ? (
+              <div className="pf-tool-field">
+                <span>{t('genSettings.videoModel')}</span>
+                <OptionPicker
+                  icon={<ModelTile modelId={effectiveVideoModel} size="sm" />}
+                  title={t('genSettings.videoModel')}
+                  value={effectiveVideoModel}
+                  options={videoModelOptions}
+                  onChange={setVideoModel}
+                  disabled={busy}
+                  className="pf-picker-block"
+                />
+              </div>
+            ) : null}
             {uploadField ? (
               <input
                 ref={fileRef}

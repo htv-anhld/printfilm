@@ -1,6 +1,6 @@
 /** 漫剧 Agent 首页：AI 生剧本 / 自由画布 + 我的项目（多选删除） */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   FolderOpen,
   LayoutGrid,
@@ -16,7 +16,7 @@ import Button from '../../components/ui/Button'
 import PillFilter, { type PillOption } from '../../components/ui/PillFilter'
 import { dramaApi, resolveDramaMediaUrl, type DramaProjectListItem } from '../../api/drama'
 import { dialog } from '../../lib/dialog'
-import { type ImageStyleId } from '../../lib/dramaImageStyles'
+import { IMAGE_STYLE_IDS, type ImageStyleId } from '../../lib/dramaImageStyles'
 import { formatDramaUsageBrief } from '../../lib/dramaUsage'
 import {
   dramaProjectEntryPath,
@@ -24,6 +24,8 @@ import {
   isCanvasWorkflow,
 } from '../../lib/dramaWorkflow'
 import RequireAuth from './RequireAuth'
+import VideoGenSettings, { type VideoGenValue } from '../../components/ui/VideoGenSettings'
+import { useVideoModelOptions } from '../../lib/videoModelOptions'
 import { tr, useI18n } from '../../i18n'
 import { DramaContentLocaleSelect } from '../../components/drama/DramaContentLocaleSelect'
 import type { DramaContentLocale } from '../../components/drama/dramaContentLocale'
@@ -106,6 +108,24 @@ function DramaListInner() {
   const [query, setQuery] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [contentLocale, setContentLocale] = useState<DramaContentLocale>(locale)
+  const location = useLocation()
+  // genSettings 项目级视频设置（模型 / 画幅 / 清晰度），写入项目 params
+  const [genSettings, setGenSettings] = useState<VideoGenValue>({ model: '', ratio: '9:16', resolution: '480p' })
+  const { defaultId: defaultVideoModel } = useVideoModelOptions()
+
+  // 目录到达后用后台默认视频模型填充
+  useEffect(() => {
+    if (!defaultVideoModel) return
+    setGenSettings((prev) => (prev.model ? prev : { ...prev, model: defaultVideoModel }))
+  }, [defaultVideoModel])
+
+  // 首页「精选风格」带来的风格：预选并展开新建面板
+  useEffect(() => {
+    const picked = (location.state as { imageStyleId?: string } | null)?.imageStyleId
+    if (!picked || !(IMAGE_STYLE_IDS as readonly string[]).includes(picked)) return
+    setImageStyleId(picked as ImageStyleId)
+    setShowCreate(true)
+  }, [location.state])
 
   // 加载项目列表
   async function loadProjects() {
@@ -145,6 +165,11 @@ function DramaListInner() {
         image_style_id: imageStyleId || undefined,
         title: source.slice(0, 40),
         content_locale: contentLocale,
+        params: {
+          aspect_ratio: genSettings.ratio,
+          resolution: genSettings.resolution,
+          ...(genSettings.model ? { video_model: genSettings.model } : {}),
+        },
       }
       const project = await dramaApi.createProject(body)
       navigate(`/drama/projects/${project.id}`, { state: { activeStep: 'outline' } })
@@ -391,6 +416,10 @@ function DramaListInner() {
                   <span className="drama-agent-char-sep">/</span>
                   {CREATIVE_MAX_LENGTH}
                 </span>
+              </div>
+              <div className="drama-agent-gen-settings">
+                <span className="drama-agent-gen-label">{t('genSettings.title')}</span>
+                <VideoGenSettings value={genSettings} onChange={setGenSettings} disabled={busy} />
               </div>
               <div className="drama-agent-ai-footer">
                 <div className="drama-agent-ai-options">

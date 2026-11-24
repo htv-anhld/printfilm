@@ -1522,7 +1522,12 @@ async def prepare_fragment_video_for_submit(
         if changed:
             episode.params = ep_params
 
-    mid = (model_id or "").strip() or None
+    # 本次请求未指定时，回退项目创建时选的视频模型
+    mid = (
+        (model_id or "").strip()
+        or str((project.params or {}).get("video_model") or "").strip()
+        or None
+    )
 
     refs = (
         await db.execute(

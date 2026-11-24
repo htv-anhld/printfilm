@@ -474,6 +474,16 @@ def _format_seedance_create_error(
             "参考音频过短：{who}，Seedance 要求时长 ≥ 1.8 秒。请打开对应角色/旁白，重新生成或上传更长的试听音频后再生成该分镜。",
             who=who,
         )
+    # TokenFree / New API 预扣费失败：账户余额不足以冻结本次视频的预估费用
+    if "insufficient_user_quota" in text or "预扣费额度失败" in text:
+        nums = re.findall(r"[＄$]\s*([0-9]+(?:\.[0-9]+)?)", text)
+        if len(nums) >= 2:
+            return _(
+                "TokenFree 账户余额不足：剩余 ${left}，本次视频需预扣 ${need}。请到 TokenFree 充值，或改用更便宜的视频模型 / 更短时长后重试",
+                left=f"{float(nums[0]):.2f}",
+                need=f"{float(nums[1]):.2f}",
+            )
+        return _("TokenFree 账户余额不足，无法预扣本次视频费用。请到 TokenFree 充值后重试")
     return f"Seedance create error {status_code}: {text}"
 
 
@@ -1316,7 +1326,9 @@ class ArkGateway:
         return_last_frame: bool = True,
         generate_audio: bool = False,
         extra_image_urls: list[str] | None = None,
+        model: str | None = None,
     ) -> str:
+        """提交 Seedance 图生视频；model 为前台逻辑模型 id（空 = 后台默认视频模型）。"""
         if self.mock:
             digest = hashlib.md5(f"{image_url}:{prompt}".encode()).hexdigest()[:10]
             return f"mock-task-{digest}"
@@ -1363,8 +1375,9 @@ class ArkGateway:
                     "role": "reference_image",
                 }
             )
-        route = self._resolve_ark_route("video", self.settings.model_video)
-        video_model = route.upstream_model if route else self.settings.model_video
+        wanted = (model or "").strip() or self.settings.model_video
+        route = self._resolve_ark_route("video", wanted)
+        video_model = route.upstream_model if route else resolve_upstream_model("video", wanted)
         body: dict[str, Any] = {
             "model": video_model,
             "content": content,
@@ -1846,6 +1859,7 @@ class ArkGateway:
                     prompt_as_json=use_json,
                     generate_audio=generate_audio,
                     extra_image_urls=extra_image_urls,
+                    model=model,
                 )
                 return await self.wait_video(
                     task_id,

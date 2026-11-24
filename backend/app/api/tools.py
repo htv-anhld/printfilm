@@ -44,6 +44,7 @@ async def run_tool(
     pack: str = Form(""),
     duration: str = Form(""),
     motion: str = Form(""),
+    model: str = Form(""),
     files: list[UploadFile] | None = File(default=None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -58,6 +59,7 @@ async def run_tool(
         "pack": pack,
         "duration": duration,
         "motion": motion,
+        "model": model,
     }
     try:
         for item in files or []:
@@ -95,6 +97,7 @@ async def run_tool(
                     duration_raw=duration or None,
                     motion=motion or None,
                     files=saved,
+                    model=model or None,
                 )
 
             try:

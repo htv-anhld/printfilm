@@ -1,0 +1,502 @@
+/*
+ * 首页仪表盘（参照 Dravelio dashboard）
+ * Hero 始终为深色电影感背景；下方区块跟随浅/深主题
+ */
+
+.pf-dash {
+  display: grid;
+  gap: 2.4rem;
+}
+
+/* ── Hero ── */
+.pf-dash-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: clamp(460px, 62vh, 600px);
+  border-radius: 24px;
+  overflow: hidden;
+  background: #0a0c0b;
+  color: #fff;
+}
+
+.pf-dash-hero-bg {
+  position: absolute;
+  inset: -4%;
+  z-index: -2;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 6px;
+  transform: rotate(-4deg) scale(1.08);
+  opacity: 0.55;
+  animation: pf-dash-drift 28s ease-in-out infinite alternate;
+}
+
+.pf-dash-hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  filter: saturate(1.1);
+}
+
+.pf-dash-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(110% 80% at 50% 35%, rgba(10, 12, 11, 0.25) 0%, rgba(10, 12, 11, 0.7) 70%),
+    linear-gradient(180deg, rgba(10, 12, 11, 0.55) 0%, rgba(10, 12, 11, 0.35) 40%, rgba(10, 12, 11, 0.94) 100%);
+}
+
+@keyframes pf-dash-drift {
+  from {
+    transform: rotate(-4deg) scale(1.08) translateY(0);
+  }
+  to {
+    transform: rotate(-4deg) scale(1.08) translateY(-3%);
+  }
+}
+
+.pf-dash-hero-inner {
+  box-sizing: border-box;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(980px, 100%);
+  padding: clamp(2.5rem, 8vh, 5.5rem) clamp(1rem, 5vw, 4rem) clamp(2rem, 5vh, 3rem);
+  text-align: center;
+}
+
+.pf-dash-headline {
+  margin: 0;
+  font-size: clamp(2.2rem, 5.4vw, 4.6rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: #fff;
+  text-shadow: 0 6px 40px rgba(0, 0, 0, 0.35);
+}
+
+.pf-dash-greet {
+  max-width: 640px;
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+/* ── Composer ── */
+.pf-dash-composer {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  gap: 10px;
+  padding: 14px 14px 12px 18px;
+  text-align: left;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  background: linear-gradient(170deg, rgba(20, 20, 22, 0.74) 0%, rgba(44, 44, 48, 0.56) 100%);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  transition: border-color 0.3s, box-shadow 0.4s;
+}
+
+.pf-dash-composer:hover {
+  border-color: color-mix(in srgb, var(--pf-lime) 45%, transparent);
+}
+
+.pf-dash-composer:focus-within {
+  border-color: color-mix(in srgb, var(--pf-lime) 70%, transparent);
+  box-shadow: 0 24px 70px -24px color-mix(in srgb, var(--pf-lime) 55%, transparent);
+}
+
+.pf-dash-modes {
+  display: inline-flex;
+  gap: 4px;
+  justify-self: start;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.pf-dash-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pf-dash-mode:hover {
+  color: #fff;
+}
+
+.pf-dash-mode.is-active {
+  background: var(--pf-lime);
+  color: var(--pf-lime-ink);
+}
+
+.pf-dash-input {
+  width: 100%;
+  min-height: 72px;
+  max-height: 220px;
+  padding: 4px 0 0;
+  border: 0;
+  outline: none;
+  resize: vertical;
+  background: transparent;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.pf-dash-input:focus,
+.pf-dash-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.pf-dash-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pf-dash-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-dash-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pf-dash-hint {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pf-dash-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  margin-left: auto;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--pf-lime);
+  color: var(--pf-lime-ink);
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.pf-dash-go:hover:not(:disabled) {
+  background: var(--pf-lime-hover);
+  transform: translateY(-1px);
+}
+
+.pf-dash-go:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.pf-dash-error {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #ff8a7a;
+}
+
+.pf-spin {
+  animation: pf-dash-spin 0.9s linear infinite;
+}
+
+@keyframes pf-dash-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── 快捷入口 ── */
+.pf-dash-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  padding-top: 14px;
+}
+
+.pf-dash-shortcut {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 84px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #fff;
+  text-align: center;
+}
+
+.pf-dash-shortcut-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background: linear-gradient(170deg, rgba(20, 20, 22, 0.72) 0%, rgba(44, 44, 48, 0.55) 100%);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  color: rgba(255, 255, 255, 0.85);
+  transition: transform 0.3s ease, border-color 0.2s, color 0.2s;
+}
+
+.pf-dash-shortcut:hover .pf-dash-shortcut-icon {
+  color: var(--pf-lime);
+  border-color: color-mix(in srgb, var(--pf-lime) 55%, transparent);
+  transform: translateY(-3px);
+}
+
+/* ── 区块 ── */
+.pf-dash-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.pf-dash-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pf-dash-section-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.pf-dash-section-hint {
+  font-size: 0.82rem;
+  color: var(--pf-muted);
+}
+
+.pf-dash-section-head a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  color: var(--pf-muted);
+  transition: background 0.2s, color 0.2s;
+}
+
+.pf-dash-section-head a:hover {
+  background: var(--pf-surface-2);
+  color: var(--pf-ink);
+}
+
+/* 精选风格：横向滚动海报 */
+.pf-dash-featured {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 200px;
+  gap: 10px;
+  padding-bottom: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.pf-dash-feature {
+  position: relative;
+  display: block;
+  aspect-ratio: 216 / 302;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--pf-card);
+  color: #fff;
+  text-align: left;
+  scroll-snap-align: start;
+}
+
+.pf-dash-feature img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.pf-dash-feature::after {
+  content: '';
+  position: absolute;
+  inset: 40% 0 0;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+}
+
+.pf-dash-feature span {
+  position: absolute;
+  inset: auto 12px 12px;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+.pf-dash-feature:hover img {
+  transform: scale(1.06);
+}
+
+/* 最近作品卡片 */
+.pf-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.pf-dash-card {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--pf-line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--pf-card);
+  color: var(--pf-ink);
+  transition: transform 0.2s ease, border-color 0.2s, box-shadow 0.2s;
+}
+
+.pf-dash-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--pf-line-strong);
+  box-shadow: var(--pf-shadow);
+}
+
+.pf-dash-card.is-skeleton {
+  min-height: 210px;
+  background: linear-gradient(90deg, var(--pf-surface-2) 0%, var(--pf-card) 50%, var(--pf-surface-2) 100%);
+  background-size: 200% 100%;
+  animation: pf-shimmer 1.4s linear infinite;
+}
+
+.pf-dash-card-cover {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  background: var(--pf-surface-2);
+  overflow: hidden;
+}
+
+.pf-dash-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pf-dash-card-initial {
+  color: var(--pf-muted);
+}
+
+.pf-dash-card-body {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px 12px;
+  min-width: 0;
+}
+
+.pf-dash-card-body strong,
+.pf-dash-card-body small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-dash-card-body strong {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.pf-dash-card-body small {
+  font-size: 0.76rem;
+  color: var(--pf-muted);
+}
+
+.pf-dash-empty {
+  margin: 0;
+  padding: 40px 20px;
+  border-radius: 20px;
+  background: var(--pf-surface-2);
+  color: var(--pf-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.pf-dash-empty.is-error {
+  color: var(--crimson);
+}
+
+@media (max-width: 960px) {
+  .pf-dash-hero {
+    border-radius: 18px;
+  }
+
+  .pf-dash-hero-bg {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .pf-dash-section-hint {
+    display: none;
+  }
+
+  .pf-dash-shortcuts {
+    gap: 12px;
+  }
+
+  .pf-dash-shortcut {
+    width: 64px;
+  }
+
+  .pf-dash-shortcut-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+  }
+
+  .pf-dash-featured {
+    grid-auto-columns: 150px;
+  }
+
+  .pf-dash-go {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-dash-hero-bg,
+  .pf-dash-card.is-skeleton {
+    animation: none;
+  }
+}

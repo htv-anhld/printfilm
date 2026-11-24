@@ -411,7 +411,9 @@ async def start_video_tool(
     duration_raw: str | None,
     motion: str | None,
     files: list[Path],
+    model: str | None = None,
 ) -> dict:
+    """独立视频工具：先得到首帧图，再提交 Seedance；model 为前台选择的视频模型 id。"""
     ark = get_ark()
     duration = duration_seconds(duration_raw)
     still_path: Path | None = None
@@ -468,6 +470,7 @@ async def start_video_tool(
         duration,
         resolution="480p",
         generate_audio=False,
+        model=(model or "").strip() or None,
     )
     digest = hashlib.md5(f"{user.id}:{task_id}".encode()).hexdigest()[:8]
     logger.info("tool video queued user=%s tool=%s task=%s hash=%s", user.id, tool_id, task_id, digest)

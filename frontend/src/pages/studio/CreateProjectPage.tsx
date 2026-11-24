@@ -66,6 +66,15 @@ export default function CreateProjectPage() {
   const [error, setError] = useState('')
   const untitled = t('studio.create.untitled')
 
+  // 首页输入框带来的主题（/studio/new?topic=…）：主题模式 + 预填主题与标题
+  useEffect(() => {
+    const topic = params.get('topic')?.trim()
+    if (!topic) return
+    setInputTab('theme')
+    setSourceText(topic.slice(0, 2000))
+    setTitle(topic.slice(0, 24))
+  }, [params])
+
   // 营销预设（/studio/new?preset=…）：脚本模式 + 预设脚本与标题
   useEffect(() => {
     const preset = params.get('preset')
