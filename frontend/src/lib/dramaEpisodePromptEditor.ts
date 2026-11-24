@@ -1,5 +1,7 @@
 /** 分集脚本编辑器：inline 时长/资产标签渲染与序列化 */
 import { tr } from '../i18n'
+import { getActiveLocale } from '../i18n/detect'
+import { delocalizeDramaMarkers, localizeDramaMarkers } from './dramaMarkerDisplay'
 
 export type DramaMentionChipData = {
   assetId: number
@@ -344,7 +346,8 @@ export function serializePromptEditorContent(root: HTMLElement) {
   }
 
   root.childNodes.forEach((child) => walk(child))
-  return result
+  // 界面上显示的是本地化标记，存回去前还原成后端认识的中文标记
+  return delocalizeDramaMarkers(result, getActiveLocale())
 }
 
 // 根据 content 渲染编辑器 DOM
@@ -355,6 +358,7 @@ export function renderPromptEditorContent(
 ) {
   root.replaceChildren()
   if (!content) return
+  content = localizeDramaMarkers(content, getActiveLocale())
 
   let lastIndex = 0
   for (const match of content.matchAll(CONTENT_TOKEN_PATTERN)) {

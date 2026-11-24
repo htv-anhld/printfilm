@@ -11,7 +11,7 @@ import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import { handleBillingError } from '../../lib/billingError'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
 import { isLocale, tr, useI18n } from '../../i18n'
-import { categoryLabel } from './categoryLabel'
+import { templateCategoryLabel } from './categoryLabel'
 
 // 文案用 getter，渲染时按当前语言取
 const OUTPUT_MODES: { id: PipelineMode; label: string; desc: string; image: string }[] = [
@@ -294,8 +294,8 @@ export default function StyleConfigPage() {
               </div>
               <p style={{ margin: '0.5rem 0 0', fontWeight: 600 }}>{currentTpl.name}</p>
               <div className="pf-tags">
-                {currentTpl.category.map((c) => (
-                  <span key={c}>{categoryLabel(t, c)}</span>
+                {currentTpl.category.map((c, i) => (
+                  <span key={c}>{templateCategoryLabel(t, currentTpl, i)}</span>
                 ))}
               </div>
             </div>

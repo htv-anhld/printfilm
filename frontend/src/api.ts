@@ -41,6 +41,8 @@ export type Template = {
   name: string
   description: string
   category: string[]
+  /** 后端按界面语言翻好的分类名（与 category 一一对应） */
+  category_labels?: string[]
   preview_cover: string
   default_ratio: string
   shot_duration_min: number

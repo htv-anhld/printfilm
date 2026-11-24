@@ -10,7 +10,7 @@ import { IconChevronLeft, IconRefresh, IconSparkles } from '../../components/ui/
 import { CATEGORY_ORDER } from '../../lib/categories'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
 import { messages, useI18n, type Locale } from '../../i18n'
-import { categoryLabel } from './categoryLabel'
+import { categoryLabel, templateCategoryLabel } from './categoryLabel'
 import { isMarketingPreset } from '../../lib/marketingPresets'
 
 type Inspiration = {
@@ -265,7 +265,7 @@ export default function CreateProjectPage() {
                   <span>
                     {tpl.default_ratio} ·{' '}
                     {(tpl.category || [])[0]
-                      ? categoryLabel(t, (tpl.category || [])[0])
+                      ? templateCategoryLabel(t, tpl, 0)
                       : t('studio.category.general')}
                   </span>
                 </div>

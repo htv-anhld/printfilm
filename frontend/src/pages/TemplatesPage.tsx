@@ -7,7 +7,7 @@ import AppShell from '../components/layout/AppShell'
 import PillTabs from '../components/ui/PillTabs'
 import { CATEGORY_ORDER, HOME_CATEGORY_LABELS } from '../lib/categories'
 import { useI18n } from '../i18n'
-import { categoryLabel } from './studio/categoryLabel'
+import { templateCategoryLabel } from './studio/categoryLabel'
 
 export default function TemplatesPage() {
   const nav = useNavigate()
@@ -90,8 +90,8 @@ export default function TemplatesPage() {
               <h3>{tpl.name}</h3>
               <p>{tpl.description}</p>
               <div className="pf-tags">
-                {tpl.category.map((c) => (
-                  <span key={c}>{categoryLabel(t, c)}</span>
+                {tpl.category.map((c, i) => (
+                  <span key={c}>{templateCategoryLabel(t, tpl, i)}</span>
                 ))}
               </div>
             </div>

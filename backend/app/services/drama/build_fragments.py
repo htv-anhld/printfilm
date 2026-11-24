@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 import re
 from typing import Any
 
@@ -14,6 +15,7 @@ from app.services.seedance_segments import (
 )
 from app.services.drama.content_locale import (
     EMPTY_SHOT_ALIAS_RE,
+    content_text,
     is_narrator_name,
     is_visual_label_alias_line,
     is_zh,
@@ -939,7 +941,8 @@ def _build_production_cues(
 ) -> list[str]:
     # 字幕 / BGM / 人物介绍前置提示（字幕 cue 不含「旁白」字样，避免 Seedance 整镜念白）
     hint = " ".join(filter(None, [location_line or "", *narrative_lines[:3]]))
-    lines = [f"【BGM：{_infer_bgm_mood(hint)}；音量低于人声】"]
+    # BGM 描述按内容语言写（前缀「【BGM：」是结构标记，保持中文）
+    lines = [f"【BGM：{content_text(_infer_bgm_mood(hint))}；{content_text('音量低于人声')}】"]
     if include_subtitles:
         lines.insert(0, DRAMA_SUBTITLE_CUE)
     lines.extend(character_intro_lines)

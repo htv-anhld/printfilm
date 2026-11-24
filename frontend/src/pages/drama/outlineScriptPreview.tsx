@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { Pencil } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import { tr, useI18n } from '../../i18n'
+import { delocalizeDramaMarkers, localizeDramaMarkers } from '../../lib/dramaMarkerDisplay'
 
 export type OutlineSceneBlock = {
   /** 原始整段（含场头行），写回时原样拼接 */
@@ -231,6 +232,7 @@ function formatEstimateDuration(sec: number): string {
 
 // 渲染解析后的剧本行
 function ScriptLines({ text }: { text: string }) {
+  const { locale } = useI18n()
   const lines = useMemo(
     () => text.split(/\r?\n/).map((line) => parseScriptLine(line)),
     [text],
@@ -242,14 +244,14 @@ function ScriptLines({ text }: { text: string }) {
         if (line.kind === 'meta') {
           return (
             <p key={i} className="drama-outline-script-meta">
-              {line.text}
+              {localizeDramaMarkers(line.text, locale)}
             </p>
           )
         }
         if (line.kind === 'action') {
           return (
             <p key={i} className="drama-outline-script-action">
-              {line.text}
+              {localizeDramaMarkers(line.text, locale)}
             </p>
           )
         }
@@ -315,7 +317,7 @@ export function OutlineScriptPreview({
   shotStats,
   onSaveScenes,
 }: OutlineScriptPreviewProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const blocks = useMemo(() => parseOutlineSceneBlocks(text), [text])
   const blockStats = useMemo(
     () => blocks.map((b) => summarizeOutlineScene(b.body)),
@@ -333,7 +335,7 @@ export function OutlineScriptPreview({
 
   function startEdit(index: number) {
     setEditingIndex(index)
-    setDraft(blocks[index]?.raw || '')
+    setDraft(localizeDramaMarkers(blocks[index]?.raw || '', locale))
   }
 
   async function saveEdit() {
@@ -341,7 +343,7 @@ export function OutlineScriptPreview({
     setSaving(true)
     try {
       const next = blocks.map((b, i) =>
-        i === editingIndex ? { ...b, raw: draft.trim() } : b,
+        i === editingIndex ? { ...b, raw: delocalizeDramaMarkers(draft.trim(), locale) } : b,
       )
       await onSaveScenes(joinOutlineSceneBlocks(next))
       setEditingIndex(null)

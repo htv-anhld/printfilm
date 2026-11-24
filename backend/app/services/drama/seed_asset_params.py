@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.drama.content_locale import content_text, is_zh, localize_role_type
+
 # DEFAULT_APPEARANCE_NAME 从剧本抽取角色时的默认形象名
 DEFAULT_APPEARANCE_NAME = "基础形象"
 
@@ -41,14 +43,16 @@ def manju_join_character_prompt(character: dict[str, Any]) -> str:
     role_type = str(character.get("roleType") or "").strip()
     core_tags = str(character.get("coreTags") or "").strip()
     personality = str(character.get("personality") or "").strip()
+    # 字段标签按内容语言写（这段 prompt 会显示在资产面板里）
     parts = [
         visual,
-        f"身份：{title}" if title else "",
-        f"定位：{role_type}" if role_type else "",
-        f"标签：{core_tags}" if core_tags else "",
-        f"性格：{personality}" if personality else "",
+        content_text("身份：{v}", v=title) if title else "",
+        content_text("定位：{v}", v=localize_role_type(role_type)) if role_type else "",
+        content_text("标签：{v}", v=core_tags) if core_tags else "",
+        content_text("性格：{v}", v=personality) if personality else "",
     ]
-    return "。".join(part for part in parts if part)
+    sep = "。" if is_zh() else ". "
+    return sep.join(part for part in parts if part)
 
 
 # 从摘要人物 dict 拼角色生图提示词正文（refresh/fallback 时可叙事化扩展）
@@ -89,7 +93,7 @@ def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
         "relationships": character.get("relationships"),
         "growthArc": character.get("growthArc"),
         "canvas": {
-            "appearanceName": DEFAULT_APPEARANCE_NAME,
+            "appearanceName": content_text(DEFAULT_APPEARANCE_NAME),
             "generation": {
                 "prompt": prompt,
                 **DEFAULT_IMAGE_GENERATION,
@@ -102,5 +106,5 @@ def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
 # 组装场景资产 params（对齐 manju buildSceneParams）
 def build_scene_params(scene_name: str, story_type: str = "") -> dict[str, Any]:
     _ = story_type  # manju 场景 seed 未使用 storyType，保留参数供 refresh 扩展
-    prompt = f"场景：{scene_name.strip()}，影视级写实场景，构图清晰，适合短剧拍摄"
+    prompt = content_text("场景：{name}，影视级写实场景，构图清晰，适合短剧拍摄", name=scene_name.strip())
     return build_named_image_params(prompt, "16:9", kind="scene")

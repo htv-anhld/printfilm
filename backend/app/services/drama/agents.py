@@ -6,6 +6,7 @@ from typing import Any
 
 from app.i18n import _
 from app.services.drama.content_locale import (
+    localize_role_type,
     char_limit,
     content_text,
     default_episode_title,
@@ -698,7 +699,7 @@ def format_summary_text(summary: dict[str, Any]) -> str:
                 t(
                     "- {name}（{role}/{title}）：{visual}；标签：{tags}；弧光：{arc}",
                     name=c.get("name", ""),
-                    role=c.get("roleType", ""),
+                    role=localize_role_type(c.get("roleType", "")),
                     title=c.get("title", ""),
                     visual=c.get("visualImage", ""),
                     tags=c.get("coreTags", ""),
