@@ -91,3 +91,23 @@ export function useResolutionOptions(): PickerOption<VideoResolution>[] {
     [t],
   )
 }
+
+/** 单集时长选项（0 = 默认 60–90 秒）；镜数按约 8 秒/镜估算，与后端 episode_length 一致 */
+export const EPISODE_DURATION_VALUES = [0, 120, 180, 300] as const
+export type EpisodeDuration = (typeof EPISODE_DURATION_VALUES)[number]
+
+/** 单集时长选择项 */
+export function useEpisodeDurationOptions(): PickerOption<EpisodeDuration>[] {
+  const { t } = useI18n()
+  return useMemo(
+    () => [
+      { value: 0, label: t('genSettings.durationDefault'), hint: t('genSettings.durationDefaultHint') },
+      ...([120, 180, 300] as const).map((sec) => ({
+        value: sec,
+        label: t(`genSettings.duration${sec}`),
+        hint: t('genSettings.durationShotsHint', { n: Math.ceil(sec / 8) }),
+      })),
+    ],
+    [t],
+  )
+}

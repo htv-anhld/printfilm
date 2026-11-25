@@ -1512,17 +1512,15 @@ function EpisodeEditInner() {
           >
             {busy && status === t('episode.edit.planning') ? t('episode.edit.planningShort') : t('episode.edit.replan')}
           </button>
-          {/* 一键生成：暂时隐藏，恢复时去掉 false && */}
-          {false && (
-            <button
-              type="button"
-              className="drama-ep-btn-dark drama-ep-header-gen-all"
-              disabled={generateAllLocked || fragments.length === 0}
-              onClick={() => void generateAll()}
-            >
-              {busy ? t('episode.edit.enqueueing') : t('episode.edit.generateAll')}
-            </button>
-          )}
+          {/* 一键生成：已有成片的分镜自动跳过；开启尾帧衔接时按镜序排队 */}
+          <button
+            type="button"
+            className="drama-ep-btn-lime drama-ep-header-gen-all"
+            disabled={generateAllLocked || fragments.length === 0}
+            onClick={() => void generateAll()}
+          >
+            {busy ? t('episode.edit.enqueueing') : t('episode.edit.generateAll')}
+          </button>
         </div>
       </header>
 

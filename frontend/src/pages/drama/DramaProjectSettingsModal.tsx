@@ -24,6 +24,7 @@ import {
 import type { DramaProject, DramaScript } from '../../api/drama'
 import { dramaApi } from '../../api/drama'
 import { useI18n } from '../../i18n'
+import { useEpisodeDurationOptions } from '../../lib/videoModelOptions'
 import {
   DRAMA_CONTENT_LOCALES,
   readDramaContentLocale,
@@ -99,6 +100,8 @@ export function DramaProjectSettingsModal({
   const [saving, setSaving] = useState(false)
   const contentLocale = readDramaContentLocale(project)
   const projectParams = (project.params || {}) as Record<string, unknown>
+  // 单集时长：影响之后生成的分集正文篇幅与分镜条数
+  const durationOptions = useEpisodeDurationOptions()
   const styleId = (String(script?.params?.image_style_id || projectParams.image_style_id || '') ||
     '') as ImageStyleId | ''
   const aspectRatio = readProjectAspectRatio(projectParams)
@@ -202,6 +205,15 @@ export function DramaProjectSettingsModal({
             disabled={saving}
             options={DRAMA_RES_OPTIONS.map((r) => ({ value: r as DramaResolution, label: r }))}
             onChange={(res) => void patchProjectParams({ resolution: res })}
+          />
+          <div className="drama-project-settings-head">
+            <h4>{t('genSettings.episodeDuration')}</h4>
+          </div>
+          <SettingsChoiceRow
+            value={String(Number(projectParams.episode_duration_sec) || 0)}
+            disabled={saving}
+            options={durationOptions.map((o) => ({ value: String(o.value), label: o.label }))}
+            onChange={(sec) => void patchProjectParams({ episode_duration_sec: Number(sec) || 0 })}
           />
         </section>
 

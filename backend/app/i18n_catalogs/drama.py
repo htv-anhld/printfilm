@@ -5,6 +5,10 @@ key 为中文原文；部分条目是写进剧本/字幕的「内容文案」（
 """
 
 EN: dict[str, str] = {
+    "合成被中断，请重新发起": "Composition was interrupted, please start it again",
+    "还没有任何已生成视频的分镜，无法合成整部影片": "No shot has a video yet, so the full film can't be composed",
+    "整部影片正在合成，请稍候": "The full film is being composed, please wait",
+    "保存上传文件失败：{error}": "Failed to save the uploaded file: {error}",
     "女主角": "Female lead",
     "男主角": "Male lead",
     "重要配角": "Key supporting role",
@@ -200,6 +204,10 @@ EN: dict[str, str] = {
 }
 
 VI: dict[str, str] = {
+    "合成被中断，请重新发起": "Quá trình ghép bị gián đoạn, vui lòng ghép lại",
+    "还没有任何已生成视频的分镜，无法合成整部影片": "Chưa có phân cảnh nào có video, chưa thể ghép cả bộ phim",
+    "整部影片正在合成，请稍候": "Cả bộ phim đang được ghép, vui lòng chờ",
+    "保存上传文件失败：{error}": "Không lưu được tệp tải lên: {error}",
     "女主角": "Nữ chính",
     "男主角": "Nam chính",
     "重要配角": "Vai phụ quan trọng",

@@ -23,6 +23,7 @@ from app.models_drama import (
     DramaProject,
 )
 from app.services.billing import record_line, record_llm_chat_line
+from app.services.drama.episode_length import set_episode_length_from_project
 from app.services.drama.billing_util import record_seed_assets_llm_usage
 from app.services.drama.seed import seed_assets_from_episode_body
 from app.services.drama.agents import (
@@ -240,6 +241,7 @@ async def run_script_summary_job(project_id: int) -> dict[str, Any]:
             logger.warning("剧本摘要失败：缺少剧本 project_id=%s", project_id)
             return {"ok": False, "error": "missing_script"}
         set_project_content_locale(project)
+        set_episode_length_from_project(project)
         script = project.script
         creative = (script.source or "").strip()
         # 上传的完整剧本可能很长：摘要只需开头部分来提取人物与梗概
@@ -414,6 +416,7 @@ async def run_episode_scripts_job(
             logger.warning("分集剧本失败：缺少摘要 project_id=%s", project_id)
             return {"ok": False, "error": "missing_summary"}
         set_project_content_locale(project)
+        set_episode_length_from_project(project)
 
         script = project.script
         summary = script.summary if isinstance(script.summary, dict) else {}
@@ -606,6 +609,7 @@ async def _run_single_episode_script_job(
             logger.warning("单集剧本失败：缺少摘要 project_id=%s", project_id)
             return {"ok": False, "error": "missing_summary"}
         set_project_content_locale(project)
+        set_episode_length_from_project(project)
 
         script = project.script
         summary = script.summary if isinstance(script.summary, dict) else {}
@@ -864,6 +868,7 @@ async def run_episode_fragment_plan_job(
 
         project = episode.project
         set_project_content_locale(project)
+        set_episode_length_from_project(project)
         script = project.script
         body = resolve_episode_script_body(script.episode_content if script else None, episode)
         if not (body or "").strip():
@@ -1110,6 +1115,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
             raise ValueError(_("分集或项目不存在"))
         project = ep.project
         set_project_content_locale(project)
+        set_episode_length_from_project(project)
         user = await db.get(User, user_id)
         if not user:
             raise ValueError(_("用户不存在"))
@@ -1668,6 +1674,7 @@ async def run_asset_image_job(
         if not project or not user:
             return {"ok": False, "error": "missing"}
         set_project_content_locale(project)
+        set_episode_length_from_project(project)
         asset = None
         if asset_id:
             asset = await db.get(DramaAsset, asset_id)
@@ -1820,6 +1827,7 @@ async def run_asset_video_job(
         if not project or not user:
             return {"ok": False, "error": "missing"}
         set_project_content_locale(project)
+        set_episode_length_from_project(project)
         if not asset or asset.project_id != project_id:
             return {"ok": False, "error": "asset_not_found"}
         try:
@@ -1896,6 +1904,7 @@ async def run_seed_assets_job(
         if not project:
             return {"ok": False, "error": "project_not_found"}
         set_project_content_locale(project)
+        set_episode_length_from_project(project)
         params = dict(project.params or {}) if isinstance(project.params, dict) else {}
         try:
             result = await seed_assets_from_script(

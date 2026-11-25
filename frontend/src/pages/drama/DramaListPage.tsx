@@ -8,6 +8,7 @@ import {
   PenLine,
   Search,
   Sparkles,
+  Clock,
   Trash2,
   Upload,
 } from 'lucide-react'
@@ -26,7 +27,13 @@ import {
 } from '../../lib/dramaWorkflow'
 import RequireAuth from './RequireAuth'
 import VideoGenSettings, { type VideoGenValue } from '../../components/ui/VideoGenSettings'
-import { isDraftCapableModel, useVideoModelOptions } from '../../lib/videoModelOptions'
+import {
+  isDraftCapableModel,
+  useEpisodeDurationOptions,
+  useVideoModelOptions,
+  type EpisodeDuration,
+} from '../../lib/videoModelOptions'
+import OptionPicker from '../../components/ui/OptionPicker'
 import { tr, useI18n } from '../../i18n'
 import { DramaContentLocaleSelect } from '../../components/drama/DramaContentLocaleSelect'
 import type { DramaContentLocale } from '../../components/drama/dramaContentLocale'
@@ -121,6 +128,9 @@ function DramaListInner() {
   // createTab 新建方式：上传剧本 / AI 写剧本；scriptFile 待上传的剧本文件
   const [createTab, setCreateTab] = useState<'upload' | 'ai'>('upload')
   const [scriptFile, setScriptFile] = useState<File | null>(null)
+  // episodeDuration 单集时长（0 = 默认 60–90 秒），决定 AI 写正文篇幅与分镜条数
+  const [episodeDuration, setEpisodeDuration] = useState<EpisodeDuration>(0)
+  const durationOptions = useEpisodeDurationOptions()
   const { defaultId: defaultVideoModel } = useVideoModelOptions()
 
   // 目录到达后用后台默认视频模型填充
@@ -160,6 +170,7 @@ function DramaListInner() {
       aspect_ratio: genSettings.ratio,
       resolution: genSettings.resolution,
       draft_mode: Boolean(genSettings.draft && isDraftCapableModel(genSettings.model)),
+      ...(episodeDuration ? { episode_duration_sec: episodeDuration } : {}),
       ...(genSettings.model ? { video_model: genSettings.model } : {}),
     }
   }
@@ -489,6 +500,15 @@ function DramaListInner() {
                     <>
                       <span className="drama-agent-opt-divider" aria-hidden />
                       <DramaEpisodeCountPopover value={episodeCount} onChange={setEpisodeCount} disabled={busy} />
+                      <span className="drama-agent-opt-divider" aria-hidden />
+                      <OptionPicker
+                        icon={<Clock size={14} aria-hidden />}
+                        title={t('genSettings.episodeDuration')}
+                        value={episodeDuration}
+                        options={durationOptions}
+                        onChange={setEpisodeDuration}
+                        disabled={busy}
+                      />
                     </>
                   ) : null}
                   <span className="drama-agent-opt-divider" aria-hidden />

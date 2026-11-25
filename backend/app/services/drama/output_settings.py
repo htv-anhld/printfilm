@@ -84,6 +84,14 @@ def clean_project_generation_params(params: dict | None) -> dict | None:
         out.pop("aspect_ratio", None)
     if "resolution" in out and not _pick_resolution(out.get("resolution")):
         out.pop("resolution", None)
+    if "episode_duration_sec" in out:
+        from app.services.drama.episode_length import normalize_episode_duration
+
+        sec = normalize_episode_duration(out.get("episode_duration_sec"))
+        if sec is None:
+            out.pop("episode_duration_sec", None)
+        else:
+            out["episode_duration_sec"] = sec
     if "draft_mode" in out:
         out["draft_mode"] = bool(out.get("draft_mode"))
     if "video_model" in out:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from app.services.drama.episode_length import current_episode_length
 from app.services.drama.build_fragments import (
     EPISODE_DURATION_BUDGET_SEC,
     EPISODE_FRAGMENT_MAX,
@@ -216,12 +217,17 @@ def _pick_merge_index(drafts: list[dict[str, Any]], *, compress: bool = False) -
 def trim_episode_fragment_drafts(
     drafts: list[dict[str, Any]],
     *,
-    max_count: int = EPISODE_FRAGMENT_MAX,
-    max_total_sec: int = EPISODE_DURATION_BUDGET_SEC,
+    max_count: int | None = None,
+    max_total_sec: int | None = None,
 ) -> list[dict[str, Any]]:
-    """合并相邻短镜，使条数与总时长贴近短剧预算。"""
+    """合并相邻短镜，使条数与总时长贴近短剧预算（缺省按项目单集时长规格）。"""
     if not drafts:
         return drafts
+    spec = current_episode_length()
+    if max_count is None:
+        max_count = EPISODE_FRAGMENT_MAX if spec.is_default else spec.fragment_max
+    if max_total_sec is None:
+        max_total_sec = EPISODE_DURATION_BUDGET_SEC if spec.is_default else spec.duration_budget_sec
     merged = [dict(d) for d in drafts]
 
     while len(merged) > max_count:
@@ -266,8 +272,11 @@ def trim_episode_fragment_drafts(
     return expanded
 
 
-def cap_llm_fragment_items(items: list[Any], max_items: int = EPISODE_FRAGMENT_MAX) -> list[Any]:
-    """LLM 返回过多条时，先合并 lines 再规范化，避免一集碎成十几镜。"""
+def cap_llm_fragment_items(items: list[Any], max_items: int | None = None) -> list[Any]:
+    """LLM 返回过多条时，先合并 lines 再规范化，避免一集碎成十几镜（上限按单集时长规格）。"""
+    if max_items is None:
+        spec = current_episode_length()
+        max_items = EPISODE_FRAGMENT_MAX if spec.is_default else spec.fragment_max
     if len(items) <= max_items:
         return items
     merged: list[dict[str, Any]] = [dict(x) for x in items if isinstance(x, dict)]

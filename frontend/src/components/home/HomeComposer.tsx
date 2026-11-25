@@ -1,10 +1,15 @@
 /** 首页创作输入框（参照 Dravelio 仪表盘）：选漫剧/短视频 → 输入创意 → 直接建项目或跳转创建页 */
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Clapperboard, Film, Layers, Loader2, Palette, Sparkles } from 'lucide-react'
+import { Clapperboard, Clock, Film, Layers, Loader2, Palette, Sparkles } from 'lucide-react'
 import OptionPicker from '../ui/OptionPicker'
 import VideoGenSettings, { type VideoGenValue } from '../ui/VideoGenSettings'
-import { isDraftCapableModel, useVideoModelOptions } from '../../lib/videoModelOptions'
+import {
+  isDraftCapableModel,
+  useEpisodeDurationOptions,
+  useVideoModelOptions,
+  type EpisodeDuration,
+} from '../../lib/videoModelOptions'
 import { dramaApi } from '../../api/drama'
 import { useI18n } from '../../i18n'
 import { IMAGE_STYLE_OPTIONS, type ImageStyleId } from '../../lib/dramaImageStyles'
@@ -45,6 +50,9 @@ export default function HomeComposer({ loggedIn }: Props) {
   // gen 视频模型 / 画幅 / 清晰度（漫剧写入项目 params）
   const [gen, setGen] = useState<VideoGenValue>({ model: '', ratio: '9:16', resolution: '480p', draft: false })
   const { defaultId } = useVideoModelOptions()
+  // duration 单集时长（0 = 默认 60–90 秒）
+  const [duration, setDuration] = useState<EpisodeDuration>(0)
+  const durationOptions = useEpisodeDurationOptions()
 
   // 目录到达后填入后台默认视频模型
   useEffect(() => {
@@ -85,6 +93,7 @@ export default function HomeComposer({ loggedIn }: Props) {
           aspect_ratio: gen.ratio,
           resolution: gen.resolution,
           draft_mode: Boolean(gen.draft && isDraftCapableModel(gen.model)),
+          ...(duration ? { episode_duration_sec: duration } : {}),
           ...(gen.model ? { video_model: gen.model } : {}),
         },
       })
@@ -148,6 +157,15 @@ export default function HomeComposer({ loggedIn }: Props) {
               value={episodes}
               options={EPISODE_OPTIONS.map((n) => ({ value: n, label: t('home.dash.episodes', { count: n }) }))}
               onChange={setEpisodes}
+              disabled={busy}
+            />
+            <OptionPicker
+              tone="glass"
+              icon={<Clock size={14} aria-hidden />}
+              title={t('genSettings.episodeDuration')}
+              value={duration}
+              options={durationOptions}
+              onChange={setDuration}
               disabled={busy}
             />
             <OptionPicker

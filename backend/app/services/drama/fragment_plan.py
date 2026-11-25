@@ -6,6 +6,7 @@ import logging
 import re
 from typing import Any
 
+from app.services.drama.episode_length import adapt_episode_prompt, current_episode_length
 from app.services.drama.build_fragments import (
     FRAGMENT_DURATION_MIN,
     FRAGMENT_SOFT_MAX,
@@ -570,6 +571,55 @@ def normalize_llm_fragment_items(
     return drafts
 
 
+def _items_total_sec(items: list[Any]) -> int:
+    """LLM 分镜条目的 duration_sec 合计（缺省按 8 秒估）。"""
+    total = 0
+    for item in items:
+        try:
+            total += int((item or {}).get("duration_sec") or 8) if isinstance(item, dict) else 8
+        except (TypeError, ValueError):
+            total += 8
+    return total
+
+
+async def _retry_if_long_episode_too_short(
+    items: list[Any],
+    *,
+    db: Any | None,
+    user_id: int | None,
+    user_prompt: str,
+    skill_ids: list[int] | None,
+) -> list[Any]:
+    """长集合计时长 < 目标 85% 时重拆一次；重拆结果更长才采用。默认短剧规格不处理。"""
+    spec = current_episode_length()
+    if spec.is_default:
+        return items
+    total = _items_total_sec(items)
+    floor = int(spec.target_sec * 0.85)
+    if total >= floor:
+        return items
+    feedback = (
+        f"\n\n【上一版不合格】只拆出 {len(items)} 条、合计约 {total} 秒，远低于本集目标约 {spec.target_sec} 秒。"
+        f"请重新拆分：至少 {max(4, round(spec.target_sec / 12))} 条，duration_sec 合计不少于 {floor} 秒；"
+        "逐段覆盖正文的全部动作与台词，不要合并不同场景、不要删戏。"
+    )
+    logger.info("长集分镜偏短，重拆一次 fragments=%s total=%s target=%s", len(items), total, spec.target_sec)
+    raw = await run_task_json(
+        db,
+        user_id,
+        task="shot_plan",
+        system=with_output_language(adapt_episode_prompt(FRAGMENT_PLAN_SYSTEM_PROMPT)),
+        user=adapt_episode_prompt(user_prompt) + feedback,
+        temperature=0.4,
+        skill_ids=skill_ids,
+    )
+    retry_items = raw.get("fragments") if isinstance(raw, dict) else raw
+    if isinstance(retry_items, list) and _items_total_sec(retry_items) > total:
+        logger.info("长集重拆完成 fragments=%s total=%s", len(retry_items), _items_total_sec(retry_items))
+        return retry_items
+    return items
+
+
 async def plan_fragments_with_llm(
     *,
     episode_name: str,
@@ -620,8 +670,8 @@ async def plan_fragments_with_llm(
         user_id,
         task="shot_plan",
         # 非中文项目：对白/旁白/画面描写用内容语言，行标签保持中文（见 drama_output_directive）
-        system=with_output_language(FRAGMENT_PLAN_SYSTEM_PROMPT),
-        user=user_prompt,
+        system=with_output_language(adapt_episode_prompt(FRAGMENT_PLAN_SYSTEM_PROMPT)),
+        user=adapt_episode_prompt(user_prompt),
         temperature=0.4,
         skill_ids=skill_ids,
     )
@@ -632,6 +682,15 @@ async def plan_fragments_with_llm(
         items = raw
     if not isinstance(items, list) or not items:
         raise RuntimeError(_("LLM 分镜结果为空"))
+
+    # 长集：模型常把正文压缩成短剧规格；合计时长明显不足时带反馈重拆一次
+    items = await _retry_if_long_episode_too_short(
+        items,
+        db=db,
+        user_id=user_id,
+        user_prompt=user_prompt,
+        skill_ids=skill_ids,
+    )
 
     items = cap_llm_fragment_items(items)
 
