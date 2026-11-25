@@ -58,7 +58,20 @@ def test_tokenfree_working_image_model_remaps_seedream():
     assert tokenfree_working_image_model("seedream-5.0") == "seedream-5.0"
     assert tokenfree_working_image_model("gpt-image-2-5") == "gpt-image-2.5"
     assert tokenfree_working_image_model("gpt-image-2-5-sunburst") == "gpt-image-2.5"
-    assert tokenfree_working_image_model("gpt-image-2") == "gpt-image-2.5"
+    # gpt-image-2 在 default 分组有渠道，不再升成 2.5（2.5 无渠道）
+    assert tokenfree_working_image_model("gpt-image-2") == "gpt-image-2"
+
+
+def test_gpt_image_2_uses_images_generations_with_valid_size():
+    """gpt-image-2 走 /images/generations；尺寸按横竖映射到 OpenAI 支持的三档。"""
+    from app.services.tokenfree_image import gpt_image_size, tokenfree_uses_responses_api
+
+    assert not tokenfree_uses_responses_api("gpt-image-2")
+    assert tokenfree_uses_responses_api("gpt-image-2.5")
+    assert gpt_image_size("1728x2304") == "1024x1536"
+    assert gpt_image_size("2304x1728") == "1536x1024"
+    assert gpt_image_size("2048x2048") == "1024x1024"
+    assert gpt_image_size("2K") == "auto"
 
 
 def test_extract_tokenfree_image_url_from_img_tag():

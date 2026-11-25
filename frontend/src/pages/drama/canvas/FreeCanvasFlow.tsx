@@ -15,10 +15,12 @@ import { CANVAS_SNAP_GRID } from './canvasTypes'
 
 type FreeCanvasFlowProps = {
   projectId: number
+  /** 空白处右键：由工作区弹出添加节点菜单 */
+  onPaneContextMenu?: (event: MouseEvent | React.MouseEvent) => void
 }
 
 /** 渲染 React Flow 无限画布 */
-export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
+export function FreeCanvasFlow({ projectId, onPaneContextMenu }: FreeCanvasFlowProps) {
   const nodeTypes = useMemo(() => ({ asset: CanvasAssetNode }), [])
   const {
     nodes,
@@ -31,6 +33,7 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
     pushSnapshot,
     focusNodeId,
     clearFocusNode,
+    loading,
   } = useCanvasStore()
   const { fitView, setCenter, getNode } = useReactFlow()
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -83,11 +86,12 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
     fittedRef.current = false
   }, [projectId])
 
+  // 只在首次加载完成后自适应一次；之后用户新建节点（含右键在指定位置新建）不再移动视口
   useEffect(() => {
-    if (fittedRef.current || nodes.length === 0) return
+    if (fittedRef.current || loading) return
     fittedRef.current = true
-    void fitView({ padding: 0.2 })
-  }, [nodes.length, fitView])
+    if (nodes.length > 0) void fitView({ padding: 0.2 })
+  }, [loading, nodes.length, fitView])
 
   return (
     <div
@@ -108,6 +112,10 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
         onNodeDragStop={handleNodeDragStop}
         isValidConnection={isValidConnection}
         onPaneClick={handlePaneClick}
+        onPaneContextMenu={(event) => {
+          event.preventDefault()
+          onPaneContextMenu?.(event)
+        }}
         deleteKeyCode={['Backspace', 'Delete']}
         snapToGrid={snapToGrid}
         snapGrid={CANVAS_SNAP_GRID}

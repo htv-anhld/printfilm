@@ -49,6 +49,7 @@ from app.services.tokenfree_image import (
     raise_tokenfree_image_if_failed,
     tokenfree_image_slot,
     tokenfree_image_user_error,
+    gpt_image_size,
     tokenfree_working_image_model,
     tokenfree_uses_responses_api,
     uses_tokenfree_image,
@@ -1074,6 +1075,18 @@ class ArkGateway:
                 ref_urls=subject_refs,
                 style_ref_urls=style_refs,
             )
+        elif on_tokenfree and "gpt-image" in chosen.lower():
+            # OpenAI 兼容生图：不认 watermark / image 字段，参考图写进提示词
+            path = "/images/generations"
+            prompt_text = full_prompt
+            if refs:
+                prompt_text = f"{prompt_text}\n参考图：{' '.join(refs)}"
+            body = {
+                "model": chosen,
+                "prompt": prompt_text,
+                "size": gpt_image_size(resolved_size),
+                "n": 1,
+            }
         else:
             path = "/images/generations"
             body = {

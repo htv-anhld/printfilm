@@ -108,6 +108,13 @@ select {
 
 button {
   cursor: pointer;
+  /* 不写背景的按钮在暗色 color-scheme 下会被浏览器画成系统灰；统一透明，由各自 class 决定外观 */
+  background-color: transparent;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--pf-accent-strong);
 }
 
 @media (max-width: 960px) {

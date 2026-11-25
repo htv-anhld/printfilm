@@ -599,6 +599,8 @@ export type AdminModelSettings = {
   drama_fragment_max_attempts: number;
   ark_mock: boolean;
   oss_enabled: boolean;
+  /** 存储提供方：aliyun | s3（Cloudflare R2 / AWS S3 / MinIO 等） */
+  oss_provider?: string;
   oss_endpoint: string;
   oss_region: string;
   oss_bucket: string;
@@ -747,4 +749,8 @@ export type AdminTemplate = {
   sort_order: number;
   is_active: boolean;
   is_premium: boolean;
+  /** 展示用：按界面语言翻译的名称 / 简介 / 分类 */
+  display_name?: string;
+  display_description?: string;
+  category_labels?: string[];
 };

@@ -163,7 +163,7 @@
 
 .fc-gen-model-item.selected {
   border-color: #7c3aed;
-  background: #faf5ff;
+  background: color-mix(in srgb, #8b5cf6 10%, var(--pf-card));
 }
 
 .fc-gen-chip-row {

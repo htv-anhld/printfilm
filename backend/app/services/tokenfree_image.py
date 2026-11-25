@@ -71,16 +71,32 @@ def tokenfree_working_image_model(model: str) -> str:
         "gpt-image-2.5",
         TOKENFREE_KIE_IMAGE_MODEL,
         "gpt-image-2.5-sunburst",
-        "gpt-image-2",
-        "gpt-image-2.0",
     }:
         return TOKENFREE_WORKING_IMAGE_MODEL
+    # 2026-11 实测：gpt-image-2 在 default 分组有渠道（走 /images/generations），
+    # 而 gpt-image-2.5 在 default 分组无渠道，不能再把 2 升成 2.5
+    if low in {"gpt-image-2", "gpt-image-2.0"}:
+        return "gpt-image-2"
     return raw
 
 
 def tokenfree_uses_responses_api(model: str) -> bool:
-    """只有 GPT Image 走 /v1/responses；Seedream 等走标准 /v1/images/generations。"""
-    return "gpt-image" in (model or "").lower()
+    """只有 gpt-image-2.5 系列走 /v1/responses；gpt-image-2、Seedream 等走标准 /v1/images/generations。"""
+    low = (model or "").lower()
+    return "gpt-image" in low and ("2.5" in low or "2-5" in low)
+
+
+def gpt_image_size(size: str | None) -> str:
+    """gpt-image 只认 1024x1024 / 1024x1536 / 1536x1024：按 WxH 的横竖选档，其余用 auto。"""
+    m = re.match(r"^\s*(\d+)\s*[x×*]\s*(\d+)\s*$", str(size or ""))
+    if not m:
+        return "auto"
+    w, h = int(m.group(1)), int(m.group(2))
+    if h > w * 1.1:
+        return "1024x1536"
+    if w > h * 1.1:
+        return "1536x1024"
+    return "1024x1024"
 
 
 def build_tokenfree_image_body(

@@ -204,6 +204,7 @@ html.dark .pf-side {
   width: 3px;
   border-radius: 3px;
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
 }
 
 .pf-side.is-collapsed .pf-side-link {
@@ -473,4 +474,64 @@ html.dark .pf-side {
     z-index: 55;
     background: var(--pf-overlay);
   }
+}
+
+/* React Flow 自带控件/小地图默认白底：跟随主题（画布、分镜故事板共用） */
+.react-flow .react-flow__controls {
+  box-shadow: var(--pf-shadow);
+}
+
+.react-flow .react-flow__controls-button {
+  background: var(--pf-card);
+  border-bottom-color: var(--pf-line);
+  color: var(--pf-ink);
+  fill: currentColor;
+}
+
+.react-flow .react-flow__controls-button:hover {
+  background: var(--pf-surface-2);
+}
+
+.react-flow .react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.react-flow .react-flow__minimap {
+  background: var(--pf-card);
+  border: 1px solid var(--pf-line);
+  border-radius: 10px;
+}
+
+.react-flow .react-flow__minimap-mask {
+  fill: color-mix(in srgb, var(--pf-bg) 70%, transparent);
+}
+
+.react-flow .react-flow__attribution {
+  background: transparent;
+  color: var(--pf-muted);
+}
+
+/* 通用旋转加载图标 */
+.pf-spin {
+  animation: pf-spin 0.9s linear infinite;
+}
+
+@keyframes pf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 大纲工具栏：整部成片按钮组 */
+.drama-film-compose {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drama-film-compose .drama-outline-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
 }

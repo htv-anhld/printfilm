@@ -19,6 +19,18 @@ from app.schemas import (
 router = APIRouter()
 
 
+def _admin_template_out(tpl: Template) -> AdminTemplateOut:
+    """管理端模板输出：附带按界面语言翻译的展示字段（种子中文文案在 i18n 目录里有译文）。"""
+    out = AdminTemplateOut.model_validate(tpl)
+    return out.model_copy(
+        update={
+            "display_name": _(out.name) if out.name else "",
+            "display_description": _(out.description) if out.description else "",
+            "category_labels": [_(str(c)) for c in (out.category or [])],
+        }
+    )
+
+
 @router.get("/templates/meta")
 async def templates_meta(
     _admin: User = Depends(get_current_admin),
@@ -33,7 +45,8 @@ async def templates_meta(
         for item in cat_list:
             if isinstance(item, str) and item.strip():
                 categories.add(item.strip())
-    return {"categories": sorted(categories)}
+    ordered = sorted(categories)
+    return {"categories": ordered, "category_labels": {c: _(c) for c in ordered}}
 
 
 @router.get("/templates", response_model=AdminTemplateListOut)
@@ -69,7 +82,7 @@ async def list_templates(
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    items = [AdminTemplateOut.model_validate(t) for t in result.scalars().all()]
+    items = [_admin_template_out(t) for t in result.scalars().all()]
     return AdminTemplateListOut(
         items=items, meta=PageMeta(page=page, page_size=page_size, total=total)
     )
@@ -84,7 +97,7 @@ async def get_template(
     tpl = await db.get(Template, template_id)
     if not tpl:
         raise HTTPException(status_code=404, detail=_("模板不存在"))
-    return AdminTemplateOut.model_validate(tpl)
+    return _admin_template_out(tpl)
 
 
 @router.post("/templates", response_model=AdminTemplateOut)
@@ -101,7 +114,7 @@ async def create_template(
     db.add(tpl)
     await db.commit()
     await db.refresh(tpl)
-    return AdminTemplateOut.model_validate(tpl)
+    return _admin_template_out(tpl)
 
 
 @router.patch("/templates/{template_id}", response_model=AdminTemplateOut)
@@ -120,7 +133,7 @@ async def patch_template(
         setattr(tpl, key, value)
     await db.commit()
     await db.refresh(tpl)
-    return AdminTemplateOut.model_validate(tpl)
+    return _admin_template_out(tpl)
 
 
 @router.delete("/templates/{template_id}")

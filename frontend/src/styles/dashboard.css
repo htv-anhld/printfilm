@@ -224,15 +224,6 @@
   color: #ff8a7a;
 }
 
-.pf-spin {
-  animation: pf-dash-spin 0.9s linear infinite;
-}
-
-@keyframes pf-dash-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 /* ── 快捷入口 ── */
 .pf-dash-shortcuts {

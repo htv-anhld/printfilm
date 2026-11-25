@@ -3,9 +3,10 @@
 .free-canvas-page {
   --fc-bg: var(--pf-bg);
   --fc-ink: var(--pf-ink);
-  --fc-muted: #94a3b8;
-  --fc-line: color-mix(in srgb, var(--pf-ink) 5%, transparent);
-  --fc-panel: rgba(255, 255, 255, 0.95);
+  --fc-muted: var(--pf-muted);
+  --fc-line: color-mix(in srgb, var(--pf-ink) 9%, transparent);
+  /* 浮动面板跟随主题（暗色下不能是写死的白底） */
+  --fc-panel: color-mix(in srgb, var(--pf-card) 95%, transparent);
   --fc-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.04);
   position: fixed;
   inset: 0;
@@ -1287,7 +1288,7 @@
 
 .fc-gen-model-item.selected {
   border-color: #7c3aed;
-  background: #faf5ff;
+  background: color-mix(in srgb, #8b5cf6 10%, var(--pf-card));
 }
 
 .fc-gen-chip-row {
@@ -1374,4 +1375,10 @@
     flex-wrap: wrap;
     border-radius: 20px;
   }
+}
+
+/* 右键菜单：复用 .fc-add-panel 外观，固定在点击位置 */
+.fc-add-panel.fc-context-menu {
+  position: fixed;
+  z-index: 80;
 }

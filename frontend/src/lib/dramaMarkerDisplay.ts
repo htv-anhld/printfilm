@@ -31,6 +31,9 @@ const FULL_CUES: Record<Lang, Array<[string, string]>> = {
     ['【旁白·自然语速·同步字幕】', '【Lời dẫn · tốc độ tự nhiên · phụ đề đồng bộ】'],
     ['【旁白·自然语速】', '【Lời dẫn · tốc độ tự nhiên】'],
     ['【内心独白·同步字幕】', '【Độc thoại nội tâm · phụ đề đồng bộ】'],
+    ['【内心独白】', '【Độc thoại nội tâm】'],
+    ['【旁白】', '【Lời dẫn】'],
+    ['【对白】', '【Thoại】'],
   ],
   en: [
     ['【字幕：底部居中·简体中文·逐句轮换·与口播同步】', '【Subtitles: bottom center · project language · line by line · synced to speech】'],
@@ -53,6 +56,9 @@ const FULL_CUES: Record<Lang, Array<[string, string]>> = {
     ['【旁白·自然语速·同步字幕】', '【Narration · natural pace · synced subtitles】'],
     ['【旁白·自然语速】', '【Narration · natural pace】'],
     ['【内心独白·同步字幕】', '【Inner monologue · synced subtitles】'],
+    ['【内心独白】', '【Inner monologue】'],
+    ['【旁白】', '【Narration】'],
+    ['【对白】', '【Dialogue】'],
   ],
 }
 

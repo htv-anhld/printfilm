@@ -186,12 +186,9 @@ async def upload_asset_media(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DramaAssetOut:
-    """Upload image/media for a drama asset directly to OSS (no local persist)."""
+    """上传资产图片：开 OSS 直传 OSS；未开 OSS 落本地 static/generated/p{id}/（与生图同目录）。"""
     from app.models_drama import DramaProject
     from app.services import oss as oss_svc
-
-    if not oss_svc.oss_enabled():
-        raise HTTPException(status_code=503, detail=_("OSS 未启用，无法上传资产媒体"))
 
     result = await db.execute(
         select(DramaAsset)
@@ -242,20 +239,28 @@ async def upload_asset_media(
     if size > 20 * 1024 * 1024:
         raise HTTPException(status_code=400, detail=_("文件不能超过 20MB"))
 
-    object_key = (
-        f"{oss_svc.folder_prefix()}/generated/p{asset.project_id}/"
-        f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
-    )
-    try:
-        # OSS SDK 为同步阻塞 IO，放到线程池里避免阻塞事件循环。
-        url = await run_in_threadpool(
-            oss_svc.upload_fileobj,
-            upload_fp,
-            object_key,
-            content_type=content_type or "application/octet-stream",
-        )
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=_("OSS 上传失败：{error}", error=exc)) from exc
+    filename = f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
+    if oss_svc.oss_enabled():
+        object_key = f"{oss_svc.folder_prefix()}/generated/p{asset.project_id}/{filename}"
+        try:
+            # OSS SDK 为同步阻塞 IO，放到线程池里避免阻塞事件循环。
+            url = await run_in_threadpool(
+                oss_svc.upload_fileobj,
+                upload_fp,
+                object_key,
+                content_type=content_type or "application/octet-stream",
+            )
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=502, detail=_("OSS 上传失败：{error}", error=exc)) from exc
+    else:
+        from app.services import storage as storage_svc
+
+        dest = storage_svc.project_dir(asset.project_id) / filename
+        try:
+            await run_in_threadpool(dest.write_bytes, upload_fp.read())
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail=_("保存上传文件失败：{error}", error=exc)) from exc
+        url = storage_svc.rel_static_url(dest)
 
     from app.services.drama.generation import archive_asset_image_version
 

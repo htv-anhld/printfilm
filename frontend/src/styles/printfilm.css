@@ -1125,6 +1125,7 @@
   height: 48px;
   border-radius: 999px;
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
   display: grid;
   place-items: center;
   box-shadow: 0 6px 16px rgba(17, 19, 24, 0.12);
@@ -2556,7 +2557,9 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  border: 1px solid transparent;
+  /* 无变体时是次级按钮：不设背景会被暗色 color-scheme 渲染成系统灰 */
+  background: var(--pf-surface-2);
+  border: 1px solid var(--pf-line-strong);
   border-radius: 12px;
   padding: 0.58rem 1.05rem;
   font: inherit;
@@ -2577,6 +2580,7 @@
 
 .pf-btn:hover:not(:disabled):not(.is-disabled) {
   transform: translateY(-1px);
+  background: color-mix(in srgb, var(--pf-ink) 9%, var(--pf-surface-2));
 }
 
 .pf-btn:disabled,
@@ -2606,7 +2610,7 @@
 }
 
 .pf-btn-dark:hover:not(:disabled):not(.is-disabled) {
-  background: #2a2f3a;
+  background: color-mix(in srgb, var(--pf-ink) 85%, var(--pf-bg));
 }
 
 .pf-btn-ghost {
@@ -2868,6 +2872,12 @@
   font-weight: 500;
 }
 
+button.pf-link {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 .pf-link:hover {
   color: var(--pf-ink);
 }
@@ -2966,6 +2976,7 @@
 
 .pf-step.active .pf-step-dot {
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
   border-color: var(--pf-lime);
 }
 
@@ -2978,6 +2989,7 @@
 
 .pf-step-line.done {
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
 }
 
 .pf-coming {
@@ -3486,6 +3498,7 @@
 
 .pf-btn-ai:hover:not(:disabled) {
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
   border-color: var(--pf-lime);
 }
 
@@ -4765,7 +4778,7 @@ button.pf-shot-editable:disabled {
 
 .pf-icon-btn.danger:hover:not(:disabled) {
   color: #a1261a;
-  background: #ffe8e5;
+  background: color-mix(in srgb, #ef4444 12%, var(--pf-card));
   border-color: transparent;
 }
 
@@ -4791,7 +4804,7 @@ button.pf-shot-editable:disabled {
 }
 
 .pf-badge.bad {
-  background: #ffe8e5;
+  background: color-mix(in srgb, #ef4444 12%, var(--pf-card));
   color: #a1261a;
 }
 
@@ -4875,6 +4888,7 @@ button.pf-shot-editable:disabled {
 
 .pf-page-btn.active {
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
   border-color: var(--pf-lime);
 }
 
@@ -5162,6 +5176,7 @@ button.pf-shot-editable:disabled {
   display: block;
   height: 100%;
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
 }
 
 .pf-topup-list {
@@ -5699,6 +5714,7 @@ button.pf-shot-editable:disabled {
 
 .pf-pricing-sku-cta.is-primary {
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
   border-color: var(--pf-lime);
 }
 
@@ -6080,6 +6096,7 @@ button.pf-shot-editable:disabled {
   height: 0.55rem;
   border-radius: 50%;
   background: var(--pf-lime);
+  color: var(--pf-lime-ink);
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--pf-lime) 55%, transparent);
   animation: pf-pay-pulse 1.4s ease-out infinite;
 }
@@ -6275,7 +6292,7 @@ button.pf-shot-editable:disabled {
 }
 
 .pf-dialog--danger .pf-dialog-mark {
-  background: #fdecea;
+  background: color-mix(in srgb, #ef4444 12%, var(--pf-card));
   color: #a32b20;
   border-color: rgba(196, 60, 46, 0.28);
 }

@@ -1336,12 +1336,12 @@ async def generate_asset_image(
         published = storage_svc.republish_url(url, sync=True)
         if published and str(published).startswith("https://"):
             url = str(published)
-        elif result.remote_url and str(result.remote_url).startswith("https://"):
-            url = str(result.remote_url)
-            logger.warning(
-                "OSS 未拿到 https，回退上游 CDN project_id=%s",
-                project.id,
-            )
+        else:
+            # 未开 OSS：保留本地图（上游 TOS 预签名 24h 过期，存进资产会变裂图）；
+            # Seedance 需要公网 https 时由 _resolve_image_ref 读旁边 .src 里的上游原链
+            logger.info("OSS 未拿到 https，资产保留本地图 project_id=%s", project.id)
+    elif result.remote_url and str(result.remote_url).startswith("https://"):
+        url = str(result.remote_url)
     if not (url or "").strip():
         raise RuntimeError(_("生图成功但未拿到可用图片 URL"))
     logger.info("Seedream 返回 project_id=%s url=%s", project.id, url[:100])

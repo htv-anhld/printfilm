@@ -663,6 +663,10 @@ class AdminTemplateOut(BaseModel):
     sort_order: int
     is_active: bool
     is_premium: bool
+    # 展示用：按请求语言翻译后的名称 / 简介 / 分类（编辑仍用上面的原值）
+    display_name: str = ""
+    display_description: str = ""
+    category_labels: list[str] = []
 
     model_config = {"from_attributes": True}
 
