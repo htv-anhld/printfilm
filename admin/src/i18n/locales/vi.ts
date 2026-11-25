@@ -1,3 +1,5 @@
+import { deepMergeMessages } from "./deepMerge";
+import { viExtra } from "./vi/extra";
 import { viCommon } from "./vi/common";
 import { viLabels } from "./vi/labels";
 import { viUsers } from "./vi/users";
@@ -12,7 +14,7 @@ import { viDashboard } from "./vi/dashboard";
 import { viSettings } from "./vi/settings";
 import { viCommerce } from "./vi/commerce";
 
-export const vi = {
+export const vi = deepMergeMessages({
   ...viCommon,
   labels: viLabels,
   users: viUsers,
@@ -26,4 +28,4 @@ export const vi = {
   dashboard: viDashboard,
   settings: viSettings,
   commerce: viCommerce,
-};
+}, viExtra);

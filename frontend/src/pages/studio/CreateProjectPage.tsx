@@ -122,12 +122,25 @@ export default function CreateProjectPage() {
       return
     }
     api.me().catch(() => nav('/auth'))
+    // 兼容上游列表/会话链接 /studio/new?project=ID：跳回该项目当前所在步骤
+    const editId = Number(params.get('project')) || 0
+    if (editId > 0) {
+      api
+        .getProject(editId)
+        .then((p) => {
+          if (p.creation_session_id) nav(`/studio/sessions/${p.creation_session_id}?project=${p.id}`, { replace: true })
+          else if (p.status === 'DRAFT' && !p.shots.length) nav(`/studio/${p.id}/style`, { replace: true })
+          else nav(`/studio/${p.id}`, { replace: true })
+        })
+        .catch((err) => setError(err instanceof Error ? err.message : t('common.loadFailed')))
+      return
+    }
     api.templates().then((list) => {
       setTemplates(list)
       const fromUrl = params.get('template') || ''
       setTemplateId((prev) => prev || fromUrl || list[0]?.id || '')
     })
-  }, [nav, params])
+  }, [nav, params, t])
 
   // 筛选 key 保持中文原值（与模板 category 比较），只翻译展示名
   const categories = useMemo(() => {

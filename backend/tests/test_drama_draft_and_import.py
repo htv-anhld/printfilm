@@ -32,11 +32,12 @@ def test_draft_capable_only_seedance_25():
 
 
 def test_tokenfree_wrapper_forwards_draft_flag():
-    """TokenFree 包装要把 draft 写进 metadata.input。"""
+    """TokenFree 包装要把 draft 写进 metadata（上游已取消 metadata.input 嵌套）。"""
     out = wrap_seedance_payload_for_newapi(
         {"model": "seedance-2-5", "content": [{"type": "text", "text": "hi"}], "draft": True}
     )
-    assert out["metadata"]["input"]["draft"] is True
+    assert out["metadata"]["draft"] is True
+    assert "input" not in out["metadata"]
 
 
 def test_finalize_body_references_draft_task():

@@ -31,10 +31,10 @@ def test_three_minute_episode_scales_prompt_and_limits():
 
 
 def test_fragment_cap_follows_project_duration():
-    """LLM 分镜条数上限跟随项目单集时长（上下文变量）。"""
+    """LLM 分镜条数上限跟随项目单集时长（上下文变量）；默认规格不截断（上游 EPISODE_FRAGMENT_MAX=0）。"""
     items = [{"lines": [f"空镜：{i}"], "duration_sec": 8} for i in range(30)]
     set_episode_length_from_project(SimpleNamespace(params={}))
-    assert len(cap_llm_fragment_items(list(items))) == 10
+    assert len(cap_llm_fragment_items(list(items))) == 30
     set_episode_length_from_project(SimpleNamespace(params={"episode_duration_sec": 180}))
     assert len(cap_llm_fragment_items(list(items))) == 23
     set_episode_length_from_project(SimpleNamespace(params={}))

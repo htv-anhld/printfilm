@@ -3,6 +3,7 @@
  * 用于生成前告警：时长、空镜误标对白、资产缺图/缺音色
  */
 import type { DramaAsset, DramaFragment } from '../api/drama'
+import { dramaAssetHasImage } from './dramaAssetImage'
 import {
   DRAMA_SEGMENT_DURATION_HARD_MAX,
   DRAMA_SEGMENT_DURATION_MAX,
@@ -198,7 +199,7 @@ export function validateDramaFragmentScript(content: string): DramaScriptIssue[]
   return issues
 }
 
-// 校验本镜关联资产：缺图 / 说话角色缺音色（警告级，可继续生成）
+// 校验本镜关联资产：缺参考图为硬错误；说话角色缺音色仍为警告
 export function validateDramaFragmentAssets(
   frag: DramaFragment | null | undefined,
   assets: DramaAsset[],
@@ -220,8 +221,7 @@ export function validateDramaFragmentAssets(
       continue
     }
     const kind = (asset.type || '').toLowerCase()
-    const hasImage = Boolean((asset.cover || asset.url || '').trim())
-    if ((kind === 'character' || kind === 'scene' || kind === 'prop') && !hasImage) {
+    if ((kind === 'character' || kind === 'scene' || kind === 'prop') && !dramaAssetHasImage(asset)) {
       missingImage.push(asset.name || `#${id}`)
     }
     if (DRAMA_VOICE_BINDING_ENABLED && kind === 'character' && needsVoice && !assetHasVoiceBinding(asset)) {
@@ -231,8 +231,8 @@ export function validateDramaFragmentAssets(
 
   if (missingImage.length > 0) {
     issues.push({
-      level: 'warn',
-      message: tr('lib.scriptValidate.missingImage', {
+      level: 'error',
+      message: tr('lib.scriptValidate.missingImageBlocking', {
         names: missingImage.slice(0, 5).join(tr('lib.listSep')) + (missingImage.length > 5 ? '…' : ''),
       }),
     })

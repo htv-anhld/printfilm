@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react'
-import { Link } from 'react-router-dom'
-import { isBillingError, PRICING_PATH } from '../../lib/billingError'
 import { useI18n } from '../../i18n'
+import { Link } from 'react-router-dom'
+import { isBillingError, billingPointsMessage, PRICING_PATH } from '../../lib/billingError'
+import { formatCopyrightError, formatGenerationErrorMessage } from '../../lib/generationError'
 
 type Props = {
   message: string | null | undefined
@@ -25,16 +26,16 @@ export default function BillingErrorNotice({
   const text = String(message || '').trim()
   if (!text) return null
   const Tag = inline ? 'span' : 'p'
-  if (!isBillingError(text)) {
+  if (formatCopyrightError(text) || !isBillingError(text)) {
     return (
       <Tag className={className} style={style} role={inline ? undefined : 'alert'}>
-        {text}
+        {formatGenerationErrorMessage(text)}
       </Tag>
     )
   }
   return (
     <Tag className={className} style={style} role={inline ? undefined : 'alert'}>
-      {text}{' '}
+      {billingPointsMessage(text)}{' '}
       <Link to={PRICING_PATH} className="pf-link pf-billing-topup-link">
         {linkText ?? t('billing.topupLink')}
       </Link>

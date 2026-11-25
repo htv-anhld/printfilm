@@ -171,6 +171,7 @@ async def synthesize_voice_asset(
     audio_url: str | None = None
     resolved_speaker = (speaker or "").strip()
     voice_design_meta: dict[str, Any] = {}
+    result_metadata: dict[str, Any] = {}
     if voice_design_enabled(settings) and not settings.ark_mock:
         try:
             audio_url, designed_speaker = await _synthesize_via_voice_design(
@@ -222,6 +223,7 @@ async def synthesize_voice_asset(
             project_id=project.id,
             shot_no=asset.id,
             emotion_hint=prompt,
+            result_metadata=result_metadata,
         )
     audio_url = finalize_voice_reference_url(
         audio_url or "",
@@ -229,7 +231,10 @@ async def synthesize_voice_asset(
         asset_id=asset.id,
     )
     asset.url = audio_url
-    asset.cover = asset.cover or audio_url
+    # 不把 mp3 写入 cover：避免 Seedance 把音色资产当成 reference_image
+    cover = (asset.cover or "").split("?", 1)[0].strip().lower()
+    if any(cover.endswith(ext) for ext in (".mp3", ".wav", ".m4a", ".aac", ".ogg", ".webm")):
+        asset.cover = ""
     params: dict[str, Any] = dict(asset.params or {})
     params["voicePrompt"] = prompt
     params["sampleText"] = text
@@ -242,6 +247,12 @@ async def synthesize_voice_asset(
     params.update(voice_design_meta)
     gen = params.get("generation") if isinstance(params.get("generation"), dict) else {}
     params["generation"] = {**gen, "status": "done", "url": audio_url}
+    from app.services.drama.asset_metadata import generated_media_metadata
+    params["media_metadata"] = generated_media_metadata(
+        model_id=result_metadata.get("model_id"),
+        prompt=prompt, options={"speaker": result_metadata.get("speaker") or resolved_speaker, "sample_text": text},
+        simulated=bool(result_metadata.get("simulated")),
+    )
     asset.params = params
     await record_line(
         db,

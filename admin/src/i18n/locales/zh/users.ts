@@ -14,6 +14,7 @@ export const zhUsers = {
     todayCalls: "今日 {n} 次",
     totalCalls: "累计调用",
   },
+  resetPassword: "重置密码",
   fields: {
     accountId: "账号 ID",
     email: "邮箱",

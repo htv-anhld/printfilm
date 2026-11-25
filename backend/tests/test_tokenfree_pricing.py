@@ -119,34 +119,43 @@ def test_charge_official_image_uses_sunburst_size_tiers() -> None:
     assert kie_sunburst_credits_for_size("1K") == 6
     assert kie_sunburst_credits_for_size("2K") == 10
     assert kie_sunburst_credits_for_size("4K") == 16
-    assert charge_fen_official_image(settings, size="1K") == 21
-    assert charge_fen_official_image(settings, size="2K") == 35
-    assert charge_fen_official_image(settings, size="4K") == 56
+    assert charge_fen_official_image(settings, model="gpt-image-2", size="1K") == 21
+    assert charge_fen_official_image(settings, model="gpt-image-2", size="2K") == 35
+    # GPT Image 2 的 4K 钳到 2K；2.5 保留 4K
+    assert charge_fen_official_image(settings, model="gpt-image-2", size="4K") == 35
+    assert kie_sunburst_credits_for_size("4K") == 16
     assert resolve_billing_image_size(settings, model="seedream-5-0-pro", size="3K") == "2K"
-    assert resolve_billing_image_size(settings, model="gpt-image-2-5-sunburst", size="4K") == "2K"
+    assert resolve_billing_image_size(settings, model="gpt-image-2", size="4K") == "2K"
+    assert resolve_billing_image_size(settings, model="gpt-image-2.5", size="4K") == "4K"
 
 
-def test_charge_official_video_720p_is_double_480p() -> None:
-    """720p 预扣为 480p 的两倍。"""
+def test_charge_official_video_720p() -> None:
+    """2.5 对齐 TF：刊例×1.5×像素 tok；1080p 高于 720p。"""
     settings = get_settings()
     settings.billing_markup = 1.0
+    settings.billing_usd_cny = 7.3
+    set_cached_rates(None)
     fen_480 = charge_fen_official_video(5.0, settings, model="seedance-2-5", resolution="480p")
     fen_720 = charge_fen_official_video(5.0, settings, model="seedance-2-5", resolution="720p")
-    assert fen_480 == 336
-    assert fen_720 == 672
+    fen_1080 = charge_fen_official_video(5.0, settings, model="seedance-2-5", resolution="1080p")
+    # 5s：10k/22k/49k tok × (70|77)×1.5 /1e6
+    assert fen_480 == 525
+    assert fen_720 == 1155
+    assert fen_1080 == 2830
+    assert fen_1080 > fen_720 > fen_480
 
 
 def test_charge_official_video_uses_vendor_sec_not_placeholder() -> None:
-    """视频预估用火山 480P 秒价，不用 37.5 占位倍率。"""
+    """无可用表达式时走本站兜底秒价（≥¥1.5/秒），不用 37.5 占位倍率。"""
     settings = get_settings()
-    settings.billing_markup = 1.5
-    settings.billing_usd_cny = 7.0
+    settings.billing_markup = 1.0
+    settings.billing_usd_cny = 7.3
     rates = parse_pricing_payload(_sample_payload(), settings)
     set_cached_rates(rates)
     try:
         charge = charge_fen_official_video(5.0, settings, model="seedance-2-5", resolution="480p")
-        # 3.36 元 → 336 分，× markup 1.5 → 504
-        assert charge == 504
+        # TF 对齐兜底：5s×10k tok×70×1.5 → ¥5.25 → 525 分
+        assert charge == 525
     finally:
         set_cached_rates(None)
 
@@ -168,19 +177,17 @@ def test_charge_official_llm_uses_in_out_split() -> None:
 
 
 def test_build_official_rate_rows_marks_video_vendor() -> None:
-    """费率表视频行标 vendor_sec，方便去 TokenFree 核对。"""
+    """费率表视频行标 vendor_sec；ID 为 TokenFree 点分规范名，用户价 = 成本 × markup。"""
     settings = get_settings()
     settings.billing_usd_cny = 7.0
     settings.billing_markup = 1.5
     rates = parse_pricing_payload(_sample_payload(), settings)
     rows = build_official_rate_rows(rates, settings)
     by_id = {row["id"]: row for row in rows}
-    assert by_id["gpt-image-2-5"]["official_cost_yuan"] == 0.35
-    assert by_id["gpt-image-2-5"]["user_charge_yuan"] == 0.35
-    assert by_id["gpt-image-2-5"]["basis"] == "kie_sunburst"
-    assert "积分" in by_id["gpt-image-2-5"]["rate_label"]
-    assert by_id["seedance-2-5"]["basis"] == "vendor_sec"
-    assert by_id["seedance-2-5"]["placeholder"] is True
+    assert by_id["gpt-image-2.5"]["official_cost_yuan"] == 0.35
+    assert by_id["gpt-image-2.5"]["user_charge_yuan"] == 0.53
+    assert by_id["seedance-2.5"]["basis"] == "vendor_sec"
+    assert "seedance-2-5" not in by_id
 
 
 def test_parse_pricing_item_skips_bad_row() -> None:
@@ -191,16 +198,17 @@ def test_parse_pricing_item_skips_bad_row() -> None:
 
 
 def test_video_catalog_id_from_endpoint() -> None:
-    """方舟接入点名能收到推荐 Seedance id。"""
-    assert video_catalog_id("doubao-seedance-2-5-260628") == "seedance-2-5"
-    assert video_catalog_id("seedance-2-0-mini") == "seedance-2-0-mini"
-    assert video_catalog_id("doubao-seedance-2-0-260128") == "seedance-2-0"
-    assert video_catalog_id("seedance-2") == "seedance-2-0"
-    assert video_catalog_id("seedance-2-0") == "seedance-2-0"
+    """方舟接入点名能收到 TokenFree 点分 Seedance id。"""
+    assert video_catalog_id("doubao-seedance-2-5-260628") == "seedance-2.5"
+    assert video_catalog_id("seedance-2-0-mini") == "seedance-2.0"  # mini 未开通→2.0
+    assert video_catalog_id("doubao-seedance-2-0-260128") == "seedance-2.0"
+    assert video_catalog_id("seedance-2") == "seedance-2.0"
+    assert video_catalog_id("seedance-2.0-fast") == "seedance-2.0-fast"
+    assert video_catalog_id("doubao-seedance-2-0-fast-260128") == "seedance-2.0-fast"
 
 
 def test_canonicalize_channel_models_merges_seedance_2_aliases() -> None:
-    """2.0 三档别名合并成一条，2.5 / Mini 保留。"""
+    """2.0 别名与 mini 合并到 2.0；fast / 2.5 保留。"""
     from app.services.tokenfree_pricing import canonicalize_channel_models
 
     assert canonicalize_channel_models(
@@ -209,9 +217,10 @@ def test_canonicalize_channel_models_merges_seedance_2_aliases() -> None:
             "seedance-2",
             "seedance-2-0",
             "seedance-2-0-mini",
+            "seedance-2.0-fast",
             "seedance-2-5",
         ]
-    ) == ["seedance-2-0", "seedance-2-0-mini", "seedance-2-5"]
+    ) == ["seedance-2.0", "seedance-2.0-fast", "seedance-2.5"]
 
 
 def test_canonicalize_keeps_unknown_seedance_id() -> None:

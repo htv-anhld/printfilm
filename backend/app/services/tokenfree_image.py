@@ -1,4 +1,4 @@
-"""TokenFree / New API 生图：KIE 渠道走 POST /v1/responses，不是方舟 /images/generations。"""
+"""TokenFree / New API 生图：Seedream 与 GPT Image 2 走 POST /v1/responses，不是方舟 /images/generations。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID
 from app.services.tokenfree_video import uses_tokenfree_video
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ def uses_tokenfree_image(*, base_url: str = "", channel_id: str = "") -> bool:
 
 
 def is_seedream_family(model: str) -> bool:
-    """TokenFree 上 Seedream 走 /responses 会 task_protocol_error。"""
+    """模型名是否属于 Seedream 族（计费/尺寸钳制用）。"""
     mid = (model or "").strip().lower()
     return "seedream" in mid
 
@@ -39,6 +38,70 @@ def is_seedream_family(model: str) -> bool:
 # TokenFree 上的 GPT Image 名（目录里是带点的 gpt-image-2.5）；sunburst 是 Kie 价目名
 TOKENFREE_WORKING_IMAGE_MODEL = "gpt-image-2.5"
 TOKENFREE_KIE_IMAGE_MODEL = "gpt-image-2-5-sunburst"
+
+
+def gpt_image_caps_at_2k(model: str) -> bool:
+    """GPT Image 2 仅 1K/2K；2.5 支持到 4K，不降档。"""
+    mid = (model or "").strip().lower()
+    if "gpt-image" not in mid:
+        return False
+    return "2.5" not in mid and "2-5" not in mid
+
+
+def is_gpt_image_25(model: str) -> bool:
+    """GPT Image 2.5：TokenFree 只在 image-generation 渠道放行，不走 /responses。"""
+    mid = (model or "").strip().lower()
+    return "gpt-image-2.5" in mid or "gpt-image-2-5" in mid
+
+
+def gpt_image_resolution_tier(size: str) -> str:
+    """把 1K/2K/4K 或像素面积收成计费档（价目表达式读 resolution）。"""
+    raw = (size or "").strip().upper().replace(" ", "")
+    if raw in {"1K", "2K", "4K"}:
+        return raw
+    if "X" not in raw:
+        return "2K"
+    left, _, right = raw.partition("X")
+    if not left.isdigit() or not right.isdigit():
+        return "2K"
+    width, height = int(left), int(right)
+    longest = max(width, height)
+    if longest >= 3000:
+        return "4K"
+    if longest >= 1600:
+        return "2K"
+    return "1K"
+
+
+def build_tokenfree_openai_image_body(
+    *,
+    model: str,
+    prompt: str,
+    size: str = "",
+    aspect_ratio: str = "",
+    ref_urls: list[str] | None = None,
+    style_ref_urls: list[str] | None = None,
+) -> dict[str, Any]:
+    """GPT Image 2.5：POST /images/generations（openai 渠道），并带上 resolution 供计费。"""
+    narrative = build_tokenfree_image_body(
+        model=model,
+        prompt=prompt,
+        size=size,
+        aspect_ratio=aspect_ratio,
+        ref_urls=ref_urls,
+        style_ref_urls=style_ref_urls,
+    )
+    pixel = (size or "").strip()
+    if not _is_pixel_size(pixel):
+        pixel = "1024x1024"
+    return {
+        "model": narrative["model"],
+        "prompt": narrative["input"],
+        "size": pixel,
+        "n": 1,
+        "resolution": gpt_image_resolution_tier(size),
+        "response_format": "url",
+    }
 
 # doubao-seedream-5-0-260128 / seedream-5-0-pro → seedream-5.0 / seedream-5.0-pro
 _SEEDREAM_ID_RE = re.compile(r"^(?:doubao-)?seedream-(\d+)[-.](\d+)(?:-(\d{6}))?(?:-(pro|lite|flash))?(?:-(\d{6}))?$")
@@ -99,26 +162,78 @@ def gpt_image_size(size: str | None) -> str:
     return "1024x1024"
 
 
+def _aspect_ratio_orientation(ratio: str) -> str:
+    """根据 w:h 返回横/竖/方构图标签；无法解析则空串。"""
+    try:
+        left, _, right = (ratio or "").strip().partition(":")
+        w, h = float(left), float(right)
+    except ValueError:
+        return ""
+    if w <= 0 or h <= 0:
+        return ""
+    if w > h:
+        return "横构图"
+    if h > w:
+        return "竖构图"
+    return "方形构图"
+
+
+def _is_pixel_size(size: str) -> bool:
+    """是否为 WxH 像素串（非 1K/2K 档位）。"""
+    raw = (size or "").strip().lower()
+    if not raw or raw in {"1k", "2k", "3k", "4k"}:
+        return False
+    if "x" not in raw:
+        return False
+    left, _, right = raw.partition("x")
+    return left.isdigit() and right.isdigit()
+
+
 def build_tokenfree_image_body(
     *,
     model: str,
     prompt: str,
     size: str = "",
+    aspect_ratio: str = "",
     ref_urls: list[str] | None = None,
     style_ref_urls: list[str] | None = None,
+    structured_refs: bool = False,
 ) -> dict[str, Any]:
-    """线上成功体只要 model + 自然语言 input，不要 size: 这种协议字段。"""
+    """线上成功体只要 model + 自然语言 input，不要 size: 这种协议字段。
+
+    画幅必须单独写入自然语言（GPT Image /responses 无结构化 size 字段），
+    否则角色设定板等竖向提示词会盖过 UI 所选比例。
+    """
     text = (prompt or "").strip() or "画面清晰，主体稳定"
+    ratio = (aspect_ratio or "").strip()
+    if ratio and ratio.lower() != "auto":
+        orient = _aspect_ratio_orientation(ratio)
+        frame = f"输出画幅必须为{ratio}"
+        if orient:
+            frame += f"（{orient}，整张画布严格按该比例，禁止改成其他比例）"
+        else:
+            frame += "（整张画布严格按该比例，禁止改成其他比例）"
+        text = f"{text}。{frame}"
     size_s = (size or "").strip()
     if size_s:
-        text = f"{text}。输出清晰度{size_s}"
+        if _is_pixel_size(size_s):
+            text = f"{text}。目标像素约{size_s}"
+        else:
+            text = f"{text}。输出清晰度{size_s}"
     refs = [u.strip() for u in (ref_urls or []) if (u or "").strip()]
     style_refs = [u.strip() for u in (style_ref_urls or []) if (u or "").strip()]
     if style_refs:
         text = f"{text}。画风参考图（只借色调、笔触、光影，禁止抄主体与构图）：{' '.join(style_refs)}"
     if refs:
         text = f"{text}。构图与主体参考：{' '.join(refs)}"
-    return {"model": tokenfree_working_image_model(model), "input": text}
+    mid = tokenfree_working_image_model(model)
+    if structured_refs and (refs or style_refs):
+        # URLs in plain text are not image inputs. Responses-compatible channels
+        # must receive input_image blocks to actually inspect the references.
+        content = [{'type': 'input_text', 'text': text}]
+        content.extend({'type': 'input_image', 'image_url': url} for url in [*refs, *style_refs])
+        return {'model': mid, 'input': [{'role': 'user', 'content': content}]}
+    return {"model": mid, "input": text}
 
 
 def extract_tokenfree_image_url(data: dict[str, Any]) -> str | None:
@@ -138,9 +253,13 @@ def extract_tokenfree_image_url(data: dict[str, Any]) -> str | None:
             if isinstance(url, str) and url.startswith("http"):
                 return url.strip()
             text = str(block.get("text") or "")
-            found = _IMG_SRC_RE.search(text) or _URL_RE.search(text)
-            if found:
-                return found.group(1).strip()
+            img = _IMG_SRC_RE.search(text)
+            if img:
+                return img.group(1).strip()
+            # _URL_RE 无捕获组，必须用 group(0)
+            bare = _URL_RE.search(text)
+            if bare:
+                return bare.group(0).strip()
     if data.get("data"):
         first = data["data"][0]
         if isinstance(first, dict):
@@ -229,9 +348,13 @@ def is_tokenfree_rate_limit(*, status_code: int = 0, body: str = "") -> bool:
 
 
 def is_tokenfree_protocol_error(*, status_code: int = 0, body: str = "") -> bool:
-    """KIE / New API 任务协议失败（常见于 Seedream 或瞬时 502）。"""
+    """New API 任务协议失败（含 Invalid task protocol request）。"""
     text = (body or "").lower()
-    if "task_protocol_error" in text or "task protocol request failed" in text:
+    if (
+        "task_protocol_error" in text
+        or "task protocol request failed" in text
+        or "invalid task protocol" in text
+    ):
         return True
     try:
         payload = json.loads(body) if (body or "").strip().startswith("{") else None
@@ -239,7 +362,13 @@ def is_tokenfree_protocol_error(*, status_code: int = 0, body: str = "") -> bool
         payload = None
     err = payload.get("error") if isinstance(payload, dict) else None
     code = str((err or {}).get("code") or "") if isinstance(err, dict) else ""
-    return int(status_code or 0) == 502 and code.lower() == "task_protocol_error"
+    msg = str((err or {}).get("message") or "") if isinstance(err, dict) else ""
+    if "invalid task protocol" in msg.lower():
+        return True
+    return int(status_code or 0) in {400, 502} and code.lower() in {
+        "task_protocol_error",
+        "invalid_request_error",
+    } and "protocol" in (msg or text).lower()
 
 
 def is_tokenfree_no_distributor(*, status_code: int = 0, body: str = "") -> bool:
@@ -293,9 +422,17 @@ def tokenfree_image_user_error(*, model: str = "", status_code: int = 0, body: s
     """用户可见的 TokenFree 出图失败文案；通道挂了不再误导改模型。"""
     if is_tokenfree_rate_limit(status_code=status_code, body=body):
         return _("出图通道繁忙，同时进行的任务过多，请稍后再点「生成画面」")
-    if tokenfree_image_channel_dead(status_code=status_code, body=body):
-        # TokenFree 上已会把 Seedream 改走 gpt-image，再提示「请改用」会误导
+    if is_tokenfree_protocol_error(status_code=status_code, body=body):
+        if is_seedream_family(model):
+            # Seedream 走 /responses 时协议失败多为该模型通道问题，勿当成全站挂死
+            return _("当前 Seedream 出图协议失败，请稍后重试；若持续失败，可在管理端将默认图模改为 GPT Image")
         return _("出图通道暂时失败，请稍后再点「生成画面」")
+    if is_tokenfree_no_distributor(status_code=status_code, body=body):
+        who = (model or "").strip() or _("该图像模型")
+        return _(
+            "当前 TokenFree 分组未开通 {model}（无可用渠道）。请在 TokenFree 控制台为 default 分组配置该模型后再生成。",
+            model=who,
+        )
     payload = _parse_json_object(body)
     if payload and is_tokenfree_image_task_failed(payload):
         return tokenfree_image_failed_task_message(payload)

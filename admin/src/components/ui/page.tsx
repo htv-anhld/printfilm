@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { Inbox } from "lucide-react";
+import "@/styles/admin-primitives.css";
 
 type PageHeaderProps = {
   title?: string;
@@ -9,13 +11,16 @@ type PageHeaderProps = {
   className?: string;
 };
 
-// 统一页面标题区（标题由顶栏展示，此处仅描述与操作）
-export function PageHeader({ description, actions, className }: PageHeaderProps) {
-  if (!description && !actions) return null;
+// 页面标题、说明与主要操作的统一层级。
+export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
+  if (!title && !description && !actions) return null;
   return (
-    <div className={cn("admin-page-header", className)}>
-      {description ? <p className="admin-page-desc">{description}</p> : null}
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    <div className={cn("admin-page-header admin-ui-page-header", className)}>
+      {title || description ? <div className="min-w-0">
+        {title ? <h1 className="admin-ui-page-title">{title}</h1> : null}
+        {description ? <p className="admin-page-desc">{description}</p> : null}
+      </div> : null}
+      {actions ? <div className="admin-ui-page-actions">{actions}</div> : null}
     </div>
   );
 }
@@ -34,8 +39,8 @@ export function EmptyState({
 }: EmptyStateProps) {
   const { t } = useI18n();
   return (
-    <div className={cn("admin-empty", className)}>
-      <div className="admin-empty-icon">∅</div>
+    <div className={cn("admin-empty admin-ui-empty", className)}>
+      <div className="admin-empty-icon"><Inbox className="h-6 w-6" strokeWidth={1.5} aria-hidden="true" /></div>
       <div className="admin-empty-title">{title ?? t("common.noData")}</div>
       <div className="admin-empty-desc">{description ?? t("common.noDataHint")}</div>
     </div>

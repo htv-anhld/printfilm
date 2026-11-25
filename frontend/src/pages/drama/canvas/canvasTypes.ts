@@ -27,15 +27,18 @@ export type CanvasAssetNodeData = {
   generating?: boolean
   /** 视频节点 Seedance 生成参数 */
   videoOptions?: Record<string, unknown>
+  /** 角色/场景/图片节点生图参数（模型/比例/清晰度） */
+  imageOptions?: Record<string, unknown>
   [key: string]: unknown
 }
 
-/** 支持本地图片上传的节点类型 */
+/** 支持本地媒体上传的节点类型 */
 export const CANVAS_UPLOADABLE_KINDS = new Set<CanvasNodeKind>([
   'character',
   'scene',
   'image',
   'video',
+  'audio',
 ])
 
 /** 支持提示词 + AI 生成的节点类型 */
@@ -111,14 +114,74 @@ export const CANVAS_NODE_DEFAULT_LABEL: Record<CanvasNodeKind, string> = {
   },
 }
 
-/** 节点卡片尺寸（宽 × 高，用于落点居中） */
+/**
+ * 为新建画布节点生成不与现有节点冲突的名称。
+ * 后端同类型同名会去重复用资产，导致 asset-{id} 冲突并覆盖旧节点。
+ */
+export function nextCanvasNodeLabel(
+  kind: CanvasNodeKind,
+  existing: Array<{ data: { kind: CanvasNodeKind; label?: string } }>,
+): string {
+  const base = CANVAS_NODE_DEFAULT_LABEL[kind]
+  const used = new Set(
+    existing
+      .filter((n) => n.data.kind === kind)
+      .map((n) => (typeof n.data.label === 'string' ? n.data.label.trim() : '')),
+  )
+  if (!used.has(base)) return base
+  let i = 2
+  while (used.has(`${base} ${i}`)) i += 1
+  return `${base} ${i}`
+}
+
+/** 节点卡片尺寸（宽 × 高，用于落点居中；含页脚约 +40） */
 export const CANVAS_NODE_SIZE: Record<CanvasNodeKind, { width: number; height: number }> = {
   character: { width: 200, height: 280 },
   scene: { width: 200, height: 280 },
   video: { width: 160, height: 240 },
   image: { width: 160, height: 240 },
   text: { width: 280, height: 140 },
-  audio: { width: 200, height: 100 },
+  audio: { width: 240, height: 120 },
+}
+
+/** 预览区默认尺寸（不含页脚；无媒体时用竖屏占位） */
+export const CANVAS_MEDIA_BODY_SIZE: Record<
+  Exclude<CanvasNodeKind, 'text' | 'audio'>,
+  { width: number; height: number }
+> = {
+  character: { width: 200, height: 240 },
+  scene: { width: 200, height: 240 },
+  video: { width: 160, height: 220 },
+  image: { width: 160, height: 220 },
+}
+
+/**
+ * 按媒体宽高比计算预览框尺寸：横屏变宽、竖屏保持竖向。
+ * aspect = naturalWidth / naturalHeight
+ */
+export function canvasMediaFrameSize(
+  kind: CanvasNodeKind,
+  aspect: number | null | undefined,
+): { width: number; height: number } {
+  if (kind === 'text') return { width: 280, height: 100 }
+  if (kind === 'audio') return { width: 240, height: 96 }
+  const fallback = CANVAS_MEDIA_BODY_SIZE[kind]
+  if (!aspect || !Number.isFinite(aspect) || aspect <= 0) return { ...fallback }
+
+  const a = Math.min(Math.max(aspect, 9 / 21), 21 / 9)
+  const shortSide = kind === 'character' || kind === 'scene' ? 200 : 160
+  const maxLong = kind === 'character' || kind === 'scene' ? 320 : 280
+
+  if (a >= 1) {
+    // 横屏 / 正方形：以短边为高
+    const height = shortSide
+    const width = Math.min(maxLong, Math.round(height * a))
+    return { width, height: Math.max(120, Math.round(width / a)) }
+  }
+  // 竖屏：以短边为宽
+  const width = shortSide
+  const height = Math.min(maxLong, Math.round(width / a))
+  return { width, height: Math.max(140, height) }
 }
 
 /** 网格吸附步长 */

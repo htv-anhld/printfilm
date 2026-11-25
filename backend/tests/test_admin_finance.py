@@ -73,3 +73,40 @@ async def test_finance_daily_list_includes_new_usage(db_session: AsyncSession) -
     )
     if after["totals"]["charge_fen"] > 0:
         assert after["totals"]["profit_pct"] is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("requested_days", "expected_days"), [(0, 1), (3, 3), (91, 90)])
+async def test_finance_daily_list_pads_and_clamps_window(
+    monkeypatch: pytest.MonkeyPatch, requested_days: int, expected_days: int
+) -> None:
+    """窗口裁剪到 1..90 天，无数据日期补零（含调用次数）。"""
+    from datetime import date
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.services.admin import finance
+
+    monkeypatch.setattr(finance, "_utc_today", lambda: date(2026, 10, 26))
+    monkeypatch.setattr(finance, "_local_usage_daily", AsyncMock(return_value={}))
+    db = AsyncMock()
+    empty = MagicMock()
+    empty.scalars.return_value.all.return_value = []
+    db.execute.return_value = empty
+    out = await build_finance_daily_list(db, days=requested_days)
+
+    assert out["days"] == expected_days
+    assert len(out["series"]) == expected_days
+    assert out["series"][-1]["date"] == "2026-10-26"
+    assert out["totals"]["charge_fen"] == out["totals"]["calls"] == 0
+    assert all(row["charge_fen"] == row["tokens"] == row["calls"] == 0 for row in out["series"])
+
+
+def test_finance_admin_routes_keep_upstream_compare() -> None:
+    """本分支管理端保留成本/利润与上游用量对照接口。"""
+    from app.api.admin import router
+
+    paths = {route.path for route in router.routes}
+    assert "/admin/finance/daily" in paths
+    assert "/admin/finance/daily/sync" in paths
+    assert "/admin/stats/upstream-usage" in paths
+    assert "/admin/stats/upstream-usage/sync" in paths

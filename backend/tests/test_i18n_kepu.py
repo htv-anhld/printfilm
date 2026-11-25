@@ -46,6 +46,30 @@ _SHOTS_JSON = json.dumps(
     ensure_ascii=False,
 )
 
+_ZH_SHOTS_JSON = json.dumps(
+    {
+        "character_bible": "无固定人物",
+        "bgm_lock": "轻快专业",
+        "shots": [
+            {
+                "shot": 1,
+                "duration": 5,
+                "title": "开场",
+                "subtitle": "身边的人工智能",
+                "text": "人工智能正在改变我们的日常生活。",
+                "segments": [
+                    {"duration": 3, "kind": "visual", "text": "中景：人物在工位操作电脑"},
+                    {"duration": 4, "kind": "narration", "text": "人工智能正在改变我们的日常生活。"},
+                ],
+                "img_prompt": "中景：人物在工位操作电脑",
+                "camera": "轻推",
+                "bgm": "轻快专业",
+            }
+        ],
+    },
+    ensure_ascii=False,
+)
+
 
 @pytest.fixture
 def captured_llm(monkeypatch: pytest.MonkeyPatch) -> list[str]:
@@ -54,9 +78,12 @@ def captured_llm(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
     async def _fake_chat(system: str, user: str, **_kw) -> str:
         systems.append(system)
-        if "作品名" in system:
+        # 扩写：user 为 {"original_topic": ...} JSON；按原始选题语言给出对应语言结果
+        if '"original_topic"' in user:
+            if "人工智能" in user:
+                return json.dumps({"title": "人工智能与生活", "content": "人工智能如何改变日常生活"}, ensure_ascii=False)
             return json.dumps({"title": "AI và cuộc sống", "content": "Nội dung chủ đề"}, ensure_ascii=False)
-        return _SHOTS_JSON
+        return _ZH_SHOTS_JSON if "人工智能" in user else _SHOTS_JSON
 
     monkeypatch.setattr(ArkGateway, "mock", property(lambda self: False))
 
@@ -65,9 +92,9 @@ def captured_llm(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     return systems
 
 
-async def _storyboard(locale: str | None):
+async def _storyboard(locale: str | None, source_text: str = "AI thay đổi cuộc sống"):
     return await ArkGateway().chat_storyboard(
-        source_text="AI thay đổi cuộc sống",
+        source_text=source_text,
         source_type="theme",
         style_prefix="扁平插画",
         llm_system_addon="",
@@ -93,11 +120,13 @@ async def test_storyboard_directive_appended_for_vi_and_en(captured_llm: list[st
 
 @pytest.mark.asyncio
 async def test_storyboard_directive_absent_for_zh(captured_llm: list[str]) -> None:
-    await _storyboard("zh")
+    # 中文项目按原始素材语言校验分镜（上游规则），这里用中文素材
+    await _storyboard("zh", "人工智能改变生活")
     zh_system = captured_llm[-1]
-    assert "OUTPUT LANGUAGE" not in zh_system
+    # 只有上游的素材语言规则，没有本分支的 vi/en【输出语言】指令
+    assert "【输出语言 / OUTPUT LANGUAGE" not in zh_system
     # 未传 content_locale 且无请求语言（默认 zh）时与显式 zh 一致
-    await _storyboard(None)
+    await _storyboard(None, "人工智能改变生活")
     assert captured_llm[-1] == zh_system
     assert storyboard_language_addon("zh") == ""
 
@@ -108,8 +137,9 @@ async def test_expand_content_follows_request_locale(captured_llm: list[str]) ->
         out = await ArkGateway().expand_content("AI trong đời sống", "theme")
     assert "Vietnamese" in captured_llm[-1]
     assert out["title"] == "AI và cuộc sống"
-    await ArkGateway().expand_content("人工智能", "theme")
+    zh_out = await ArkGateway().expand_content("人工智能", "theme")
     assert "OUTPUT LANGUAGE" not in captured_llm[-1]
+    assert zh_out["title"] == "人工智能与生活"
 
 
 def test_vietnamese_subtitle_breaks_on_spaces() -> None:
@@ -155,7 +185,9 @@ def test_seedance_prompt_follows_content_language() -> None:
     assert "简体中文" not in vi_prompt
     zh_prompt = segplan.build_seedance_prompt(script, burn_subtitles=True)
     assert zh_prompt == segplan.build_seedance_prompt(script, burn_subtitles=True, content_locale="zh")
-    assert "简体中文" in zh_prompt
+    # 上游把字幕规则改为「按原文语言」，中文项目也不再写死「简体中文」
+    assert "原文语言" in zh_prompt
+    assert "Vietnamese" not in zh_prompt
 
 
 def test_latin_visual_shot_labels_are_visual() -> None:

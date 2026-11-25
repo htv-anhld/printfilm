@@ -1,6 +1,7 @@
 import { getActiveLocale } from '../i18n/detect'
 import { messages } from '../i18n/messages'
 import { tr } from '../i18n/translate'
+import { IMAGE_TEXT_STEPS, imageTextBoardStep } from './imageTextStoryboard'
 
 export const RUNNING = new Set([
   'SCRIPTING',
@@ -227,7 +228,13 @@ export const BOARD_STEPS = KEPU_STEPS
 /** 静图成片跳过「镜头视频」步 */
 export function kepuSteps(pipelineMode?: string | null) {
   if (pipelineMode === 'image_text') {
-    return KEPU_STEPS.filter((s) => s.key !== 'videos')
+    // 静图成片步骤：label 按当前界面语言取 shortVideoCreate.stillSteps
+    return IMAGE_TEXT_STEPS.map((s) => ({
+      key: s.key,
+      get label() {
+        return tr(`shortVideoCreate.stillSteps.${s.key}`)
+      },
+    }))
   }
   return KEPU_STEPS
 }
@@ -267,6 +274,10 @@ export function kepuStepIndex(
     shots?: Array<{ image_url?: string | null; audio_url?: string | null; video_url?: string | null }>
   } | null,
 ): number {
+  if (project?.pipeline_mode === 'image_text') {
+    if (page === 'create' || page === 'style') return 0
+    return imageTextBoardStep(project)
+  }
   const steps = kepuSteps(project?.pipeline_mode)
   const idx = (key: string) => {
     const n = steps.findIndex((s) => s.key === key)
@@ -297,6 +308,13 @@ export function kepuPhaseHint(project: {
   pipeline_mode?: string | null
   shots?: Array<{ image_url?: string | null; audio_url?: string | null; video_url?: string | null }>
 }): string {
+  if (project.pipeline_mode === 'image_text') {
+    if (isRunning(effectiveStatus(project))) return tr('kepuPhase.imageTextRunning')
+    const phase = kepuBillingPhase(project)
+    if (phase === 'script') return tr('kepuPhase.imageTextScript')
+    if (phase === 'assets') return tr('kepuPhase.imageTextAssets')
+    return tr('kepuPhase.imageTextCompose')
+  }
   if (isRunning(effectiveStatus(project))) {
     return tr('kepuPhase.running')
   }

@@ -1,6 +1,7 @@
+import { displaySegmentCues, canonicalSegmentCues } from '../../lib/segmentCueDisplay'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { isAssetsReadyComposeError } from '../../lib/apiError'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api, defaultsFromTemplate } from '../../api'
 import type { Project, Shot, Template } from '../../api'
 import AppShell from '../../components/layout/AppShell'
@@ -18,6 +19,8 @@ import {
 } from '../../components/ui/Icons'
 import { scenePromptForDisplay } from '../../promptDisplay'
 import { dialog } from '../../lib/dialog'
+import { downloadSingleVideo } from '../../lib/clientDownload'
+import { withReturn } from '../../features/marketplace/ui'
 import { handleBillingError } from '../../lib/billingError'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import {
@@ -44,6 +47,8 @@ import {
   parseSegmentScript,
   replaceFirstVisualInScript,
   replaceNarrationInScript,
+  shotDisplayDurationSec,
+  sumDuration,
   validateSegmentScriptDuration,
 } from '../../lib/segmentDuration'
 import { currentMessages, isLocale, tr, useI18n } from '../../i18n'
@@ -64,7 +69,7 @@ function downloadStoryboardCsv(project: Project) {
         s.shot_no,
         s.narration,
         scenePromptForDisplay(s.img_prompt || s.video_prompt || ''),
-        s.duration,
+        shotDisplayDurationSec(s),
         shotDisplayLabel(shotDisplayKind(s, { pipelineMode: project.pipeline_mode })),
         s.overlay_title || '',
       ]
@@ -104,10 +109,10 @@ function shotCaption(shot: Shot) {
 }
 
 function hasActiveUnifiedTasks(project: Project | null): boolean {
-  const activeStatuses = ['pending', 'leased', 'running', 'awaiting_poll', 'awaiting_review']
+  const activeStatuses = ['pending', 'leased', 'running', 'awaiting_poll', 'awaiting_review', 'cancel_requested']
   return Boolean(
     project?.active_tasks?.some(
-      (task) => !task.cancel_requested && activeStatuses.includes(task.status),
+      (task) => activeStatuses.includes(task.status),
     ),
   )
 }
@@ -126,7 +131,8 @@ export default function StoryboardPage() {
   const { id } = useParams()
   const projectId = Number(id)
   const nav = useNavigate()
-  const { t, m } = useI18n()
+  const { t, m, locale } = useI18n()
+  const location = useLocation()
   const [project, setProject] = useState<Project | null>(null)
   const [template, setTemplate] = useState<Template | null>(null)
   const [busy, setBusy] = useState(false)
@@ -162,9 +168,14 @@ export default function StoryboardPage() {
     api
       .getProject(projectId)
       .then((p) => {
+        if (p.creation_session_id) {
+          nav(`/studio/sessions/${p.creation_session_id}?project=${p.id}`, { replace: true })
+          return
+        }
         setProject(p)
-        return api.templates().then((list) => {
-          setTemplate(list.find((t) => t.id === p.template_id) || null)
+        return api.templates().then(async (list) => {
+          const selected = list.find((t) => t.id === p.template_id)
+          setTemplate(selected || (p.template_id ? await api.getTemplate(p.template_id) : null))
         })
       })
       .catch((err) => setError(err instanceof Error ? err.message : t('studio.board.errLoad')))
@@ -199,7 +210,7 @@ export default function StoryboardPage() {
   const contentLocale = isLocale(rawContentLocale) ? rawContentLocale : null
   const step = project ? kepuStepIndex('board', project) : 2
   const totalDuration = useMemo(
-    () => (project?.shots || []).reduce((s, x) => s + (Number(x.duration) || 0), 0),
+    () => (project?.shots || []).reduce((s, x) => s + shotDisplayDurationSec(x), 0),
     [project?.shots],
   )
 
@@ -258,7 +269,7 @@ export default function StoryboardPage() {
           ? t('studio.board.genVideos')
           : t('studio.board.continueGenerate')
 
-  // 工作台进度：完整模式要镜头视频 + 外部 TTS，静图模式只配音合成
+  // 完整模式的默认旁白由视频模型生成；仅实际存在外部配音时展示 TTS 进度。
   const progressItems = useMemo(() => {
     if (!project) return []
     const list = project.shots || []
@@ -287,12 +298,14 @@ export default function StoryboardPage() {
         pct: stage === 'VIDEOING' ? project.progress : undefined,
       })
     }
-    items.push({
-      label: t('studio.board.pAudio', { done: auds, total: list.length || 0 }),
-      done: list.length > 0 && auds === list.length,
-      run: stage === 'AUDIOING',
-      pct: stage === 'AUDIOING' ? project.progress : undefined,
-    })
+    if (!full || auds > 0 || stage === 'AUDIOING') {
+      items.push({
+        label: t('studio.board.pAudio', { done: auds, total: list.length || 0 }),
+        done: list.length > 0 && auds === list.length,
+        run: stage === 'AUDIOING',
+        pct: stage === 'AUDIOING' ? project.progress : undefined,
+      })
+    }
     items.push({
       label: full ? t('studio.board.pStitch') : t('studio.board.pRender'),
       done: Boolean(project.final_video_url) || project.status === 'DONE',
@@ -383,10 +396,38 @@ export default function StoryboardPage() {
   async function composeOnly() {
     if (!project) return
     setBusy(true)
+    setError('')
     try {
       setProject(await api.compose(project.id))
     } catch (err) {
       setError(err instanceof Error ? err.message : t('studio.board.errCompose'))
+      await handleBillingError(err, nav)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function cancelGeneration() {
+    if (!project) return
+    setBusy(true)
+    setError('')
+    try {
+      setProject(await api.cancelProject(project.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('studio.board.errStop'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function downloadFinal() {
+    if (!project?.final_video_url) return
+    setBusy(true)
+    setError('')
+    try {
+      await downloadSingleVideo({ url: api.assetUrl(project.final_video_url, project.updated_at), title: project.title, projectId: project.id })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('studio.board.errDownload'))
     } finally {
       setBusy(false)
     }
@@ -575,15 +616,18 @@ export default function StoryboardPage() {
     })
   }
 
-  // 改脚本时回填旁白与首帧画面
+  // 改脚本时回填旁白与首帧画面，并同步时长为 @duration 合计
   function patchEditingScript(value: string) {
     if (!editing) return
+    value = canonicalSegmentCues(value)
+    const tagged = sumDuration(value)
     setEditing({
       ...editing,
       segment_script: value,
       video_prompt: value,
       narration: narrationFromScript(value),
       img_prompt: firstVisualFromScript(value) || editing.img_prompt,
+      duration: tagged > 0 ? tagged : editing.duration,
     })
   }
 
@@ -606,7 +650,7 @@ export default function StoryboardPage() {
         img_prompt: editing.img_prompt,
         video_prompt: editing.video_prompt,
         segment_script: editing.segment_script,
-        duration: Number(editing.duration) || 4,
+        duration: durationCheck.total > 0 ? durationCheck.total : Number(editing.duration) || 4,
         camera: editing.camera,
       })
       closeShotEdit()
@@ -729,6 +773,11 @@ export default function StoryboardPage() {
                 {generateLabel}
               </button>
             )}
+            {running ? (
+              <button type="button" className="pf-btn-text" disabled={busy} onClick={() => void cancelGeneration()}>
+                {t('studio.board.stopGenerate')}
+              </button>
+            ) : null}
             <button
               type="button"
               className="pf-btn-text"
@@ -795,6 +844,7 @@ export default function StoryboardPage() {
       </header>
 
       {error ? <BillingErrorNotice message={error} /> : null}
+      <ProjectMediaCostSummary project={project} />
       {project.error_msg ? <p className="pf-error">{project.error_msg}</p> : null}
 
       <div className="pf-board">
@@ -987,9 +1037,17 @@ export default function StoryboardPage() {
                   </button>
                 ) : null}
                 {hasFinal ? (
-                  <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" onClick={openFinalPreview}>
-                    {t('studio.board.previewFinal')}
-                  </button>
+                  <>
+                    <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" onClick={openFinalPreview}>
+                      {t('studio.board.previewFinal')}
+                    </button>
+                    <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" disabled={busy} onClick={() => void downloadFinal()}>
+                      {t('studio.board.downloadFinal')}
+                    </button>
+                    <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" onClick={() => nav(withReturn(`/marketplace/from-printfilm?project=${project.id}`, `${location.pathname}${location.search}`))}>
+                      {t('studio.board.publishMarketplace')}
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="button"
@@ -1147,7 +1205,7 @@ export default function StoryboardPage() {
                               )}
                             </button>
                           </td>
-                          <td className="col-dur">{formatMmSs(shot.duration)}</td>
+                          <td className="col-dur">{formatMmSs(shotDisplayDurationSec(shot))}</td>
                           <td className="col-status">
                             <span
                               className={[
@@ -1188,6 +1246,11 @@ export default function StoryboardPage() {
                                   onClick={() => regenVideo(shot)}
                                 >
                                   {shot.video_url ? t('studio.board.opRegenVideo') : t('studio.board.opGenVideo')}
+                                </button>
+                              ) : null}
+                              {shot.video_url ? (
+                                <button type="button" className="op" onClick={() => setPreview({ kind: 'shot', shotNo: shot.shot_no, imageUrl: shot.image_url, videoUrl: shot.video_url, audioUrl: shot.audio_url, caption: shotCaption(shot) })}>
+                                  {t('studio.board.opPreviewVideo')}
                                 </button>
                               ) : null}
                               <button
@@ -1330,7 +1393,7 @@ export default function StoryboardPage() {
                     />
                     {t('studio.board.shotItem', {
                       no: String(s.shot_no).padStart(2, '0'),
-                      dur: formatMmSs(Number(s.duration) || 0),
+                      dur: formatMmSs(shotDisplayDurationSec(s)),
                     })}
                   </label>
                 ))}
@@ -1417,7 +1480,7 @@ export default function StoryboardPage() {
                       onChange={(e) => setEditing({ ...editing, overlay_subtitle: e.target.value })}
                     />
                     <span className="pf-muted pf-prompt-hint">
-                      {t('studio.board.subtitleHint')}
+                      {isFullPipeline ? t('studio.board.subtitleHintFull') : t('studio.board.subtitleHintStill')}
                     </span>
                   </label>
                   <label>
@@ -1436,7 +1499,7 @@ export default function StoryboardPage() {
               ) : null}
               {editMode === 'full' ? (
                 <label>
-                  {t('studio.board.imgPrompt')}
+                  {isFullPipeline ? t('studio.board.imgPrompt') : t('studio.board.imgPromptStill')}
                   <textarea
                     autoFocus={editFocus === 'img_prompt'}
                     value={editing.img_prompt}
@@ -1444,18 +1507,18 @@ export default function StoryboardPage() {
                     rows={3}
                   />
                   <span className="pf-muted pf-prompt-hint">
-                    {t('studio.board.imgPromptHint')}
+                    {isFullPipeline ? t('studio.board.imgPromptHint') : t('studio.board.imgPromptHintStill')}
                   </span>
                 </label>
               ) : null}
-              {editMode === 'segment' || editMode === 'full' ? (
+              {isFullPipeline && (editMode === 'segment' || editMode === 'full') ? (
                 <>
                   <label>
                     {t('studio.board.segmentScript')}
                     <textarea
                       className="pf-prompt-segment"
                       autoFocus={editFocus === 'segment_script' || editMode === 'segment'}
-                      value={editing.segment_script || editing.video_prompt || ''}
+                      value={displaySegmentCues(editing.segment_script || editing.video_prompt || '', locale)}
                       onChange={(e) => patchEditingScript(e.target.value)}
                       rows={editMode === 'segment' ? 8 : 5}
                       placeholder={segmentScriptPlaceholder()}
@@ -1508,7 +1571,7 @@ export default function StoryboardPage() {
               ) : null}
             </div>
             <div className="pf-prompt-modal-foot">
-              {editMode !== 'segment' ? (
+              {isFullPipeline && editMode !== 'segment' ? (
                 <button
                   type="button"
                   className="pf-btn pf-btn-ghost pf-btn-sm"
@@ -1520,7 +1583,7 @@ export default function StoryboardPage() {
                   {t('studio.board.toSegment')}
                 </button>
               ) : null}
-              {editMode !== 'narration' ? (
+              {isFullPipeline && editMode !== 'narration' ? (
                 <button
                   type="button"
                   className="pf-btn pf-btn-ghost pf-btn-sm"
@@ -1532,7 +1595,7 @@ export default function StoryboardPage() {
                   {t('studio.board.toNarration')}
                 </button>
               ) : null}
-              {editMode !== 'full' ? (
+              {isFullPipeline && editMode !== 'full' ? (
                 <button
                   type="button"
                   className="pf-btn pf-btn-ghost pf-btn-sm"
@@ -1654,3 +1717,4 @@ export default function StoryboardPage() {
     </AppShell>
   )
 }
+import { ProjectMediaCostSummary } from '../../components/billing/ProjectMediaCostSummary'

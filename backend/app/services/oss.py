@@ -180,7 +180,6 @@ def ensure_browser_cors() -> None:
             logger.warning("s3 CORS update failed (token may lack bucket admin permission)", exc_info=True)
         return
     try:
-        import oss2
         from oss2.models import BucketCors, CorsRule
 
         rule = CorsRule(

@@ -175,7 +175,7 @@ export function TemplatesPage() {
     setSaving(true);
     try {
       const category = form.category
-        .split(",")
+        .split(/[,，]/)
         .map((s) => s.trim())
         .filter(Boolean);
       if (editing) {

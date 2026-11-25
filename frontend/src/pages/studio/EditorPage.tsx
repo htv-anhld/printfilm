@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../../api'
 import type { Project, Shot } from '../../api'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
@@ -8,6 +8,7 @@ import ComingSoon from '../../components/ui/ComingSoon'
 import { STATUS_CN, shotsByNo } from '../../lib/status'
 import { downloadSingleVideo } from '../../lib/clientDownload'
 import { useI18n } from '../../i18n'
+import { withReturn } from '../../features/marketplace/ui'
 
 // 面板页签 id；文案见 studio.editor.tabs.*
 const PANEL_TABS = ['copy', 'visual', 'voice', 'transition'] as const
@@ -16,6 +17,7 @@ export default function EditorPage() {
   const { id } = useParams()
   const projectId = Number(id)
   const nav = useNavigate()
+  const location = useLocation()
   const { t, m } = useI18n()
   const [project, setProject] = useState<Project | null>(null)
   const [activeShotId, setActiveShotId] = useState<number | null>(null)
@@ -37,6 +39,11 @@ export default function EditorPage() {
     api
       .getProject(projectId)
       .then((p) => {
+        // 分步创作会话的项目回到会话编辑器
+        if (p.creation_session_id) {
+          nav(`/studio/sessions/${p.creation_session_id}?project=${p.id}`, { replace: true })
+          return
+        }
         setProject(p)
         const first = p.shots[0]
         if (first) {
@@ -255,6 +262,14 @@ export default function EditorPage() {
             onClick={() => void exportFilm()}
           >
             {t('studio.editor.exportVideo')}
+          </button>
+          <button
+            type="button"
+            className="pf-btn pf-btn-ghost pf-btn-sm"
+            disabled={!project.final_video_url}
+            onClick={() => nav(withReturn(`/marketplace/from-printfilm?project=${project.id}`, `${location.pathname}${location.search}`))}
+          >
+            {t('studio.editor.publishMarketplace')}
           </button>
         </div>
       </div>

@@ -56,11 +56,11 @@ export default function HomeRecent() {
   useEffect(() => {
     let alive = true
     dramaApi
-      .listProjects()
-      .then((rows) => {
+      .listProjects({ page: 1, page_size: 50 })
+      .then((res) => {
         if (!alive) return
         setDramas(
-          latestDramas(rows).map((r) => ({
+          latestDramas(res.items).map((r) => ({
             key: `d${r.id}`,
             to: dramaProjectEntryPath(r),
             title: r.title || t('home.dash.untitled'),

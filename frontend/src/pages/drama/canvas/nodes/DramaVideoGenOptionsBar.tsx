@@ -1,3 +1,4 @@
+import { MediaCostNotice } from '../../../../components/billing/MediaCostNotice'
 /** 画布视频节点：风格 / Seedance 模型 / 时长 / 比例清晰度 */
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { BarChart3, ChevronDown, RectangleVertical, Smile, Timer } from 'lucide-react'
@@ -6,14 +7,17 @@ import {
   IMAGE_STYLE_OPTIONS,
 } from '../../../../lib/dramaImageStyles'
 import { DramaImageStylePreviewImg } from '../../../../components/drama/DramaImageStylePreviewImg'
+import { DramaMediaModelPicker } from '../../../../components/drama/DramaMediaModelPicker'
 import {
+  aspectRatiosForVideoModel,
+  clampVideoAspectRatioForModel,
   clampVideoDuration,
+  clampVideoResolutionForModel,
+  durationBoundsForModel,
   formatVideoOutputLabel,
-  VIDEO_ASPECT_RATIO_OPTIONS,
-  VIDEO_DURATION_MAX,
-  VIDEO_DURATION_MIN,
+  hasKnownVideoModelResolutions,
+  resolutionsForModel,
   VIDEO_DURATION_PRESETS,
-  VIDEO_RESOLUTION_OPTIONS,
   type VideoAspectRatio,
   type VideoGenerationOptions,
   type VideoResolution,
@@ -21,6 +25,7 @@ import {
 import {
   catalogModelLabel,
   catalogVideoModels,
+  resolveCatalogModelSelection,
   useMediaModelsCatalog,
 } from '../../../../hooks/useMediaModelsCatalog'
 import './dramaImageGenOptions.css'
@@ -42,30 +47,105 @@ export function DramaVideoGenOptionsBar({
 }: DramaVideoGenOptionsBarProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState<OpenPanel>(null)
+  const [adjustment, setAdjustment] = useState('')
+  // 自定义时长草稿：输入过程不立刻 clamp，避免打「24」时中间的「2」被夹成 min
+  const [durationDraft, setDurationDraft] = useState<string | null>(null)
+  const durationDraftRef = useRef<string | null>(null)
   const catalog = useMediaModelsCatalog()
   const videoModels = catalogVideoModels(catalog)
 
   useEffect(() => {
+    durationDraftRef.current = durationDraft
+  }, [durationDraft])
+
+  useEffect(() => {
     // 目录到达后，把旧 Kie/方舟 id 换成后台默认视频模型
     if (!catalog || disabled) return
-    const ids = videoModels.map((m) => m.id)
-    if (!ids.length) return
-    if (value.model_id && ids.includes(value.model_id)) return
-    const next = catalog.defaults.video_model || ids[0]
-    if (next && next !== value.model_id) onChange({ ...value, model_id: next })
-  }, [catalog, disabled])
+    const next = resolveCatalogModelSelection(catalog, 'video', value.model_id)
+    if (next === value.model_id) return
+    if (!next) {
+      onChange({ ...value, model_id: '' })
+      return
+    }
+    if (next !== value.model_id) {
+      onChange({
+        ...value,
+        model_id: next,
+        resolution: clampVideoResolutionForModel(next, value.resolution, catalog, videoModels),
+        aspect_ratio: clampVideoAspectRatioForModel(next, value.aspect_ratio, catalog, videoModels),
+        duration_sec: clampVideoDuration(value.duration_sec, next, catalog, videoModels),
+      })
+    }
+  }, [catalog, disabled, value.model_id])
+
+  useEffect(() => {
+    // 换模型后：清晰度 / 比例 / 时长钳到允许范围（须已知目录行，避免 SAFE 误写）
+    if (disabled) return
+    if (!hasKnownVideoModelResolutions(value.model_id, catalog, videoModels)) return
+    const nextRes = clampVideoResolutionForModel(
+      value.model_id,
+      value.resolution,
+      catalog,
+      videoModels,
+    )
+    const nextAspect = clampVideoAspectRatioForModel(
+      value.model_id,
+      value.aspect_ratio,
+      catalog,
+      videoModels,
+    )
+    const nextDur = clampVideoDuration(value.duration_sec, value.model_id, catalog, videoModels)
+    if (
+      nextRes !== value.resolution ||
+      nextAspect !== value.aspect_ratio ||
+      nextDur !== value.duration_sec
+    ) {
+      setAdjustment(tr('episode.genOpts.videoParamsAdjusted'))
+      onChange({
+        ...value,
+        resolution: nextRes,
+        aspect_ratio: nextAspect,
+        duration_sec: nextDur,
+      })
+    }
+  }, [value.model_id, catalog, disabled])
+
+  const resolutionOptions = resolutionsForModel(value.model_id, catalog, videoModels)
+  const aspectOptions = aspectRatiosForVideoModel(value.model_id, catalog, videoModels)
+  const durationBounds = durationBoundsForModel(value.model_id, catalog, videoModels)
+  const durationPresets = VIDEO_DURATION_PRESETS.filter(
+    (sec) => sec >= durationBounds.min && sec <= durationBounds.max,
+  )
+
+  /** 把草稿提交为夹紧后的 duration_sec */
+  function commitDurationDraft(raw: string | null = durationDraftRef.current) {
+    if (raw == null) return
+    const text = raw.trim()
+    const parsed = text === '' ? Number.NaN : Number(text)
+    const next = clampVideoDuration(
+      Number.isFinite(parsed) ? parsed : value.duration_sec,
+      value.model_id,
+      catalog,
+      videoModels,
+    )
+    if (next !== value.duration_sec) {
+      onChange({ ...value, duration_sec: next })
+    }
+    setDurationDraft(null)
+  }
 
   useEffect(() => {
     if (!open) return
     function onDoc(e: Event) {
       const target = e.target as Node | null
       if (rootRef.current && target && !rootRef.current.contains(target)) {
+        commitDurationDraft()
         setOpen(null)
       }
     }
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
-  }, [open])
+  }, [open, value, catalog, videoModels])
 
   const stop = (e: MouseEvent) => {
     e.stopPropagation()
@@ -77,6 +157,8 @@ export function DramaVideoGenOptionsBar({
 
   return (
     <div ref={rootRef} className="fc-gen-opts" onMouseDown={stop} onPointerDown={stop}>
+      {adjustment && <span className="media-cost-notice" role="status">{adjustment}</span>}
+      <MediaCostNotice modelId={value.model_id} resolution={value.resolution} seconds={value.duration_sec} />
       <div className="fc-gen-opts-triggers">
         <button
           type="button"
@@ -148,25 +230,33 @@ export function DramaVideoGenOptionsBar({
       {open === 'model' ? (
         <div className="fc-gen-opt-panel" role="dialog" aria-label={tr('episode.genOpts.videoModel')}>
           <div className="fc-gen-opt-panel-title">{tr('episode.genOpts.model')}</div>
-          <div className="fc-gen-model-list">
-            {videoModels.length === 0 ? (
-              <p className="fc-gen-model-empty">{tr('episode.genOpts.noVideoModels')}</p>
-            ) : null}
-            {videoModels.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className={`fc-gen-model-item${value.model_id === m.id ? ' selected' : ''}`}
-                onClick={() => {
-                  onChange({ ...value, model_id: m.id })
-                  setOpen(null)
-                }}
-              >
-                <strong>{m.label}</strong>
-                <span>{m.description || 'TokenFree'}</span>
-              </button>
-            ))}
-          </div>
+          <DramaMediaModelPicker
+            models={videoModels}
+            selectedId={value.model_id}
+            onSelect={(m) => {
+              const nextRes = clampVideoResolutionForModel(
+                m.id,
+                value.resolution,
+                catalog,
+                videoModels,
+              )
+              const nextAspect = clampVideoAspectRatioForModel(
+                m.id,
+                value.aspect_ratio,
+                catalog,
+                videoModels,
+              )
+              const nextDur = clampVideoDuration(value.duration_sec, m.id, catalog, videoModels)
+              onChange({
+                ...value,
+                model_id: m.id,
+                resolution: nextRes,
+                aspect_ratio: nextAspect,
+                duration_sec: nextDur,
+              })
+              setOpen(null)
+            }}
+          />
         </div>
       ) : null}
 
@@ -174,13 +264,16 @@ export function DramaVideoGenOptionsBar({
         <div className="fc-gen-opt-panel" role="dialog" aria-label={tr('episode.genOpts.videoDuration')}>
           <div className="fc-gen-opt-panel-title">{tr('episode.genOpts.duration')}</div>
           <div className="fc-gen-chip-row">
-            {VIDEO_DURATION_PRESETS.map((sec) => (
+            {durationPresets.map((sec) => (
               <button
                 key={sec}
                 type="button"
                 className={`fc-gen-chip${value.duration_sec === sec ? ' selected' : ''}`}
                 onClick={() => {
-                  onChange({ ...value, duration_sec: sec })
+                  onChange({
+                    ...value,
+                    duration_sec: clampVideoDuration(sec, value.model_id, catalog, videoModels),
+                  })
                   setOpen(null)
                 }}
               >
@@ -189,16 +282,30 @@ export function DramaVideoGenOptionsBar({
             ))}
           </div>
           <label className="fc-gen-duration-custom">
-            {tr('episode.genOpts.customDuration', { min: VIDEO_DURATION_MIN, max: VIDEO_DURATION_MAX })}
+            {tr('episode.genOpts.customDuration', { min: durationBounds.min, max: durationBounds.max })}
             <input
               type="number"
-              min={VIDEO_DURATION_MIN}
-              max={VIDEO_DURATION_MAX}
-              value={value.duration_sec}
+              inputMode="numeric"
+              min={durationBounds.min}
+              max={durationBounds.max}
+              step={1}
+              value={durationDraft ?? String(value.duration_sec)}
               disabled={disabled}
-              onChange={(e) =>
-                onChange({ ...value, duration_sec: clampVideoDuration(Number(e.target.value)) })
-              }
+              onFocus={() => setDurationDraft(String(value.duration_sec))}
+              onChange={(e) => {
+                // 允许清空/多位数中间态，失焦或回车再 clamp
+                const next = e.target.value
+                if (next !== '' && !/^\d{0,3}$/.test(next)) return
+                setDurationDraft(next)
+              }}
+              onBlur={() => commitDurationDraft(durationDraft)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  commitDurationDraft(durationDraft ?? e.currentTarget.value)
+                  setOpen(null)
+                }
+              }}
             />
           </label>
         </div>
@@ -208,7 +315,7 @@ export function DramaVideoGenOptionsBar({
         <div className="fc-gen-opt-panel" role="dialog" aria-label={tr('episode.genOpts.ratioAndRes')}>
           <div className="fc-gen-opt-panel-title">{tr('episode.genOpts.ratio')}</div>
           <div className="fc-gen-chip-row">
-            {VIDEO_ASPECT_RATIO_OPTIONS.map((ratio) => (
+            {aspectOptions.map((ratio) => (
               <button
                 key={ratio}
                 type="button"
@@ -223,7 +330,7 @@ export function DramaVideoGenOptionsBar({
             {tr('episode.genOpts.resolution')}
           </div>
           <div className="fc-gen-chip-row">
-            {VIDEO_RESOLUTION_OPTIONS.map((res) => (
+            {resolutionOptions.map((res) => (
               <button
                 key={res}
                 type="button"

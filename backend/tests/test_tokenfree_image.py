@@ -33,9 +33,38 @@ def test_build_tokenfree_image_body_matches_live_success():
     body = build_tokenfree_image_body(model="gpt-image-2-5", prompt="橘猫", size="2K")
     assert body["model"] == "gpt-image-2.5"
     assert "橘猫" in body["input"]
+    assert "输出清晰度2K" in body["input"]
     assert "size:" not in body["input"]
     assert "prompt" not in body
     assert "watermark" not in body
+
+
+def test_build_tokenfree_image_body_includes_aspect_ratio():
+    """UI 所选画幅必须进自然语言 input，不能只写清晰度。"""
+    body = build_tokenfree_image_body(
+        model="gpt-image-2",
+        prompt="国风角色设定板",
+        size="2K",
+        aspect_ratio="16:9",
+    )
+    text = body["input"]
+    assert "输出画幅必须为16:9" in text
+    assert "横构图" in text
+    assert "输出清晰度2K" in text
+    assert "输出清晰度2816x1584" not in text
+
+
+def test_build_tokenfree_image_body_pixel_size_not_called_clarity():
+    body = build_tokenfree_image_body(
+        model="gpt-image-2",
+        prompt="场景",
+        size="2816x1584",
+        aspect_ratio="16:9",
+    )
+    text = body["input"]
+    assert "目标像素约2816x1584" in text
+    assert "输出画幅必须为16:9" in text
+    assert "输出清晰度2816x1584" not in text
 
 
 def test_build_tokenfree_image_body_separates_style_and_subject_refs():
@@ -72,6 +101,33 @@ def test_gpt_image_2_uses_images_generations_with_valid_size():
     assert gpt_image_size("2304x1728") == "1536x1024"
     assert gpt_image_size("2048x2048") == "1024x1024"
     assert gpt_image_size("2K") == "auto"
+
+
+def test_gpt_image_25_uses_openai_generations_body():
+    """2.5 必须走 images/generations 字段，并带 resolution 供 1K/2K/4K 计费。"""
+    from app.services.tokenfree_image import (
+        build_tokenfree_openai_image_body,
+        gpt_image_resolution_tier,
+        is_gpt_image_25,
+    )
+
+    assert is_gpt_image_25("gpt-image-2.5") is True
+    assert is_gpt_image_25("gpt-image-2") is False
+    assert gpt_image_resolution_tier("3520x4694") == "4K"
+    assert gpt_image_resolution_tier("1776x2368") == "2K"
+    body = build_tokenfree_openai_image_body(
+        model="gpt-image-2.5",
+        prompt="角色设定",
+        size="1776x2368",
+        aspect_ratio="3:4",
+    )
+    assert body["model"] == "gpt-image-2.5"
+    assert body["size"] == "1776x2368"
+    assert body["resolution"] == "2K"
+    assert body["response_format"] == "url"
+    assert "prompt" in body and "input" not in body
+    assert "3:4" in body["prompt"]
+
 
 
 def test_extract_tokenfree_image_url_from_img_tag():
@@ -137,9 +193,10 @@ def test_sunburst_model_not_found_is_channel_dead():
         '"message":"分组 default 下模型 gpt-image-2-5-sunburst 无可用的渠道distributor"}}'
     )
     assert is_tokenfree_no_distributor(status_code=503, body=body) is True
-    assert "暂时失败" in tokenfree_image_user_error(
-        model="gpt-image-2-5-sunburst", status_code=503, body=body
-    )
+    # 上游：无渠道时明确提示「未开通」并带出模型名
+    msg = tokenfree_image_user_error(model="gpt-image-2-5-sunburst", status_code=503, body=body)
+    assert "未开通" in msg
+    assert "gpt-image-2-5-sunburst" in msg
 
 
 def test_is_tokenfree_no_distributor():
@@ -151,12 +208,14 @@ def test_is_tokenfree_no_distributor():
 
 
 def test_tokenfree_image_user_error_does_not_nudge_switch_model():
-    """TokenFree 通道挂了不再提示改用 gpt-image-2-5。"""
+    """TokenFree 通道挂了不再提示改用 gpt-image-2-5；Seedream 协议失败单独提示（上游）。"""
     protocol = '{"error":{"code":"task_protocol_error","message":"Task protocol request failed"}}'
-    for mid in ("gpt-image-2-5", "seedream-5-0-pro"):
-        msg = tokenfree_image_user_error(model=mid, status_code=502, body=protocol)
-        assert "请改用 gpt-image-2-5" not in msg
-        assert "暂时失败" in msg
+    gpt_msg = tokenfree_image_user_error(model="gpt-image-2-5", status_code=502, body=protocol)
+    assert "请改用 gpt-image-2-5" not in gpt_msg
+    assert "暂时失败" in gpt_msg
+    seedream_msg = tokenfree_image_user_error(model="seedream-5-0-pro", status_code=502, body=protocol)
+    assert "Seedream" in seedream_msg
+    assert "请改用 gpt-image-2-5" not in seedream_msg
 
 
 def test_raise_seedream_http_error_tokenfree_vs_ark():

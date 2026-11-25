@@ -1,3 +1,4 @@
+import { Select } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -58,7 +59,7 @@ export function DramaFragmentsPage() {
         <AdminUserSearchSelect value={userId} onChange={setUserId} />
         <Input placeholder={t("drama.fields.projectId")} value={projectId} onChange={(e) => setProjectId(e.target.value)} />
         <Input placeholder={t("drama.fields.episodeId")} value={episodeId} onChange={(e) => setEpisodeId(e.target.value)} />
-        <select
+        <Select
           className="admin-native-select"
           value={generationStatus}
           onChange={(e) => setGenerationStatus(e.target.value)}
@@ -69,7 +70,7 @@ export function DramaFragmentsPage() {
               {formatDramaGenerationStatus(s)}
             </option>
           ))}
-        </select>
+        </Select>
         <Button
           size="sm"
           variant="secondary"

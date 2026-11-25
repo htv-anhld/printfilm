@@ -65,7 +65,7 @@ export function TeamsPage() {
   const { t } = useI18n();
   return (
     <RemoteListPage<TeamRow>
-      endpoint="/api/admin/teams"
+      endpoint="/api/admin/seat-teams"
       description={t("commerce.teams.desc")}
       searchPlaceholder={t("commerce.teams.search")}
       emptyText={t("commerce.teams.empty")}

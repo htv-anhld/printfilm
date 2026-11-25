@@ -1,5 +1,5 @@
 /** 大纲「项目设置」：画幅/画风/字幕/人物介绍/尾帧衔接（全局可改；分镜页只读） */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Modal from '../../components/ui/Modal'
 import { DramaImageStyleModal } from './DramaImageStyleModal'
 import {
@@ -10,17 +10,25 @@ import {
 import { type ImageStyleId } from '../../lib/dramaImageStyles'
 import {
   DRAMA_RATIO_OPTIONS,
-  DRAMA_RES_OPTIONS,
   readProjectAspectRatio,
   readProjectResolution,
   type DramaAspectRatio,
   type DramaResolution,
 } from '../../lib/dramaProjectOutputSettings'
 import {
+  clampVideoResolutionForModel,
+  hasKnownVideoModelResolutions,
+  resolutionsForModel,
+} from '../../lib/dramaVideoGenerationOptions'
+import {
+  catalogVideoModels,
+  useMediaModelsCatalog,
+} from '../../hooks/useMediaModelsCatalog'
+import {
   readEpisodeSubtitleMode,
   subtitleModeUsesModelOutput,
   type DramaSubtitleMode,
-} from '../../lib/dramaSubtitleBoard'
+} from '../../lib/dramaSubtitleSettings'
 import type { DramaProject, DramaScript } from '../../api/drama'
 import { dramaApi } from '../../api/drama'
 import { useI18n } from '../../i18n'
@@ -106,9 +114,30 @@ export function DramaProjectSettingsModal({
     '') as ImageStyleId | ''
   const aspectRatio = readProjectAspectRatio(projectParams)
   const resolution = readProjectResolution(projectParams)
+  const catalog = useMediaModelsCatalog()
+  const videoModels = catalogVideoModels(catalog)
+  const videoModelId =
+    String(projectParams.video_model || projectParams.model_id || '').trim() ||
+    catalog?.defaults.video_model ||
+    ''
+  const resolutionOptions = resolutionsForModel(videoModelId, catalog, videoModels)
+  const clampedResolution = clampVideoResolutionForModel(
+    videoModelId,
+    resolution,
+    catalog,
+    videoModels,
+  ) as DramaResolution
   const subtitleMode = readEpisodeSubtitleMode(projectParams)
   const characterIntroMode = readEpisodeCharacterIntroMode(projectParams)
   const linkLastFrame = coerceLinkLastFrame(projectParams)
+
+  useEffect(() => {
+    if (!open || saving) return
+    if (!hasKnownVideoModelResolutions(videoModelId, catalog, videoModels)) return
+    if (clampedResolution === resolution) return
+    void patchProjectParams({ resolution: clampedResolution })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, videoModelId, catalog, clampedResolution])
 
   async function patchProjectParams(patch: Record<string, unknown>) {
     setSaving(true)
@@ -201,9 +230,9 @@ export function DramaProjectSettingsModal({
             <h4>{t('drama.settings.resolution')}</h4>
           </div>
           <SettingsChoiceRow
-            value={resolution}
+            value={clampedResolution}
             disabled={saving}
-            options={DRAMA_RES_OPTIONS.map((r) => ({ value: r as DramaResolution, label: r }))}
+            options={resolutionOptions.map((r) => ({ value: r as DramaResolution, label: r }))}
             onChange={(res) => void patchProjectParams({ resolution: res })}
           />
           <div className="drama-project-settings-head">

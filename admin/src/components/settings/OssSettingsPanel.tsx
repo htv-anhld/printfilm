@@ -37,30 +37,32 @@ export function OssSettingsPanel() {
     return Boolean(form.oss_bucket && hasCreds && hasSecret);
   }, [form, clearOssId, clearOssSecret, ossKeyIdInput, ossKeySecretInput]);
 
-  async function handleSave() {
-    if (!form) return;
-    await save(
+  async function handleSave(): Promise<boolean> {
+    if (!form) return false;
+    const saved = await save(
       {
         oss_enabled: form.oss_enabled,
         oss_provider: form.oss_provider || "aliyun",
-        oss_endpoint: form.oss_endpoint,
-        oss_region: form.oss_region,
-        oss_bucket: form.oss_bucket,
-        oss_folder: form.oss_folder,
-        oss_public_base: form.oss_public_base,
+        oss_endpoint: form.oss_endpoint.trim(),
+        oss_region: form.oss_region.trim(),
+        oss_bucket: form.oss_bucket.trim(),
+        oss_folder: form.oss_folder.trim(),
+        oss_public_base: form.oss_public_base.trim(),
         oss_upload_async: form.oss_upload_async,
-        oss_upload_queue: form.oss_upload_queue,
-        oss_access_key_id: ossKeyIdInput.trim() || undefined,
-        oss_access_key_secret: ossKeySecretInput.trim() || undefined,
+        oss_upload_queue: form.oss_upload_queue.trim(),
+        oss_access_key_id: clearOssId ? undefined : ossKeyIdInput.trim() || undefined,
+        oss_access_key_secret: clearOssSecret ? undefined : ossKeySecretInput.trim() || undefined,
         clear_oss_access_key_id: clearOssId,
         clear_oss_access_key_secret: clearOssSecret,
       },
       t("settings.oss.saved"),
     );
+    if (!saved) return false;
     setOssKeyIdInput("");
     setOssKeySecretInput("");
     setClearOssId(false);
     setClearOssSecret(false);
+    return true;
   }
 
   // 先保存再测试：后端用已保存的配置上传小文件并从公网 URL 读回
@@ -71,7 +73,7 @@ export function OssSettingsPanel() {
     }
     setTesting(true);
     try {
-      await handleSave();
+      if (!(await handleSave())) return;
       const res = await api<StorageCheck>("/api/admin/settings/storage/test", { method: "POST" });
       if (res.ok) toast.success(t("settings.oss.testOk"));
       else if (!res.upload_ok) toast.error(t("settings.oss.testUploadFail", { error: res.error || "-" }), { duration: 10000 });
@@ -148,6 +150,7 @@ export function OssSettingsPanel() {
             </div>
           </div>
           {isS3 ? <p className="settings-hint-box mt-3">{t("settings.oss.r2Guide")}</p> : null}
+          <p className="settings-hint-box mt-3">{t("settings.oss.marketplaceNote")}</p>
           <div className="settings-field-grid mt-3">
             <LabeledControl label="Endpoint">
               <input
@@ -202,8 +205,13 @@ export function OssSettingsPanel() {
             <SecretField
               label="AccessKey ID"
               value={ossKeyIdInput}
-              configured={form.has_oss_access_key_id && !clearOssId}
-              onChange={setOssKeyIdInput}
+              configured={form.has_oss_access_key_id}
+              clearPending={clearOssId}
+              onUndoClear={() => setClearOssId(false)}
+              onChange={(value) => {
+                setOssKeyIdInput(value);
+                setClearOssId(false);
+              }}
               onClear={() => {
                 setOssKeyIdInput("");
                 setClearOssId(true);
@@ -212,8 +220,13 @@ export function OssSettingsPanel() {
             <SecretField
               label="AccessKey Secret"
               value={ossKeySecretInput}
-              configured={form.has_oss_access_key_secret && !clearOssSecret}
-              onChange={setOssKeySecretInput}
+              configured={form.has_oss_access_key_secret}
+              clearPending={clearOssSecret}
+              onUndoClear={() => setClearOssSecret(false)}
+              onChange={(value) => {
+                setOssKeySecretInput(value);
+                setClearOssSecret(false);
+              }}
               onClear={() => {
                 setOssKeySecretInput("");
                 setClearOssSecret(true);

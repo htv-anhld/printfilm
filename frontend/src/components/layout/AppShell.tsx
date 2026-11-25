@@ -2,8 +2,19 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useI18n } from '../../i18n'
 import { GITHUB_REPO_URL } from '../../lib/siteLinks'
+import type { NavActive as SiteNavActive } from '../../lib/siteNavigation'
 import EmailVerifyBanner from './EmailVerifyBanner'
-import AppSidebar, { type NavActive } from './AppSidebar'
+import AppSidebar, { type NavActive as SidebarNavActive } from './AppSidebar'
+
+/** 页面可传侧栏 key，也可传上游新页面的导航 key（如 canvas / tasks）；侧栏不认识的 key 交给路径匹配 */
+export type NavActive = SidebarNavActive | SiteNavActive
+
+const SIDEBAR_KEYS = new Set<string>(['home', 'drama', 'kepu', 'tools', 'assets', 'pricing', 'templates', 'studio', 'history'])
+
+/** 只把侧栏支持的 active 透传给 AppSidebar */
+function sidebarActive(active?: NavActive): SidebarNavActive | undefined {
+  return active && SIDEBAR_KEYS.has(active) ? (active as SidebarNavActive) : undefined
+}
 
 type Props = {
   children: ReactNode
@@ -19,10 +30,11 @@ export default function AppShell({ children, active, wide, flush, hideFooter }: 
 
   return (
     <div className="pf-shell pf-shell-app">
-      <AppSidebar active={active} />
+      <a className="pf-skip-content" href="#pf-main-content">{t('nav.skipContent')}</a>
+      <AppSidebar active={sidebarActive(active)} />
       <div className="pf-shell-body">
       <EmailVerifyBanner />
-      <main className={['pf-shell-main', wide ? 'wide' : '', flush ? 'flush' : ''].filter(Boolean).join(' ')}>
+      <main id="pf-main-content" tabIndex={-1} className={['pf-shell-main', wide ? 'wide' : '', flush ? 'flush' : ''].filter(Boolean).join(' ')}>
         {children}
       </main>
       {!hideFooter && !flush ? (

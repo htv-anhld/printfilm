@@ -37,13 +37,14 @@ async def get_owned_drama_project(
         opts.append(selectinload(DramaProject.assets))
     if with_episodes:
         opts.append(selectinload(DramaProject.episodes).selectinload(DramaEpisode.fragments))
-    q = select(DramaProject).where(DramaProject.id == project_id, DramaProject.user_id == user.id)
+    q = select(DramaProject).where(DramaProject.id == project_id)
     if opts:
         q = q.options(*opts)
     result = await db.execute(q)
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail=_("漫剧项目不存在"))
+    await require_drama_project_access(db, project, user.id)
     # 本请求后续的 AI 调用 / 时长估算按项目内容语言
     set_project_content_locale(project)
     return project
@@ -67,7 +68,7 @@ async def get_owned_episode(
     q = (
         select(DramaEpisode, DramaProject.content_locale)
         .join(DramaProject, DramaEpisode.project_id == DramaProject.id)
-        .where(DramaEpisode.id == episode_id, DramaProject.user_id == user.id)
+        .where(DramaEpisode.id == episode_id)
     )
     if opts:
         q = q.options(*opts)
@@ -76,8 +77,31 @@ async def get_owned_episode(
     if not row:
         raise HTTPException(status_code=404, detail=_("分集不存在"))
     episode, content_locale = row[0], row[1]
+    project = await db.get(DramaProject, episode.project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail=_("分集不存在"))
+    await require_drama_project_access(db, project, user.id)
     set_content_locale(content_locale or "zh")
     return episode
+
+
+async def require_drama_project_access(db: AsyncSession, project: DramaProject, user_id: int) -> None:
+    """Generic drama APIs are owner-only. Canvas members use canvas-scoped APIs."""
+    if int(project.user_id) != int(user_id):
+        raise HTTPException(status_code=404, detail=_("漫剧项目不存在"))
+
+
+async def require_drama_project_manager(db: AsyncSession, project: DramaProject, user_id: int) -> None:
+    await require_drama_project_access(db, project, user_id)
+
+
+async def get_owned_asset(db: AsyncSession, asset_id: int, user: User) -> DramaAsset:
+    """通过资产所属项目统一校验个人与团队访问权限。"""
+    asset = await db.get(DramaAsset, asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail=_("资产不存在"))
+    await get_owned_drama_project(db, asset.project_id, user)
+    return asset
 
 
 async def detach_task_fragment_refs(

@@ -1,8 +1,17 @@
-/** 角色音色绑定：从漫剧 voice 资产选择，写入 params 供 Seedance reference_audio 使用 */
+/** 角色音色绑定：选择 / 上传 / AI 合成试听，写入 params.voiceAudio */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { dramaApi, resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
 import Modal from '../../components/ui/Modal'
+import { useCharacterVoiceGenerationEnabled } from '../../hooks/usePublicCapabilities'
 import { tr, useI18n } from '../../i18n'
+
+const AUDIO_ACCEPT = 'audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,.mp3,.wav,.m4a'
+
+/** 是否可作为角色音色资产 */
+function isVoiceLikeAsset(asset: DramaAsset): boolean {
+  const t = (asset.type || '').toLowerCase()
+  return t === 'voice' || t === 'audio'
+}
 
 export type VoiceBinding = {
   sourceAssetId: number
@@ -33,7 +42,7 @@ export function readVoicePrompt(asset: DramaAsset): string {
 }
 
 // 从角色资产 params 读取已绑定音色
-export function readAssetVoiceBinding(asset: DramaAsset): VoiceBinding | null {
+export function readAssetVoiceBinding(asset: Pick<DramaAsset, 'params'>): VoiceBinding | null {
   const params = (asset.params || {}) as Record<string, unknown>
   const raw = params.voiceAudio
   if (raw && typeof raw === 'object') {
@@ -107,16 +116,15 @@ export function CharacterVoiceBindModal({
   onBound,
   onError,
 }: Props) {
-  /*
-   * voiceAssets 项目内 voice 资产
-   * selectedId 选中音色
-   * newPrompt 新建音色描述
-   * newName 新建音色名称
-   * busy 提交中
-   * synthBusy 合成中
-   * promptBusy AI 生成提示词中
-   */
   const { t } = useI18n()
+  const voiceGenerationEnabled = useCharacterVoiceGenerationEnabled()
+  /*
+   * voiceAssets 项目内 voice/audio 资产
+   * selectedId 选中音色
+   * newPrompt / newName 新建合成表单
+   * busy / synthBusy / promptBusy / uploadBusy 各操作中
+   * mode pick | upload | create
+   */
   const [voiceAssets, setVoiceAssets] = useState<DramaAsset[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [newPrompt, setNewPrompt] = useState('')
@@ -124,9 +132,11 @@ export function CharacterVoiceBindModal({
   const [busy, setBusy] = useState(false)
   const [synthBusy, setSynthBusy] = useState(false)
   const [promptBusy, setPromptBusy] = useState(false)
+  const [uploadBusy, setUploadBusy] = useState(false)
   const [suggestedSpeaker, setSuggestedSpeaker] = useState('')
-  const [mode, setMode] = useState<'pick' | 'create'>('pick')
+  const [mode, setMode] = useState<'pick' | 'upload' | 'create'>('pick')
   const promptRequestedRef = useRef(false)
+  const uploadInputRef = useRef<HTMLInputElement>(null)
 
   const bound = useMemo(() => readAssetVoiceBinding(asset), [asset])
   const selectedVoice = voiceAssets.find((v) => v.id === selectedId) || null
@@ -135,6 +145,7 @@ export function CharacterVoiceBindModal({
   // 根据角色设定 AI 生成音色描述
   const fetchVoicePrompt = useCallback(
     async (force = false) => {
+      if (!voiceGenerationEnabled) return
       if (promptBusy) return
       if (!force && newPrompt.trim()) return
       setPromptBusy(true)
@@ -151,7 +162,7 @@ export function CharacterVoiceBindModal({
         setPromptBusy(false)
       }
     },
-    [asset.id, newPrompt, onError, projectId, promptBusy],
+    [asset.id, newPrompt, onError, projectId, promptBusy, voiceGenerationEnabled],
   )
 
   useEffect(() => {
@@ -169,29 +180,69 @@ export function CharacterVoiceBindModal({
     dramaApi
       .listAssets(projectId)
       .then((list) => {
-        const voices = list.filter((a) => (a.type || '').toLowerCase() === 'voice')
+        const voices = list.filter(isVoiceLikeAsset)
         setVoiceAssets(voices)
         if (!bound?.sourceAssetId && voices[0]) {
           setSelectedId(voices[0].id)
         }
         if (voices.length === 0) {
-          setMode('create')
+          setMode('upload')
         }
       })
       .catch((err) => onError(err instanceof Error ? err.message : tr('drama.voiceBind.loadVoicesFailed')))
   }, [open, asset, projectId, bound?.sourceAssetId, onError])
 
-  // 进入「新建并合成」时自动 AI 生成音色描述
+  // 进入「AI 合成」时自动生成音色描述
   useEffect(() => {
-    if (!open || mode !== 'create' || promptRequestedRef.current) return
+    if (!open || !voiceGenerationEnabled || mode !== 'create' || promptRequestedRef.current) return
     promptRequestedRef.current = true
     void fetchVoicePrompt(true)
-  }, [open, mode, fetchVoicePrompt])
+  }, [open, mode, fetchVoicePrompt, voiceGenerationEnabled])
+
+  useEffect(() => {
+    if (!voiceGenerationEnabled && mode === 'create') setMode('pick')
+  }, [voiceGenerationEnabled, mode])
 
   if (!open) return null
 
+  const anyBusy = busy || synthBusy || promptBusy || uploadBusy
+
+  // 本地上传音频并记为音色资产
+  async function handleUploadAudio(file: File) {
+    if (uploadBusy) return
+    if (!file.type.startsWith('audio/') && !/\.(mp3|wav|m4a)$/i.test(file.name)) {
+      onError(tr('drama.voiceBind.uploadBadType'))
+      return
+    }
+    setUploadBusy(true)
+    try {
+      const baseName = file.name.replace(/\.[^.]+$/, '').trim()
+      const created = await dramaApi.createAsset({
+        project_id: projectId,
+        type: 'voice',
+        asset_type: 'audio',
+        name: baseName || tr('drama.voiceBind.defaultName', { name: asset.name || tr('drama.common.character') }),
+        params: {
+          source: 'upload',
+          originalFilename: file.name,
+        },
+      })
+      const uploaded = await dramaApi.uploadAssetMedia(created.id, file)
+      if (!(uploaded.url || '').trim()) throw new Error(tr('drama.voiceBind.uploadNoUrl'))
+      setVoiceAssets((prev) => [uploaded, ...prev.filter((v) => v.id !== uploaded.id)])
+      setSelectedId(uploaded.id)
+      setMode('pick')
+    } catch (err) {
+      onError(err instanceof Error ? err.message : tr('drama.common.uploadFailed'))
+    } finally {
+      setUploadBusy(false)
+      if (uploadInputRef.current) uploadInputRef.current.value = ''
+    }
+  }
+
   // 按提示词新建并合成 voice 资产
   async function handleCreateAndSynth() {
+    if (!voiceGenerationEnabled) { onError(tr('drama.common.voiceGenDisabled')); return }
     const prompt = newPrompt.trim()
     if (!prompt || synthBusy) return
     setSynthBusy(true)
@@ -204,12 +255,12 @@ export function CharacterVoiceBindModal({
         character_asset_id: asset.id,
       })
       const created = result.asset
-      if (!created) throw new Error(t('drama.voiceBind.synthFailedShort'))
+      if (!created) throw new Error(tr('drama.voiceBind.synthFailedShort'))
       setVoiceAssets((prev) => [...prev, created])
       setSelectedId(created.id)
       setMode('pick')
     } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.voiceBind.synthFailed'))
+      onError(err instanceof Error ? err.message : tr('drama.voiceBind.synthFailed'))
     } finally {
       setSynthBusy(false)
     }
@@ -217,6 +268,7 @@ export function CharacterVoiceBindModal({
 
   // 对已有 voice 资产重新合成
   async function handleResynth(voice: DramaAsset) {
+    if (!voiceGenerationEnabled) { onError(tr('drama.common.voiceGenDisabled')); return }
     const prompt = readVoicePrompt(voice)
     if (!prompt || synthBusy) return
     setSynthBusy(true)
@@ -232,7 +284,7 @@ export function CharacterVoiceBindModal({
         setVoiceAssets((prev) => prev.map((v) => (v.id === voice.id ? result.asset! : v)))
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.voiceBind.resynthFailed'))
+      onError(err instanceof Error ? err.message : tr('drama.voiceBind.resynthFailed'))
     } finally {
       setSynthBusy(false)
     }
@@ -241,7 +293,7 @@ export function CharacterVoiceBindModal({
   // 确认绑定到角色
   async function handleConfirm() {
     if (!selectedVoice?.url || busy) {
-      onError(t('drama.voiceBind.pickSynthesized'))
+      onError(tr('drama.voiceBind.pickOrUpload'))
       return
     }
     setBusy(true)
@@ -252,7 +304,7 @@ export function CharacterVoiceBindModal({
       onBound(updated)
       onClose()
     } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.voiceBind.bindFailed'))
+      onError(err instanceof Error ? err.message : tr('drama.voiceBind.bindFailed'))
     } finally {
       setBusy(false)
     }
@@ -275,7 +327,7 @@ export function CharacterVoiceBindModal({
       onBound(updated)
       onClose()
     } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.voiceBind.unbindFailed'))
+      onError(err instanceof Error ? err.message : tr('drama.voiceBind.unbindFailed'))
     } finally {
       setBusy(false)
     }
@@ -287,15 +339,20 @@ export function CharacterVoiceBindModal({
       onClose={onClose}
       title={t('drama.voiceBind.title')}
       size="lg"
-      dismissible={!busy}
+      dismissible={!anyBusy}
       className="drama-voice-bind-modal"
       footer={
         <>
-          <button type="button" className="pf-btn" onClick={onClose} disabled={busy}>
+          <button type="button" className="pf-btn" onClick={onClose} disabled={anyBusy}>
             {t('drama.common.cancel')}
           </button>
           {bound ? (
-            <button type="button" className="pf-btn" onClick={() => void handleUnbind()} disabled={busy}>
+            <button
+              type="button"
+              className="pf-btn"
+              onClick={() => void handleUnbind()}
+              disabled={anyBusy}
+            >
               {t('drama.voiceBind.unbind')}
             </button>
           ) : null}
@@ -303,7 +360,7 @@ export function CharacterVoiceBindModal({
             type="button"
             className="pf-btn pf-btn-lime"
             onClick={() => void handleConfirm()}
-            disabled={!selectedVoice?.url || busy}
+            disabled={!selectedVoice?.url || anyBusy}
           >
             {busy ? t('drama.voiceBind.binding') : t('drama.voiceBind.confirmBind')}
           </button>
@@ -311,38 +368,51 @@ export function CharacterVoiceBindModal({
       }
     >
       <p className="drama-muted">
-        {t('drama.voiceBind.lead', { name: asset.name || t('drama.common.character') })}
+        {t('drama.voiceBind.leadUpload', { name: asset.name || t('drama.common.character') })}
+        {voiceGenerationEnabled ? t('drama.voiceBind.leadAiSuffix') : ''}
+      </p>
+      <p className="drama-muted" style={{ marginTop: -6, fontSize: 12 }}>
+        {t('drama.voiceBind.canvasHint')}
       </p>
 
-      <div className="drama-voice-mode-tabs">
-        <button
-          type="button"
-          className={mode === 'pick' ? 'active' : ''}
-          onClick={() => setMode('pick')}
-        >
-          {t('drama.voiceBind.pickExisting')}
-        </button>
-        <button
-          type="button"
-          className={mode === 'create' ? 'active' : ''}
-          onClick={() => {
-            setMode('create')
-            if (!newPrompt.trim() && !promptBusy) {
-              promptRequestedRef.current = false
-            }
-          }}
-        >
-          {t('drama.voiceBind.createAndSynth')}
-        </button>
+      <div className="drama-voice-mode-tabs" role="group" aria-label={t('drama.voiceBind.sourceAria')}>
+        {([
+          { value: 'pick' as const, label: t('drama.voiceBind.pickExisting') },
+          { value: 'upload' as const, label: t('drama.voiceBind.uploadAudio') },
+          ...(voiceGenerationEnabled ? [{ value: 'create' as const, label: t('drama.voiceBind.aiSynth') }] : []),
+        ]).map((item) => (
+          <button
+            key={item.value}
+            type="button"
+            className={mode === item.value ? 'active' : ''}
+            disabled={anyBusy}
+            onClick={() => {
+              setMode(item.value)
+              if (item.value === 'create' && !newPrompt.trim() && !promptBusy) {
+                promptRequestedRef.current = false
+              }
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
 
       {mode === 'pick' ? (
         <div className="drama-voice-list">
           {voiceAssets.length === 0 ? (
-            <p className="drama-muted">{t('drama.voiceBind.noVoices')}</p>
+            <p className="drama-muted">
+              {voiceGenerationEnabled ? t('drama.voiceBind.noVoicesUploadOrAi') : t('drama.voiceBind.noVoicesUpload')}
+            </p>
           ) : (
             voiceAssets.map((voice) => {
               const hasAudio = Boolean(voice.url)
+              const canResynth = Boolean(readVoicePrompt(voice))
+              const statusLabel = !hasAudio
+                ? t('drama.voiceBind.notSynthesized')
+                : canResynth
+                  ? t('drama.voiceCard.synthesized')
+                  : t('drama.voiceBind.uploaded')
               return (
                 <label key={voice.id} className="drama-voice-option">
                   <input
@@ -353,9 +423,9 @@ export function CharacterVoiceBindModal({
                   />
                   <span>
                     {voice.name || t('drama.voiceBind.voiceN', { id: voice.id })}
-                    <small>{hasAudio ? t('drama.voiceCard.synthesized') : t('drama.voiceBind.notSynthesized')}</small>
+                    <small>{statusLabel}</small>
                   </span>
-                  {hasAudio ? (
+                  {voiceGenerationEnabled && hasAudio && canResynth ? (
                     <button
                       type="button"
                       className="pf-btn pf-btn-sm"
@@ -373,7 +443,31 @@ export function CharacterVoiceBindModal({
             })
           )}
         </div>
-      ) : (
+      ) : mode === 'upload' ? (
+        <div className="drama-voice-create-form">
+          <p className="drama-muted" style={{ margin: 0 }}>
+            {t('drama.voiceBind.uploadHint')}
+          </p>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept={AUDIO_ACCEPT}
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) void handleUploadAudio(file)
+            }}
+          />
+          <button
+            type="button"
+            className="pf-btn pf-btn-lime"
+            disabled={uploadBusy}
+            onClick={() => uploadInputRef.current?.click()}
+          >
+            {uploadBusy ? t('drama.common.uploading') : t('drama.voiceBind.chooseAudioFile')}
+          </button>
+        </div>
+      ) : voiceGenerationEnabled ? (
         <div className="drama-voice-create-form">
           <label className="drama-field">
             <span>{t('drama.voiceBind.voiceName')}</span>
@@ -420,7 +514,7 @@ export function CharacterVoiceBindModal({
             {synthBusy ? t('drama.voiceCard.synthing') : t('drama.voiceBind.synthPreview')}
           </button>
         </div>
-      )}
+      ) : null}
 
       {previewUrl ? (
         <audio className="drama-voice-audio" controls src={previewUrl} />

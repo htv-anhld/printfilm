@@ -344,6 +344,7 @@ export const enDrama = {
     pollFailed: 'Polling failed',
     genTimeout: 'Generation timed out — refresh later',
     addFailed: 'Failed to add episode',
+    needCreativeOrSummary: 'Fill in the episode idea or summary before generating the script',
     creativeTooShort: 'The episode idea must be at least {n} characters',
     bodyBeforeBrief: 'The script needs at least {n} characters before filling in the idea and synopsis',
     regenTitle: 'Regenerate episode',

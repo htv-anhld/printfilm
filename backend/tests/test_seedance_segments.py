@@ -169,7 +169,7 @@ def test_empty_shot_misclassified_as_dialogue_is_rewritten():
     assert "【画面·无配音仅环境音】空镜：" in fixed
     assert script_has_dialogue_cue(fixed) is False
     assert script_has_visual_only_cue(fixed) is True
-    section = build_seedance_production_section(fixed)
+    section = build_seedance_production_section(fixed, burn_subtitles=True)
     assert "禁止为其生成配音" in section
     assert "画面描述段不出现字幕" in section
     assert "逐句轮换" in section
@@ -185,7 +185,7 @@ def test_legacy_drama_subtitle_cue_normalized_on_rewrite():
     fixed = rewrite_misclassified_visual_voice_lines(legacy)
     assert DRAMA_SUBTITLE_CUE in fixed
     assert "仅标记段落同步" not in fixed
-    assert "逐句轮换" in build_seedance_production_section(fixed)
+    assert "逐句轮换" in build_seedance_production_section(fixed, burn_subtitles=True)
 
 
 def test_character_intro_cue_normalized_beside_character():
@@ -195,7 +195,9 @@ def test_character_intro_cue_normalized_beside_character():
     fixed = rewrite_misclassified_visual_voice_lines(legacy)
     assert "【人物介绍·画面叠字·角色身旁】禹｜治水英雄" in fixed
     assert "【人物介绍·画面叠字】禹" not in fixed.replace("【人物介绍·画面叠字·角色身旁】", "")
-    section = build_seedance_production_section(fixed)
+    section = build_seedance_production_section(
+        fixed, burn_subtitles=True, character_intro=True
+    )
     assert "角色身旁" in section
     assert "禁止居中大标题" in section
 
@@ -215,6 +217,21 @@ def test_build_seedance_production_section_ambient_only():
     assert "禁止任何 BGM" in section
     assert "操作环境音" in section
     assert "第三人称旁白配音" not in section
+    assert "轻快专业" not in section
+
+
+def test_build_seedance_production_section_no_bgm_keeps_vo():
+    """内置口播：保留旁白约束，禁止模型 BGM。"""
+    script = build_segment_script(
+        [
+            SegmentBeat(duration=5, kind="narration", text="诺贝尔发明了炸药"),
+        ],
+        bgm_mood="轻快专业",
+    )
+    section = build_seedance_production_section(script, ambient_only=False, no_bgm=True)
+    assert "禁止任何 BGM" in section
+    assert "旁白" in section
+    assert "后期外部 TTS" not in section
     assert "轻快专业" not in section
 
 

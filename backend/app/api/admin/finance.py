@@ -12,7 +12,11 @@ from app.services.admin.upstream_usage import sync_upstream_usage
 router = APIRouter(prefix="/finance", tags=["admin-finance"])
 
 
-@router.get("/daily", response_model=AdminFinanceDailyOut)
+@router.get("/daily", response_model=AdminFinanceDailyOut,
+    summary="查看每日财务汇总",
+    description="管理员按日查看最近 days 天的本地扣费、本地成本、Token 用量、调用次数、官方实际成本与利润；days 支持 1 至 90 天。",
+    response_description="操作成功，返回结果详见响应结构",
+)
 async def admin_finance_daily(
     days: int = Query(30, ge=1, le=90),
     _admin: User = Depends(get_current_admin),

@@ -1,0 +1,1170 @@
+/* 自动生成：scripts/gen_dark_css.py — 暗色主题颜色覆盖（勿手改） */
+/* canvas/canvasTidy.css */
+html.dark .pf-tidy-motion{background:linear-gradient(90deg,#1b2c233d,transparent 18%,transparent 82%,#3d301240)}
+html.dark .pf-tidy-hand>span{color:#dcb15e}
+html.dark .pf-tidy-progress{border:1px solid #2d3d39;background:#1a1a1af5;box-shadow:0 16px 56px #0000007e;color:#9db1c7}
+html.dark .pf-tidy-progress-title{color:#3f8478}
+html.dark .pf-tidy-progress-title>span{color:#717f8a}
+html.dark .pf-tidy-progress p{color:#7a8893}
+html.dark .pf-tidy-progress-track{background:#252c2a}
+html.dark .pf-tidy-progress-track i{background:linear-gradient(90deg,#4c9183,#e0c990)}
+html.dark .pf-tidy-progress footer{color:#69747d}
+html.dark .pf-tidy-progress button{border:0;background:#212b28;color:#8db7ae}
+html.dark .pf-tidy-progress button:focus-visible{outline:2px solid #499f89}
+html.dark .pf-flow-area.is-organizing .react-flow__node[data-tidy-active=true]>.pf-skel{outline:2px solid #4a9582}
+html.dark .pf-source-dock .pf-tidy-trigger{color:#81b7ab}
+html.dark .pf-group-frame.is-organized{border-color:#3c514b;background:linear-gradient(135deg,#1d2c2654,#1d221d38)}
+html.dark .pf-group-frame.is-organized>header{color:#80aea1}
+/* canvas/composition.css */
+html.dark .pf-composition-editor{border:1px solid #2f2936;background:#1a1a1a;color:#beb7c6;box-shadow:0 20px 65px #00000085}
+html.dark .pf-composition-editor p{color:#7c7285}
+html.dark .pf-composition-editor button{border:1px solid #2e2935;background:#1a1a1a;color:#8a779d}
+html.dark .pf-composition-clips article{border:1px solid #2c2532;background:#1b1823}
+html.dark .pf-composition-preview{background:#29252f;color:#615270}
+html.dark .pf-composition-preview>b{background:#16101af2;color:#1a1a1a}
+html.dark .pf-composition-clips .pf-clip-title{border:0;background:transparent;color:#b0a3bc}
+html.dark .pf-composition-clips article>small{color:#c9985d}
+html.dark .pf-composition-warning{background:#362610}
+html.dark .pf-composition-actions{border-top:1px solid #29232f}
+html.dark .pf-composition-actions span{color:#776780}
+html.dark .pf-composition-actions>button{border:0;background:#8864ad;color:#1a1a1a}
+html.dark .pf-composition-result video{background:#282828}
+html.dark .pf-composition-node{color:#867790}
+html.dark .pf-composition-node small{color:#c89a6f}
+html.dark .pf-composition-node-footer{background:#1a1a1a;border:1px solid #2a2430;box-shadow:0 12px 35px #00000049}
+html.dark .pf-composition-node-footer button{border:0;background:#c5c1cc;color:#1a1a1a}
+/* canvas/frameAnalysis.css */
+html.dark .pf-frame-analysis{background:#1a1a1a;border:1px solid #272e38;box-shadow:0 24px 100px #00000085;color:#aabad1}
+html.dark .pf-frame-analysis>header,html.dark .pf-frame-analysis>footer{border-bottom:1px solid #21272f}
+html.dark .pf-frame-analysis button{border:1px solid #272e38;background:#1a1a1a;color:inherit}
+html.dark .pf-frame-analysis button.is-primary,html.dark .pf-frame-analysis button.is-active{background:#0f1e35;border-color:#8cb0e3;color:#2a6ab9}
+html.dark .pf-frame-analysis>footer{border-bottom:0;border-top:1px solid #21272f}
+html.dark .pf-analysis-settings{border:0;border-bottom:1px solid #21272f}
+html.dark .pf-analysis-settings select,html.dark .pf-analysis-settings input[type=number]{border:1px solid #272e38;background:#1a1a1a;color:inherit}
+html.dark .pf-analysis-content{background:#181e25}
+html.dark .pf-analysis-content>nav{border-right:1px solid #252c34}
+html.dark .pf-analysis-content small{color:#76879f}
+html.dark .pf-analysis-content>main>img,html.dark .pf-analysis-content>main>video{background:#21272f}
+html.dark .pf-analysis-node button{border:0;background:#151f2a;color:#406692}
+/* canvas/imageEditor.css */
+html.dark .pf-image-edit-dialog{background:#1a1a1a;color:#b8bac6;border:1px solid #272831;box-shadow:0 24px 90px #000000a1}
+html.dark .pf-image-edit-dialog button{background:#1a1a1a;color:#898c9a;border:1px solid #292a32}
+html.dark .pf-image-edit-dialog button[aria-pressed=true]{background:#221f2b;color:#8462af;border-color:#3e344b}
+html.dark .pf-image-edit-dialog button:focus-visible{outline:2px solid #7755a5}
+html.dark .pf-image-edit-tabs{background:#222227}
+html.dark .pf-image-edit-tabs button{border:0;background:transparent}
+html.dark .pf-image-edit-tabs button[aria-pressed=true]{background:#1a1a1a}
+html.dark .pf-image-edit-tools input,html.dark .pf-mask-tools input{accent-color:#8562ad}
+html.dark .pf-crop-selection{border:1px solid #1a1a1a;box-shadow:0 0 0 2000px #000000fb}
+html.dark .pf-crop-selection:after{background:linear-gradient(to right,transparent 33.1%,#1a1a1a70 33.3%,transparent 33.5%,transparent 66.4%,#1a1a1a70 66.6%,transparent 66.8%),linear-gradient(to bottom,transparent 33.1%,#1a1a1a70 33.3%,transparent 33.5%,transparent 66.4%,#1a1a1a70 66.6%,transparent 66.8%)}
+html.dark .pf-image-edit-dialog .pf-crop-handle{border:1px solid #554865;background:#1a1a1a}
+html.dark .pf-crop-dimensions{color:#737281}
+html.dark .pf-image-edit-prompt{color:#8a8897}
+html.dark .pf-image-edit-prompt textarea{border:1px solid #312f39;background:#1e1b23}
+html.dark .pf-image-edit-prompt textarea:focus{outline:2px solid #7755a5}
+html.dark .pf-image-edit-dialog footer span{color:#75717f}
+html.dark .pf-image-edit-dialog .is-primary{background:#8562ad;color:#1a1a1a;border-color:#8562ad}
+/* canvas/imageTools.css */
+html.dark .pf-image-tools-editor{border:1px solid #262e38;background:#1a1a1a;box-shadow:0 24px 100px #00000085;color:#98afca}
+html.dark .pf-image-tools-editor>header{border-bottom:1px solid #202731}
+html.dark .pf-image-tools-preview{background:#1c222b}
+html.dark .pf-image-tools-layout aside{border-left:1px solid #212933}
+html.dark .pf-image-tools-layout input[type=range]{accent-color:#7396c2}
+html.dark .pf-image-tools-layout select{border:1px solid #29313c;background:#1a1a1a;color:inherit}
+html.dark .pf-image-tools-editor button{border:1px solid #27313c;background:#1a1a1a;color:inherit}
+html.dark .pf-image-tools-editor .is-primary{background:#0f1e35;border-color:#234a7f;color:#2e6bb7}
+html.dark .pf-image-tools-editor p,html.dark .pf-image-tools-editor footer span{color:#63778f}
+html.dark .pf-image-tools-editor footer{border-top:1px solid #202731}
+html.dark .pf-image-angle-map{border:1px dashed #384352;background:#141d29}
+html.dark .pf-image-angle-map span{background:#1d2a39}
+html.dark .pf-image-angle-map i{border:1px solid #334f73;color:#3c5b83}
+/* canvas/inlineAudio.css */
+html.dark .pf-audio-player{color:#859bb8}
+html.dark .pf-audio-wave{background:#171d26}
+html.dark .pf-audio-wave i{background:#384352}
+html.dark .pf-audio-wave i.is-played{background:#668fc4}
+html.dark .pf-audio-wave span{color:#566980}
+html.dark .pf-audio-player>input{accent-color:#668fc4}
+html.dark .pf-audio-controls button{background:#17212f;color:#507cb3;border:0}
+html.dark .pf-audio-controls select{border:0;color:inherit;background:transparent}
+html.dark .pf-audio-controls input{accent-color:#668fc4}
+/* canvas/mediaVariants.css */
+html.dark .pf-variant-controls{background:#101012;color:#1a1a1a;box-shadow:0 3px 12px #0000005f}
+html.dark .pf-variant-controls button{border:0;background:transparent;color:inherit}
+html.dark .pf-variant-controls button:hover{background:#1a1a1a24}
+html.dark .pf-variant-thumbs{background:#1a1a1a}
+html.dark .pf-variant-thumbs button{border:2px solid transparent;background:#222027}
+html.dark .pf-variant-thumbs button[aria-pressed=true]{border-color:#8b67ae;box-shadow:0 0 0 1px #000000a1}
+html.dark .pf-media-comparison{border:1px solid #2d2933;background:#1a1a1a;color:#babcc7;box-shadow:0 20px 70px #00000085}
+html.dark .pf-media-comparison button{border:1px solid #2e2a36;background:#1a1a1a;color:#9b8fa7}
+html.dark .pf-compare-pickers select{border:1px solid #2f2b34;background:#1e1b23;color:#b2adb9}
+html.dark .pf-compare-modes button[aria-pressed=true],html.dark .pf-compare-adopt button{background:#8865ac;color:#1a1a1a;border-color:#8865ac}
+html.dark .pf-compare-stage figure{background:#222228}
+html.dark .pf-compare-stage figcaption{background:#101012;color:#1a1a1a}
+html.dark .pf-compare-stage.is-wipe>i{background:#1a1a1a;box-shadow:0 0 7px #000000}
+html.dark .pf-compare-slider input{accent-color:#8865ac}
+html.dark .pf-compare-note{color:#7b7385}
+html.dark .pf-media-comparison th,html.dark .pf-media-comparison td{border-bottom:1px solid #2c2932}
+html.dark .pf-media-comparison th:first-child{color:#82758b}
+/* canvas/menuKeyboard.css */
+html.dark .pf-add-menu [role="menuitem"]:focus-visible,html.dark .pf-context-menu [role="menuitem"]:focus-visible{outline:2px solid #709fe5;background:#0e1e32}
+/* canvas/textGeneration.css */
+html.dark .pf-text-generation{background:#1a1a1a;border:1px solid #262d38;box-shadow:0 24px 100px #00000085;color:#aabad1}
+html.dark .pf-text-generation>header,html.dark .pf-text-generation>footer{border-bottom:1px solid #222831}
+html.dark .pf-text-generation button{border:1px solid #28313d;background:#1a1a1a;color:inherit}
+html.dark .pf-text-generation button.is-primary{background:#0f1d33;color:#3673c2;border-color:#324560}
+html.dark .pf-text-generation aside{border-right:1px solid #222831;background:#171d26}
+html.dark .pf-text-generation select,html.dark .pf-text-generation textarea{border:1px solid #28313d;background:#1a1a1a;color:inherit}
+html.dark .pf-text-generation p{color:#6b7b93}
+html.dark .pf-text-generation>footer{border-bottom:0;border-top:1px solid #222831}
+/* canvas/textNodeEditor.css */
+html.dark .pf-text-editor-backdrop{background:#000000ac}
+html.dark .pf-text-editor{background:#1a1a1a;color:#bfbfc8;border:1px solid #2b2b2f;box-shadow:0 24px 80px #00000085;outline:none}
+html.dark .pf-text-editor-toolbar{background:#1d1d22;border-bottom:1px solid #2c2c31}
+html.dark .pf-text-editor-tool-group::before{background:#2f2f35}
+html.dark .pf-text-editor button{border:0;background:transparent;color:#8e8e99}
+html.dark .pf-text-editor button:hover{background:#26262c;color:#bcbcc7}
+html.dark .pf-text-editor button:focus-visible{outline:2px solid #717185}
+html.dark .pf-text-editor button[aria-pressed=true]{background:#282830;color:#c3c3d1}
+html.dark .pf-text-editor-status{color:#84848f}
+html.dark .pf-text-editor-content{scrollbar-color:#727272 transparent}
+html.dark .pf-text-editor .tiptap{outline:none;caret-color:#b9b9c4}
+html.dark .pf-text-editor .tiptap blockquote{border-left:3px solid #323239;color:#85858f}
+html.dark .pf-text-editor .tiptap hr{border:0;border-top:1px solid #303037}
+html.dark .pf-text-editor .tiptap a{color:#6172ae}
+html.dark .pf-text-editor .tiptap code{background:#212126}
+html.dark .pf-text-editor .tiptap pre{background:#1f1f23}
+html.dark .pf-text-editor .tiptap pre code{background:none}
+html.dark .pf-text-editor .tiptap td,html.dark .pf-text-editor .tiptap th{border:1px solid #2f2f36}
+html.dark .pf-text-editor .tiptap th{background:#1d1d22}
+/* projectTeams.css */
+html.dark .pf-project-teams{background:var(--pf-card);border:1px solid var(--pf-line-strong)}
+html.dark .pf-project-teams p{color:var(--pf-muted)}
+html.dark .pf-project-teams button{border:1px solid var(--pf-line-strong);background:var(--pf-card);color:var(--pf-ink)}
+html.dark .pf-project-teams button[aria-pressed=true]{background:var(--pf-lime-soft);border-color:var(--pf-accent-strong)}
+html.dark .pf-project-teams-grid article{border:1px solid var(--pf-line-strong)}
+html.dark .pf-project-teams-grid article>span{color:var(--pf-muted)}
+html.dark .pf-project-teams footer{border-top:1px solid var(--pf-line-strong)}
+/* storyboard/storyboard.css */
+html.dark .pf-board-workspace{--board-bg:#1b1b23;--board-panel:#1a1a1a;--board-soft:#1f1c23;--board-line:#2a2730;--board-muted:#777381;--board-ink:#bab9c3;--board-accent:#8a67ac;background:var(--board-bg);color:var(--board-ink)}
+html.dark .pf-board-workspace button{color:inherit;background:transparent;border:0}
+html.dark .pf-board-workspace button:hover{background:#23222a}
+html.dark .pf-board-workspace button:focus-visible{outline:2px solid #633f82}
+html.dark .pf-board-workspace small{color:var(--board-muted)}
+html.dark .pf-board-tabs button{color:var(--board-muted)}
+html.dark .pf-board-tabs button[aria-pressed=true]{background:#281f31;color:var(--board-accent)}
+html.dark .pf-board-section,html.dark .pf-board-detail{border:1px solid var(--board-line);background:var(--board-panel)}
+html.dark .pf-board-section>header{border-bottom:1px solid var(--board-line)}
+html.dark .pf-board-section>header button{color:var(--board-muted)}
+html.dark .pf-board-items{scrollbar-color:#4d4956 transparent}
+html.dark .pf-board-workspace .pf-board-card{border:1px solid transparent;border-bottom-color:var(--board-line)}
+html.dark .pf-board-card.is-active{background:#281f30!important;border-color:#644182!important}
+html.dark .pf-board-card-title{color:var(--board-muted)}
+html.dark .pf-board-thumb{background:var(--board-soft);color:#605c69}
+html.dark .pf-board-thumb.is-text{color:var(--board-ink)}
+html.dark .pf-board-empty{color:var(--board-muted)}
+html.dark .pf-board-empty button{border:1px solid var(--board-line)}
+html.dark .pf-board-detail>header{border-bottom:1px solid var(--board-line)}
+html.dark .pf-board-detail>header>button{color:var(--board-muted)}
+html.dark .pf-board-node-heading>svg{color:#5b4175}
+html.dark .pf-board-node-heading>span{color:var(--board-muted)}
+html.dark .pf-board-node-heading>span.is-busy{color:#ce9736}
+html.dark .pf-board-node-heading input{border:1px solid var(--board-line);color:inherit;background:var(--board-panel)}
+html.dark .pf-board-menu{background:var(--board-panel);border:1px solid var(--board-line);box-shadow:0 12px 36px #0000005b}
+html.dark .pf-board-media-tools{border:1px solid var(--board-line)}
+html.dark .pf-board-stage{border:1px solid #5a3c75;box-shadow:0 0 0 2px #0000003c;color:#403d44;background:var(--board-panel)}
+html.dark .pf-board-stage.has-media{background:#dcdce1}
+html.dark .pf-board-audio-start{color:var(--board-ink)}
+html.dark .pf-board-progress{color:var(--board-muted);background:radial-gradient(ellipse,#292030,transparent 75%)}
+html.dark .pf-board-progress progress{accent-color:var(--board-accent)}
+html.dark .pf-board-workspace .pf-composer-card.is-attached{box-shadow:none;border:1px solid var(--board-line)}
+html.dark .pf-board-variants button{border:1px solid var(--board-line)}
+html.dark .pf-board-variants button[aria-pressed=true]{border-color:var(--board-accent)}
+html.dark .pf-board-writing-tabs button[aria-pressed=true]{color:var(--board-accent);background:#281f31}
+html.dark .pf-board-workspace .pf-text-editor-embedded .pf-text-editor{box-shadow:none;background:var(--board-panel);color:var(--board-ink)}
+html.dark .pf-board-workspace .pf-text-editor-embedded .pf-text-editor-toolbar{background:var(--board-panel);border-top:1px solid var(--board-line);border-bottom:0}
+html.dark .pf-board-sequence{background:var(--board-panel);border:1px solid var(--board-line);box-shadow:0 2px 5px #0000001d}
+html.dark .pf-board-sequence-items{border-top:1px solid var(--board-line)}
+html.dark .pf-board-shot{border:1px solid var(--board-line)}
+html.dark .pf-board-shot label{color:var(--board-muted)}
+html.dark .pf-board-shot input{border:1px solid var(--board-line);background:var(--board-soft);color:inherit}
+html.dark .pf-board-soundtrack{border-top:1px solid var(--board-line)}
+html.dark .pf-board-soundtrack select{border:1px solid var(--board-line);background:var(--board-soft);color:inherit}
+html.dark .pf-board-preview-stage{background:#dfdfdf}
+html.dark .pf-board-notice{background:var(--board-panel);border:1px solid var(--board-line);box-shadow:0 6px 24px #0000003a}
+html.dark .pf-board-dock-row>button{background:var(--board-panel);border:1px solid var(--board-line)}
+html.dark .pf-board-add>div{background:var(--board-panel);border:1px solid var(--board-line);box-shadow:0 6px 24px #0000005f}
+html.dark .is-dark .pf-board-workspace{--board-bg:#ceccd7;--board-panel:#c6c3d0;--board-soft:#bfbcc9;--board-line:#afaaba;--board-muted:#5b5468;--board-ink:#2c2631}
+html.dark .is-dark .pf-board-workspace button:hover{background:#b7aec1}
+html.dark .is-dark .pf-board-card.is-active{background:#afa0c0!important}
+html.dark .is-dark .pf-board-tabs button[aria-pressed=true]{background:#afa0c0;color:#462e59}
+/* studioModelSelect.css */
+html.dark .pf-model-mark{color:#babcc7}
+html.dark .pf-model-mark.is-seed{color:#7060a7}
+html.dark .pf-model-mark.is-deepseek{color:#6a8bef}
+html.dark .pf-model-select.is-large>.pf-composer-param{border:1px solid #2b2932;background:#1d1d22;color:#babcc7}
+html.dark .pf-model-select>.pf-composer-param[aria-expanded=true],html.dark .pf-model-select>.pf-composer-param:focus-visible{border-color:#7b55a1;outline:2px solid #7b55a11a}
+html.dark .pf-composer-popover.pf-model-options{background:#1a1a1a;border:1px solid #24232a;box-shadow:0 16px 48px #00000064;color:#babcc7}
+html.dark .pf-composer-popover.pf-model-options button{border:0;background:transparent;color:inherit}
+html.dark .pf-composer-popover.pf-model-options button:hover,html.dark .pf-composer-popover.pf-model-options button:focus-visible{background:#201e27;outline:0}
+html.dark .pf-composer-popover.pf-model-options button[aria-checked=true]{background:#241f2b}
+html.dark .pf-model-options .pf-model-mark{background:#212127}
+html.dark .pf-model-options .pf-model-option-copy small{color:#797884}
+html.dark .pf-model-options button>svg:last-child{color:#8a66ac}
+html.dark .pf-workspace-dialog .pf-default-reset{border:0;background:transparent;color:#7b7683}
+html.dark .pf-default-field>small{color:#797382}
+html.dark .pf-workspace-dialog.is-defaults::backdrop{background:#100e150a}
+html.dark .is-defaults .pf-panel-note{border-top:1px solid #2a2630;color:#797382}
+/* workspaceToolbar.css */
+html.dark .pf-studio-shell .pf-workspace-toolbar{--toolbar-panel:#1a1a1a;--toolbar-line:#2a2730;--toolbar-ink:#bab9c3;--toolbar-accent:#8a67ac;--toolbar-hover:#23222a;--toolbar-active:#281f31;border:1px solid var(--toolbar-line);background:var(--toolbar-panel);color:var(--toolbar-ink);box-shadow:0 2px 12px #00000026}
+html.dark .pf-studio-shell.is-dark .pf-workspace-toolbar{--toolbar-panel:#c6c3d0;--toolbar-line:#afaaba;--toolbar-ink:#2c2631;--toolbar-hover:#b7aec1;--toolbar-active:#afa0c0}
+html.dark .pf-studio-shell .pf-workspace-toolbar > button,html.dark .pf-studio-shell .pf-workspace-toolbar > .pf-board-add > button{border:0;background:transparent;color:var(--toolbar-ink)}
+html.dark .pf-studio-shell .pf-workspace-toolbar > button:hover:not(:disabled),html.dark .pf-studio-shell .pf-workspace-toolbar > .pf-board-add > button:hover:not(:disabled){background:var(--toolbar-hover)}
+html.dark .pf-studio-shell .pf-workspace-toolbar > button[aria-pressed=true],html.dark .pf-studio-shell .pf-workspace-toolbar > button.is-active{background:var(--toolbar-active);color:var(--toolbar-accent)}
+html.dark .pf-studio-shell .pf-workspace-toolbar > .pf-toolbar-primary,html.dark .pf-studio-shell .pf-workspace-toolbar > .pf-board-add > .pf-toolbar-primary{background:var(--toolbar-accent);color:#ffffff}
+html.dark .pf-studio-shell .pf-workspace-toolbar > .pf-toolbar-primary:hover:not(:disabled),html.dark .pf-studio-shell .pf-workspace-toolbar > .pf-board-add > .pf-toolbar-primary:hover:not(:disabled){background:#9977b8}
+html.dark .pf-studio-shell .pf-workspace-toolbar button:focus-visible{outline:2px solid #633f82}
+html.dark .pf-workspace-toolbar .pf-dock-sep{background:var(--toolbar-line)}
+html.dark .pf-studio-shell .pf-canvas-agent{border:1px solid #785c94;background:#b8a6cd;color:#261831;box-shadow:inset 0 1px 0 #00000064,0 4px 12px #00000064}
+html.dark .pf-canvas-agent-mark > .pf-canvas-agent-play{fill:#2f1d40;stroke:none}
+html.dark .pf-canvas-agent-mark > .pf-canvas-agent-spark{fill:#4d5c2a;stroke:none}
+html.dark .pf-studio-shell .pf-canvas-agent:hover{background:#a791c0;border-color:#b89dd2;box-shadow:inset 0 1px 0 #0000007e,0 5px 18px #0000007e}
+html.dark .pf-studio-shell .pf-canvas-agent.is-open{background:#967ab3;border-color:#442f54;box-shadow:0 0 0 3px #00000066,0 4px 12px #00000064}
+html.dark .pf-studio-shell .pf-canvas-agent:focus-visible{outline:3px solid #633f82}
+html.dark .pf-canvas-agent-status{background:#4d5c2a;border:2px solid #b8a6cd}
+html.dark .pf-canvas-agent-tooltip{color:#201628;background:#bfb2ce;box-shadow:0 4px 16px #0000005b}
+html.dark .pf-canvas-agent-tooltip > span{color:#403549}
+html.dark .pf-studio-shell.is-dark .pf-canvas-agent{background:#b09ac3;border-color:#74518f;box-shadow:inset 0 1px 0 #00000052,0 4px 16px #00000085}
+/* workspaceTour.css */
+html.dark .pf-workspace-tour{color:#b5bac8}
+html.dark .pf-tour-mask{fill:#080b12a6}
+html.dark .pf-tour-focus{border:2px solid #213572;box-shadow:0 0 0 4px #00000068}
+html.dark .pf-tour-card{background:#1a1a1a;border:1px solid #242831;box-shadow:0 18px 60px #000000a1}
+html.dark .pf-tour-card header{color:#6f778b}
+html.dark .pf-tour-card header b{color:#8899b7}
+html.dark .pf-tour-card button{border:0;background:transparent;color:inherit}
+html.dark .pf-tour-card button:hover{background:#1a202a}
+html.dark .pf-tour-card button:focus-visible{outline:2px solid #7795da}
+html.dark .pf-tour-progress i{background:#20252e}
+html.dark .pf-tour-progress i.is-done{background:#768cbf}
+html.dark .pf-tour-card h2{outline:none}
+html.dark .pf-tour-card p{color:#8d99ac}
+html.dark .pf-tour-card small{color:#656d7d}
+html.dark .pf-tour-card .pf-tour-skip{color:#656d7d}
+html.dark .pf-tour-card .pf-tour-next{background:#a9b3c9;color:#1a1a1a}
+html.dark .pf-tour-card .pf-tour-next:hover{background:#879ab9}
+/* printfilmStudio.css */
+html.dark .pf-studio-shell{--bg:#dadce0;--panel:#d3d4d9;--line:#bfc0c6;--text:#28292d;--muted:#696c75;background:var(--bg);color:var(--text)}
+html.dark .pf-studio-topbar{border-bottom:1px solid #c6c7cc;background:#d6d8db}
+html.dark .pf-top-icon,html.dark .pf-agent-head-actions button,html.dark .pf-panel-title button,html.dark .pf-menu-head button{color:#50535f;background:transparent;border:0}
+html.dark .pf-top-icon:hover,html.dark .pf-agent-head-actions button:hover{background:#c4c5cb;color:#1a1a1a}
+html.dark .pf-project-name span{color:#80838c}
+html.dark .pf-view-toggle{background:#cccdd4;border:1px solid #bcbec6}
+html.dark .pf-view-toggle button{border:0;color:#62646e;background:transparent}
+html.dark .pf-view-toggle button.is-active{background:#4d95f0;color:#ffffff}
+html.dark .pf-status{color:#6a6e79}
+html.dark .pf-status i{background:#63bd96}
+html.dark .pf-save{background:#4594f1;color:#ffffff;border:0}
+html.dark .pf-left-rail{background:#d6d8db;border-right:1px solid #c4c5ca}
+html.dark .pf-left-rail button{border:0;background:transparent;color:#6f727d}
+html.dark .pf-left-rail button:hover,html.dark .pf-left-rail button.is-active{color:#70b1ff;background:#bac3d4}
+html.dark .pf-flow-area{background:#dadce0}
+html.dark .pf-flow-area .react-flow{background:#dadce0;background-image:radial-gradient(#c4c6cd 1px,transparent 1px)}
+html.dark .pf-flow-area .react-flow__controls{background:#cbccd1;border:1px solid #b7b8bf;box-shadow:none}
+html.dark .pf-flow-area .react-flow__controls-button{background:#cbccd1;border-color:#b7b8bf;fill:#53565e}
+html.dark .pf-flow-area .react-flow__minimap{background:#ced1d7;border:1px solid #b3b6bd}
+html.dark .pf-flow-tip{color:#6a6f7a}
+html.dark .pf-flow-tools{background:#c9cad0;border:1px solid #b6b7be;box-shadow:0 10px 28px #000000f5}
+html.dark .pf-flow-tools button{border:0;color:#494d57;background:transparent}
+html.dark .pf-flow-tools button:first-child{background:#222326;color:#d7d8dd}
+html.dark .pf-flow-tools button:hover,html.dark .pf-flow-tools button.is-active{background:#b5bac4;color:#1a1a1a}
+html.dark .pf-flow-tools span{color:#62646e}
+html.dark .pf-flow-divider{background:#afb0b7}
+html.dark .pf-node{background:#ced1d7;border:1px solid #a6a8b1;box-shadow:0 10px 30px #000000f5;color:#2b2c30}
+html.dark .pf-node.is-selected{border-color:#68aaf7;box-shadow:0 0 0 1px #000000,0 12px 30px #000000}
+html.dark .pf-node-video,html.dark .pf-node-task{border-color:#b3817f}
+html.dark .pf-node-titlebar{border-bottom:1px solid #bcbfc7}
+html.dark .pf-node-state{color:#ef8080}
+html.dark .pf-node-content{color:#5b606c}
+html.dark .pf-node-preview{background:#dadbdf}
+html.dark .pf-node-meta{color:#7f828d;border-top:1px solid #bcbfc7}
+html.dark .pf-node .react-flow__handle{background:#5b616c;border:2px solid #ced1d7}
+html.dark .pf-node-menu,html.dark .pf-assets-panel{background:#d4d5da;border-right:1px solid #bebfc7;box-shadow:10px 0 30px #000000cf}
+html.dark .pf-node-menu p{color:#737880}
+html.dark .pf-node-menu-item{color:#37373b;background:transparent;border:0}
+html.dark .pf-node-menu-item:hover{background:#c1c5cd}
+html.dark .pf-node-menu-item svg:last-child{color:#6c717c}
+html.dark .pf-node-menu-icon{color:#004aa2;background:#a6b9d6}
+html.dark .pf-agent{background:#d2d4d8;border:1px solid #b7b9c1;box-shadow:0 18px 45px #000000}
+html.dark .pf-agent-header{border-bottom:1px solid #bebfc7}
+html.dark .pf-agent-person>span,html.dark .pf-agent-response>span{background:#3969ac;color:#bcdcff}
+html.dark .pf-agent-person small{color:#777b85}
+html.dark .pf-agent-spark{background:#a3b4d0;color:#70aaff}
+html.dark .pf-agent-intro p{color:#5a5e68}
+html.dark .pf-agent-intro button{border:1px solid #b6bac3;background:#c9ccd3;color:#37393e}
+html.dark .pf-agent-intro button svg{color:#06499c}
+html.dark .pf-agent-response{border-top:1px solid #bebfc7}
+html.dark .pf-agent-response small{color:#7faff0}
+html.dark .pf-agent-response p{color:#333438}
+html.dark .pf-agent-input{border-top:1px solid #bebfc7}
+html.dark .pf-agent-input textarea{background:transparent;border:0;outline:0;color:#2b2c30}
+html.dark .pf-agent-input textarea::placeholder{color:#8a8e98}
+html.dark .pf-agent-input>div{color:#7e828b}
+html.dark .pf-agent-input>div button{border:0;background:transparent;color:#737780}
+html.dark .pf-send{background:#5ba7f9!important;color:#ffffff!important}
+html.dark .pf-assets-panel{border-left:1px solid #bebfc7;border-right:0;box-shadow:-10px 0 30px #000000cf}
+html.dark .pf-search{border:1px solid #b9bcc2;color:#727680}
+html.dark .pf-search input{border:0;outline:0;background:transparent;color:#363636}
+html.dark .pf-empty-panel{color:#727781}
+html.dark .pf-empty-panel button{border:0;color:#134386;background:#99b1d5}
+html.dark .pf-studio-footer{background:#d6d7da;border-top:1px solid #c4c5ca;color:#777b85}
+html.dark .pf-footer-toggle{background:transparent;border:0;color:#51545f}
+html.dark .pf-open-agent{border:0;background:#99aed2;color:#1c375f}
+html.dark .pf-footer-drawer{background:#d0d2d7;border:1px solid #b4b6be;box-shadow:0 -10px 28px #000000}
+html.dark .pf-drawer-tab{color:#62656f}
+html.dark .pf-drawer-tab.is-active{background:#a5b5cf;color:#183251}
+html.dark .pf-node-selection{border:1px solid #7f9dc0;background:#b2c3db;color:#22354c;box-shadow:0 8px 24px #000000}
+html.dark .pf-node-selection button{border:0;background:#be848c;color:#411316}
+html.dark .pf-asset-item{border:1px solid transparent;background:#c9ccd3;color:#35373c}
+html.dark .pf-asset-item:hover{border-color:#5c87b9;background:#bac2ce}
+html.dark .pf-asset-item small{color:#6f7481}
+html.dark .pf-asset-thumb{background:#bdc1cb;color:#1e4f8a}
+html.dark .pf-asset-item>svg{color:#125094}
+html.dark .pf-agent-events{border-top:1px solid #bebfc7}
+html.dark .pf-agent-event{color:#5f6673}
+html.dark .pf-agent-event span{background:#b9c0cc;color:#2a4b77}
+html.dark .pf-agent-event-message_delta{color:#323c48}
+html.dark .pf-agent-event-error{color:#8e1212}
+html.dark .pf-agent-event-error span{background:#c9959d;color:#4f1717}
+html.dark .pf-stop{background:#c5636c!important}
+html.dark .pf-stop:hover{background:#db7880!important}
+html.dark .pf-top-slash{color:#94979f}
+html.dark .pf-episode-switch,html.dark .pf-model-switch,html.dark .pf-share-button,html.dark .pf-balance-button,html.dark .pf-account-button{border:1px solid #b7bac2;background:#c8c9d0;color:#37383d}
+html.dark .pf-episode-switch{border:0;background:transparent;color:#484a50}
+html.dark .pf-top-save-state{color:#deb268}
+html.dark .pf-top-icon-group{border:1px solid #b7bac2;background:#c8c9d0}
+html.dark .pf-share-button{background:#b6a8c3;border-color:#9c89ac;color:#33223e}
+html.dark .pf-balance-button{color:#46484e}
+html.dark .pf-storyboard{background:#c9cad1}
+html.dark .pf-story-column{border:1px solid #aeb0b8;background:#bdbec7;box-shadow:0 12px 28px #00000085}
+html.dark .pf-story-column>header{border-bottom:1px solid #aeb0b8}
+html.dark .pf-story-title{color:#292a31}
+html.dark .pf-story-title em{color:#34363b}
+html.dark .pf-story-actions button{border:0;background:transparent;color:#494e59}
+html.dark .pf-story-empty{color:#474a50}
+html.dark .pf-story-empty button{border:1px solid #a5a8b2;background:#b8bac4;color:#2b2f37}
+html.dark .pf-story-card{border:1px solid transparent;background:#c8c9d0;color:#2b2c30}
+html.dark .pf-story-card:hover{border-color:#849fc6;box-shadow:0 0 0 1px #00000085}
+html.dark .pf-story-card-heading small{color:#535863}
+html.dark .pf-story-card>img{background:#cbccd2}
+html.dark .pf-story-placeholder{background:#c8c9d0;color:#676c77}
+html.dark .pf-story-placeholder p{color:#35373c}
+html.dark .pf-story-card-meta{color:#545963;border-top:1px solid #b4b5be}
+html.dark .pf-selection-toolbar{border:1px solid #a0a3ac;background:#bdbec7;box-shadow:0 12px 35px #000000}
+html.dark .pf-selection-toolbar button{border:0;background:transparent;color:#212327}
+html.dark .pf-selection-toolbar button:hover{background:#a8acb5}
+html.dark .pf-toolbar-separator{background:#9a9da7}
+html.dark .pf-composer{border:1px solid #a3a5ae;background:#bdbec7;box-shadow:0 18px 55px #000000}
+html.dark .pf-composer-tabs button{border:0;background:#b2b4bd;color:#34363c}
+html.dark .pf-composer-tabs button.is-active{background:#aca1b6;color:#2e123d}
+html.dark .pf-composer-tabs button:last-child{color:#50535f;background:transparent}
+html.dark .pf-composer textarea{border:0;outline:0;background:transparent;color:#212226}
+html.dark .pf-composer textarea::placeholder{color:#4c4e58}
+html.dark .pf-composer-reference{color:#5b606c}
+html.dark .pf-reference-chip{background:#a9abb4;color:#2c2e34}
+html.dark .pf-composer-reference button{border:0;background:#b0b3bc;color:#2d3036}
+html.dark .pf-composer-footer{border-top:1px solid #aaadb5;color:#4c505b}
+html.dark .pf-composer-price{color:#4e3957}
+html.dark .pf-composer-send{border:0;background:#242425;color:#c1c2c8}
+html.dark .pf-media-preview{background:#030304}
+html.dark .pf-media-preview-card{border:1px solid #9b9eaa;background:#d0d2d7;box-shadow:0 24px 80px #000000}
+html.dark .pf-media-preview-card>button{border:1px solid #9396a1;background:#bdc0c7;color:#212327}
+html.dark .pf-task-row{background:#c8cad1;color:#46484e}
+html.dark .pf-task-row b{color:#2a4767}
+html.dark .pf-task-row b.is-completed{color:#95daba}
+html.dark .pf-task-row b.is-failed{color:#8d1212}
+html.dark .pf-reset-button{border:1px solid #c1969e;background:#d0b9c0;color:#582429}
+html.dark .pf-reset-button:hover{background:#cb9da7}
+html.dark .pf-node-actions button,html.dark .pf-crop-ratios button{border:1px solid #b2b4bd;background:#c2c5cc;color:#35373c}
+html.dark .pf-node-more{border:0;background:transparent;color:#5e6470}
+html.dark .pf-node-audio{border:0;background:#d3d6dc;color:#3f4753}
+html.dark .pf-context-menu{border:1px solid #a8abb5;background:#c1c4cb;box-shadow:0 16px 40px #000000}
+html.dark .pf-context-menu button{border:0;background:transparent;color:#292b31}
+html.dark .pf-context-menu button:hover:not(:disabled){background:#aeb2bd}
+html.dark .pf-context-menu button:disabled{color:#868a94}
+html.dark .pf-inspector{border:1px solid #a8abb5;background:#c8cad1;box-shadow:0 18px 48px #000000}
+html.dark .pf-inspector header button,html.dark .pf-inspector footer button{border:0;background:#b1b5bf;color:#282828}
+html.dark .pf-inspector label{color:#50545f}
+html.dark .pf-inspector input,html.dark .pf-inspector textarea{border:1px solid #b0b3bc;background:#d1d3d8;color:#212226}
+html.dark .pf-card{border:1px solid #b3b6be;background:#c9cad2;color:#22242b;box-shadow:0 16px 36px #000000}
+html.dark .pf-card.is-selected{border-color:#42597f;box-shadow:0 0 0 1px #000000,0 16px 36px #000000}
+html.dark .pf-card-group{background:#0b0c0eb1}
+html.dark .pf-card-head{color:#3f4147}
+html.dark .pf-card-head button{border:0;background:transparent;color:#5d6470}
+html.dark .pf-card-shot,html.dark .pf-card-media,html.dark .pf-card-empty{border:0;background:#d1d2d9}
+html.dark .pf-card-shot img,html.dark .pf-card-media{background:#d1d2d9}
+html.dark .pf-card-empty{color:#686d79}
+html.dark .pf-card-copy{color:#33363c}
+html.dark .pf-card-caption{color:#5d6470}
+html.dark .pf-card .react-flow__handle{background:#3f4b5a;border:2px solid #c9cad2}
+html.dark .pf-float-toolbar{border:1px solid #a4a6af;background:#bdbec7ee;box-shadow:0 12px 32px #000000}
+html.dark .pf-float-toolbar button{border:0;background:transparent;color:#1e2026}
+html.dark .pf-float-toolbar button:hover{background:#a8acb5}
+html.dark .pf-float-toolbar span{background:#969aa4}
+html.dark .pf-prompt-dock{border:1px solid #aaadb5;background:#c2c3caf2;box-shadow:0 22px 60px #000000}
+html.dark .pf-prompt-tabs button,html.dark .pf-ref-row button{border:0;background:#b3b6be;color:#282a2f}
+html.dark .pf-prompt-tabs button:last-child{background:transparent;color:#50545d}
+html.dark .pf-ref-row span{background:#b0b3bc;color:#363636}
+html.dark .pf-ref-row span button{background:transparent}
+html.dark .pf-prompt-dock textarea{border:0;outline:0;background:transparent;color:#1e2024}
+html.dark .pf-prompt-dock textarea::placeholder{color:#5d626c}
+html.dark .pf-prompt-dock footer{color:#494d58}
+html.dark .pf-prompt-dock footer button{border:0;background:transparent;color:#33353b}
+html.dark .pf-prompt-dock footer em{color:#504058}
+html.dark .pf-prompt-send{background:#232325!important;color:#c3c4ca!important}
+html.dark .react-flow__edge-path{stroke:#94adce}
+html.dark .pf-add-menu,html.dark .pf-history-panel{background:#d4d5da;border-right:1px solid #bebfc7;box-shadow:10px 0 30px #000000cf}
+html.dark .pf-add-menu header,html.dark .pf-history-panel header{border-bottom:1px solid #bec0c8}
+html.dark .pf-add-menu header button,html.dark .pf-history-panel header button{border:0;background:transparent;color:#50535f}
+html.dark .pf-add-item,html.dark .pf-add-group>button,html.dark .pf-add-children button{border:0;background:transparent;color:#33353a}
+html.dark .pf-add-item:hover,html.dark .pf-add-group>button:hover,html.dark .pf-add-children button:hover{background:#c1c5cd}
+html.dark .pf-add-icon{background:#a6b9d6;color:#004aa2}
+html.dark .pf-add-copy small{color:#737880}
+html.dark .pf-add-item>svg:last-child,html.dark .pf-add-group>button>svg:last-child,html.dark .pf-add-children button>svg:last-child{color:#6c717c}
+html.dark .pf-add-menu footer{border-top:1px solid #bec0c8}
+html.dark .pf-add-menu footer button{border:1px solid #b5b7c0;background:#c9ccd3;color:#36373c}
+html.dark .pf-add-menu footer button:hover{border-color:#6288b7;background:#bac2ce}
+html.dark .pf-history-item{border:1px solid transparent;background:#c9ccd3;color:#35373c}
+html.dark .pf-history-item:hover{border-color:#5c87b9}
+html.dark .pf-history-thumb{background:#bdc1cb;color:#1e4f8a}
+html.dark .pf-history-item small{color:#6f7481}
+html.dark .pf-history-error{color:#8e1212}
+html.dark .pf-card-empty small{color:#838892}
+html.dark .pf-flow-tools-left button,html.dark .pf-flow-tools-center button,html.dark .pf-flow-tools-right button{border:0;color:#494d57;background:transparent}
+html.dark .pf-flow-tools button:hover,html.dark .pf-flow-tools button.is-active{background:#b5bac4;color:#1a1a1a}
+html.dark .pf-flow-tools-center button:first-child{background:#222326;color:#d7d8dd}
+html.dark .pf-flow-brand{background:linear-gradient(135deg,#70acff,#997df2);color:#ffffff}
+html.dark .pf-prompt-dock footer button:hover{background:#b3b6be}
+html.dark .pf-studio-shell.is-immersive .pf-studio-topbar{background:#d9dadeee;border-bottom-color:#c7c9cf}
+html.dark .pf-studio-shell.is-immersive .pf-studio-main{background:#d2d3d9}
+html.dark .pf-flow-area{background:#d2d3d9}
+html.dark .pf-flow-area .react-flow{background:#d2d3d9!important;background-image:radial-gradient(#b7bac2 1.15px,transparent 1.15px)!important}
+html.dark .pf-flow-area .react-flow__controls{border:1px solid #b3b5bd;background:#c3c4cc;box-shadow:0 8px 24px #000000f5}
+html.dark .pf-flow-area .react-flow__controls-button{background:#c3c4cc;border-color:#b3b5bd;fill:#414349}
+html.dark .pf-card{border:1px solid #1a1a1a22;background:#202125;color:#d0d2d7;box-shadow:0 20px 48px #000000f5}
+html.dark .pf-card.is-selected{border-color:#1a1a1a;box-shadow:0 0 0 2px #000000,0 22px 52px #000000}
+html.dark .pf-card.is-text{background:#1b1e23}
+html.dark .pf-card-head{color:#b1b6bf}
+html.dark .pf-card-editor{color:#d1d1d1}
+html.dark .pf-card-shot,html.dark .pf-card-empty{background:#c1c4cb}
+html.dark .pf-card-empty{color:#4f545d}
+html.dark .pf-card-caption{color:#888c96}
+html.dark .pf-card .react-flow__handle{background:#1a1a1a;border:2px solid #3e4146}
+html.dark .react-flow__edge-path{stroke:#26282e!important}
+html.dark .pf-float-toolbar{border:1px solid #a5a7b0;background:#bdbec7f2;box-shadow:0 16px 40px #000000}
+html.dark .pf-float-toolbar button{color:#1e2024}
+html.dark .pf-float-toolbar button:hover{background:#a8acb5}
+html.dark .pf-float-toolbar span{background:#9598a2}
+html.dark .pf-flow-tools{border:1px solid #b0b2bb;background:#c6c8cff7;box-shadow:0 18px 44px #000000}
+html.dark .pf-dock-plus{background:#202125!important;color:#d6d7de!important}
+html.dark .pf-flow-brand{background:linear-gradient(145deg,#70acff,#997df2)!important;box-shadow:0 0 22px #000000}
+html.dark .pf-join-group{background:#2bda6c;box-shadow:0 12px 30px #000000cf}
+html.dark .pf-studio-shell.is-immersive .pf-add-menu,html.dark .pf-studio-shell.is-immersive .pf-history-panel,html.dark .pf-studio-shell.is-immersive .pf-assets-panel{border:1px solid #b6b9c3;box-shadow:0 18px 48px #000000}
+html.dark .pf-composer-card{background:#1a1a1a;color:#c6d0e6;box-shadow:0 20px 56px #0000005f;border:1px solid #292c30}
+html.dark .pf-chip,html.dark .pf-chip-btn{border:1px solid #292c30;background:#1a1a1a;color:#a7b1c3}
+html.dark .pf-chip button{border:0;background:transparent;color:#59616e}
+html.dark .pf-chip-btn:hover{background:#202125;border-color:#383b40}
+html.dark .pf-composer-close{border:0;background:transparent;color:#59616e}
+html.dark .pf-composer-close:hover{background:#202125;color:#c6d0e6}
+html.dark .pf-composer-card textarea{border:0;outline:0;background:transparent;color:#c6d0e6}
+html.dark .pf-mention{border:1px solid #292c30;background:#1a1a1a;box-shadow:0 16px 40px #00000049}
+html.dark .pf-mention h4{color:#59616e}
+html.dark .pf-mention button{border:0;background:transparent}
+html.dark .pf-mention button:hover{background:#202125}
+html.dark .pf-mention-thumb{background:#202125;color:#59616e}
+html.dark .pf-mention b{color:#c6d0e6}
+html.dark .pf-mention small{color:#59616e}
+html.dark .pf-mention p{color:#59616e}
+html.dark .pf-composer-card textarea::placeholder{color:#59616e}
+html.dark .pf-composer-card footer{border-top:1px solid #202125}
+html.dark .pf-param{border:1px solid #292c30;background:#1a1a1a;color:#a7b1c3}
+html.dark .pf-param:hover{background:#1a1e21}
+html.dark .pf-composer-eye{border:0;background:transparent;color:#59616e}
+html.dark .pf-composer-cost{color:#818896}
+html.dark .pf-composer-go{border:0;background:#c6d0e6!important;color:#1a1a1a!important;box-shadow:0 8px 20px #00000068}
+html.dark .pf-composer-go svg{color:#1a1a1a;stroke:#1a1a1a}
+html.dark .pf-composer-go:hover{background:#bbc7d8}
+html.dark .pf-composer-go:disabled{box-shadow:none}
+html.dark .pf-crop-row button{border:1px solid #292c30;background:#1a1e21}
+html.dark .pf-flow-dock{border:1px solid #292c30;background:#1a1a1a;box-shadow:0 14px 38px #00000052}
+html.dark .pf-flow-dock button{border:0;background:transparent;color:#99a3b1}
+html.dark .pf-flow-dock button:hover{background:#202125;color:#c6d0e6}
+html.dark .pf-flow-dock button.is-active{background:#c6d0e6;color:#1a1a1a}
+html.dark .pf-flow-dock .pf-dock-plus{background:#c6d0e6;color:#1a1a1a}
+html.dark .pf-flow-dock .pf-dock-plus:hover{background:#bbc7d8;color:#1a1a1a}
+html.dark .pf-dock-sep{background:#292c30}
+html.dark .pf-dock-zoom{color:#a7b1c3}
+html.dark .pf-add-menu.is-floating{border:1px solid #292c30;background:#1a1a1a;box-shadow:0 18px 48px #0000005f;color:#c6d0e6}
+html.dark .pf-add-menu.is-floating header{border-bottom:1px solid #202125;color:#c6d0e6}
+html.dark .pf-add-menu.is-floating header button{border:0;background:transparent;color:#59616e}
+html.dark .pf-add-menu.is-floating header button:hover{background:#202125;color:#c6d0e6}
+html.dark .pf-add-menu.is-floating .pf-add-item,html.dark .pf-add-menu.is-floating .pf-add-group>button{border:0;background:transparent;color:#c6d0e6}
+html.dark .pf-add-menu.is-floating .pf-add-item:hover,html.dark .pf-add-menu.is-floating .pf-add-group>button:hover{background:#202125}
+html.dark .pf-add-menu.is-floating .pf-add-icon{background:#0e1e32;color:#4177ee}
+html.dark .pf-add-menu.is-floating .pf-add-copy small{color:#59616e}
+html.dark .pf-add-menu.is-floating .pf-add-item>svg:last-child,html.dark .pf-add-menu.is-floating .pf-add-group>button>svg:last-child{color:#59616e}
+html.dark .pf-add-menu.is-floating .pf-add-children button{border:0;background:transparent;color:#a7b1c3}
+html.dark .pf-add-menu.is-floating .pf-add-children button:hover{background:#202125}
+html.dark .pf-add-menu.is-floating .pf-add-children button>svg:last-child{color:#59616e}
+html.dark .pf-add-menu.is-floating footer{border-top:1px solid #202125}
+html.dark .pf-add-menu.is-floating footer button{border:1px solid #292c30;background:#1a1e21;color:#a7b1c3}
+html.dark .pf-add-menu.is-floating footer button:hover{background:#0e1e32;border-color:#193150;color:#305fe3}
+html.dark .pf-skel{color:#c6d0e6}
+html.dark .pf-skel.is-selected .pf-skel-card{border-color:#5895f7;box-shadow:0 0 0 2px #0000007a,0 14px 36px #00000040}
+html.dark .pf-skel-title{color:#a7b1c3}
+html.dark .pf-skel-icon{color:#818896}
+html.dark .pf-skel-actions button{border:0;background:transparent;color:#59616e}
+html.dark .pf-skel-actions button:hover{background:#202125;color:#c6d0e6}
+html.dark .pf-skel-card{border:1px solid #292c30;background:#1a1a1a;color:#c6d0e6;box-shadow:0 10px 30px #00000031}
+html.dark .pf-skel-editor{border:0;outline:0;background:transparent;color:#c6d0e6}
+html.dark .pf-skel-media{border:0;background:#202125}
+html.dark .pf-skel-media img,html.dark .pf-skel-media video{background:#202125}
+html.dark .pf-skel-empty{border:0;background:#1a1e21;color:#59616e}
+html.dark .pf-skel-empty:hover{background:#202125;color:#99a3b1}
+html.dark .pf-skel-caption{color:#818896}
+html.dark .pf-skel-handle{background:#1a1a1a!important;border:2px solid #383b40!important}
+html.dark .pf-skel.is-selected .pf-skel-handle{border-color:#5895f7!important}
+html.dark .pf-skel-toolbar{border:1px solid #292c30;background:#1a1a1a;box-shadow:0 12px 32px #00000059}
+html.dark .pf-skel-toolbar button{border:0;background:transparent;color:#a7b1c3}
+html.dark .pf-skel-toolbar button:hover{background:#202125}
+html.dark .pf-skel-divider{background:#292c30}
+html.dark .pf-composer-card.is-attached{box-shadow:0 18px 48px #00000059}
+html.dark .pf-composer-card footer{border-top:1px solid #202125}
+html.dark .pf-param-select{border:1px solid #292c30;background:#1a1a1a;color:#a7b1c3}
+html.dark .pf-param-select select{border:0;outline:0;background:transparent;color:inherit}
+html.dark .pf-param-select svg{color:#59616e}
+html.dark .pf-image-draft{background:#1a1a1a}
+html.dark .pf-image-draft-input{border:0;outline:0;background:transparent;color:#c6d0e6}
+html.dark .pf-image-try{color:#59616e}
+html.dark .pf-image-try span{color:#818896}
+html.dark .pf-image-try button{border:0;background:transparent;color:#59616e}
+html.dark .pf-image-try button:hover{color:#4177ee}
+html.dark .pf-image-busy{color:#59616e}
+html.dark .pf-skel-badge{background:#133123;color:#06b47e}
+html.dark .pf-image-pager,html.dark .pf-image-tools{background:#1a1a1a;border:1px solid #292c30;box-shadow:0 10px 26px #0000004e}
+html.dark .pf-image-pager span{color:#a7b1c3}
+html.dark .pf-image-pager button,html.dark .pf-image-tools button{border:0;background:transparent;color:#a7b1c3}
+html.dark .pf-image-pager button:hover:not(:disabled),html.dark .pf-image-tools button:hover{background:#202125}
+html.dark .pf-image-thumbs button{border:2px solid transparent;background:#202125}
+html.dark .pf-image-thumbs button.is-active{border-color:#5895f7}
+html.dark .pf-compare-modal{background:#06091185}
+html.dark .pf-compare-card{background:#1a1a1a;box-shadow:0 24px 64px #00000085}
+html.dark .pf-compare-card header{border-bottom:1px solid #292c30}
+html.dark .pf-compare-card header b{color:#c6d0e6}
+html.dark .pf-compare-card header button{border:0;background:transparent;color:#818896}
+html.dark .pf-compare-grid figure{border:1px solid #292c30;background:#171e24}
+html.dark .pf-compare-grid img{background:#292c30}
+html.dark .pf-compare-grid figcaption{color:#818896}
+html.dark .pf-studio-shell{--bg:#1d2024;--panel:#1a1a1a;--line:#292c30;--text:#bbc7d8;--muted:#818896;background:var(--bg);color:var(--text)}
+html.dark .pf-studio-topbar{background:#1a1a1aee;border-bottom:1px solid #292c30}
+html.dark .pf-studio-shell.is-immersive .pf-studio-topbar{background:#1a1a1aee;border-bottom-color:#292c30}
+html.dark .pf-top-icon,html.dark .pf-agent-head-actions button,html.dark .pf-panel-title button,html.dark .pf-menu-head button{color:#818896}
+html.dark .pf-top-icon:hover,html.dark .pf-agent-head-actions button:hover{background:#202125;color:#c6d0e6}
+html.dark .pf-project-name strong{color:#c6d0e6}
+html.dark .pf-project-name span{color:#59616e}
+html.dark .pf-view-toggle{background:#202125;border-color:#292c30}
+html.dark .pf-view-toggle button{color:#818896}
+html.dark .pf-view-toggle button.is-active{background:#5895f7;color:#ffffff}
+html.dark .pf-episode-switch,html.dark .pf-model-switch,html.dark .pf-share-button,html.dark .pf-balance-button,html.dark .pf-account-button{border-color:#292c30;background:#1a1a1a;color:#a7b1c3}
+html.dark .pf-episode-switch{background:transparent;border:0;color:#99a3b1}
+html.dark .pf-top-save-state{color:#f78707}
+html.dark .pf-top-icon-group{border-color:#292c30;background:#1a1a1a}
+html.dark .pf-share-button{background:#130e2f;border-color:#1c1441;color:#7f42de}
+html.dark .pf-studio-shell.is-immersive .pf-studio-main{background:#1d2024}
+html.dark .pf-flow-area{background:#1d2024}
+html.dark .pf-flow-area .react-flow{background:#1d2024!important;background-image:radial-gradient(#383b40 1.1px,transparent 1.1px)!important}
+html.dark .pf-flow-tip{color:#59616e}
+html.dark .pf-flow-area .react-flow__controls{border:1px solid #292c30;background:#1a1a1a;box-shadow:0 8px 24px #00000040}
+html.dark .pf-flow-area .react-flow__controls-button{background:#1a1a1a;border-color:#292c30;fill:#99a3b1}
+html.dark .pf-flow-area .react-flow__minimap{background:#1a1a1a;border:1px solid #292c30}
+html.dark .pf-flow-tools{border:1px solid #292c30;background:#1a1a1af5;box-shadow:0 12px 36px #00000040}
+html.dark .pf-flow-tools-left button,html.dark .pf-flow-tools-center button,html.dark .pf-flow-tools-right button{color:#99a3b1}
+html.dark .pf-flow-tools button:hover,html.dark .pf-flow-tools button.is-active{background:#202125;color:#c6d0e6}
+html.dark .pf-flow-tools span{color:#818896}
+html.dark .pf-dock-plus{background:#c6d0e6!important;color:#1a1a1a!important}
+html.dark .pf-flow-brand{background:linear-gradient(145deg,#75b1fb,#081699)!important;box-shadow:0 0 18px #000000cf}
+html.dark .pf-join-group{box-shadow:0 10px 28px #000000aa}
+html.dark .pf-skel-caption{color:#818896}
+html.dark .pf-add-menu,html.dark .pf-history-panel,html.dark .pf-assets-panel,html.dark .pf-node-menu{background:#1a1a1a;border-color:#292c30;color:#bbc7d8;box-shadow:0 16px 40px #00000040}
+html.dark .pf-studio-shell.is-immersive .pf-add-menu,html.dark .pf-studio-shell.is-immersive .pf-history-panel,html.dark .pf-studio-shell.is-immersive .pf-assets-panel{border:1px solid #292c30;background:#1a1a1a;box-shadow:0 16px 40px #00000040}
+html.dark .pf-add-item,html.dark .pf-add-group>button,html.dark .pf-add-children button,html.dark .pf-node-menu-item,html.dark .pf-asset-item,html.dark .pf-history-item{color:#bbc7d8}
+html.dark .pf-add-item:hover,html.dark .pf-add-group>button:hover,html.dark .pf-add-children button:hover,html.dark .pf-node-menu-item:hover,html.dark .pf-asset-item:hover,html.dark .pf-history-item:hover{background:#202125}
+html.dark .pf-add-icon,html.dark .pf-node-menu-icon{background:#0e1e32;color:#5895f7}
+html.dark .pf-add-copy small,html.dark .pf-asset-item small,html.dark .pf-history-item small{color:#59616e}
+html.dark .pf-add-menu footer button{border-color:#292c30;background:#1a1e21;color:#a7b1c3}
+html.dark .pf-add-menu footer button:hover{border-color:#21456d;background:#0e1e32}
+html.dark .pf-search{border-color:#292c30;color:#59616e}
+html.dark .pf-search input{color:#c6d0e6}
+html.dark .pf-empty-panel{color:#59616e}
+html.dark .pf-empty-panel button{background:#0e1e32;color:#4177ee}
+html.dark .pf-agent{background:#1a1a1a;border:1px solid #292c30;box-shadow:0 18px 48px #00000049}
+html.dark .pf-studio-shell.is-immersive .pf-agent{background:#1a1a1a;border:1px solid #292c30}
+html.dark .pf-agent-header{border-bottom-color:#292c30}
+html.dark .pf-agent-person b{color:#c6d0e6}
+html.dark .pf-agent-person small{color:#59616e}
+html.dark .pf-agent-intro h3{color:#c6d0e6}
+html.dark .pf-agent-intro p{color:#818896}
+html.dark .pf-agent-intro button{border-color:#292c30;background:#1a1e21;color:#a7b1c3}
+html.dark .pf-agent-response{border-top-color:#292c30}
+html.dark .pf-agent-response p{color:#bbc7d8}
+html.dark .pf-agent-input{border-top-color:#292c30}
+html.dark .pf-agent-input textarea{color:#c6d0e6}
+html.dark .pf-agent-input textarea::placeholder{color:#59616e}
+html.dark .pf-agent-events{border-top-color:#292c30}
+html.dark .pf-agent-event{color:#818896}
+html.dark .pf-context-menu{border:1px solid #292c30;background:#1a1a1a;box-shadow:0 16px 40px #00000049;color:#bbc7d8}
+html.dark .pf-context-menu button{border:0;background:transparent;color:#bbc7d8}
+html.dark .pf-context-menu button:hover:not(:disabled){background:#202125}
+html.dark .pf-context-menu button.is-danger{color:#e04040}
+html.dark .pf-context-icon{color:#818896}
+html.dark .pf-context-menu button.is-danger .pf-context-icon{color:#e04040}
+html.dark .pf-context-menu kbd{border:0;background:transparent;color:#59616e}
+html.dark .pf-inspector{border:1px solid #292c30;background:#1a1a1a;box-shadow:0 18px 48px #00000049;color:#bbc7d8}
+html.dark .pf-inspector input,html.dark .pf-inspector textarea{border:1px solid #292c30;background:#1a1e21;color:#c6d0e6}
+html.dark .pf-inspector label{color:#818896}
+html.dark .pf-inspector header button,html.dark .pf-inspector footer button{background:#202125;color:#c6d0e6}
+html.dark .pf-storyboard{background:#1d2024}
+html.dark .pf-story-column{border-color:#292c30;background:#1a1a1a;box-shadow:0 8px 24px #00000031}
+html.dark .pf-story-column>header{border-bottom-color:#292c30}
+html.dark .pf-story-title{color:#c6d0e6}
+html.dark .pf-story-card{background:#1a1e21;color:#bbc7d8}
+html.dark .pf-story-card:hover{border-color:#21456d}
+html.dark .pf-story-placeholder{background:#202125;color:#59616e}
+html.dark .pf-story-empty{color:#818896}
+html.dark .pf-story-empty button{border-color:#292c30;background:#1a1a1a;color:#a7b1c3}
+html.dark .pf-media-preview{background:#06091185}
+html.dark .pf-media-preview-card{border-color:#292c30;background:#1a1a1a}
+html.dark .react-flow__edge-path{stroke:#40434a!important}
+html.dark .pf-studio-footer{background:#1a1a1a;border-top:1px solid #292c30;color:#818896}
+html.dark .pf-footer-drawer{background:#1a1a1a;border-color:#292c30;box-shadow:0 -10px 28px #00000040}
+html.dark .pf-left-rail{background:#1a1a1a;border-right:1px solid #292c30}
+html.dark .pf-left-rail button{color:#818896}
+html.dark .pf-left-rail button:hover,html.dark .pf-left-rail button.is-active{color:#4177ee;background:#0e1e32}
+html.dark .pf-library{border:1px solid #292830;background:#1a1a1a;color:#c2c3cd;box-shadow:0 14px 40px #00000049}
+html.dark .pf-library>header span{background:#222128;color:#8d8e9a}
+html.dark .pf-library>header button{border:0;background:transparent;color:#80828f}
+html.dark .pf-library-actions button{border:1px solid #2e2d34;background:#1a1a1a;color:#929997}
+html.dark .pf-library-actions button:nth-child(2){background:#c2c3cd;color:#1a1a1a;border-color:#c2c3cd}
+html.dark .pf-library-actions button.is-active{color:#8866ab;background:#211929}
+html.dark .pf-library-search{background:#212127;color:#5e5f6a}
+html.dark .pf-library-search input{background:none;border:0;outline:none;color:#b6b7c3}
+html.dark .pf-library-filters button{border:1px solid #2c2b32;color:#82838f;background:#1a1a1a}
+html.dark .pf-library-filters button.is-active{background:#c2c3cd;border-color:#c2c3cd;color:#1a1a1a}
+html.dark .pf-library-tags{color:#8b8c99}
+html.dark .pf-library-tags select{background:#1b1b23;border:1px solid #2d2c33;color:#bbbcc4;outline-color:#694889}
+html.dark .pf-library-source{background:#1a1a1a;border:1px solid #2c2b32;color:#8e9994}
+html.dark .pf-library-source:hover{background:#1e1825}
+html.dark .pf-library-hint{color:#737380}
+html.dark .pf-library-error{color:#c85b6a}
+html.dark .pf-library .pf-library-card{background:#202028;border:1px solid #2b2931}
+html.dark .pf-library .pf-library-pick{border:0;color:#5e5f6a;background:transparent}
+html.dark .pf-library .pf-library-pick>span{background:linear-gradient(transparent,#090a0dd8);color:#1a1a1a}
+html.dark .pf-library .pf-library-star{border:0;color:#1a1a1a;background:#1011146e}
+html.dark .pf-library .pf-library-star.is-active{color:#ffd870}
+html.dark .pf-library .pf-library-empty{color:#686773}
+html.dark .pf-library-launch{background:#1a1a1a;border:1px solid #2f2d35;color:#8f919e;box-shadow:0 5px 16px #00000031}
+html.dark .pf-library-launch:hover{background:#211929;border-color:#543d6a}
+html.dark .pf-library button:focus-visible,html.dark .pf-library-launch:focus-visible{outline:2px solid #694889}
+html.dark .pf-group-frame{border:1px solid #4e405f88;background:#6043740a}
+html.dark .pf-group-frame.is-selected{border-color:#6b4c82;background:#60437411}
+html.dark .pf-group-frame>header{color:#7c6690}
+html.dark .pf-story-card>video{background:#212127}
+html.dark .pf-story-card-heading button{border:1px solid #302c37;background:#1a1a1a;color:#7c6690}
+html.dark .pf-workflow-backdrop{background:#0d0d1185}
+html.dark .pf-workflow-dialog{background:#1a1a1a;color:#c2c3cd;border:1px solid #2f2b35;box-shadow:0 24px 80px #00000085}
+html.dark .pf-workflow-dialog p{color:#858390}
+html.dark .pf-workflow-dialog button{border:1px solid #2e2935;background:#1e1b23;color:#b1a7ba}
+html.dark .pf-workflow-dialog button:hover,html.dark .pf-workflow-dialog button.is-active{background:#281d34;border-color:#4b3d5a}
+html.dark .pf-workflow-dialog input:not([type=range]):not([type=color]),html.dark .pf-workflow-dialog select{border:1px solid #322d37;background:#1a1a1a;color:#bcb8c6}
+html.dark .pf-workflow-dialog footer button:last-child{background:#926ead;color:#1a1a1a}
+html.dark .pf-workflow-dialog .pf-workflow-error{color:#cd3450;background:#310e15}
+html.dark .pf-recipe-list article{border:1px solid #2b2730}
+html.dark .pf-recipe-list small{color:#797281}
+html.dark .pf-recipe-launch{background:#1a1a1a;border:1px solid #322c37;color:#ab9db7;box-shadow:0 4px 12px #0000002a}
+html.dark .pf-mask-stage{background:#23222a}
+html.dark .pf-director-layout canvas{background:#27282f}
+html.dark .pf-director-layout fieldset{border:1px solid #2c2631}
+html.dark .pf-director-layout label input[type=range]{accent-color:#7f549f}
+html.dark .pf-director-timeline > input{accent-color:#7f549f}
+html.dark .pf-canvas-reference{background:#241f2b;color:#9981b7}
+html.dark .pf-selection-run{border:1px solid #2f2838;background:#1a1a1a;box-shadow:0 4px 20px #00000045;color:#918b9d}
+html.dark .pf-selection-run button{background:#8b66ae;color:#1a1a1a;border:0}
+html.dark .pf-composer-audio{color:#9a90a7}
+html.dark .pf-peer-cursor>span,html.dark .pf-peer-selection>span{color:#1a1a1a;box-shadow:0 2px 6px #0000005f}
+html.dark .pf-collaborator{background:#1a1a1af2;border:1px solid #2d2833;box-shadow:0 2px 10px #0000003a;color:#bdb8c7}
+html.dark .pf-collaborator>i{color:#1a1a1a}
+html.dark .pf-collaborator small{color:#7e758c}
+html.dark .pf-collaboration-status{color:#af8f75;background:#362b10}
+/* studioEditors.css */
+html.dark .pf-agent-panel{border:1px solid #252934;background:#1a1a1a;box-shadow:0 16px 55px #00000068;color:#9dabc2}
+html.dark .pf-agent-panel button,html.dark .pf-media-editor button{color:inherit;background:#1a1a1a;border:1px solid #232832}
+html.dark .pf-agent-panel button:hover,html.dark .pf-media-editor button:hover{background:#0e1a31;border-color:#27364a}
+html.dark .pf-agent-panel button:focus-visible,html.dark .pf-media-editor button:focus-visible{outline:2px solid #7db2f2}
+html.dark .pf-agent-panel-header{border-bottom:1px solid #1d222b}
+html.dark .pf-agent-panel-header>svg{color:#76a1db}
+html.dark .pf-agent-panel-header button{border:0;background:transparent;color:#6b788b}
+html.dark .pf-agent-scroll{scrollbar-color:#313844 transparent}
+html.dark .pf-agent-scroll p{color:#6d7a90}
+html.dark .pf-agent-welcome>svg{color:#85a8da}
+html.dark .pf-agent-bubble small{color:#61728c}
+html.dark .pf-agent-bubble p{color:#96a6be}
+html.dark .pf-agent-bubble.is-user{border:1px solid #172338;background:#0e1a31}
+html.dark .pf-agent-bubble.is-thinking p,html.dark .pf-agent-bubble.is-reconnecting p{color:#626e81}
+html.dark .pf-agent-bubble.is-error{background:#30110e}
+html.dark .pf-agent-bubble.is-error p{color:#c56976}
+html.dark .pf-agent-tool{border-bottom:1px solid #1f2228;color:#6a7891}
+html.dark .pf-agent-tool summary span{color:#61877c}
+html.dark .pf-agent-tool pre{background:#161c27}
+html.dark .pf-agent-tool.is-error{color:#c26878}
+html.dark .pf-agent-working{color:#82a3d2}
+html.dark .pf-agent-compose{border:1px solid #242c37;background:#0c142a}
+html.dark .pf-agent-compose textarea{background:transparent;border:0;outline:none;color:#99adc5}
+html.dark .pf-agent-compose textarea::placeholder{color:#505e74}
+html.dark .pf-agent-compose select{border:0;background:transparent;color:#7286a2;outline:none}
+html.dark .pf-agent-compose footer>button{border:0;background:transparent}
+html.dark .pf-agent-compose footer>.pf-agent-send{background:#82b1ed;color:#ffffff}
+html.dark .pf-agent-references button{background:#17212f}
+html.dark .pf-agent-session{border-bottom:1px solid #1d222b}
+html.dark .pf-agent-session small,html.dark .pf-tool-toggle small{color:#52637a}
+html.dark .pf-agent-session input{border:1px solid #252f3c}
+html.dark .pf-tool-toggle input{accent-color:#87ade3}
+html.dark .pf-agent-error{background:#300e0e;color:#c06a78}
+html.dark .pf-edit-overlay{background:#3c4b6566}
+html.dark .pf-media-editor{background:#1a1a1a;border:1px solid #232a36;box-shadow:0 20px 70px #00000085;color:#91a0bb}
+html.dark .pf-media-editor button.is-active{background:#0f1d33;color:#7195cb;border-color:#203046}
+html.dark .pf-media-editor video{background:#1d232c}
+html.dark .pf-media-editor input[type=range]{accent-color:#8bade1}
+html.dark .pf-media-editor input[type=number]{border:1px solid #232a36;color:inherit}
+html.dark .pf-media-editor p,html.dark .pf-media-editor footer>span{color:#5b6980}
+html.dark .pf-media-editor button.is-primary{background:#87aee3;color:#ffffff;border-color:#87aee3}
+html.dark .pf-media-editor .pf-editor-error{color:#be6777;background:#300e11}
+html.dark .pf-studio-shell.is-light .pf-agent-fab,html.dark .pf-studio-shell.is-light .pf-library-actions button:nth-child(2),html.dark .pf-studio-shell.is-light .pf-library-filters button.is-active{background:#101d36;border-color:#212e44;color:#5578a9;box-shadow:0 5px 22px #0000005f}
+html.dark .pf-studio-shell.is-light .pf-agent-fab:hover{background:#12223e}
+html.dark .pf-studio-shell.is-light .pf-preview-modal{background:#27313ebb}
+html.dark .pf-studio-shell.is-light .pf-preview-modal video,html.dark .pf-studio-shell.is-light .pf-preview-modal img,html.dark .pf-studio-shell.is-light .pf-preview-modal audio{background:#171e29}
+html.dark .pf-workflow-backdrop{background:#3b4a6377}
+html.dark .pf-message-content code{background:#1a222d}
+html.dark .pf-message-content figure{border:1px solid #232c36}
+html.dark .pf-message-content figcaption{background:#1a222d;color:#5b6d89}
+html.dark .pf-agent-bubble.is-error .pf-message-content{color:#c06a78}
+html.dark .pf-node-history article{border:1px solid #232a34}
+html.dark .pf-node-history img,html.dark .pf-node-history video{background:#191f29}
+html.dark .pf-node-history small{color:#505d74}
+html.dark .pf-studio-shell.is-light{--bg:#141a27;--panel:#1a1a1a;--line:#242a35;--text:#99a8bf;--muted:#5c6b80}
+html.dark .pf-studio-shell.is-light .pf-dock-plus,html.dark .pf-studio-shell.is-light .pf-flow-dock .pf-dock-plus,html.dark .pf-studio-shell.is-light .pf-flow-dock button.is-active,html.dark .pf-studio-shell.is-light .pf-composer-go{background:#8caee4!important;color:#ffffff!important}
+html.dark .pf-studio-shell.is-light .pf-flow-area .react-flow__minimap{background:#171f2b;border-color:#222b36}
+html.dark .pf-studio-shell.is-light .pf-media-preview,html.dark .pf-studio-shell.is-light .pf-compare-modal{background:#333c48a8}
+html.dark .pf-studio-shell.is-light .pf-library-pick>span{background:linear-gradient(transparent,#151f2de8);color:#919fb7}
+html.dark .pf-studio-shell.is-light .pf-library-star{background:#1a1a1ad9;color:#556c8a}
+html.dark .pf-agent-panel button[aria-pressed=true]{color:#ce889e;background:#310e18}
+html.dark .pf-agent-mention-options button[data-active=true]{background:#0f1e35;border-color:#1b447e;outline:1px solid #1b447e}
+html.dark .pf-agent-mention-help{color:#5a6c84;border-top:1px solid #1f2530}
+html.dark .pf-footer-drawer>button{border:1px solid #242b36;background:#111a2b;color:#647b9a}
+/* sourceParity.css */
+html.dark .pf-studio-shell.is-light{--bg:#171e24;--panel:#1a1a1a;--line:#292f37;--text:#a4b1c5;--muted:#636f80}
+html.dark .pf-studio-shell .pf-skel{color:var(--text)}
+html.dark .pf-skel-rename{border:1px solid #14498c;color:inherit;outline:none}
+html.dark .pf-skel-badge{background:transparent;color:#639b8c}
+html.dark .pf-studio-shell .pf-skel-card{border:1px solid #2b3138;box-shadow:0 2px 7px #0000002a}
+html.dark .pf-studio-shell .pf-skel.is-selected .pf-skel-card{border-color:#86b1e9;box-shadow:0 0 0 1px #000000cf}
+html.dark .pf-skel-media{background:#1a212a}
+html.dark .pf-skel-media img,html.dark .pf-skel-media video{background:transparent}
+html.dark .pf-node-play{border:1px solid #1a1a1a;color:#7099d0;background:#1a1a1adc}
+html.dark .pf-skel-audio{color:#476b90}
+html.dark .pf-skel-text{scrollbar-color:#2d343d transparent}
+html.dark .pf-node-placeholder{color:#566273}
+html.dark .pf-studio-shell .pf-skel-handle{border:1.5px solid #405268!important;background:#0d1a2c!important}
+html.dark .pf-skel[data-media-kind=image] .pf-skel-handle{border-color:#49787f!important}
+html.dark .pf-skel[data-media-kind=video] .pf-skel-handle{border-color:#cdbb97!important}
+html.dark .pf-studio-shell.is-light .pf-skel-toolbar{box-shadow:0 4px 14px #0000005b}
+html.dark .pf-skel .pf-skel-resize{color:#496383;background:#1a1a1a;border:1px solid #252d38}
+html.dark .pf-studio-shell .pf-composer-card.is-attached,html.dark .pf-studio-shell .pf-composer-card.is-attached.is-image{box-shadow:0 5px 20px #00000052;border-color:#272d35}
+html.dark .pf-composer-card .pf-param-select{border:0;background:transparent}
+html.dark .pf-composer-card .pf-param-select:hover{background:#171f2b}
+html.dark .pf-agent-panel,html.dark .pf-agent-panel.is-floating,html.dark .pf-agent-panel.is-docked{border:1px solid #282f38;background:#1a1a1aee;box-shadow:0 6px 28px #0000004e;color:#94a5bc}
+html.dark .pf-agent-panel.is-docked{box-shadow:none}
+html.dark .pf-agent-resize:focus-visible{outline:2px solid #1c497f}
+html.dark .pf-agent-tool{border:0;background:transparent;color:#697689}
+html.dark .pf-agent-tool summary>em{color:#556477}
+html.dark .pf-agent-tool pre{background:#171e29}
+html.dark .pf-agent-tool.is-error,html.dark .pf-agent-tool.is-error em{color:#ce9197}
+html.dark .pf-agent-bubble{border:0;background:transparent;color:#98a9bf}
+html.dark .pf-agent-bubble.is-user{background:#17202d;color:#89a0bd}
+html.dark .pf-message-actions button{border:0;color:#546479;background:transparent}
+html.dark .pf-agent-bubble.is-error{background:#2f0e0e;color:#c7828c}
+html.dark .pf-agent-bubble.is-task_created,html.dark .pf-agent-bubble.is-canvas_patch,html.dark .pf-agent-bubble.is-reconnecting{color:#546479}
+html.dark .pf-agent-panel .pf-agent-jump{background:#1a1a1a;box-shadow:0 2px 12px #0000005b}
+html.dark .pf-agent-compose{background:#162020;border:1px solid #262c36}
+html.dark .pf-agent-compose footer>.pf-agent-send{background:#76aeed}
+html.dark .pf-agent-welcome h3{color:#7a91ac}
+html.dark .pf-agent-welcome button{border:0;background:#171d26}
+html.dark .pf-agent-welcome button small{color:#546174}
+html.dark .pf-agent-working{color:#546c8c}
+html.dark .pf-agent-working>span{background:#2b425e}
+html.dark .pf-inline-player>video{background:#1b232c}
+html.dark .pf-inline-controls{background:#1a1a1aed;color:#667f9c}
+html.dark .pf-inline-controls button{border:0;color:inherit;background:transparent}
+html.dark .pf-inline-controls button:hover{background:#192535}
+html.dark .pf-inline-controls input{accent-color:#8db1e2}
+html.dark .pf-inline-capture>div{background:#1a1a1a;border:1px solid #252c36;box-shadow:0 5px 20px #00000085}
+html.dark .pf-inline-error{color:#924c4f}
+html.dark .pf-grid-split{border:1px solid #252d38;background:#1a1a1a;color:#90a2bd;box-shadow:0 12px 40px #00000085}
+html.dark .pf-grid-split header span{color:#536479}
+html.dark .pf-grid-split button{color:inherit;background:#1a1a1a;border:1px solid #252b33}
+html.dark .pf-grid-presets button[aria-pressed=true]{color:#769ccc;background:#0e1c31;border-color:#2c3d54}
+html.dark .pf-grid-presets i{background:#34455a}
+html.dark .pf-grid-presets small{color:#516378}
+html.dark .pf-grid-dimensions input{border:1px solid #252e38;color:inherit}
+html.dark .pf-grid-preview span{border:.5px solid #1a1a1a;color:#5c82ae;text-shadow:0 0 3px #000000}
+html.dark .pf-grid-split p{color:#5b6d87}
+html.dark .pf-grid-split .pf-grid-submit{background:#0f1d33;border-color:#263548;color:#7c9ec9}
+html.dark .pf-workspace-chrome button{color:#8094ac}
+html.dark .pf-chrome-buttons{border:1px solid #272e38;background:#1a1a1aed}
+html.dark .pf-chrome-buttons>button{background:transparent;border:0}
+html.dark .pf-workspace-title{border:1px solid #272e38;background:#1a1a1aed}
+html.dark .pf-workspace-title>span{border-left:1px solid #252a34}
+html.dark .pf-workspace-save{color:#52647c}
+html.dark .pf-workspace-views{border:1px solid #262d37;background:#1a1a1aed}
+html.dark .pf-workspace-views button{border:0;background:transparent}
+html.dark .pf-workspace-views button[aria-pressed=true]{background:#80b3f0;color:#ffffff}
+html.dark .pf-workspace-balance{background:#1a1a1aed;border:1px solid #272e37}
+html.dark .pf-workspace-menu{background:#1a1a1a;border:1px solid #252d38;box-shadow:0 8px 28px #00000066}
+html.dark .pf-workspace-menu header{color:#687a92}
+html.dark .pf-workspace-menu header button{border:0;background:transparent}
+html.dark .pf-workspace-menu>button{border:0;background:transparent}
+html.dark .pf-workspace-menu>button:hover,html.dark .pf-chrome-buttons button:hover{background:#15202c}
+html.dark .pf-studio-shell.is-immersive .pf-flow-dock.pf-source-dock{box-shadow:0 3px 14px #00000040}
+html.dark .pf-studio-shell.is-light .pf-source-dock button{border:0;color:#5b6e87;background:transparent}
+html.dark .pf-studio-shell.is-light .pf-source-dock .pf-dock-plus{background:#192535!important;color:#6485ad!important}
+html.dark .pf-studio-shell.is-light .pf-source-dock button.is-active{background:#132031!important;color:#89aad4!important}
+html.dark .pf-canvas-corner-tools{border:1px solid #272e38;background:#1a1a1aed;box-shadow:0 3px 14px #00000040}
+html.dark .pf-canvas-corner-tools button{color:#58687f;background:transparent;border:0}
+html.dark .pf-canvas-corner-tools button:hover{background:#152030}
+html.dark .pf-canvas-corner-tools button[aria-pressed=true]{color:#7cabe2}
+html.dark .pf-canvas-corner-tools>span{color:#5b6c83}
+html.dark .pf-canvas-search{border:1px solid #242e3a;background:#1a1a1a;box-shadow:0 8px 30px #00000066}
+html.dark .pf-canvas-search header{border-bottom:1px solid #1d232c;color:#4e627c}
+html.dark .pf-canvas-search input{border:0;outline:0;color:#8094af}
+html.dark .pf-canvas-search header button{border:0;background:transparent;color:inherit}
+html.dark .pf-canvas-search>div>button{border:0;background:transparent;color:#637a98}
+html.dark .pf-canvas-search>div>button:hover{background:#131f2d}
+html.dark .pf-canvas-search small{color:#4d5c71}
+html.dark .pf-canvas-search p{color:#4f5f76}
+html.dark .pf-canvas-help{background:#1a1a1a;color:#61758e;border:1px solid #252d38;box-shadow:0 5px 20px #0000005f}
+html.dark .pf-canvas-help header button{border:0;background:transparent;color:inherit}
+html.dark .pf-workspace-document{background:#171e24}
+html.dark .pf-document-content>header{color:#4c698a}
+html.dark .pf-document-content header p{color:#4c5d72}
+html.dark .pf-document-node{border:1px solid #242c35;background:#1a1a1a;color:#8496ae}
+html.dark .pf-document-node>header{color:#556b87}
+html.dark .pf-document-node>header button{color:inherit;border:0;background:#141d29}
+html.dark .pf-document-node>p{color:#53647a}
+html.dark .pf-document-node textarea{border:1px solid #202834;color:#748fb0;background:#0c1b2a}
+html.dark .pf-document-pending{background:#161e28;color:#42546d}
+html.dark .pf-agent-mention-menu{background:#1a1a1a;border:1px solid #232c39;box-shadow:0 6px 24px #00000064}
+html.dark .pf-agent-mention-menu header{color:#4f6481}
+html.dark .pf-agent-mention-options>button small{color:#47566c}
+html.dark .pf-agent-mention-options>button[aria-selected=true]{background:#0e1c31;color:#8aa7cf}
+html.dark .pf-agent-mention-menu p{color:#4d5e73}
+html.dark .pf-prompt-presets button{border:1px solid #222a35;background:#0d1a2c;color:#516c90}
+html.dark .pf-prompt-presets span{color:#495c72}
+html.dark .pf-studio-shell.is-light .pf-workspace-access{border:1px solid #263243;background:#1a1a1a;box-shadow:0 12px 40px #00000064;color:#3e5a85}
+html.dark .pf-workspace-access .pf-access-icon{background:#0f1d33;color:#5c8ed3}
+html.dark .pf-workspace-access .pf-access-copy p{color:#6e829d}
+html.dark .pf-studio-shell.is-light .pf-workspace-access button{border:1px solid #24344a;color:#2a6dc2;background:#0f1d33}
+html.dark .pf-studio-shell.is-light .pf-workspace-access button.is-secondary{background:#1a1a1a;color:#77879d;border-color:#242b36}
+html.dark .pf-studio-shell.is-light .pf-workspace-access button:focus-visible{outline:2px solid #709fe5}
+html.dark .pf-node-error{background:#31130e;color:#c0514a}
+/* agent/agentPanel.css */
+html.dark .pf-agent-panel.is-floating,html.dark .pf-agent-panel.is-docked{--agent-ink:#c2c3cd;--agent-muted:#83838f;--agent-line:#2a2931;--agent-accent:#8b67ad;color:var(--agent-ink);background:#1a1a1a;border-color:var(--agent-line);box-shadow:0 18px 60px #00000068}
+html.dark .pf-agent-panel.is-docked{box-shadow:-8px 0 32px #0000002a}
+html.dark .pf-agent-panel .pf-agent-panel-header>b{color:var(--agent-ink)}
+html.dark .pf-agent-brand{color:var(--agent-ink)}
+html.dark .pf-agent-panel .pf-agent-panel-header button{color:#8b8b97}
+html.dark .pf-agent-panel .pf-agent-panel-header button:hover,html.dark .pf-agent-panel .pf-agent-panel-header button[aria-expanded=true]{color:var(--agent-ink);background:#232329}
+html.dark .pf-agent-panel button:focus-visible,html.dark .pf-agent-panel select:focus-visible{outline:2px solid var(--agent-accent)}
+html.dark .pf-agent-progress{border:1px solid #2c2433;background:#1f1827;color:#8b67ad}
+html.dark .pf-agent-progress small{color:#7a6e85}
+html.dark .pf-story-guide{border:1px solid #2e2634;background:#1f1623}
+html.dark .pf-story-guide>header b{color:#afa3bf}
+html.dark .pf-story-guide>header>span{color:#6f5f7c}
+html.dark .pf-agent-panel .pf-story-script{color:#857490}
+html.dark .pf-story-guide>select{border:1px solid #2e2634;background:#1a1a1a;color:#9681a7}
+html.dark .pf-story-steps li{color:#62576b}
+html.dark .pf-story-steps li+li::before{color:#4a4251}
+html.dark .pf-story-steps .is-done{color:#74947f}
+html.dark .pf-story-steps .is-current{color:#8b67ad}
+html.dark .pf-agent-panel .pf-story-stage-actions button{border:1px solid #332a3c;color:#8b67ad;background:#1a1a1a}
+html.dark .pf-agent-panel .pf-story-stage-actions button.is-primary{background:#8b67ad;color:#1a1a1a;border-color:#8b67ad}
+html.dark .pf-agent-panel .pf-story-guide .pf-story-hint{color:#84718d}
+html.dark .pf-story-node-list>article{border-top:1px solid #2b2431}
+html.dark .pf-story-node-list small{color:#756680}
+html.dark .pf-agent-panel .pf-story-node-list button{border:0;background:transparent;color:#8b67ad}
+html.dark .pf-story-footnote{color:#6b5b76}
+html.dark .pf-agent-panel .pf-agent-scroll{scrollbar-color:#302f36 transparent}
+html.dark .pf-agent-panel .pf-agent-bubble{color:var(--agent-ink)}
+html.dark .pf-agent-panel .pf-agent-bubble.is-user{background:#232029;color:var(--agent-ink);border:0}
+html.dark .pf-agent-panel .pf-agent-tool{color:var(--agent-muted)}
+html.dark .pf-agent-panel .pf-agent-welcome>svg{color:var(--agent-accent)}
+html.dark .pf-agent-panel .pf-agent-welcome h3{color:var(--agent-ink)}
+html.dark .pf-agent-panel .pf-agent-welcome p{color:var(--agent-muted)}
+html.dark .pf-agent-panel .pf-agent-welcome button{background:#1d1d22;color:#acabb7}
+html.dark .pf-agent-panel .pf-agent-welcome button:hover{background:#241f2b}
+html.dark .pf-agent-panel .pf-agent-welcome button small{color:var(--agent-muted)}
+html.dark .pf-agent-panel .pf-agent-settings{border:1px solid var(--agent-line);background:#1a1a1a;box-shadow:0 20px 40px #0000007e}
+html.dark .pf-agent-settings-heading{color:var(--agent-muted)}
+html.dark .pf-agent-panel .pf-agent-settings-heading button{background:transparent;border:0}
+html.dark .pf-agent-panel .pf-agent-settings p{color:var(--agent-muted)}
+html.dark .pf-agent-skill-selects{border-bottom:1px solid var(--agent-line)}
+html.dark .pf-agent-skill-selects label{color:var(--agent-muted)}
+html.dark .pf-agent-skill-selects select{border:1px solid var(--agent-line);background:#1a1a1a;color:var(--agent-ink)}
+html.dark .pf-agent-panel .pf-tool-toggle:hover{background:#232127}
+html.dark .pf-agent-panel .pf-tool-toggle input{border:0;background:#434348}
+html.dark .pf-agent-panel .pf-tool-toggle input::after{background:#1a1a1a;box-shadow:0 1px 3px #0000005f}
+html.dark .pf-agent-panel .pf-tool-toggle input:checked{background:var(--agent-accent)}
+html.dark .pf-agent-panel .pf-tool-toggle input:focus-visible{outline:2px solid var(--agent-accent)}
+html.dark .pf-agent-panel .pf-agent-settings .pf-agent-settings-note{border-top:1px solid var(--agent-line)}
+html.dark .pf-agent-panel .pf-agent-shortcuts button{border:0;background:transparent;color:#908a9b}
+html.dark .pf-agent-panel .pf-agent-shortcuts button:hover{color:var(--agent-accent)}
+html.dark .pf-agent-panel .pf-agent-compose{border:1px solid var(--agent-line);background:#1d1d22}
+html.dark .pf-agent-panel .pf-agent-compose:focus-within{border-color:#533d69}
+html.dark .pf-agent-panel .pf-agent-compose textarea{color:var(--agent-ink)}
+html.dark .pf-agent-panel .pf-agent-compose textarea::placeholder{color:#797583}
+html.dark .pf-agent-panel .pf-agent-compose footer button{border:0;background:transparent;color:#908d9a}
+html.dark .pf-agent-panel .pf-agent-compose footer button:hover{background:#29252f}
+html.dark .pf-agent-panel .pf-agent-compose .pf-composer-param{color:var(--agent-ink)}
+html.dark .pf-agent-role-icon{color:#8e8998}
+html.dark .pf-agent-panel .pf-agent-compose select{color:#898290}
+html.dark .pf-agent-panel .pf-agent-compose .pf-agent-send{background:var(--agent-accent);color:#ffffff}
+html.dark .pf-agent-panel .pf-agent-compose .pf-agent-send:disabled{background:#504f58}
+html.dark .pf-agent-panel .pf-agent-compose .pf-agent-send:not(:disabled):hover{background:#9d7bba}
+html.dark .pf-agent-panel .pf-agent-references button{background:#24202c;color:#927eaa}
+html.dark .pf-reference-count{color:#87818f}
+html.dark .pf-reference-thumbnail{border:1px solid #2f2b35;color:#79658b;background:#25232b}
+html.dark .pf-reference-thumbnail.is-text{background:#1a1a1a}
+html.dark .pf-reference-text-preview{color:#89848f}
+html.dark .pf-reference-label{color:#888291}
+html.dark .pf-agent-panel .pf-reference-card .pf-reference-remove{border:1px solid #312b37;background:#1a1a1a;color:#93889f;box-shadow:0 1px 3px #0000003a}
+html.dark .pf-reference-video-badge{color:#1a1a1a;background:#100e14c7}
+html.dark .pf-agent-panel .pf-agent-compose footer button[aria-pressed=true]{background:#381d28;color:#b85178}
+html.dark .pf-message-content hr{border:0;border-top:1px solid #2a2931}
+html.dark .pf-message-content blockquote{border-left:3px solid #473b54;color:#8b8291}
+html.dark .pf-message-content pre{border:1px solid #2a2931;background:#1d1d22}
+html.dark .pf-message-content code{background:#242129;color:#9484a8}
+html.dark .pf-message-content pre code{border:0;background:transparent;color:inherit}
+html.dark .pf-message-table{border:1px solid #2a2931}
+html.dark .pf-message-table :is(th,td){border-bottom:1px solid #2a2931}
+html.dark .pf-message-table th{background:#201e24}
+html.dark .pf-message-content a{color:#8b67ad}
+html.dark .pf-agent-panel .pf-story-plan{border:1px solid #2c2b32;background:#1a1a1a;box-shadow:0 8px 16px #00000038;color:#b8b8c4}
+html.dark .pf-agent-panel .pf-story-plan-heading{border:0;background:none;color:inherit}
+html.dark .pf-story-plan-heading>span{color:#83818d}
+html.dark .pf-story-plan-heading>svg{color:#86838f}
+html.dark .pf-story-plan li{color:#8f8d99}
+html.dark .pf-story-plan li.is-done>svg{color:#6affdf}
+html.dark .pf-story-plan li.is-current{color:#bdbbc6}
+html.dark .pf-story-plan li.is-current>svg{color:#946dbd}
+html.dark .pf-agent-panel .pf-story-continue{background:#212127;border:1px solid #2a2930;color:#aeabb9}
+html.dark .pf-agent-panel .pf-story-continue:disabled{color:#696771;background:#1d1d22}
+html.dark .pf-story-plan-done{color:#898490}
+html.dark .pf-story-existing{color:#88848f}
+html.dark .pf-agent-panel .pf-story-existing button{background:none}
+html.dark .pf-agent-proposal{background:#212127;border:1px solid #2b2b31;color:#b9b8c5}
+html.dark .pf-proposal-changes svg{color:#878490}
+html.dark .pf-proposal-prompts{color:#837f8d}
+html.dark .pf-proposal-prompts article{background:#1a1a1a}
+html.dark .pf-proposal-summary{border-top:1px dashed #2f2e35}
+html.dark .pf-proposal-summary>span{color:#888491}
+html.dark .pf-proposal-summary small{color:#7e7883}
+html.dark .pf-proposal-actions>span{color:#858491}
+html.dark .pf-agent-panel .pf-proposal-actions button{background:#1a1a1a;border:1px solid #2b2a31;color:#bbb7c3}
+html.dark .pf-agent-panel .pf-proposal-actions button.is-primary{background:#c5c5cc;border-color:#c5c5cc;color:#1a1a1a}
+html.dark .pf-proposal-progress{background:#1a1a1a;border:1px solid #2b2932}
+html.dark .pf-proposal-progress small{color:#756a84}
+html.dark .pf-agent-proposal>p[role=alert]{color:#bc525a}
+html.dark .pf-agent-panel .pf-agent-compose{background:#1d1d22}
+html.dark .pf-agent-panel .pf-agent-compose .pf-agent-send{background:#c5c5cc}
+html.dark .pf-agent-panel .pf-agent-compose .pf-agent-send:not(:disabled):hover{background:#afabb8}
+html.dark .pf-batch-overlay{background:#00000085}
+html.dark .pf-batch-dialog{background:#1a1a1a;border:1px solid #2c2a31;color:#bdbbc5;box-shadow:0 24px 90px #00000085}
+html.dark .pf-batch-dialog button{border:1px solid #2e2b33;background:#1a1a1a;color:#b0acb9}
+html.dark .pf-batch-dialog p{color:#807988}
+html.dark .pf-batch-dialog fieldset{border:1px solid #2c2830}
+html.dark .pf-batch-dialog label{color:#898490}
+html.dark .pf-batch-dialog select,html.dark .pf-batch-dialog input{border:1px solid #2f2b34;background:#1b1823;color:#bdb9c6}
+html.dark .pf-batch-dialog .is-primary{background:#c5c5cc;color:#1a1a1a;border-color:#c5c5cc}
+html.dark .pf-batch-quote{background:#201e24}
+html.dark .pf-batch-quote small{color:#807988}
+html.dark .pf-batch-dialog p[role=alert]{color:#bc525a}
+html.dark .pf-agent-panel .pf-reference-count button{background:none;color:#7e7788}
+html.dark .pf-reference-strip.is-draft .pf-reference-card{background:#1a1a1a;border:1px solid #2e2b34}
+html.dark .pf-reference-strip.is-draft .pf-reference-thumbnail{border:0;background:none}
+html.dark .pf-reference-strip.is-draft .pf-reference-label{color:#a9a2b7}
+html.dark .pf-agent-panel .pf-reference-strip.is-draft .pf-reference-remove{border:0;box-shadow:none;background:none;color:#7b7484}
+html.dark .pf-agent-panel .pf-reference-expand{border:1px solid #2e2b34;background:#1a1a1a;color:#81748e}
+html.dark .pf-director-skills{border:1px solid #2d2735;background:#190c2b;color:#9c87ab}
+html.dark .pf-director-phases button{border:0;background:#241e2a;color:#8e7f9a}
+html.dark .pf-director-phases button[aria-pressed=true]{background:#906cac;color:#1a1a1a}
+html.dark .pf-director-options button{background:#1a1a1a;border:1px solid #2d2734;color:#b1aaba}
+html.dark .pf-director-options button[aria-checked=true]{border-color:#8e65ab;background:#251b2f}
+html.dark .pf-director-options small{color:#877890}
+html.dark .pf-director-skills p{color:#7e6e8a}
+html.dark .pf-director-rules pre{color:#938a9c}
+/* canvas/canvasRefinements.css */
+html.dark .pf-library-pagination{border-top:1px solid #222932;color:#77879c}
+html.dark .pf-library-pagination button{border:1px solid #252d38;background:#1a1a1a;color:#889eb9}
+html.dark .pf-flow-area .react-flow__edge-path.pf-connection{stroke:#4c5b6d!important}
+html.dark .pf-flow-area .react-flow__edge:hover .pf-connection{stroke:#5f7694!important}
+html.dark .pf-flow-area .react-flow__edge.selected .pf-connection{stroke:#648fc4!important}
+html.dark .pf-studio-shell.is-dark .pf-connection{stroke:#78879c!important}
+html.dark .pf-studio-shell.is-dark .react-flow__edge.selected .pf-connection{stroke:#174a8b!important}
+html.dark .pf-edge-cut{border:1px solid #313b48;background:#1a1a1a;color:#6688b2;box-shadow:0 2px 6px #00000049}
+html.dark .pf-edge-cut:hover{background:#152130}
+html.dark .pf-chip.is-ref .pf-ref-jump{border:0;background:transparent;color:inherit}
+html.dark .pf-chip.is-ref .pf-ref-jump:hover{color:#8f69b9}
+html.dark .pf-studio-shell.is-light .pf-agent-mention-menu{background:#1a1a1a;border-color:#2e3741;box-shadow:0 8px 28px #0000005b}
+html.dark .pf-mention-tabs button{border:0!important;color:#72849c}
+html.dark .pf-mention-tabs button[aria-selected=true]{background:#0f1f33;color:#2e8cda}
+html.dark .pf-mention-search{border:1px solid #262e38;color:#5d6f86}
+html.dark .pf-mention-search input{border:0;outline:none;background:transparent;color:#8ea3c0}
+html.dark .pf-mention-thumb{background:#1e242b;color:#657b94}
+html.dark .pf-agent-mention-options .pf-mention-copy small{color:#617186}
+html.dark .pf-studio-shell.is-light .pf-skel-toolbar{border-color:#2c3640;box-shadow:0 3px 12px #00000047}
+html.dark .pf-studio-shell.is-light .pf-skel-toolbar button{color:#8698af}
+html.dark .pf-studio-shell.is-light .pf-skel-toolbar button:hover{background:#152130;color:#388bd6}
+html.dark .pf-node-generating{background:radial-gradient(ellipse at center,#302d38 0%,#24232a 72%,#1e1e24 100%);color:#bcbcc7}
+html.dark .pf-node-generating small{color:#84818e}
+html.dark .pf-generation-track{background:#3c3a42}
+html.dark .pf-generation-track>span{background:#8c67ae}
+html.dark .pf-prompt-editable{outline:none;color:#bfc1cd}
+html.dark .pf-prompt-editable:empty:before{color:#636474}
+html.dark .pf-inline-reference{background:#292432;color:#a19ab1}
+html.dark .pf-flow-area .react-flow__handle.connectingto:not(.valid){background:#4d2e2e!important;border-color:#ca7e7e!important}
+html.dark .pf-flow-area .react-flow__node-group{background:transparent;border:0;box-shadow:none}
+html.dark .pf-studio-shell .pf-composer-card.is-attached,html.dark .pf-studio-shell .pf-composer-card.is-attached.is-image{box-shadow:0 16px 38px #00000064;border:1px solid #25262d}
+html.dark .pf-studio-shell .pf-composer-card .pf-chip-btn,html.dark .pf-studio-shell .pf-composer-card .pf-chip{background:#212127;border:0;color:#9398a8}
+html.dark .pf-studio-shell .pf-composer-card.is-attached textarea,html.dark .pf-studio-shell .pf-composer-card.is-attached.is-image textarea{color:#bfc1cd}
+html.dark .pf-composer-quote{color:#7b7f8f}
+html.dark .pf-composer-param{border:0;background:transparent;color:#b3b5c2}
+html.dark .pf-composer-param:hover,html.dark .pf-composer-param[aria-expanded=true]{background:#212127}
+html.dark .pf-composer-param:focus-visible,html.dark .pf-composer-popover button:focus-visible{outline:2px solid #90a8dc}
+html.dark .pf-composer-popover{border:1px solid #28282e;background:#1a1a1a;color:#b3b5c2;box-shadow:0 12px 38px #00000068}
+html.dark .pf-composer-popover button{border:0;background:transparent;color:inherit}
+html.dark .pf-composer-popover button:hover,html.dark .pf-composer-popover button[aria-checked=true]{background:#1f1f27;color:#bdbfcf}
+html.dark .pf-composer-popover button small{color:#6c6f7b}
+html.dark .pf-composer-popover legend{color:#717480}
+html.dark .pf-composer-option-grid button{border:1px solid #26262d}
+html.dark .pf-composer-option-grid button[aria-checked=true]{border-color:#545679;background:#1d1c2b}
+html.dark .pf-studio-shell .pf-composer-card .pf-composer-go{background:#c1c2cd;box-shadow:none;color:#1a1a1a}
+html.dark .pf-studio-shell .pf-composer-card .pf-composer-cost{color:#7b7f8f}
+html.dark .pf-composer-validation{color:#bf7d3c}
+html.dark .pf-composer-card .pf-prompt-presets button{background:#1a1a23;color:#a7aab9;border-color:#25252f}
+html.dark .pf-composer-card .pf-prompt-presets span{color:#6f7382}
+html.dark .pf-studio-shell .pf-composer-card .pf-composer-go{background:#c1c2cd!important}
+html.dark .pf-video-try{color:#a8a7b6;background:#1a1a1a}
+html.dark .pf-video-try>span{color:#767383}
+html.dark .pf-video-try button{border:0;background:transparent;color:#a8a8b9}
+html.dark .pf-video-try button:hover{color:#825fac}
+html.dark .pf-video-setup{background:#1a1a1a;color:#afafbe;box-shadow:0 18px 60px #00000085}
+html.dark .pf-video-setup p{color:#74717f}
+html.dark .pf-video-setup button{border:1px solid #2b2833;background:#1a1a1a;color:inherit}
+html.dark .pf-video-setup .is-primary{background:#8867ab;color:#1a1a1a}
+html.dark .pf-video-setup-grid button[aria-pressed=true]{border-color:#8867ab;background:#21182c}
+html.dark .pf-video-setup-grid b{background:#8867ab;color:#1a1a1a}
+html.dark .pf-node-self-writing{border:0;outline:0;color:#b7b5c2;background:#1a1a1a}
+html.dark .pf-writing-skill-editor{border-top:1px solid #282828}
+html.dark .pf-writing-skill-editor button{border:1px solid #2f2c37;background:#1f1929;color:#9c7db6}
+html.dark .pf-writing-skill-editor textarea{border:1px solid #2b2735}
+html.dark .pf-story-result-placeholder{background:#1a1a1a;color:#3f3e43}
+html.dark .pf-story-result-placeholder span{color:#76668a}
+html.dark .pf-story-result-placeholder:focus-visible{outline:2px solid #694c87}
+html.dark .pf-writing-outputs{background:#221c27;color:#9681a7}
+html.dark .pf-writing-outputs small{color:#7b7783}
+html.dark .pf-writing-director{border:0;border-top:1px solid #28222d}
+html.dark .pf-writing-progress{background:#211b27;color:#9272ab}
+html.dark .pf-writing-progress small{color:#776982}
+html.dark .pf-video-frame-slots button{border:1px solid #272d35;background:#1a1a1a;color:#93a1b6}
+html.dark .pf-video-frame-slots button[aria-pressed=true]{border-color:#9689cf;background:#1e172e;color:#654eab}
+html.dark .pf-chip.is-ref small{color:#b28934}
+html.dark .pf-chip.is-ref.is-pending{border:1px dashed #665a41}
+/* workspaceChrome.css */
+html.dark .pf-workspace-chrome.pf-chrome-v2{color:#bbbcc7}
+html.dark .pf-chrome-v2 button{color:#8e8f9d}
+html.dark .pf-chrome-v2 .pf-top-box{border:1px solid #2d2c34;background:#1a1a1a;box-shadow:0 2px 9px #0000001f}
+html.dark .pf-title-control{border:0;background:transparent}
+html.dark .pf-title-control b{color:#c0c2cd}
+html.dark .pf-path-divider{color:#5e5e6a}
+html.dark .pf-chrome-v2 .pf-save-state{border:0;background:transparent;color:#7c7d8c}
+html.dark .pf-save-state.is-pending{color:#cf9a44!important}
+html.dark .pf-view-tabs button,html.dark .pf-top-tools button{background:transparent;border:0}
+html.dark .pf-view-tabs button[aria-pressed=true],html.dark .pf-top-tools button[aria-expanded=true]{color:#8665ab;background:#261e2e}
+html.dark .pf-chrome-v2 button:hover{background:#221f27}
+html.dark .pf-chrome-v2 .pf-share-trigger{background:#261e2e;color:#8867aa;border-color:#40334c}
+html.dark .pf-top-more{background:#1a1a1a;border:1px solid #2c2b33;box-shadow:0 15px 45px #00000045}
+html.dark .pf-top-more button{background:transparent;border:0}
+html.dark .pf-top-more .has-divider{border-top:1px solid #292630}
+html.dark .pf-top-more kbd{color:#716f7d}
+html.dark .pf-workspace-feedback{background:#1a1a1aeb;color:#80758c}
+html.dark .pf-workspace-dialog{--panel:#1a1a1a;--soft:#1f1c23;--ink:#babcc7;--muted:#7f7f8b;--line:#2b2932;--accent:#8a66ac;color:var(--ink);background:var(--panel);border:1px solid var(--line);box-shadow:0 20px 80px #00000068}
+html.dark .pf-workspace-dialog::backdrop{background:#0e101583}
+html.dark .pf-workspace-dialog button{border:1px solid var(--line);color:var(--ink);background:var(--panel)}
+html.dark .pf-dialog-inner>header button{border:0;color:var(--muted)}
+html.dark .pf-workspace-dialog button:hover:not(:disabled){background:var(--soft)}
+html.dark .pf-workspace-dialog button.pf-primary{background:var(--accent);border-color:var(--accent);color:#ffffff}
+html.dark .pf-workspace-dialog input:not([type=checkbox]),html.dark .pf-workspace-dialog select{border:1px solid var(--line);background:var(--soft);color:var(--ink)}
+html.dark .pf-workspace-dialog input:focus,html.dark .pf-workspace-dialog select:focus{outline:2px solid #593f75}
+html.dark .pf-muted,html.dark .pf-workspace-dialog small{color:var(--muted)}
+html.dark .pf-panel-note{border-top:1px solid var(--line);color:var(--muted)}
+html.dark .pf-workspace-dialog [role=alert]{color:#be6169}
+html.dark .pf-wallet-card{border:1px solid var(--line)}
+html.dark .pf-wallet-card>span{color:var(--muted)}
+html.dark .pf-wallet-card footer{border-top:1px solid var(--line)}
+html.dark .pf-wallet-stats span{color:var(--muted)}
+html.dark .pf-wallet-stats b{color:var(--ink)}
+html.dark .pf-panel-tabs{background:var(--soft)}
+html.dark .pf-panel-tabs button{border:0;background:transparent}
+html.dark .pf-panel-tabs button[aria-pressed=true]{background:var(--panel);box-shadow:0 2px 8px #00000026}
+html.dark .pf-billing-records article{border-bottom:1px solid var(--line)}
+html.dark .pf-invite-card{background:var(--soft)}
+html.dark .pf-invite-card p{color:var(--muted)}
+html.dark .pf-member-list article{border-bottom:1px solid var(--line)}
+html.dark .pf-avatar{background:#2a2031;color:#8a66ac}
+html.dark .pf-project-list button,html.dark .pf-job-list button{border:0;border-bottom:1px solid var(--line)}
+html.dark .pf-version-row{border-bottom:1px solid var(--line)}
+html.dark .pf-setting-row{border-bottom:1px solid var(--line)}
+html.dark .pf-setting-row input{accent-color:#8a66ac}
+html.dark .pf-history-results h3{color:var(--muted)}
+html.dark .pf-history-preview{border:1px solid var(--line);background:var(--soft)}
+html.dark .pf-history-preview>button:not(.pf-history-select){border:0;background:transparent}
+html.dark .pf-history-play-icon{background:#1a1a1af2;color:#8a66ac;box-shadow:0 5px 18px #00000085}
+html.dark .pf-history-play:hover .pf-history-play-icon{background:#1a1a1a;box-shadow:0 6px 24px #000000aa}
+html.dark .pf-history-grid .is-selected .pf-history-preview{border:2px solid #714c95}
+html.dark .pf-history-preview .pf-history-select{background:#1a1a1a}
+html.dark .pf-history-select[aria-pressed=true]{background:#8a66ac!important;color:#1a1a1a}
+html.dark .pf-studio-shell.is-light .pf-storyboard{background:#1e1b23}
+html.dark .pf-studio-shell .pf-story-column{box-shadow:none}
+html.dark .pf-studio-shell.is-light .pf-story-column>header{border-bottom:1px solid #2b2932}
+html.dark .pf-studio-shell.is-light .pf-story-card{background:#1a1a1a;color:#b7b7c2;border:0;border-bottom:1px solid #2b2932}
+html.dark .pf-studio-shell.is-light .pf-story-card-heading{color:#908f9e}
+html.dark .pf-studio-shell.is-light .pf-story-placeholder{background:#1f1c23;color:#5e5a68}
+html.dark .pf-studio-shell.is-light .pf-story-placeholder p{color:#aca9b5}
+html.dark .pf-studio-shell.is-light .pf-story-card>img{background:#1f1c23}
+html.dark .pf-studio-shell.is-light .pf-story-card-meta{border:0;color:#807c8b}
+html.dark .pf-story-column.is-expanded{background:#1a1a1a;box-shadow:0 20px 80px #00000085}
+html.dark .pf-story-actions button{border:0;background:transparent;color:#898390}
+html.dark .pf-story-title em{color:#777081}
+html.dark .pf-studio-shell.is-dark .pf-workspace-dialog{--panel:#c8c7d2;--soft:#bebcc9;--ink:#27222e;--muted:#5b5469;--line:#afabba}
+html.dark .pf-studio-shell.is-dark .pf-chrome-v2 .pf-top-box,html.dark .pf-studio-shell.is-dark .pf-top-more{background:#c4c1cf;color:#271f30;border-color:#afabba}
+html.dark .pf-studio-shell.is-dark .pf-chrome-v2 button,html.dark .pf-studio-shell.is-dark .pf-title-control b{color:#2c2535}
+html.dark .pf-studio-shell.is-dark .pf-chrome-v2 button:hover{background:#b2a9c2}
+html.dark .pf-workspace-dialog button.pf-primary:hover:not(:disabled){background:#774ea3;color:#ffffff}

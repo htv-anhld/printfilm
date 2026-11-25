@@ -2,6 +2,7 @@
 import { tr } from '../i18n'
 import { dramaApi, type DramaAsset } from '../api/drama'
 import { buildBoundParams } from '../pages/drama/CharacterVoiceBindModal'
+import { ensureCharacterVoiceGenerationEnabled } from '../api/publicCapabilities'
 
 export type CharacterVoiceGenerateResult = {
   character: DramaAsset
@@ -13,6 +14,7 @@ export async function generateAndBindCharacterVoice(
   projectId: number,
   asset: DramaAsset,
 ): Promise<CharacterVoiceGenerateResult> {
+  await ensureCharacterVoiceGenerationEnabled()
   const promptResult = await dramaApi.suggestVoicePrompt({
     project_id: projectId,
     asset_id: asset.id,

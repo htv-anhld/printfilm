@@ -32,6 +32,7 @@ import { pageCountOf } from '../../lib/pagination'
 import { readVisualPrompt } from '../../lib/dramaVisualPrompt'
 import { filterDramaLibraryAssets } from '../../lib/dramaLibraryAssets'
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../lib/dramaVoiceBinding'
+import { useCharacterVoiceGenerationEnabled } from '../../hooks/usePublicCapabilities'
 import {
   dramaAssetImageGenButtonLabel,
   dramaAssetNeedsImageGeneration,
@@ -102,6 +103,7 @@ function needsImageGeneration(asset: DramaAsset): boolean {
 
 // 渲染资产库步骤
 export function AssetsStep({ projectId, onError }: AssetsStepProps) {
+  const voiceGenerationEnabled = useCharacterVoiceGenerationEnabled()
   /*
    * assets 项目资产
    * tab 当前分类
@@ -285,7 +287,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err || '')
-      if (isBillingError(message)) return null
+      if (isBillingError(message)) { onError(message); return null }
       if (await handleBillingError(err)) return null
       onError(message || t('drama.assetsStep.balanceCheckFailed'))
       return null
@@ -294,7 +296,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
 
   async function notifyImageGenFailure(err: unknown) {
     const message = err instanceof Error ? err.message : String(err || '')
-    if (isBillingError(message)) return
+    if (isBillingError(message)) { onError(message); return }
     if (isUpstreamAccountError(message)) {
       await alertDramaGenError(err)
       onError(formatDramaGenError(message).message)
@@ -404,6 +406,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
 
   // 一键 AI 生成音色并绑定（各角色独立 busy，互不阻塞）
   async function handleGenerateCharacterVoice(asset: DramaAsset) {
+    if (!voiceGenerationEnabled) { onError(t('drama.common.voiceGenDisabled')); return }
     if (characterVoiceBusyIds.has(asset.id) || batchVoiceBusy) return
     setCharacterVoiceBusyIds((prev) => new Set(prev).add(asset.id))
     try {
@@ -423,6 +426,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
 
   // 批量按角色设定生成音色
   async function batchGenerateCharacterVoices() {
+    if (!voiceGenerationEnabled) { onError(t('drama.common.voiceGenDisabled')); return }
     if (batchVoiceBusy || selectedCharacterAssets.length === 0) return
     const ok = await dialog.confirm({
       title: t('drama.assetsStep.batchVoiceTitle'),
@@ -507,6 +511,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
 
   // 按提示词合成 voice 资产试听
   async function handleSynthVoice(asset: DramaAsset) {
+    if (!voiceGenerationEnabled) { onError(t('drama.common.voiceGenDisabled')); return }
     const prompt = (voicePromptDrafts[asset.id] ?? readVoicePrompt(asset)).trim()
     if (!prompt) {
       onError(t('drama.assetsStep.fillVoicePrompt'))
@@ -780,7 +785,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
             </button>
           ) : null}
 
-          {DRAMA_VOICE_BINDING_ENABLED && tab === 'character' ? (
+          {DRAMA_VOICE_BINDING_ENABLED && voiceGenerationEnabled && tab === 'character' ? (
             <button
               type="button"
               className="pf-btn pf-btn-lime"
@@ -843,7 +848,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                     )
                   }
                 }}
-                onSynth={() => void handleSynthVoice(asset)}
+                onSynth={voiceGenerationEnabled ? () => void handleSynthVoice(asset) : undefined}
                 onDelete={() => void handleDeleteVoice(asset)}
                 onError={onError}
               />
@@ -895,7 +900,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => e.stopPropagation()}
               >
-                {tab === 'character' && isCharacter ? (
+                {voiceGenerationEnabled && tab === 'character' && isCharacter ? (
                   <label
                     className="drama-voice-multi-select"
                     style={{ display: 'inline-flex', gap: 8, alignItems: 'center', marginRight: 8, cursor: 'pointer' }}
@@ -932,7 +937,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                           label={voice.label}
                           onError={onError}
                         />
-                      ) : (
+                      ) : voiceGenerationEnabled ? (
                         <button
                           type="button"
                           className="pf-btn pf-btn-sm pf-btn-lime"
@@ -947,7 +952,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                             ? t('drama.common.generating')
                             : t('drama.assetsStep.genVoice')}
                         </button>
-                      )
+                      ) : null
                     ) : null}
                     <button
                       type="button"

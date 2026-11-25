@@ -109,8 +109,8 @@ def motion_hint(level: str | None) -> str:
 # 把上传文件落到用户工具目录
 def save_upload(user_id: int, data: bytes, filename: str) -> Path:
     ext = Path(filename or "bin").suffix.lower() or ".bin"
-    if ext not in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".mov", ".webm"}:
-        raise ValueError(_("仅支持 png / jpg / webp / gif / mp4 / mov / webm"))
+    if ext not in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".mov", ".webm", ".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}:
+        raise ValueError(_("不支持的参考文件格式"))
     dest = tools_dir(user_id) / f"{uuid.uuid4().hex[:12]}{ext}"
     dest.write_bytes(data)
     return dest
@@ -151,6 +151,9 @@ async def run_image_tool(
     mode: str | None,
     pack: str | None,
     files: list[Path],
+    output_no: int | None = None,
+    model_id: str | None = None,
+    resolution: str | None = None,
 ) -> dict:
     ark = get_ark()
     size = ratio_to_size(ratio)
@@ -158,12 +161,12 @@ async def run_image_tool(
     full_prompt = (prompt or "").strip()
 
     if tool_id == "t2i":
-        if len(full_prompt) < 4:
+        if not full_prompt:
             raise ValueError(_("请填写提示词"))
     elif tool_id in {"i2i", "i2p"}:
         if not files:
             raise ValueError(_("请上传参考图"))
-        refs = [publish_public(files[0])]
+        refs = [publish_public(path) for path in files]
         if tool_id == "i2i":
             full_prompt = f"{full_prompt or '保持主体，生成风格一致的变体'}。{strength_hint(strength)}"
         else:
@@ -198,21 +201,26 @@ async def run_image_tool(
     else:
         raise ValueError(_("不支持的生图工具"))
 
-    result = await ark.gen_image(
-        full_prompt,
-        negative,
-        refs or None,
-        project_id=0,
-        shot_no=user.id,
-        size=size,
-    )
+    from app.services.ark import force_real_image
+
+    with force_real_image():
+        result = await ark.gen_image(
+            full_prompt,
+            negative,
+            refs or None,
+            project_id=0,
+            shot_no=output_no or user.id,
+            size=resolution or size,
+            model=(model_id or "").strip() or None,
+            aspect_ratio=ratio or "auto",
+        )
     await record_seedream_image_usage(
         db,
         user_id=user.id,
-        model=get_settings().model_image,
+        model=(model_id or "").strip() or get_settings().model_image,
         domain="studio",
         image_result=result,
-        extra_raw={"tool_id": tool_id},
+        extra_raw={"tool_id": tool_id, "size": resolution or size},
     )
     url = result.local_url or result.remote_url or ""
     if url:
@@ -412,9 +420,41 @@ async def start_video_tool(
     motion: str | None,
     files: list[Path],
     model: str | None = None,
+    output_no: int | None = None,
+    model_id: str | None = None,
+    resolution: str | None = None,
+    video_mode: str | None = None,
+    references: dict | None = None,
+    generate_audio: bool | None = False,
 ) -> dict:
-    """独立视频工具：先得到首帧图，再提交 Seedance；model 为前台选择的视频模型 id。"""
+    """独立视频工具：先得到首帧图，再提交 Seedance。
+
+    model（工具中心）/ model_id（工作室画布）为前台选择的视频模型 id；工具中心默认不生成声音。
+    """
+    from app.services.studio_generation import video_audio_enabled
+
+    model_id = (model_id or model or "").strip() or None
+    generate_audio = video_audio_enabled(model_id, generate_audio)
     ark = get_ark()
+    if video_mode:
+        from app.services.media_models.prices import resolve_strategy
+        from app.services.media_models.planning import reference_params
+        strategy = resolve_strategy(model_id or get_settings().model_video)
+        params = {"prompt": prompt.strip(), "duration": int(str(duration_raw or "5").removesuffix("s")),
+                  "resolution": resolution or "480p", "aspect_ratio": ratio or "9:16",
+                  "generate_audio": generate_audio, **reference_params(references or {})}
+        for field in ("first_frame", "last_frame"):
+            if params.get(field) and not params[field].startswith(("https://", "http://", "/static/")):
+                params[field] = publish_public(Path(params[field]))
+        for field in ("reference_images", "reference_videos", "reference_audios"):
+            if field in params:
+                params[field] = [url if url.startswith(("https://", "http://", "/static/")) else publish_public(Path(url))
+                                 for url in params[field]]
+        body = strategy.build_provider_request(params, {"upstream_model": model_id or get_settings().model_video})
+        task_id = await ark.gen_video_seedance_body(body, project_id=0)
+        preview = params.get("first_frame") or next(iter(params.get("reference_images") or []), None)
+        return {"kind": "video", "urls": [], "task_id": task_id, "status": "queued", "preview_url": preview,
+                "message": _("视频生成中，请稍候")}
     duration = duration_seconds(duration_raw)
     still_path: Path | None = None
     preview_url: str | None = None
@@ -427,7 +467,7 @@ async def start_video_tool(
             f"{text}。电影感静帧，无文字",
             "文字，字幕，水印，logo",
             project_id=0,
-            shot_no=user.id,
+            shot_no=output_no or user.id,
             size=ratio_to_size(ratio or "9:16"),
         )
         await record_seedream_image_usage(
@@ -444,6 +484,13 @@ async def start_video_tool(
             if published:
                 preview_url = published
         image_url = preview_url or still.remote_url
+        from app.services.media_models.runtime import current_snapshot
+        if output_no and (current_snapshot.get() or {}).get("mode") == "fixed_media":
+            run = await db.get(ToolRun, output_no)
+            if run is not None and run.user_id == user.id:
+                # A helper image remains available even if the following video fails.
+                run.preview_url = preview_url
+                await db.commit()
         video_prompt = text
     elif tool_id == "v2v":
         if not files:
@@ -468,9 +515,10 @@ async def start_video_tool(
         image_url,
         video_prompt,
         duration,
-        resolution="480p",
-        generate_audio=False,
-        model=(model or "").strip() or None,
+        resolution=resolution or "480p",
+        ratio=ratio or "9:16",
+        generate_audio=generate_audio,
+        model=model_id or None,
     )
     digest = hashlib.md5(f"{user.id}:{task_id}".encode()).hexdigest()[:8]
     logger.info("tool video queued user=%s tool=%s task=%s hash=%s", user.id, tool_id, task_id, digest)
@@ -485,7 +533,7 @@ async def start_video_tool(
 
 
 # 单次查询视频任务；成功则下载并同步 OSS
-async def poll_video_task(user: User, task_id: str) -> dict:
+async def poll_video_task(user: User, task_id: str, *, on_stage=None) -> dict:
     ark = get_ark()
     result = await ark.fetch_task_once(task_id)
     usage = {
@@ -493,6 +541,8 @@ async def poll_video_task(user: User, task_id: str) -> dict:
         "completion_tokens": int(result.completion_tokens or 0),
     }
     if result.status == "succeeded" and result.url:
+        if on_stage:
+            await on_stage("transferring")
         dest = tools_dir(user.id) / f"v_{task_id[-10:]}.mp4"
         if result.url.startswith("/static/"):
             url = ensure_public_url(result.url) or result.url

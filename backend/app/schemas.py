@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field, SecretStr, field_validator
 
 from app.i18n import SUPPORTED_LOCALES, normalize_locale
 from app.schemas_common import PageMeta
@@ -16,6 +16,15 @@ def _validate_content_locale(value: str | None) -> str | None:
     if loc not in SUPPORTED_LOCALES:
         raise ValueError("content_locale must be one of: zh, en, vi")
     return loc
+
+
+def _normalize_project_template_id(value: Any) -> Any:
+    """历史项目可能没有模板；响应沿用字符串契约，不改写数据库。"""
+    return "" if value is None else value
+
+
+# 仅用于项目响应，创建和更新请求仍使用各自的模板校验。
+ProjectTemplateIdOut = Annotated[str, BeforeValidator(_normalize_project_template_id)]
 
 
 # ---- Auth ----
@@ -85,6 +94,11 @@ class ProfileUpdateRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(min_length=1, max_length=64)
     new_password: str = Field(min_length=6, max_length=64)
+
+
+class CloseAccountRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=64)
+    confirmation: str = Field(min_length=1, max_length=16)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -163,6 +177,9 @@ class ShotUpdate(BaseModel):
 
 
 class ProjectCreate(BaseModel):
+    target_duration_sec: int = Field(default=60, ge=15, le=180)
+    image_resolution: str = Field(default="", max_length=16)
+    video_resolution: str = Field(default="", max_length=16)
     template_id: str
     # 为空时由创建接口按请求语言填「未命名作品」
     title: str | None = None
@@ -189,6 +206,9 @@ class ProjectCreate(BaseModel):
 
 
 class ProjectUpdate(BaseModel):
+    target_duration_sec: int | None = Field(default=None, ge=15, le=180)
+    image_resolution: str | None = Field(default=None, max_length=16)
+    video_resolution: str | None = Field(default=None, max_length=16)
     title: str | None = Field(default=None, max_length=200)
     source_type: str | None = Field(default=None, pattern="^(theme|script)$")
     source_text: str | None = Field(default=None, min_length=2, max_length=20000)
@@ -216,8 +236,12 @@ class ProjectUpdate(BaseModel):
 
 
 class ProjectOut(BaseModel):
+    creation_session_id: int | None = None
+    target_duration_sec: int = 60
+    image_resolution: str = ""
+    video_resolution: str = ""
     id: int
-    template_id: str
+    template_id: ProjectTemplateIdOut
     title: str
     source_type: str
     source_text: str
@@ -249,9 +273,10 @@ class ProjectOut(BaseModel):
 
 
 class ProjectListItem(BaseModel):
+    creation_session_id: int | None = None
     id: int
     title: str
-    template_id: str
+    template_id: ProjectTemplateIdOut
     status: str
     progress: int
     cover_url: str | None
@@ -277,6 +302,8 @@ class ContentExpandRequest(BaseModel):
     mode: str = Field(default="theme", pattern="^(theme|script)$")
     # 生成内容所用语言（zh | en | vi）；缺省跟随界面语言
     content_locale: str | None = Field(default=None, pattern="^(zh|en|vi)$")
+    target_duration_sec: int | None = Field(default=None, ge=5, le=600)
+    style: str | None = Field(default=None, max_length=200)
 
 
 class ContentExpandOut(BaseModel):
@@ -390,6 +417,7 @@ class AdminFinanceDailyRowOut(BaseModel):
     charge_fen: int = 0
     cost_fen: int = 0
     tokens: int = 0
+    calls: int = 0
     actual_cost_fen: int = 0
     profit_fen: int = 0
     profit_pct: float | None = None
@@ -399,6 +427,7 @@ class AdminFinanceDailyTotalsOut(BaseModel):
     charge_fen: int = 0
     cost_fen: int = 0
     tokens: int = 0
+    calls: int = 0
     actual_cost_fen: int = 0
     profit_fen: int = 0
     profit_pct: float | None = None
@@ -487,6 +516,8 @@ class AdminQueueSummaryOut(BaseModel):
     name: str
     label: str
     pending: int
+    active: int = 0
+    max_concurrency: int = 0
     sample: list[AdminQueueTaskOut]
 
 
@@ -507,7 +538,8 @@ class AdminQueuesOut(BaseModel):
 
 class AdminUserOut(BaseModel):
     id: int
-    email: EmailStr
+    # 管理端展示历史账号及注销墓碑；匿名 .invalid 地址不作为登录输入校验。
+    email: str = Field(max_length=255)
     nickname: str
     quota_left: int
     balance_fen: int
@@ -530,10 +562,16 @@ class AdminUserListOut(BaseModel):
     meta: PageMeta
 
 
+class AdminUserPasswordReset(BaseModel):
+    new_password: SecretStr
+
+
 class AdminUserPatch(BaseModel):
     plan: str | None = None
     role: str | None = None
-    # Absolute target balance in fen; when set, write ledger delta
+    # 相对调账（分）：正数增加、负数减少；与 balance_fen 互斥，优先本字段
+    balance_delta_fen: int | None = None
+    # 兼容旧客户端：绝对目标余额（分）
     balance_fen: int | None = None
     balance_note: str | None = None
 
@@ -546,6 +584,9 @@ class AdminOrderOut(BaseModel):
     sku_id: str
     amount_fen: int
     credit_fen: int
+    payment_currency: str | None = None
+    payment_amount_minor: int | None = None
+    payment_exchange_rate: str | None = None
     pay_type: str
     status: str
     trade_no: str | None
@@ -574,6 +615,8 @@ class AdminLedgerOut(BaseModel):
     ref_id: str
     note: str
     created_at: datetime
+    # 手动调账时 ref_type=admin，ref_id 为操作管理员 id
+    operator_email: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -587,7 +630,7 @@ class AdminProjectOut(BaseModel):
     id: int
     user_id: int
     user_email: str | None = None
-    template_id: str
+    template_id: ProjectTemplateIdOut
     title: str
     status: str
     progress: int

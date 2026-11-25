@@ -1,5 +1,8 @@
+import { useState } from "react";
+import { Check, Eye, EyeOff, RotateCcw, Trash2 } from "lucide-react";
 import { LabeledControl } from "@/components/settings/SettingsPanel";
 import { useI18n } from "@/i18n";
+import { Button } from "@/components/ui/button";
 
 type SecretFieldProps = {
   label: string;
@@ -9,9 +12,14 @@ type SecretFieldProps = {
   placeholder?: string;
   onChange: (value: string) => void;
   onClear?: () => void;
+  clearPending?: boolean;
+  onUndoClear?: () => void;
+  disabled?: boolean;
+  required?: boolean;
+  error?: string;
 };
 
-// 密钥输入：留空不修改，支持清除已存密钥
+// Only the new draft can be revealed; existing secrets are never loaded into this field.
 export function SecretField({
   label,
   hint,
@@ -20,30 +28,64 @@ export function SecretField({
   placeholder,
   onChange,
   onClear,
+  clearPending = false,
+  onUndoClear,
+  disabled = false,
+  required = false,
+  error,
 }: SecretFieldProps) {
   const { t } = useI18n();
+  const [visible, setVisible] = useState(false);
+  const hasDraft = value.trim().length > 0;
+  const status = clearPending
+    ? t("common.secret.statusClearPending")
+    : hasDraft
+      ? t("common.secret.statusDraft")
+      : configured
+        ? t("common.secret.configured")
+        : t("common.secret.statusNotConfigured");
+  const inputRequired = required && !configured && !clearPending;
+  const fieldError = error ?? (value.length > 0 && !hasDraft && !clearPending ? t("common.secret.onlySpaces") : undefined);
+  const guidance = clearPending
+    ? t("common.secret.guideClearPending")
+    : configured
+      ? t("common.secret.configuredHint")
+      : t("common.secret.guideNew");
   return (
     <LabeledControl
       label={label}
-      hint={hint ?? (configured ? t("common.secret.configuredHint") : undefined)}
+      hint={[hint, guidance].filter(Boolean).join(" ")}
+      required={inputRequired}
+      error={fieldError}
     >
       <div className="admin-secret-field">
-        <div className="admin-secret-field-row">
+        <div className="admin-secret-field-row settings-secret-row">
           <input
-            type="password"
+            type={visible && !clearPending ? "text" : "password"}
             className="settings-input is-secret"
-            placeholder={placeholder ?? (configured ? t("common.secret.keepEmpty") : t("common.secret.enter"))}
-            value={value}
+            placeholder={clearPending ? t("common.secret.markedClear") : placeholder ?? (configured ? t("common.secret.keepEmpty") : t("common.secret.enter"))}
+            value={clearPending ? "" : value}
+            disabled={disabled || clearPending}
+            required={inputRequired}
             onChange={(e) => onChange(e.target.value)}
             autoComplete="new-password"
+            autoCapitalize="none"
+            spellCheck={false}
           />
-          {configured && onClear ? (
-            <button type="button" className="admin-btn admin-btn-secondary settings-mini-btn" onClick={onClear}>
-              {t("common.clear")}
-            </button>
-          ) : null}
+          <Button type="button" variant="outline" size="icon" disabled={disabled || clearPending || !hasDraft}
+            aria-label={visible ? t("common.secret.hideLabel", { label }) : t("common.secret.showLabel", { label })} aria-pressed={visible}
+            title={visible ? t("common.secret.hideInput") : t("common.secret.showInput")} onClick={() => setVisible((current) => !current)}>
+            {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+          </Button>
+          {clearPending && onUndoClear ? <Button type="button" variant="outline" disabled={disabled} onClick={onUndoClear}>
+            <RotateCcw size={14} />{t("common.secret.undo")}
+          </Button> : (configured || hasDraft) && onClear ? <Button type="button" variant="outline" disabled={disabled} onClick={() => { setVisible(false); onClear(); }}>
+            <Trash2 size={14} />{t("common.clear")}
+          </Button> : null}
         </div>
-        {configured ? <span className="admin-secret-status">{t("common.secret.configured")}</span> : null}
+        <span className="admin-secret-status inline-flex items-center gap-1" role="status">
+          {configured && !clearPending && !hasDraft ? <Check size={12} /> : null}{status}
+        </span>
       </div>
     </LabeledControl>
   );

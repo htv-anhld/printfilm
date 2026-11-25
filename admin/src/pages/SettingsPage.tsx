@@ -32,7 +32,7 @@ function SettingsPageHeader() {
         <button
           type="button"
           className="admin-btn admin-btn-primary settings-save-btn"
-          disabled={action.saving}
+          disabled={action.saving || action.disabled}
           onClick={() => void action.onSave()}
         >
           {action.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}

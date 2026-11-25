@@ -12,6 +12,7 @@ from app.deps import get_current_user
 from app.models import User
 from app.schemas import (
     ChangePasswordRequest,
+    CloseAccountRequest,
     ForgotPasswordRequest,
     GoogleExchangeRequest,
     LoginRequest,
@@ -24,6 +25,7 @@ from app.schemas import (
     VerifyEmailTokenRequest,
 )
 from app.services import storage
+from app.services.account_closure import close_account
 from app.services.auth import (
     create_access_token,
     get_user_by_email,
@@ -43,11 +45,18 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
 
 
-@router.post("/register", response_model=TokenResponse)
+@router.post(
+    "/register",
+    response_model=TokenResponse,
+    summary="注册账号",
+    description="使用邮箱、密码和昵称注册账号，按系统配置初始化额度及注册赠送余额，成功后返回访问令牌。已注册邮箱返回 400。",
+    response_description="注册成功的访问令牌",
+)
 async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) -> TokenResponse:
     existing = await get_user_by_email(db, body.email)
     if existing:
         raise HTTPException(status_code=400, detail=_("邮箱已注册"))
+    from app.services.billing import wallet
     from app.services.email_verification import mark_verified, send_verification, verification_active
 
     user = User(
@@ -60,6 +69,9 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
     )
     db.add(user)
     await db.flush()
+    if wallet.enabled():
+        # 统一钱包（上游积分体系）开启时先建账户；注册赠金仍在邮箱验证后由 mark_verified 发放
+        await wallet.initialize_account(db, user)
     from app.services.partners import attribute_signup
 
     await attribute_signup(db, user, body.ref)
@@ -80,7 +92,13 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="邮箱密码登录",
+    description="验证邮箱和密码并签发访问令牌；邮箱或密码错误返回 401。",
+    response_description="登录成功的访问令牌",
+)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> TokenResponse:
     user = await get_user_by_email(db, body.email.lower())
     if not user or not verify_password(body.password, user.hashed_password):
@@ -88,18 +106,49 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> Token
     return TokenResponse(access_token=create_access_token(str(user.id)))
 
 
-@router.get("/me", response_model=UserOut)
+@router.post(
+    "/close-account",
+    summary="永久注销当前账号",
+    description="需要登录并校验当前密码及确认词 DELETE；存在名下团队或未完成任务时返回 409。成功后立即匿名化资料并使现有令牌失效。",
+    response_description="账号注销结果",
+)
+async def close_current_account(
+    body: CloseAccountRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict[str, bool]:
+    """仅编排当前用户的账号注销，安全检查和持久化由领域服务执行。"""
+    return await close_account(
+        db,
+        user=user,
+        password=body.password,
+        confirmation=body.confirmation,
+    )
+
+
+@router.get(
+    "/me",
+    response_model=UserOut,
+    summary="获取当前用户资料",
+    description="需要登录，返回当前用户的账号资料、套餐、额度及余额信息。",
+    response_description="当前用户资料",
+)
 async def me(user: User = Depends(get_current_user)) -> User:
     return user
 
 
-@router.post("/change-password")
+@router.post(
+    "/change-password",
+    summary="修改登录密码",
+    description="需要登录并校验当前密码；新密码不能与当前密码相同，成功后返回 ok。",
+    response_description="密码修改结果",
+)
 async def change_password(
     body: ChangePasswordRequest,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict[str, bool]:
-    """校验当前密码后写入新密码。"""
+    """需要登录并校验当前密码；新密码不能与当前密码相同，成功后返回 ok。"""
     if not verify_password(body.current_password, user.hashed_password):
         raise HTTPException(status_code=400, detail=_("当前密码不正确"))
     if body.current_password == body.new_password:
@@ -109,24 +158,34 @@ async def change_password(
     return {"ok": True}
 
 
-@router.post("/forgot-password")
+@router.post(
+    "/forgot-password",
+    summary="申请重置密码",
+    description="向指定邮箱发送密码重置邮件。接口统一返回提示以避免泄露账号是否存在；重置服务不可用时返回 503。",
+    response_description="密码重置申请结果",
+)
 async def forgot_password(
     body: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, object]:
-    """发送密码重置邮件；统一成功文案，避免邮箱枚举。"""
+    """向指定邮箱发送密码重置邮件。接口统一返回提示以避免泄露账号是否存在；重置服务不可用时返回 503。"""
     try:
         return await request_password_reset(db, str(body.email))
     except RedisUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-@router.post("/reset-password")
+@router.post(
+    "/reset-password",
+    summary="通过令牌重置密码",
+    description="使用邮件中的一次性令牌设置新密码；令牌无效返回 400，重置服务不可用返回 503。",
+    response_description="密码重置结果",
+)
 async def reset_password(
     body: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, bool]:
-    """用邮件中的一次性 token 设置新密码。"""
+    """使用邮件中的一次性令牌设置新密码；令牌无效返回 400，重置服务不可用返回 503。"""
     try:
         await apply_password_reset(db, token=body.token, new_password=body.new_password)
     except RedisUnavailableError as exc:
@@ -136,13 +195,19 @@ async def reset_password(
     return {"ok": True}
 
 
-@router.patch("/me", response_model=UserOut)
+@router.patch(
+    "/me",
+    response_model=UserOut,
+    summary="更新当前用户资料",
+    description="需要登录，更新昵称、登录邮箱和联系手机号。手机号仅保存，不发送验证码；邮箱被占用或资料无效时返回 400。",
+    response_description="更新后的用户资料",
+)
 async def update_me(
     body: ProfileUpdateRequest,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> User:
-    """更新当前用户的用户名、登录邮箱与联系手机号（仅记录，无验证码）。"""
+    """需要登录，更新昵称、登录邮箱和联系手机号。手机号仅保存，不发送验证码；邮箱被占用或资料无效时返回 400。"""
     try:
         fields = prepare_profile_update(
             nickname=(body.nickname or "").strip() or _("创作者"),
@@ -165,13 +230,22 @@ async def update_me(
     return user
 
 
-@router.post("/avatar", response_model=UserOut)
+@router.post(
+    "/avatar",
+    response_model=UserOut,
+    summary="上传用户头像",
+    description=(
+        "需要登录，通过 multipart/form-data 上传或替换头像。"
+        "支持 JPG、PNG、WebP、GIF，文件不能为空且最大 5 MB。"
+    ),
+    response_description="包含新头像地址的用户资料",
+)
 async def upload_avatar(
-    file: UploadFile = File(...),
+    file: UploadFile = File(..., description="头像文件，支持 JPG、PNG、WebP、GIF，最大 5 MB"),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> User:
-    """Upload or replace the current user's profile avatar."""
+    """需要登录，通过 multipart/form-data 上传或替换头像。支持 JPG、PNG、WebP、GIF，文件不能为空且最大 5 MB。"""
     content_type = (file.content_type or "").lower()
     allowed = {
         "image/jpeg": ".jpg",

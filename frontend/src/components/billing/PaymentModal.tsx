@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import Modal from '../ui/Modal'
 import PaymentBrandIcon from './PaymentBrandIcon'
@@ -28,7 +28,7 @@ type Props = {
   onPaid: () => void
 }
 
-
+/** 将剩余秒数格式化为分秒倒计时。 */
 function formatRemain(sec: number) {
   const m = Math.floor(sec / 60)
   const s = sec % 60
@@ -52,9 +52,11 @@ export default function PaymentModal({ open, checkout, onClose, onPaid }: Props)
   const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
 
-  const handlePaid = useEffectEvent(() => {
-    onPaid()
-  })
+  // 轮询和手动确认都读取最近一次提交的回调，父组件重渲染不会重启订单计时。
+  const onPaidRef = useRef(onPaid)
+  useLayoutEffect(() => {
+    onPaidRef.current = onPaid
+  }, [onPaid])
 
   /** 取消支付：关闭弹窗，并尽量把待支付订单置为 closed */
   async function handleCancel() {
@@ -98,6 +100,7 @@ export default function PaymentModal({ open, checkout, onClose, onPaid }: Props)
     const payload = checkout.qr_payload || checkout.img || ''
     let cancelled = false
 
+    /** 按网关返回值展示二维码图片、编码二维码或打开收银台。 */
     async function paintQr() {
       if (isRedirect) {
         // 无原生二维码：直接新开易支付站点，弹窗仅等待到账
@@ -150,7 +153,7 @@ export default function PaymentModal({ open, checkout, onClose, onPaid }: Props)
           setStatus('paid')
           window.clearInterval(poll)
           window.clearInterval(tick)
-          handlePaid()
+          onPaidRef.current()
         } else if (order.status === 'closed') {
           setStatus('expired')
           window.clearInterval(poll)
@@ -168,6 +171,7 @@ export default function PaymentModal({ open, checkout, onClose, onPaid }: Props)
     }
   }, [open, checkout])
 
+  /** 主动查询订单到账状态，与后台轮询共用最新支付成功回调。 */
   async function confirmPaid() {
     if (!checkout) return
     setChecking(true)
@@ -176,7 +180,7 @@ export default function PaymentModal({ open, checkout, onClose, onPaid }: Props)
       const order = await api.getBillingOrder(checkout.out_trade_no)
       if (order.status === 'paid') {
         setStatus('paid')
-        onPaid()
+        onPaidRef.current()
       } else {
         setError(
           checkout.pay_mode === 'redirect'

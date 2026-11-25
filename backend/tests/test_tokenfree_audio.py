@@ -21,6 +21,7 @@ from app.services.tokenfree_gateway import TOKENFREE_BASE_URL, TOKENFREE_CHANNEL
 def test_uses_tokenfree_audio():
     assert uses_tokenfree_audio(base_url=TOKENFREE_BASE_URL, channel_id=TOKENFREE_CHANNEL_ID)
     assert uses_tokenfree_audio(base_url="https://www.tokenfree.com/v1") is True
+    # 本分支保留多渠道路由：火山方舟/openspeech 等非 TokenFree 渠道不走 TokenFree 音频
     assert uses_tokenfree_audio(base_url="https://ark.cn-beijing.volces.com/api/v3") is False
 
 

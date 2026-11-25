@@ -94,7 +94,7 @@ export function CanvasMentionPopover({
         </button>
       </div>
       {filtered.length === 0 ? (
-        <div className="fc-mention-empty">{tr('episode.canvas.mention.empty')}</div>
+        <div className="fc-mention-empty">{tr('episode.canvas.mention.emptyConnected')}</div>
       ) : (
         <ul className="fc-mention-list">
           {filtered.map((item, index) => {

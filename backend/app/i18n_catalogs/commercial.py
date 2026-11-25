@@ -4,6 +4,8 @@
 """
 
 EN: dict[str, str] = {
+    "新密码须为 6 至 64 个字符，最多 72 字节，不能包含空字符": "The new password must be 6–64 characters, at most 72 bytes, with no null characters",
+    "仅支持重置普通用户的密码": "Only regular users' passwords can be reset",
     # ── 多上游渠道 ──
     "渠道 ID「{id}」不合法：只能用小写字母、数字、- 和 _": (
         "Channel ID “{id}” is invalid: use lowercase letters, digits, - and _ only"
@@ -144,6 +146,8 @@ EN: dict[str, str] = {
 }
 
 VI: dict[str, str] = {
+    "新密码须为 6 至 64 个字符，最多 72 字节，不能包含空字符": "Mật khẩu mới phải dài 6–64 ký tự, tối đa 72 byte, không chứa ký tự rỗng",
+    "仅支持重置普通用户的密码": "Chỉ có thể đặt lại mật khẩu cho người dùng thường",
     # ── 多上游渠道 ──
     "渠道 ID「{id}」不合法：只能用小写字母、数字、- 和 _": (
         "ID kênh “{id}” không hợp lệ: chỉ dùng chữ thường, số, - và _"

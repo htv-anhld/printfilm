@@ -1,3 +1,5 @@
+import { deepMergeMessages } from "./deepMerge";
+import { zhExtra } from "./zh/extra";
 import { zhCommon } from "./zh/common";
 import { zhLabels } from "./zh/labels";
 import { zhUsers } from "./zh/users";
@@ -12,7 +14,7 @@ import { zhDashboard } from "./zh/dashboard";
 import { zhSettings } from "./zh/settings";
 import { zhCommerce } from "./zh/commerce";
 
-export const zh = {
+export const zh = deepMergeMessages({
   ...zhCommon,
   labels: zhLabels,
   users: zhUsers,
@@ -26,4 +28,4 @@ export const zh = {
   dashboard: zhDashboard,
   settings: zhSettings,
   commerce: zhCommerce,
-};
+}, zhExtra);

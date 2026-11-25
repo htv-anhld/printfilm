@@ -1,4 +1,5 @@
 /** 剧情大纲步骤：自动摘要 + 分集剧本流水线 */
+import { isRequestAborted } from '../../api/http'
 import { useEffect, useRef, useState } from 'react'
 import {
   dramaApi,
@@ -8,6 +9,7 @@ import {
 import { getImageStyleLabel, type ImageStyleId } from '../../lib/dramaImageStyles'
 import {
   autoMissingEpisodeCount,
+  getAssetsSeedStatus,
   getEpisodeContentStatus,
   getImageStyleId,
   getSummaryStatus,
@@ -21,6 +23,7 @@ import { DramaProjectSettingsModal } from './DramaProjectSettingsModal'
 import DramaFilmComposeButton from './DramaFilmComposeButton'
 import { OutlineEpisodePanel } from './OutlineEpisodePanel'
 import { tr, useI18n } from '../../i18n'
+import { useTeamEditLock } from '../../features/teams/useTeamEditLock'
 
 type MetaModalKey = 'source' | 'summary' | 'project'
 
@@ -45,22 +48,42 @@ export function OutlineStep({
   const notifyOutlineReady = (ready: boolean) => onOutlineReadyChange?.(ready)
   const [script, setScript] = useState<DramaScript | null>(project.script || null)
   const [metaModal, setMetaModal] = useState<MetaModalKey | null>(null)
-  const [summaryGenerating, setSummaryGenerating] = useState(false)
-  const [episodeGenerating, setEpisodeGenerating] = useState(false)
+  // 进页即按服务端状态展示，避免摘要/分集生成中外部一片空白
+  const [summaryGenerating, setSummaryGenerating] = useState(
+    () => getSummaryStatus(project.script || null) === 'generating',
+  )
+  const [assetsSeeding, setAssetsSeeding] = useState(
+    () => getAssetsSeedStatus(project) === 'generating',
+  )
+  const [episodeGenerating, setEpisodeGenerating] = useState(
+    () => getEpisodeContentStatus(project.script || null) === 'generating',
+  )
   const [summaryError, setSummaryError] = useState('')
   const [episodeError, setEpisodeError] = useState('')
-  const [progress, setProgress] = useState({ done: 0, total: 0 })
+  const [progress, setProgress] = useState(() => {
+    const prog = (project.script?.params || {}).episode_content_progress as
+      | { done?: number; total?: number }
+      | undefined
+    return {
+      done: Number(prog?.done) || 0,
+      total: Number(prog?.total) || 0,
+    }
+  })
   const [summaryEditing, setSummaryEditing] = useState(false)
   const [summaryDraft, setSummaryDraft] = useState<Record<string, unknown> | null>(null)
   const [summarySaving, setSummarySaving] = useState(false)
   const [sourceEditing, setSourceEditing] = useState(false)
   const [sourceDraft, setSourceDraft] = useState('')
   const [sourceSaving, setSourceSaving] = useState(false)
+  const scriptLock = useTeamEditLock({ projectId, type: 'script', resourceId: 0 }, summaryEditing || sourceEditing, async (isCurrent) => { const fresh = await dramaApi.getScript(projectId); if (isCurrent()) { setScript(fresh); if (summaryEditing) setSummaryDraft(fresh.summary || {}); if (sourceEditing) setSourceDraft(fresh.source || '') } })
   const pipelineRef = useRef(0)
+  const projectRef = useRef(project)
+  projectRef.current = project
 
   const summary = (script?.summary || null) as Record<string, unknown> | null
   const summaryStatus = getSummaryStatus(script)
   const episodeStatus = getEpisodeContentStatus(script)
+  const assetsSeedStatus = getAssetsSeedStatus(project)
   const episodeCount =
     Number(
       summary?.episodeCount ||
@@ -134,6 +157,7 @@ export function OutlineStep({
       onProjectChange(p)
       return finished
     } catch (err) {
+      if (isRequestAborted(err)) throw err
       const msg = err instanceof Error ? err.message : tr('drama.outline.summaryFailed')
       setSummaryError(msg)
       onError(msg)
@@ -143,18 +167,63 @@ export function OutlineStep({
     }
   }
 
-  // 入队并轮询分集剧本直到完成
+  // 摘要完成后等待/触发资产抽取（后端摘要任务也会自动抽；此处兜底）
+  async function ensureAssetsSeeded(runToken?: number): Promise<boolean> {
+    try {
+      let p = await dramaApi.getProject(projectId)
+      onProjectChange(p)
+      let st = getAssetsSeedStatus(p)
+      /* 已完成/已失败直接返回，不置抽取态，避免进页闪一下“抽取资产中”。 */
+      if (st === 'done' || st === 'failed') {
+        setAssetsSeeding(false)
+        return true
+      }
+      if (st !== 'generating') {
+        try {
+          await dramaApi.seedAssets(projectId)
+        } catch {
+          /* 可能已在后台抽取，继续轮询 */
+        }
+      }
+      setAssetsSeeding(true)
+      const started = Date.now()
+      while (Date.now() - started < 10 * 60 * 1000) {
+        if (runToken !== undefined && runToken !== pipelineRef.current) return false
+        p = await dramaApi.getProject(projectId)
+        onProjectChange(p)
+        st = getAssetsSeedStatus(p)
+        if (st === 'done' || st === 'failed') {
+          setAssetsSeeding(false)
+          return st === 'done' || st === 'failed'
+        }
+        setAssetsSeeding(st === 'generating' || !st)
+        await new Promise((r) => setTimeout(r, 2000))
+      }
+      setAssetsSeeding(false)
+      return true
+    } catch {
+      setAssetsSeeding(false)
+      return true
+    }
+  }
+
+  // 入队并轮询分集剧本直到完成（摘要任务成功后会自动入队；此处仅兜底）
   async function runEpisodeScripts(runToken?: number, force = false) {
     setEpisodeGenerating(true)
     setEpisodeError('')
     try {
-      const res = await dramaApi.episodeScript({
-        project_id: projectId,
-        batch_size: 1,
-        force,
-      })
-      setScript(res.script)
-      setProgress({ done: res.total_generated, total: res.total_target })
+      const current = await dramaApi.getScript(projectId)
+      setScript(current)
+      const already = getEpisodeContentStatus(current)
+      if (already !== 'generating' || force) {
+        const res = await dramaApi.episodeScript({
+          project_id: projectId,
+          batch_size: 1,
+          force,
+        })
+        setScript(res.script)
+        setProgress({ done: res.total_generated, total: res.total_target })
+      }
       const finished = await pollScriptUntil((s) => {
         const st = getEpisodeContentStatus(s)
         return st === 'completed' || st === 'failed'
@@ -173,6 +242,7 @@ export function OutlineStep({
       const p = await dramaApi.getProject(projectId)
       onProjectChange(p)
     } catch (err) {
+      if (isRequestAborted(err)) return
       const msg = err instanceof Error ? err.message : tr('drama.outline.episodesFailed')
       setEpisodeError(msg)
       onError(msg)
@@ -196,42 +266,74 @@ export function OutlineStep({
     await runEpisodeScripts(undefined, true)
   }
 
-  // 挂载自动流水线：无摘要 → 摘要 → 分集（未满目标集数会续跑；已在 worker 中则只轮询）
+  // 挂载流水线：整剧摘要 → 抽资产 → 分集剧本（分镜由后端在分集完成后入队）
   useEffect(() => {
     const token = ++pipelineRef.current
     async function pipeline() {
       let current = script
-      const status = getSummaryStatus(current)
-      if (!current?.summary && status !== 'completed') {
-        try {
-          if (status === 'generating') {
-            setSummaryGenerating(true)
-            current = await pollScriptUntil((s) => {
-              const st = getSummaryStatus(s)
-              return st === 'completed' || st === 'failed'
-            }, token)
-            setSummaryGenerating(false)
-            if (!current || getSummaryStatus(current) === 'failed') {
-              const msg =
-                String((current?.params || {}).summary_error || '') || tr('drama.outline.summaryFailed')
-              setSummaryError(msg)
-              onError(msg)
-              return
-            }
-          } else {
-            current = await runSummary(token)
+      let status = getSummaryStatus(current)
+
+      // 1) 必须先完成整剧摘要；失败且尚未进入分集则停
+      if (status !== 'completed') {
+        const epStatusEarly = getEpisodeContentStatus(current)
+        const bodiesEarly = parseEpisodeBodies(current)
+        if (status === 'failed') {
+          const msg =
+            String((current?.params || {}).summary_error || '') || tr('drama.outline.summaryFailed')
+          setSummaryError(msg)
+          onError(msg)
+          // 分集已在生成/已有正文时继续跟进度，不因摘要失败吞掉整剧进度
+          if (
+            epStatusEarly !== 'generating' &&
+            epStatusEarly !== 'completed' &&
+            !hasSubstantialEpisode(bodiesEarly)
+          ) {
+            setEpisodeGenerating(false)
+            return
           }
-        } catch {
-          return
+        } else {
+          try {
+            if (status === 'generating') {
+              setSummaryGenerating(true)
+              current = await pollScriptUntil((s) => {
+                const st = getSummaryStatus(s)
+                return st === 'completed' || st === 'failed'
+              }, token)
+              setSummaryGenerating(false)
+            } else {
+              current = await runSummary(token)
+            }
+          } catch {
+            setSummaryGenerating(false)
+            return
+          }
+          if (!current || token !== pipelineRef.current) return
+          status = getSummaryStatus(current)
+          if (status === 'failed') {
+            const msg =
+              String((current.params || {}).summary_error || '') || tr('drama.outline.summaryFailed')
+            setSummaryError(msg)
+            onError(msg)
+            setEpisodeGenerating(false)
+            return
+          }
+          if (status !== 'completed') return
         }
-        if (!current || token !== pipelineRef.current) return
       }
+
+      // 2) 摘要完成后抽取资产（后端摘要任务也会自动抽，这里等待/兜底）
+      if (token !== pipelineRef.current) return
+      await ensureAssetsSeeded(token)
+      if (token !== pipelineRef.current) return
+
       const target =
         Number(
           (current?.summary as Record<string, unknown> | null)?.episodeCount ||
             (current?.params || {}).episode_count ||
-            project.params?.episode_count,
+            projectRef.current.params?.episode_count,
         ) || 0
+      current = await dramaApi.getScript(projectId)
+      setScript(current)
       const bodies = parseEpisodeBodies(current)
       const epStatus = getEpisodeContentStatus(current)
       const autoMissing = autoMissingEpisodeCount(bodies, target)
@@ -241,31 +343,31 @@ export function OutlineStep({
         notifyOutlineReady(true)
         return
       }
-      if (current?.summary || getSummaryStatus(current) === 'completed') {
-        if (epStatus === 'generating') {
-          setEpisodeGenerating(true)
-          const finished = await pollScriptUntil((s) => {
-            const st = getEpisodeContentStatus(s)
-            return st === 'completed' || st === 'failed'
-          }, token)
-          setEpisodeGenerating(false)
-          if (!finished) return
-          if (getEpisodeContentStatus(finished) === 'failed') {
-            const msg =
-              String((finished.params || {}).episode_content_error || '') ||
-              tr('drama.outline.episodesFailed')
-            setEpisodeError(msg)
-            onError(msg)
-            notifyOutlineReady(false)
-            return
-          }
-          notifyOutlineReady(true)
-          const p = await dramaApi.getProject(projectId)
-          onProjectChange(p)
+
+      // 3) 分集剧本：已在生成则只轮询；否则兜底入队
+      if (epStatus === 'generating') {
+        setEpisodeGenerating(true)
+        const finished = await pollScriptUntil((s) => {
+          const st = getEpisodeContentStatus(s)
+          return st === 'completed' || st === 'failed'
+        }, token)
+        setEpisodeGenerating(false)
+        if (!finished) return
+        if (getEpisodeContentStatus(finished) === 'failed') {
+          const msg =
+            String((finished.params || {}).episode_content_error || '') ||
+            tr('drama.outline.episodesFailed')
+          setEpisodeError(msg)
+          onError(msg)
+          notifyOutlineReady(false)
           return
         }
-        await runEpisodeScripts(token)
+        notifyOutlineReady(true)
+        const p = await dramaApi.getProject(projectId)
+        onProjectChange(p)
+        return
       }
+      await runEpisodeScripts(token)
     }
     void pipeline()
     return () => {
@@ -285,6 +387,7 @@ export function OutlineStep({
       const p = await dramaApi.getProject(projectId)
       onProjectChange(p)
     } catch (err) {
+      if (isRequestAborted(err)) return
       onError(err instanceof Error ? err.message : t('drama.outline.styleUpdateFailed'))
     }
   }
@@ -308,6 +411,7 @@ export function OutlineStep({
       const p = await dramaApi.getProject(projectId)
       onProjectChange(p)
     } catch (err) {
+      if (isRequestAborted(err)) return
       onError(err instanceof Error ? err.message : t('drama.outline.summarySaveFailed'))
     } finally {
       setSummarySaving(false)
@@ -325,6 +429,7 @@ export function OutlineStep({
       setScript(updated)
       setSourceEditing(false)
     } catch (err) {
+      if (isRequestAborted(err)) return
       onError(err instanceof Error ? err.message : t('drama.outline.sourceSaveFailed'))
     } finally {
       setSourceSaving(false)
@@ -345,11 +450,15 @@ export function OutlineStep({
           />
           <span className="drama-outline-toolbar-meta">
             {episodeCount ? t('drama.outline.totalEpisodes', { n: episodeCount }) : t('drama.outline.episodesTbd')}
-            {episodeGenerating || episodeStatus === 'generating'
-              ? progress.total > 0
-                ? t('drama.outline.generatingProgress', { done: progress.done, total: progress.total })
-                : t('drama.outline.generatingEpisodes')
-              : ''}
+            {summaryGenerating || summaryStatus === 'generating'
+              ? t('drama.outline.summaryGeneratingSuffix')
+              : assetsSeeding || assetsSeedStatus === 'generating'
+                ? t('drama.outline.assetsSeedingSuffix')
+                : episodeGenerating || episodeStatus === 'generating'
+                  ? progress.total > 0
+                    ? t('drama.outline.generatingProgress', { done: progress.done, total: progress.total })
+                    : t('drama.outline.generatingEpisodes')
+                  : ''}
           </span>
         </div>
         <div className="drama-outline-toolbar-actions">
@@ -398,7 +507,7 @@ export function OutlineStep({
               <button
                 type="button"
                 className="drama-btn-primary"
-                disabled={sourceSaving}
+                disabled={sourceSaving || scriptLock.readOnly}
                 onClick={() => void saveSourceEdit()}
               >
                 {sourceSaving ? t('drama.common.saving') : t('drama.common.save')}
@@ -419,7 +528,8 @@ export function OutlineStep({
         }
       >
         <div className="drama-outline-meta-modal-body">
-          {sourceEditing ? (
+          {scriptLock.readOnly && <p className="pf-team-alert" role="status">{scriptLock.checking ? t('drama.teamLock.acquiring') : scriptLock.error}<button type="button" onClick={scriptLock.retry}>{t('drama.teamLock.retryRefresh')}</button></p>}
+        {sourceEditing ? (
             <textarea
               className="drama-ep-section-textarea"
               rows={16}
@@ -447,7 +557,7 @@ export function OutlineStep({
               <button
                 type="button"
                 className="drama-btn-primary"
-                disabled={summarySaving}
+                disabled={summarySaving || scriptLock.readOnly}
                 onClick={() => void saveSummaryEdit()}
               >
                 {summarySaving ? t('drama.common.saving') : t('drama.common.save')}
@@ -465,6 +575,7 @@ export function OutlineStep({
         }
       >
         <div className="drama-outline-meta-modal-body">
+          {scriptLock.readOnly && <p className="pf-team-alert" role="status">{scriptLock.checking ? t('drama.teamLock.acquiring') : scriptLock.error}<button type="button" onClick={scriptLock.retry}>{t('drama.teamLock.retryRefresh')}</button></p>}
           {summaryGenerating || summaryStatus === 'generating' ? (
             <p className="drama-loader">{t('drama.outline.summaryGenerating')}</p>
           ) : null}
@@ -543,12 +654,63 @@ export function OutlineStep({
         onError={onError}
       />
 
+      {/* 外部整剧进度：摘要 → 资产 → 分集，主界面可见 */}
+      {summaryGenerating ||
+      summaryStatus === 'generating' ||
+      assetsSeeding ||
+      assetsSeedStatus === 'generating' ||
+      episodeGenerating ||
+      episodeStatus === 'generating' ? (
+        <div className="drama-outline-pipeline" role="status" aria-live="polite">
+          <div className="drama-outline-pipeline-main">
+            <span className="drama-outline-pipeline-pulse" aria-hidden />
+            <div>
+              <strong>
+                {summaryGenerating || summaryStatus === 'generating'
+                  ? t('drama.outline.pipelineSummary')
+                  : assetsSeeding || assetsSeedStatus === 'generating'
+                    ? t('drama.outline.pipelineAssets')
+                    : progress.total > 0
+                      ? t('drama.outline.pipelineEpisodesProgress', { done: progress.done, total: progress.total })
+                      : t('drama.outline.pipelineEpisodes')}
+              </strong>
+              <p>
+                {summaryGenerating || summaryStatus === 'generating'
+                  ? t('drama.outline.pipelineHintSummary')
+                  : assetsSeeding || assetsSeedStatus === 'generating'
+                    ? t('drama.outline.pipelineHintAssets')
+                    : t('drama.outline.pipelineHintEpisodes')}
+              </p>
+            </div>
+          </div>
+          {!(summaryGenerating || summaryStatus === 'generating') &&
+          !(assetsSeeding || assetsSeedStatus === 'generating') &&
+          progress.total > 0 ? (
+            <div className="drama-outline-pipeline-bar" aria-hidden>
+              <div
+                className="drama-outline-pipeline-bar-fill"
+                style={{
+                  width: `${Math.min(100, Math.round((100 * progress.done) / progress.total))}%`,
+                }}
+              />
+            </div>
+          ) : (
+            <div className="drama-outline-pipeline-bar is-indeterminate" aria-hidden>
+              <div className="drama-outline-pipeline-bar-fill" />
+            </div>
+          )}
+        </div>
+      ) : null}
+
       <OutlineEpisodePanel
         projectId={projectId}
         script={script}
         episodeCount={episodeCount}
-        summaryReady={summaryStatus === 'completed' || Boolean(summary)}
+        summaryReady={summaryStatus === 'completed'}
+        summaryGenerating={summaryGenerating || summaryStatus === 'generating'}
+        assetsSeeding={assetsSeeding || assetsSeedStatus === 'generating'}
         episodeGenerating={episodeGenerating || episodeStatus === 'generating'}
+        episodeProgress={progress}
         imageStyleLabel={getImageStyleLabel(imageStyleId) || undefined}
         storyType={String(summary?.storyType || '') || undefined}
         onScriptChange={setScript}

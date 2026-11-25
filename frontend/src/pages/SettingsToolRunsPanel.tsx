@@ -294,7 +294,7 @@ export default function SettingsToolRunsPanel() {
               {detail.params?.ratio ? (
                 <div>
                   <dt>{t('toolRuns.ratio')}</dt>
-                  <dd>{detail.params.ratio}</dd>
+                  <dd>{String(detail.params.ratio)}</dd>
                 </div>
               ) : null}
               {detail.params?.mode ? (

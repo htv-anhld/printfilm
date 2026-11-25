@@ -14,6 +14,7 @@ export const enUsers = {
     todayCalls: "{n} today",
     totalCalls: "Total calls",
   },
+  resetPassword: "Reset password",
   fields: {
     accountId: "Account ID",
     email: "Email",

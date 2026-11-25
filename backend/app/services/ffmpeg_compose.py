@@ -69,8 +69,10 @@ class ComposeOptions:
     # Optional continuous BGM under narration
     bgm_path: Path | None = None
     bgm_volume: float = 0.22
-    # 保留镜头视频里的操作音效，后期与 TTS 叠轨（科普 full）
+    # 保留镜头视频里的操作音效，后期与 TTS 叠轨（科普 full 回退模式）
     keep_video_sfx: bool = False
+    # Seedance 内置口播：直接保留视频音轨，不叠外部 TTS
+    prefer_video_audio: bool = False
     sfx_volume: float = 0.22
     # 内容语言（zh | en | vi）：非中文选用含越南语声调符号的拉丁字体
     content_locale: str = "zh"
@@ -133,7 +135,7 @@ def _probe_has_audio(path: Path) -> bool:
         return False
 
 
-def probe_duration(path: Path) -> float | None:
+def probe_duration(path: Path, *, video_only: bool = False) -> float | None:
     """Return media duration in seconds via ffprobe, or None."""
     ffprobe = shutil.which(get_settings().ffprobe_path) or shutil.which("ffprobe")
     if not ffprobe or not path.exists():
@@ -144,8 +146,9 @@ def probe_duration(path: Path) -> float | None:
                 ffprobe,
                 "-v",
                 "error",
+                *(["-select_streams", "v:0"] if video_only else []),
                 "-show_entries",
-                "format=duration",
+                "stream=duration" if video_only else "format=duration",
                 "-of",
                 "default=noprint_wrappers=1:nokey=1",
                 str(path),
@@ -321,7 +324,7 @@ def extract_video_last_frame(video: str | Path, dest: Path) -> bool:
     if not src.exists():
         logger.warning("抽尾帧失败：视频不存在 path=%s", src)
         return False
-    duration = probe_duration(src)
+    duration = probe_duration(src, video_only=True)
     if duration is not None and duration > 0.1:
         # 距片尾约 0.08s，避免精确 seek 到 EOF 抽空帧
         return extract_video_poster_frame(src, dest, at_sec=max(0.0, float(duration) - 0.08))
@@ -366,13 +369,15 @@ def _canvas(opts: ComposeOptions) -> tuple[int, int]:
 
 def _find_cjk_font() -> str | None:
     """Return a path usable by drawtext fontfile=…（优先环境变量与仓库内置字体）。"""
-    bundled = (
-        Path(__file__).resolve().parents[1] / "assets" / "fonts" / "NotoSansSC-Regular.otf"
-    )
+    bundled_dir = Path(__file__).resolve().parents[1] / "assets" / "fonts"
+    bundled = [
+        bundled_dir / "NotoSansSC-Regular.ttf",
+        bundled_dir / "NotoSansSC-Regular.otf",
+    ]
     candidates = [
         os.environ.get("FRAMECUT_FONT"),
-        # 仓库内置（部署时可放入 backend/assets/fonts）
-        str(bundled) if bundled.exists() else None,
+        # 仓库内置（部署时随代码带走，服务器不必再安装字体）
+        *[str(path) for path in bundled if path.is_file()],
         r"C:\Windows\Fonts\msyhbd.ttc",
         r"C:\Windows\Fonts\msyh.ttc",
         r"C:\Windows\Fonts\simhei.ttf",
@@ -1179,6 +1184,9 @@ def compose_project(
         segment_paths: list[Path] = []
         continuous = bool(opts.full_audio_path and opts.full_audio_path.exists())
         keep_sfx = bool(opts.keep_video_sfx)
+        prefer_va = bool(opts.prefer_video_audio)
+        # 内置口播或叠音效时，垫片/烧字幕需保留视频音轨
+        keep_clip_audio = keep_sfx or prefer_va
         sfx_vol = float(opts.sfx_volume or 0.22)
 
         for shot in shots:
@@ -1240,7 +1248,7 @@ def compose_project(
                     shot.duration,
                     w=w,
                     h=h,
-                    keep_audio=keep_sfx,
+                    keep_audio=keep_clip_audio,
                 )
                 _burn_captions_on_video(
                     raw_v,
@@ -1256,7 +1264,7 @@ def compose_project(
                     subtitle_layout=opts.subtitle_layout or "top",
                     title_scale=opts.title_scale,
                     sub_scale=opts.sub_scale,
-                    keep_audio=keep_sfx,
+                    keep_audio=keep_clip_audio,
                 )
             elif shot.image_path and shot.image_path.exists():
                 _image_to_video(shot.image_path, shot.duration, video, w=w, h=h)
@@ -1294,7 +1302,37 @@ def compose_project(
                     ]
                 )
 
-            if continuous and keep_sfx and _probe_has_audio(video):
+            if prefer_va and _probe_has_audio(video):
+                # Seedance 内置口播：直接保留视频音轨
+                _copy_fitted_clip(video, shot.duration, seg)
+            elif prefer_va and shot.audio_path and shot.audio_path.exists():
+                # 隐私跳过/无 a 轨：回退单镜 TTS（若有）
+                logger.warning(
+                    "compose shot %s: no video audio, falling back to shot TTS",
+                    shot.shot_no,
+                )
+                _mux_shot(
+                    video,
+                    audio,
+                    shot.duration,
+                    seg,
+                    mix_video_sfx=False,
+                    sfx_volume=sfx_vol,
+                )
+            elif prefer_va:
+                logger.warning(
+                    "compose shot %s: no video audio and no shot TTS; silent segment",
+                    shot.shot_no,
+                )
+                _mux_shot(
+                    video,
+                    audio,
+                    shot.duration,
+                    seg,
+                    mix_video_sfx=False,
+                    sfx_volume=sfx_vol,
+                )
+            elif continuous and keep_sfx and _probe_has_audio(video):
                 _copy_fitted_clip(video, shot.duration, seg)
             else:
                 _mux_shot(
@@ -1302,7 +1340,7 @@ def compose_project(
                     audio,
                     shot.duration,
                     seg,
-                    mix_video_sfx=keep_sfx and not continuous,
+                    mix_video_sfx=keep_sfx and not continuous and not prefer_va,
                     sfx_volume=sfx_vol,
                 )
             segment_paths.append(seg)

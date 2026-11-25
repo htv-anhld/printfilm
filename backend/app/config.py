@@ -1,5 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
+from pydantic import Field
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -8,6 +10,18 @@ _ENV_FILE = _BACKEND_DIR / ".env"
 
 
 class Settings(BaseSettings):
+    apple_environment: Literal["Production", "Sandbox"] = Field("Production", validation_alias="MARKETPLACE_APPLE_ENVIRONMENT")
+    apple_sandbox_enabled: bool = False
+    apple_sandbox_user_ids: str = Field("", max_length=4000, pattern=r"^(?:[1-9][0-9]*(?:,[1-9][0-9]*)*)?$")
+    apple_iap_enabled: bool = Field(False, validation_alias="MARKETPLACE_APPLE_IAP_ENABLED")
+    apple_bundle_id: str = Field("", validation_alias="MARKETPLACE_APPLE_BUNDLE_ID")
+    apple_app_id: int = 0
+    apple_domestic_bundle_id: str = ""
+    apple_domestic_app_id: int = 0
+    apple_issuer_id: str = Field("", validation_alias="MARKETPLACE_APPLE_ISSUER_ID")
+    apple_key_id: str = Field("", validation_alias="MARKETPLACE_APPLE_KEY_ID")
+    apple_private_key: str = ""
+    apple_root_certificates: str = ""
     model_config = SettingsConfigDict(
         env_file=str(_ENV_FILE) if _ENV_FILE.is_file() else ".env",
         env_file_encoding="utf-8",
@@ -23,9 +37,11 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://printfilm:change-me-strong-db-password@127.0.0.1:15432/printfilm"
     database_url_sync: str = "postgresql+psycopg2://printfilm:change-me-strong-db-password@127.0.0.1:15432/printfilm"
-    # Postgres 连接池（统一任务平台 / API 共用）
-    db_pool_size: int = 5
-    db_max_overflow: int = 5
+    # 连接已初始化的共享库时可关闭建表/补列/种子数据；仍加载数据库中的模型配置。
+    database_bootstrap_enabled: bool = True
+    # 每个 API 进程与任务平台共用；默认最多 70，PG 上限 100 时保留 30 给其他连接。
+    db_pool_size: int = 50
+    db_max_overflow: int = 20
     db_pool_recycle_sec: int = 1800
     db_pool_timeout_sec: int = 30
     redis_url: str = "redis://127.0.0.1:6379/0"
@@ -85,17 +101,31 @@ class Settings(BaseSettings):
     drama_user_video_job_limit: int = 12
     # 单个分镜视频最大尝试次数；超过后直接失败，避免长时间卡在同一镜
     drama_fragment_max_attempts: int = 3
-    # 科普 Seedance 仍出音轨：只要操作/环境音效，不要口播与 BGM
+    # 角色新音色设计暂未开放；已有音色和普通项目配音继续可用。
+    drama_voice_generation_enabled: bool = False
+    # 科普 full：Seedance 视频内置口播+环境音，后期不再叠外部 TTS
+    kepu_seedance_native_audio: bool = True
+    # 仅当 native_audio=false 时生效：Seedance 只要操作音效，口播改后期 TTS（默认开）
     kepu_seedance_sfx_audio: bool = True
 
     ark_mock: bool = False
     # ARK_MOCK=true 时文字 LLM（科普分镜 / 主题扩写）是否也走 mock。
     # 设为 false：图 / 视频仍是假素材，但脚本走真实 LLM（只配了文字渠道 Key 时联调用）
     ark_mock_text: bool = True
-    # 内置任务平台的进程内并发上限（全站 Worker 槽位）。
+    # 本地媒体联调：文字仍请求真实 LLM，图片/视频/语音仅留痕并返回默认素材。
+    local_media_mock: bool = False
+    # 本地连接共享测试库时关闭，避免本机和服务器同时消费、恢复同一队列。
+    task_runtime_enabled: bool = True
+    # 内置任务平台的进程内并发上限（全站 Worker 槽位）；未单独配置队列时，每个队列使用的并发上限。
     task_runtime_max_concurrency: int = 4
-    # 单用户同时进行中的 Worker 槽位（不含 awaiting_poll 注册项）。
+    # 三个独立队列；None 沿用 task_runtime_max_concurrency 作为各队列容量。
+    task_queue_text_concurrency: int | None = None
+    task_queue_image_concurrency: int | None = None
+    task_queue_video_concurrency: int | None = None
+    # 单用户在每个队列的并发上限；视频包含等待上游完成的任务。
     task_user_max_concurrency: int = 4
+    # 团队共用生成槽位，不取代单用户与全站上限。
+    task_team_max_concurrency: int = 4
     # Selector 每轮并发非阻塞查询上游的上限（类似 NIO select 就绪 channel 批处理）。
     task_poll_max_concurrency: int = 20
     # 孤儿恢复：leased/running 超过该秒数无更新、且本进程无执行协程时重排队。
@@ -122,6 +152,9 @@ class Settings(BaseSettings):
     billing_markup: float = 2.3
     # 首次充值赠送（最小单位）；0 关闭
     billing_first_topup_bonus_fen: int = 500
+    # 上游统一钱包（积分 / App 内购）；本分支默认关闭，钱包仍用 users.balance_fen（美分）
+    unified_wallet_enabled: bool = False
+    wallet_environment: Literal["Production", "Sandbox"] = "Production"
     # token / 视频时长估价缓冲；按张生图官价不再乘此系数（否则 5 元赠金冻不住一张图）
     billing_estimate_buffer: float = 1.2
     # Yuan per million tokens (provider cost)
@@ -133,7 +166,8 @@ class Settings(BaseSettings):
     # Kie：1 credit 折合人民币分（约 $0.005 ≈ ¥0.035 → 3.5）
     billing_kie_fen_per_credit: float = 3.5
     # TokenFree / New API：quota→USD→人民币（500000 quota = 1 USD）
-    billing_usd_cny: float = 7.0
+    # 与 TokenFree / New API 控制台一致（价目表达式里常见 /7.3 折美元）
+    billing_usd_cny: float = 7.3
     # Fallback tokens when API omits usage
     billing_est_llm_tokens: int = 80_000
     # Seedream / gpt-image 无 quota 时按张价结算，不再用 4.5 万 token × 8 元/百万
@@ -155,7 +189,7 @@ class Settings(BaseSettings):
     billing_admin_cost_alert_last_period_key: str = ""
     billing_admin_cost_alert_last_level: int = 0
 
-    # SMTP（管理员费用告警邮件）
+    # SMTP（密码重置与团队邀请邮件）
     smtp_enabled: bool = False
     smtp_host: str = ""
     smtp_port: int = 587
@@ -170,6 +204,27 @@ class Settings(BaseSettings):
     epay_key: str = ""
     epay_notify_url: str = ""
     epay_return_url: str = ""
+    android_epay_enabled: bool = False
+    android_epay_alipay_enabled: bool = False
+    android_epay_wxpay_enabled: bool = False
+    android_epay_package_name: str = ""
+    android_epay_sha256_fingerprints: str = ""
+    android_epay_return_base_url: str = ""
+    android_epay_checkout_hosts: str = ""
+    android_epay_app_scheme: str = ""
+
+
+    # Stripe Checkout（后台配置优先，环境变量用于初始默认值）
+    stripe_enabled: bool = False
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    # 前端独立部署时指定其公网地址；空值使用 public_base_url。
+    stripe_frontend_url: str = ""
+    # auto: 中文 CNY、英文 USD；固定币种保留用于兼容原配置。
+    stripe_currency: str = "cny"
+    # 精确十进制文本：1 单位外币对应多少人民币；空串表示尚未配置。
+    stripe_usd_cny_rate: str = ""
+    stripe_hkd_cny_rate: str = ""
 
     # Creem（国际卡收款，Merchant of Record）：https://docs.creem.io
     creem_api_key: str = ""
@@ -203,6 +258,20 @@ class Settings(BaseSettings):
     google_redirect_uri: str = ""
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
+    # 数字资产市场。环境变量 MARKETPLACE_ENABLED；管理端保存后以数据库为准。
+    marketplace_enabled: bool = False
+    # App 视频。环境变量 MARKETPLACE_APP_ENABLED 只作为尚未保存时的初始值；管理端保存后以数据库为准。
+    marketplace_app_enabled: bool = False
+    marketplace_social_initialization_enabled: bool = False
+    marketplace_sharing_enabled: bool = False
+    marketplace_share_base_url: str = ""
+    marketplace_share_apple_team_id: str = ""
+    marketplace_share_android_package_name: str = ""
+    marketplace_share_android_sha256_fingerprints: str = ""
+    # 完整视频最长秒数。环境变量 MARKETPLACE_MAX_DURATION_SECONDS；管理端保存后以数据库为准。
+    marketplace_max_duration_seconds: int = 1800
+    # Printfilm Studio 新工作台；默认关闭，便于灰度发布。
+    printfilm_studio_enabled: bool = False
 
     tos_endpoint: str = ""
     tos_bucket: str = ""
@@ -250,6 +319,10 @@ def get_settings() -> Settings:
 
 def reload_settings() -> Settings:
     get_settings.cache_clear()
+    from app.marketplace.app_settings import get_app_settings
+    get_app_settings.cache_clear()
+    from app.marketplace.apple_client import _official_objects
+    _official_objects.cache_clear()
     try:
         from app.services.oss import reset_oss_client
 

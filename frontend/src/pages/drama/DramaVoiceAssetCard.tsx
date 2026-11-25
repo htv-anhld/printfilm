@@ -10,7 +10,7 @@ type Props = {
   synthBusy: boolean
   onPromptChange: (value: string) => void
   onPromptBlur: () => void
-  onSynth: () => void
+  onSynth?: () => void
   onDelete: () => void
   onError: (message: string) => void
 }
@@ -87,6 +87,7 @@ export function DramaVoiceAssetCard({
         </div>
       </div>
 
+      {onSynth ? (
       <footer className="drama-voice-card-foot">
         <button
           type="button"
@@ -101,6 +102,7 @@ export function DramaVoiceAssetCard({
               : t('drama.voiceCard.synthFromPrompt')}
         </button>
       </footer>
+      ) : null}
     </article>
   )
 }

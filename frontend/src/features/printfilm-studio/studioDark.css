@@ -1,0 +1,22 @@
+/* 画布暗色主题手工补丁：自动生成的 studioDark.generated.css 之外的修正（React Flow、内联样式等） */
+html.dark .pf-studio-shell { color-scheme: dark; }
+html.dark .pf-studio-shell .react-flow {
+  --xy-background-color: #141519;
+  --xy-background-pattern-color: #34363d;
+  --xy-node-background-color: #1c1d22;
+  --xy-node-color: #e3e5ea;
+  --xy-edge-stroke: #5d6270;
+  --xy-minimap-background-color: #1a1b20;
+  --xy-controls-button-background-color: #1f2026;
+  --xy-controls-button-color: #d0d3da;
+  background: #141519;
+}
+/* 强调色（紫色）实心按钮：文字保持白色 */
+html.dark .pf-studio-shell .pf-primary,
+html.dark .pf-studio-shell .pf-primary:hover,
+html.dark .pf-studio-shell .pf-toolbar-primary,
+html.dark .pf-studio-shell .pf-toolbar-primary:hover,
+html.dark .pf-studio-shell .pf-dock-plus,
+html.dark .pf-workspace-tour .pf-primary { color: #fff; }
+html.dark .pf-studio-shell .pf-primary svg,
+html.dark .pf-studio-shell .pf-toolbar-primary svg { color: #fff; stroke: currentColor; }

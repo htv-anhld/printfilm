@@ -1,17 +1,56 @@
 import { throwApiError } from '../lib/apiError'
 import { tr } from '../i18n'
+import { API_BASE, createJsonRequester } from './client'
+import { ensureCharacterVoiceGenerationEnabled } from './publicCapabilities'
+import { withDramaEditLock, recordDramaResponse } from '../features/teams/editLocks'
+import { workspaceScope } from '../features/teams/workspaceScope'
+import type { AssetDetailReference } from '../lib/assetDetailReferences'
 
-function defaultApiBase() {
-  if (typeof window !== 'undefined' && window.location?.hostname) {
-    const { protocol, hostname } = window.location
-    return `${protocol}//${hostname}:8000`
-  }
-  return 'http://127.0.0.1:8000'
+/** 只读资产目录：工具结果 ID 不可作为可编辑的 DramaAsset ID 使用。 */
+export type MediaLibraryItem = {
+  key: string
+  id: number
+  source_kind: 'drama' | 'tool' | 'drama_fragment' | 'task' | 'short_video'
+  source_id: number
+  type: string
+  asset_type: string
+  media_kind: 'image' | 'video' | 'audio'
+  name?: string | null
+  cover?: string | null
+  url?: string | null
+  params?: Record<string, unknown> | null
+  references?: AssetDetailReference[]
+  project_id?: number | null
+  project_kind?: 'drama' | 'short_video' | null
+  project_title?: string | null
+  project_url?: string | null
+  updated_at?: string | null
+}
+export type MediaLibraryType = 'all' | 'character' | 'scene' | 'prop' | 'voice' | 'image' | 'video' | 'audio'
+export type MediaLibraryGenerationStatus = 'all' | 'generated' | 'ungenerated'
+export type MediaLibraryPage = {
+  items: MediaLibraryItem[]
+  meta: { total: number; total_all: number; page: number; page_size: number }
 }
 
-const _viteApiBase = import.meta.env.VITE_API_BASE
-const API_BASE =
-  _viteApiBase === undefined || _viteApiBase === null ? defaultApiBase() : String(_viteApiBase)
+/** 漫剧 API 沿用原有错误提示，并共用登录态与 JSON 解析。 */
+const rawRequest = createJsonRequester((response, detail) =>
+  throwApiError(response.status, detail, tr('common.requestFailed')),
+)
+/** 所有漫剧写入口共用资源占用校验，读取只登记实际归属。 */
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const epoch = workspaceScope.epoch
+  const routeProject = typeof window === 'undefined' ? 0 : Number(window.location.pathname.match(/^\/drama\/projects\/(\d+)/)?.[1] || 0)
+  const url = new URL(path, 'http://local')
+  const body = typeof init?.body === 'string' ? JSON.parse(init.body || '{}') as { project_id?: number } : {}
+  const requestedProject = Number(path.match(/^\/api\/drama\/(?:projects|scripts|canvas)\/(\d+)/)?.[1] || url.searchParams.get('project_id') || body.project_id || 0)
+  if (routeProject && requestedProject && routeProject !== requestedProject) throw new DOMException('项目页面已切换', 'AbortError')
+  const result = await withDramaEditLock(path, init, (next) => rawRequest<T>(path, next))
+  if (epoch !== workspaceScope.epoch) throw new DOMException('创作空间已切换', 'AbortError')
+  if (routeProject && typeof window !== 'undefined' && Number(window.location.pathname.match(/^\/drama\/projects\/(\d+)/)?.[1] || 0) !== routeProject) throw new DOMException('项目页面已切换', 'AbortError')
+  recordDramaResponse(path, result, epoch)
+  return result
+}
 
 /** 导出 API 根地址，供静态资源 URL 拼接 */
 export function getDramaApiBase() {
@@ -46,25 +85,6 @@ export function resolveDramaAssetPreviewUrl(asset: {
   const gen = (asset.params || {}).generation as { finished_at?: string; queued_at?: string } | undefined
   const bust = asset.updated_at || gen?.finished_at || gen?.queued_at || ''
   return resolveDramaMediaUrl(raw, bust || null)
-}
-
-function authHeaders(): HeadersInit {
-  const token = localStorage.getItem('token')
-  return token
-    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json' }
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: { ...authHeaders(), ...(init?.headers || {}) },
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throwApiError(res.status, err.detail, tr('common.requestFailed'))
-  }
-  return res.json()
 }
 
 /** 整部成片合成状态 */
@@ -104,8 +124,6 @@ export type DramaEpisodeBody = {
 export type DramaProjectUsageStats = {
   charge_fen: number
   charge_yuan: number
-  cost_fen: number
-  cost_yuan: number
   tokens: number
   calls: number
   image_gens: number
@@ -136,6 +154,7 @@ export type DramaTaskBrief = {
 export type DramaContentLocale = 'zh' | 'en' | 'vi'
 
 export type DramaProject = {
+  team_id?: number | null
   id: number
   user_id: number
   title: string
@@ -155,6 +174,8 @@ export type DramaProject = {
 }
 
 export type DramaProjectListItem = {
+  is_owner?: boolean
+  team_id?: number | null
   id: number
   title: string
   description?: string | null
@@ -172,6 +193,22 @@ export type DramaProjectListItem = {
   active_tasks?: DramaTaskBrief[]
 }
 
+/** 漫剧 / 自由画布项目分页列表：条目 + 分页元信息 */
+export type DramaProjectListPage = {
+  items: DramaProjectListItem[]
+  meta: { page: number; page_size: number; total: number }
+}
+
+/** 项目列表筛选参数，均由服务端处理 */
+export type DramaProjectListParams = {
+  relation?: 'all' | 'owned' | 'joined'
+  workflow?: 'script' | 'canvas'
+  status?: 'all' | 'running' | 'done' | 'draft'
+  q?: string
+  page?: number
+  page_size?: number
+}
+
 export type DramaAsset = {
   id: number
   type: string
@@ -180,6 +217,7 @@ export type DramaAsset = {
   cover?: string | null
   url?: string | null
   params?: Record<string, unknown> | null
+  references?: AssetDetailReference[]
   project_id: number
   updated_at?: string | null
 }
@@ -203,6 +241,7 @@ export type DramaFragment = {
   video: string
   duration_sec?: number | null
   params?: Record<string, unknown> | null
+  references?: AssetDetailReference[]
   asset_ids: number[]
 }
 
@@ -269,7 +308,17 @@ export type DramaVoiceGenerateResult = {
 }
 
 export const dramaApi = {
-  listProjects: () => request<DramaProjectListItem[]>('/api/drama/projects'),
+  listProjects: (params?: DramaProjectListParams) => {
+    const sp = new URLSearchParams()
+    if (params?.relation) sp.set('relation', params.relation)
+    if (params?.workflow) sp.set('workflow', params.workflow)
+    if (params?.status && params.status !== 'all') sp.set('status', params.status)
+    if (params?.q) sp.set('q', params.q)
+    if (params?.page) sp.set('page', String(params.page))
+    if (params?.page_size) sp.set('page_size', String(params.page_size))
+    const qs = sp.toString()
+    return request<DramaProjectListPage>(`/api/drama/projects${qs ? `?${qs}` : ''}`)
+  },
   createProject: (body: {
     title?: string
     description?: string
@@ -311,6 +360,10 @@ export const dramaApi = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+
+  /** 按集更新正文，服务端短事务合并其他集，避免整包覆盖。 */
+  updateScriptEpisode: (projectId: number, episodeNumber: number, body: { title?: string; creative?: string; summary?: string; body?: string; version?: number }) =>
+    request<DramaEpisodeBody & { version: number }>(`/api/drama/scripts/${projectId}/episodes/${episodeNumber}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   scriptSummary: (body: {
     project_id: number
@@ -355,6 +408,16 @@ export const dramaApi = {
       body: JSON.stringify({ message, project_id }),
     }),
 
+  listLibraryAssets: (filters: { type?: MediaLibraryType; mediaKind?: MediaLibraryItem['media_kind']; generationStatus?: MediaLibraryGenerationStatus; projectId?: number; projectKind?: 'drama' | 'short_video'; unassigned?: boolean; q?: string; page?: number; pageSize?: number }, signal?: AbortSignal) => {
+    const params = new URLSearchParams({ type: filters.type || 'all', page: String(filters.page || 1), page_size: String(filters.pageSize || 12) })
+    if (filters.mediaKind) params.set('media_kind', filters.mediaKind)
+    if (filters.generationStatus) params.set('generation_status', filters.generationStatus)
+    if (filters.projectId) params.set('project_id', String(filters.projectId))
+    if (filters.projectKind) params.set('project_kind', filters.projectKind)
+    if (filters.unassigned) params.set('unassigned', 'true')
+    if (filters.q) params.set('q', filters.q)
+    return request<MediaLibraryPage>(`/api/drama/library-assets?${params}`, { signal })
+  },
   listAssets: async (projectId?: number, options?: { libraryOnly?: boolean }) => {
     const params = new URLSearchParams()
     if (projectId != null) params.set('project_id', String(projectId))
@@ -367,29 +430,16 @@ export const dramaApi = {
   },
   createAsset: (body: Partial<DramaAsset> & { project_id: number }) =>
     request<DramaAsset>('/api/drama/assets', { method: 'POST', body: JSON.stringify(body) }),
+  /** 由服务端校验来源和目标空间，复制后独立保存。 */
+  copyAsset: async (asset: DramaAsset, projectId: number) => {
+    return request<DramaAsset>(`/api/drama/assets/${asset.id}/copy`, { method: 'POST', body: JSON.stringify({ project_id: projectId }) })
+  },
   updateAsset: (id: number, body: Partial<DramaAsset>) =>
     request<DramaAsset>(`/api/drama/assets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  uploadAssetMedia: async (assetId: number, file: File) => {
-    const token = localStorage.getItem('token')
-    const form = new FormData()
-    form.append('file', file)
-    const res = await fetch(`${API_BASE}/api/drama/assets/${assetId}/upload`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: form,
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }))
-      const detail = err.detail
-      const message =
-        typeof detail === 'string'
-          ? detail
-          : Array.isArray(detail)
-            ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
-            : res.statusText
-      throw new Error(message || tr('common.uploadFailed'))
-    }
-    return res.json() as Promise<DramaAsset>
+  /** 上传资产媒体并返回更新后的资产。 */
+  uploadAssetMedia: (assetId: number, file: File) => {
+    const body = new FormData(); body.append('file', file)
+    return request<DramaAsset>(`/api/drama/assets/${assetId}/upload`, { method: 'POST', body })
   },
   /** 上传剧本文件建项目（.txt/.md/.docx/.pdf ≤ 5MB）；原文按集保留，只做分集 */
   importScriptProject: async (
@@ -608,7 +658,7 @@ export const dramaApi = {
       body: JSON.stringify(body),
     }),
 
-  generateVoice: (body: {
+  generateVoice: async (body: {
     project_id: number
     asset_id?: number
     name?: string
@@ -616,17 +666,21 @@ export const dramaApi = {
     sample_text?: string
     speaker?: string
     character_asset_id?: number
-  }) =>
-    request<DramaVoiceGenerateResult>('/api/drama/generation/voice', {
+  }) => {
+    await ensureCharacterVoiceGenerationEnabled()
+    return request<DramaVoiceGenerateResult>('/api/drama/generation/voice', {
       method: 'POST',
       body: JSON.stringify(body),
-    }),
+    })
+  },
 
-  suggestVoicePrompt: (body: { project_id: number; asset_id: number }) =>
-    request<DramaVoicePromptResult>('/api/drama/generation/voice_prompt', {
+  suggestVoicePrompt: async (body: { project_id: number; asset_id: number }) => {
+    await ensureCharacterVoiceGenerationEnabled()
+    return request<DramaVoicePromptResult>('/api/drama/generation/voice_prompt', {
       method: 'POST',
       body: JSON.stringify(body),
-    }),
+    })
+  },
 
   getCanvas: (projectId: number) =>
     request<{ project_id: number; nodes: unknown[]; edges: unknown[] }>(
