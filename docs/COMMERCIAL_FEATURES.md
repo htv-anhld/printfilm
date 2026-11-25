@@ -422,5 +422,58 @@ Giới hạn hiện tại: **ảnh và video chưa chạy qua OpenAI** (code đa
 - TokenFree đã đổi tên model sang dạng ngắn có dấu chấm. Code tự chuẩn hoá khi gọi TokenFree:
   `doubao-seedream-5-0-260128` → `seedream-5.0`, `seedance-2-5` → `seedance-2.5`.
 - `gpt-image-2.5` hiện không có kênh ở nhóm `default`, nên Seedream gọi thẳng `/images/generations`, không ép sang gpt-image nữa.
-- **Chưa bật OSS vẫn chạy được video**: Seedance cần ảnh khung đầu có URL công khai. Ảnh Seedream vốn có URL CDN ký số (hạn ~24h); code lưu URL này vào file `<ảnh>.src` cạnh ảnh và dùng lại trong vòng 20 giờ (`backend/app/services/remote_source.py`). Ảnh **do người dùng tải lên** hoặc ảnh cũ hơn 20 giờ vẫn **bắt buộc bật OSS**. Khi chạy production phải bật OSS.
+- **Chưa bật OSS vẫn chạy được video**: Seedance cần ảnh khung đầu có URL công khai. Ảnh Seedream vốn có URL CDN ký số (hạn ~24h); code lưu URL này vào file `<ảnh>.src` cạnh ảnh và dùng lại trong vòng 20 giờ (`backend/app/services/remote_source.py`). Ảnh **do người dùng tải lên** hoặc ảnh cũ hơn 20 giờ cần kho lưu trữ có link công khai: bật Aliyun OSS **hoặc Cloudflare R2 / S3** (mục 19). Production nên bật một trong hai.
 - Đã thử thật: ảnh 1440×2560 ~25s; video Seedance 2.5 5s 720×1280 ~3 phút.
+- `gpt-image-2` có kênh ở nhóm `default` và gọi qua `/images/generations` (kích thước 1024×1024 / 1024×1536 / 1536×1024). Code không còn đổi nó sang `gpt-image-2.5` (không có kênh).
+
+## 19. Lưu trữ chuẩn S3: Cloudflare R2 / AWS S3 / MinIO (cập nhật 25/11/2026)
+
+Thay cho Aliyun OSS khi cần link công khai cho ảnh/video (Seedance tải ảnh tham chiếu từ link này).
+Code: `backend/app/services/oss.py` (`oss_provider = aliyun | s3`, thư viện `boto3`).
+
+Cấu hình ở **Admin → Cài đặt hệ thống → Lưu trữ OSS**, chọn **S3 / Cloudflare R2**:
+
+| Ô | Cloudflare R2 |
+|---|---|
+| Endpoint | `https://<account_id>.r2.cloudflarestorage.com` (lấy ở bucket → Settings → S3 API, **bỏ tên bucket ở cuối**) |
+| Region | `auto` |
+| Bucket | tên bucket |
+| Địa chỉ truy cập công khai | `https://pub-….r2.dev` (bucket → Settings → Public access → bật R2.dev) hoặc domain riêng |
+| AccessKey ID / Secret | R2 → Manage API Tokens → Account API token, quyền **Object Read & Write**, giới hạn đúng bucket, TTL Forever |
+
+- Bấm **«Lưu & kiểm tra kết nối»**: upload một file nhỏ rồi đọc lại qua link công khai (`POST /api/admin/settings/storage/test`). Báo riêng lỗi «không upload được» và «upload được nhưng link công khai không mở» (bucket chưa public).
+- Khoảng trắng dán thừa và tên bucket dính ở cuối endpoint được tự làm sạch.
+- Không gửi ACL khi upload (R2 không hỗ trợ ACL): quyền đọc công khai đặt ở bucket.
+- Với token **Object Read & Write**, CORS không tự cài được (chỉ ảnh hưởng tải gói nén trên trình duyệt); thêm tay ở bucket → Settings → CORS Policy nếu cần.
+- Ảnh cũ chỉ nằm trên máy chủ sẽ được đẩy lên kho ngay khi cần gửi cho Seedance.
+- Khi chưa bật kho nào, ảnh tài nguyên do người dùng tải lên vẫn lưu được trên máy chủ (`static/generated/p{id}/`), nhưng không dùng được làm tham chiếu cho Seedance.
+
+## 20. Chọn model video, tỉ lệ, độ phân giải và Draft ở frontend
+
+- Danh sách model lấy từ `/api/media-models` (các model admin đã bật). Bộ chọn ở: form tạo phim truyện, ô nhập trang chủ, công cụ tạo video, trang biên tập tập.
+- Lựa chọn lưu vào `project.params`: `video_model`, `aspect_ratio` (9:16 / 16:9 / 1:1), `resolution` (480p / 720p / 1080p), `draft_mode`. Backend chỉ nhận model nằm trong danh sách đã bật.
+- **Draft mode** (chỉ Seedance 2.5): bản nháp 480p gửi `draft: true`, lưu `params.draft.task_id` 7 ngày; nút **«Xuất 1080p»** gọi `POST /api/drama/fragments/{id}/finalize_draft` (tham chiếu `content[].draft_task`). **Chưa kiểm chứng với TokenFree thật**: bảng giá TokenFree không ghi hỗ trợ draft.
+
+## 21. Tải kịch bản lên
+
+- Tab **«Tải kịch bản»** ở Drama Studio: `.txt / .md / .docx / .pdf` ≤ 5 MB → `POST /api/drama/projects/import`.
+- Tách tập theo dòng tiêu đề `Tập N`, `Episode N`, `EP N`, `第N集`; không có tiêu đề thì cả tệp là một tập. Nội dung giữ nguyên văn (`origin = import`); AI chỉ trích nhân vật và tóm tắt, không viết lại tập.
+- PDF dạng ảnh scan (không có lớp chữ) bị từ chối vì «quá ngắn».
+
+## 22. Phim dài: thời lượng mỗi tập, «Tạo tất cả», «Ghép cả bộ phim»
+
+- **Thời lượng mỗi tập** (`episode_duration_sec`: mặc định 60–90 giây, hoặc 2 / 3 / 5 phút): `backend/app/services/drama/episode_length.py`. Tăng số chữ kịch bản, số cảnh, giới hạn số đoạn (≈ 8 giây/đoạn) và ngân sách giây. Nếu AI chia đoạn được dưới 85% thời lượng mục tiêu thì tự yêu cầu chia lại một lần. Đo thật (Claude Haiku, tập 3 phút): 20 đoạn, 196 giây.
+- **«Tạo tất cả»** ở trang phân cảnh: xếp hàng mọi đoạn chưa có video (đã có thì bỏ qua).
+- **«Ghép cả bộ phim»** ở trang dự án: ghép nền mọi đoạn theo thứ tự tập → một MP4 (`POST/GET /api/drama/projects/{id}/film`, trạng thái ở `params.film_compose`). Tác vụ ghép chạy trong tiến trình api, nên khuyến nghị **1 worker**; khởi động lại giữa chừng thì phải ghép lại.
+- Khuyến nghị dùng **Claude Haiku** làm model văn bản: model `tokenfree` từng chậm 4–5 phút/lần và hay trả rỗng.
+
+## 23. Gộp nhân vật trùng
+
+- Khoá nhận diện nhân vật bỏ ngoặc (`Minh (hình chiếu)`) và danh xưng/chức danh đầu tên (Tiến sĩ, Đội trưởng, Ông, Bà, Dr., Captain…). Không bỏ «Anh/Chị/Em» vì có thể là tên thật.
+- Gộp sẽ giữ bản có ảnh/giọng, chuyển liên kết phân cảnh và sửa các chỗ `@asset:<id>` trong nội dung sang bản được giữ.
+
+## 24. Ghi chú vận hành
+
+- nginx của web/admin dùng `resolver 127.0.0.11` + biến upstream: tạo lại container api không còn lỗi 502 / «Unexpected token '<'» ở admin.
+- Giao diện có chế độ sáng/tối; nút `.pf-btn` không có biến thể dùng nền phụ theo theme (tránh màu xám hệ thống ở chế độ tối).
+
