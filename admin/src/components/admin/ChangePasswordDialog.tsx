@@ -52,16 +52,16 @@ export function ChangePasswordDialog({ email, resetUserId, onClose }: { email?: 
       </>}>
       <form id={formId} className="space-y-4" onSubmit={submit} onChange={() => setError("")}>
         <input type="hidden" name="username" autoComplete="username" value={email ?? ""} />
-        {!resetting && <AdminField label={t("layout.password.current")} required>
-          <Input type="password" name="current" autoComplete="current-password" maxLength={64} disabled={saving} />
+        {!resetting && <AdminField label={t("layout.password.current")}>
+          <Input required type="password" name="current" autoComplete="current-password" maxLength={64} disabled={saving} />
         </AdminField>}
-        <AdminField label={t("layout.password.new")} required hint={t("layout.password.hint")}>
-          <Input type="password" name="password" autoComplete="new-password" minLength={6} maxLength={64} disabled={saving} />
+        <AdminField label={t("layout.password.new")} hint={t("layout.password.hint")}>
+          <Input required type="password" name="password" autoComplete="new-password" minLength={6} maxLength={64} disabled={saving} />
         </AdminField>
-        <AdminField label={t("layout.password.confirm")} required>
-          <Input type="password" name="confirm" autoComplete="new-password" maxLength={64} disabled={saving} />
+        <AdminField label={t("layout.password.confirm")}>
+          <Input required type="password" name="confirm" autoComplete="new-password" maxLength={64} disabled={saving} />
         </AdminField>
-        {error && <p role="alert" className="admin-field-error">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
       </form>
     </AdminModal>
   );
