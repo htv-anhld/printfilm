@@ -1,4 +1,4 @@
-/* 自动生成：scratchpad/studio_dark/gen.py — 画布暗色主题（勿手改，改 studioDark.css） */
+/* 自动生成：scripts/gen_dark_css.py — 暗色主题颜色覆盖（勿手改） */
 /* canvas/canvasTidy.css */
 html.dark .pf-tidy-motion{background:linear-gradient(90deg,#1b2c233d,transparent 18%,transparent 82%,#3d301240)}
 html.dark .pf-tidy-hand>span{color:#dcb15e}

@@ -213,6 +213,6 @@ export const GENERATION_TEXT_VI: Record<string, string> = {
   "AI VIDEO": "VIDEO AI",
   "AI IMAGE": "ẢNH AI",
   "AI AUDIO": "ÂM THANH AI",
-  "{#1}m {#2}s": "{1} phút {2} giây",
-  "{#1}s": "{1} giây",
+  "{#1}m {#2}s": "{1}p {2}s",
+  "{#1}s": "{1}s",
 }

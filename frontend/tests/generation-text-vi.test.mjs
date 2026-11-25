@@ -19,8 +19,8 @@ test('generationTextVi: 未收录回退英文', () => {
 })
 
 test('generationTextVi: 数字占位不误伤普通英文', () => {
-  assert.equal(generationTextVi('3m 29s'), '3 phút 29 giây')
-  assert.equal(generationTextVi('45s'), '45 giây')
+  assert.equal(generationTextVi('3m 29s'), '3p 29s')
+  assert.equal(generationTextVi('45s'), '45s')
   assert.equal(generationTextVi('Unknown labels'), 'Unknown labels')
   assert.equal(generationTextVi('Remove reference'), 'Bỏ tham chiếu')
 })
