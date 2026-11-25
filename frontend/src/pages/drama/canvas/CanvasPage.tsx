@@ -21,7 +21,7 @@ function CanvasPageInner() {
   if (!Number.isFinite(id) || id <= 0) {
     return (
       <div className="free-canvas-page" style={{ display: 'grid', placeItems: 'center' }}>
-        <p style={{ color: '#64748b' }}>{tr('episode.canvas.invalidProjectId')}</p>
+        <p style={{ color: 'var(--pf-muted)' }}>{tr('episode.canvas.invalidProjectId')}</p>
       </div>
     )
   }

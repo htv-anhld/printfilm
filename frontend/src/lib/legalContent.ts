@@ -7,7 +7,7 @@ export type LegalSection = {
 }
 
 export type LegalDoc = {
-  slug: 'terms' | 'privacy'
+  slug: 'terms' | 'privacy' | 'refund' | 'acceptable-use'
   title: string
   updatedAt: string
   intro: string

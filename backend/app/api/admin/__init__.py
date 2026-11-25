@@ -2,14 +2,17 @@
 from fastapi import APIRouter
 
 from app.api.admin import (
+    commerce,
     dashboard,
     finance,
     drama_assets,
     drama_episodes,
     drama_fragments,
     drama_projects,
+    error_reports,
     ledger,
     orders,
+    partners,
     projects,
     queues,
     settings,
@@ -37,3 +40,6 @@ router.include_router(drama_projects.router)
 router.include_router(drama_assets.router)
 router.include_router(drama_episodes.router)
 router.include_router(drama_fragments.router)
+router.include_router(error_reports.router)
+router.include_router(commerce.router)
+router.include_router(partners.router)

@@ -1,242 +1,140 @@
-/** PRINTFILM 官网首页：产品主张、漫剧/科普入口、成片流程与工具 */
-import { useState } from 'react'
+/** PRINTFILM 首页仪表盘（参照 Dravelio）：Hero + 创作输入框 + 快捷入口 + 精选风格 + 最近作品 */
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { Clapperboard, Film, FolderOpen, LayoutGrid, Wrench } from 'lucide-react'
+import { api, type User } from '../api'
 import AppShell from '../components/layout/AppShell'
-import Button from '../components/ui/Button'
-import { IconGithub } from '../components/ui/Icons'
-import ComingSoon from '../components/ui/ComingSoon'
-import CreateChoiceModal from '../components/ui/CreateChoiceModal'
+import HomeComposer from '../components/home/HomeComposer'
+import HomeRecent from '../components/home/HomeRecent'
 import { useI18n } from '../i18n'
-import { getDramaImageStylePreviewUrl } from '../lib/dramaImageStylePreviews'
-import { GITHUB_REPO_URL } from '../lib/siteLinks'
-import { PRODUCT_ICONS, localizeToolDefs } from '../lib/toolsCatalog'
+import { IMAGE_STYLE_OPTIONS, type ImageStyleId } from '../lib/dramaImageStyles'
+import {
+  getDramaImageStylePreviewFallbackUrl,
+  getDramaImageStylePreviewUrl,
+} from '../lib/dramaImageStylePreviews'
+import { USER_UPDATED_EVENT } from '../lib/userEvents'
+import '../styles/dashboard.css'
+
+/** Hero 背景拼贴用的风格图（深色、电影感优先） */
+const HERO_TILES: ImageStyleId[] = [
+  'neon-cyberpunk-film',
+  'retro-sci-fi-atompunk',
+  'wuxia-realistic-photo',
+  'domestic-suspense-cold',
+  'american-retro-hollywood',
+  'palace-intrigue-cold',
+  'japanese-youth-film',
+  'ghibli-handdrawn-anime',
+  '90s-realistic-film',
+  'korean-urban-soft',
+  'ancient-chinese-mythology',
+  'retro-narrative-film',
+]
+
+// 按当前小时选问候语 key
+function greetingKey(): 'home.dash.greetMorning' | 'home.dash.greetAfternoon' | 'home.dash.greetEvening' {
+  const h = new Date().getHours()
+  if (h < 12) return 'home.dash.greetMorning'
+  if (h < 18) return 'home.dash.greetAfternoon'
+  return 'home.dash.greetEvening'
+}
 
 export default function HomePage() {
   const nav = useNavigate()
-  const { t, m } = useI18n()
+  const { t } = useI18n()
   const loggedIn = Boolean(localStorage.getItem('token'))
-  const [createOpen, setCreateOpen] = useState(false)
-  const DramaIcon = PRODUCT_ICONS.drama
-  const KepuIcon = PRODUCT_ICONS.kepu
-  const tools = localizeToolDefs(m)
+  const [user, setUser] = useState<User | null>(null)
 
-  // 未登录去登录；已登录弹出产品选择
-  function goCreate() {
+  // 已登录时取昵称用于问候；资料更新事件后刷新
+  useEffect(() => {
+    if (!loggedIn) return
+    let alive = true
+    const load = () =>
+      api
+        .me()
+        .then((u) => alive && setUser(u))
+        .catch(() => undefined)
+    load()
+    window.addEventListener(USER_UPDATED_EVENT, load)
+    return () => {
+      alive = false
+      window.removeEventListener(USER_UPDATED_EVENT, load)
+    }
+  }, [loggedIn])
+
+  const shortcuts = [
+    { to: '/drama', icon: Clapperboard, label: t('home.dash.quickDrama') },
+    { to: '/studio/new', icon: Film, label: t('home.dash.quickKepu') },
+    { to: '/creative', icon: LayoutGrid, label: t('home.dash.quickCreative') },
+    { to: '/tools', icon: Wrench, label: t('home.dash.quickTools') },
+    { to: '/assets', icon: FolderOpen, label: t('home.dash.quickAssets') },
+  ]
+
+  // 精选风格：带上风格进入漫剧新建面板；未登录先登录
+  function pickStyle(id: ImageStyleId) {
     if (!loggedIn) {
-      nav('/auth?next=/')
+      nav('/auth?next=/drama')
       return
     }
-    setCreateOpen(true)
+    nav('/drama', { state: { imageStyleId: id } })
   }
 
-  // 产品入口：未登录带 next 回跳
-  function goAuthOr(path: string) {
-    nav(loggedIn ? path : `/auth?next=${encodeURIComponent(path)}`)
-  }
+  const name = user?.nickname || user?.email?.split('@')[0] || ''
 
   return (
-    <AppShell active="home" hideFooter>
-      <section className="pf-land-hero">
-        <div className="pf-land-hero-copy">
-          <p className="pf-land-kicker">PRINTFILM</p>
-          <h1>
-            {t('home.headlineBefore')}
-            <br />
-            <em>{t('home.headlineEm')}</em>
-          </h1>
-          <p className="pf-land-lede">{t('home.lede')}</p>
-          <div className="pf-land-cta">
-            <Button variant="lime" size="lg" icon onClick={goCreate}>
-              {t('home.startCreate')}
-              <ArrowRight size={16} strokeWidth={2} aria-hidden />
-            </Button>
-            <Button variant="ghost" size="lg" icon to="/tools">
-              {t('home.browseTools')}
-              <ArrowRight size={16} strokeWidth={2} aria-hidden />
-            </Button>
+    <AppShell active="home" wide hideFooter>
+      <div className="pf-dash">
+        <section className="pf-dash-hero">
+          <div className="pf-dash-hero-bg" aria-hidden>
+            {HERO_TILES.map((id) => (
+              <img key={id} src={getDramaImageStylePreviewUrl(id)} alt="" />
+            ))}
           </div>
-          <a
-            className="pf-land-github"
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <IconGithub size={16} />
-            <span>{t('home.githubCta')}</span>
-            <ArrowRight size={14} strokeWidth={2.2} aria-hidden />
-          </a>
-        </div>
-        <div className="pf-land-frames" aria-hidden>
-          <figure className="pf-land-frame is-drama">
-            <img src={getDramaImageStylePreviewUrl('ancient-chinese-mythology')} alt="" />
-            <figcaption>{t('home.dramaTitle')}</figcaption>
-          </figure>
-          <figure className="pf-land-frame is-kepu">
-            <img src={getDramaImageStylePreviewUrl('neon-cyberpunk-film')} alt="" />
-            <figcaption>{t('home.kepuTitle')}</figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <section className="pf-land-products" id="products" aria-label={t('home.products')}>
-        <button type="button" className="pf-land-product is-drama" onClick={() => goAuthOr('/drama')}>
-          <span className="pf-land-product-icon" aria-hidden>
-            <DramaIcon size={26} strokeWidth={1.6} />
-          </span>
-          <span className="pf-land-product-body">
-            <strong>{t('home.dramaTitle')}</strong>
-            <em>{t('home.dramaFor')}</em>
-            <span>{t('home.dramaDesc')}</span>
-            <span className="pf-land-chips">
-              {m.home.dramaSteps.map((label) => (
-                <span key={label}>{label}</span>
+          <div className="pf-dash-hero-inner">
+            <h1 className="pf-dash-headline">{t('home.dash.heroTitle')}</h1>
+            <p className="pf-dash-greet">
+              {name ? `${t(greetingKey(), { name })} · ` : ''}
+              {t('home.dash.lead')}
+            </p>
+            <HomeComposer loggedIn={loggedIn} />
+            <nav className="pf-dash-shortcuts" aria-label={t('home.dash.quickTitle')}>
+              {shortcuts.map(({ to, icon: Icon, label }) => (
+                <Link key={to} to={to} className="pf-dash-shortcut">
+                  <span className="pf-dash-shortcut-icon" aria-hidden>
+                    <Icon size={22} strokeWidth={1.8} />
+                  </span>
+                  <span>{label}</span>
+                </Link>
               ))}
-            </span>
-          </span>
-          <span className="pf-land-product-go" aria-hidden>
-            <ArrowRight size={16} strokeWidth={2} />
-          </span>
-        </button>
-        <button type="button" className="pf-land-product is-kepu" onClick={() => goAuthOr('/studio/new')}>
-          <span className="pf-land-product-icon" aria-hidden>
-            <KepuIcon size={26} strokeWidth={1.6} />
-          </span>
-          <span className="pf-land-product-body">
-            <strong className="pf-land-product-heading">
-              {t('home.kepuTitle')}
-              <span className="pf-land-product-tag">{t('home.kepuTag')}</span>
-            </strong>
-            <em>{t('home.kepuFor')}</em>
-            <span>{t('home.kepuDesc')}</span>
-            <span className="pf-land-chips">
-              {m.home.kepuSteps.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </span>
-          </span>
-          <span className="pf-land-product-go" aria-hidden>
-            <ArrowRight size={16} strokeWidth={2} />
-          </span>
-        </button>
-      </section>
-
-      <section className="pf-land-pipeline" aria-labelledby="pf-land-pipeline-title">
-        <header className="pf-land-section-head">
-          <p className="pf-land-kicker">{t('home.howKicker')}</p>
-          <h2 id="pf-land-pipeline-title">{t('home.howTitle')}</h2>
-        </header>
-        <ol className="pf-land-pipeline-list">
-          {m.home.pipeline.map((item) => (
-            <li key={item.step}>
-              <span className="pf-land-step-no">{item.step}</span>
-              <strong>{item.title}</strong>
-              <span>{item.desc}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="pf-land-caps" aria-labelledby="pf-land-caps-title">
-        <header className="pf-land-section-head">
-          <p className="pf-land-kicker">{t('home.capsKicker')}</p>
-          <h2 id="pf-land-caps-title">{t('home.capsTitle')}</h2>
-        </header>
-        <div className="pf-land-cap-grid">
-          {m.home.capabilities.map((item) => (
-            <article key={item.title}>
-              <strong>{item.title}</strong>
-              <p>{item.desc}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="pf-land-tools" id="tools">
-        <header className="pf-land-section-head is-row">
-          <div>
-            <p className="pf-land-kicker">{t('home.toolsKicker')}</p>
-            <h2>{t('home.toolsTitle')}</h2>
+            </nav>
           </div>
-          <Link to="/tools" className="pf-link">
-            {t('home.allTools')}
-          </Link>
-        </header>
-        <div className="pf-land-tool-grid">
-          {tools.map((tool) => {
-            const Icon = tool.icon
-            return (
-              <Link
-                key={tool.id}
-                to={`/tools/${tool.id}`}
-                className={`pf-land-tool-card${tool.soon ? ' is-soon' : ''}`}
-              >
-                <span className="pf-land-tool-icon" aria-hidden>
-                  <Icon size={20} strokeWidth={1.7} />
-                </span>
-                <strong>{tool.title}</strong>
-                <span>{tool.desc}</span>
-                {tool.soon ? <ComingSoon /> : null}
-              </Link>
-            )
-          })}
-        </div>
-      </section>
+        </section>
 
-      <section className="pf-land-who" aria-labelledby="pf-land-who-title">
-        <header className="pf-land-section-head">
-          <p className="pf-land-kicker">{t('home.whoKicker')}</p>
-          <h2 id="pf-land-who-title">{t('home.whoTitle')}</h2>
-        </header>
-        <div className="pf-land-who-grid">
-          {m.home.audiences.map((item) => (
-            <article key={item.title}>
-              <strong>{item.title}</strong>
-              <p>{item.desc}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+        <section className="pf-dash-section">
+          <div className="pf-dash-section-head">
+            <h2>{t('home.dash.featured')}</h2>
+            <span className="pf-dash-section-hint">{t('home.dash.featuredHint')}</span>
+          </div>
+          <div className="pf-dash-featured">
+            {IMAGE_STYLE_OPTIONS.map((o) => (
+              <button key={o.id} type="button" className="pf-dash-feature" onClick={() => pickStyle(o.id)}>
+                <img
+                  src={getDramaImageStylePreviewUrl(o.id)}
+                  alt=""
+                  loading="lazy"
+                  onError={(e) => {
+                    const fb = getDramaImageStylePreviewFallbackUrl(o.id)
+                    if (!e.currentTarget.src.endsWith(fb)) e.currentTarget.src = fb
+                  }}
+                />
+                <span>{o.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
 
-      <section className="pf-land-close">
-        <div>
-          <h2>{t('home.closeTitle')}</h2>
-          <p>{t('home.closeLead')}</p>
-        </div>
-        <div className="pf-land-cta">
-          <Button variant="lime" size="lg" icon onClick={goCreate}>
-            {t('home.startCreate')}
-            <ArrowRight size={16} strokeWidth={2} aria-hidden />
-          </Button>
-          <Button variant="ghost" size="lg" to="/pricing">
-            {t('home.viewPricing')}
-          </Button>
-        </div>
-      </section>
-
-      <footer className="pf-land-foot">
-        <div className="pf-land-foot-brand">
-          <strong>PRINTFILM</strong>
-          <p>{t('home.footBrand')}</p>
-        </div>
-        <nav className="pf-land-foot-nav" aria-label={t('home.footNav')}>
-          <Link to="/drama">{t('nav.drama')}</Link>
-          <Link to="/history">{t('nav.kepu')}</Link>
-          <Link to="/method">{t('home.methodLink')}</Link>
-          <Link to="/tools">{t('nav.tools')}</Link>
-          <Link to="/pricing">{t('nav.pricing')}</Link>
-          <Link to="/help">{t('nav.help')}</Link>
-          <Link to="/terms">{t('footer.terms')}</Link>
-          <Link to="/privacy">{t('footer.privacy')}</Link>
-          <Link to="/contact">{t('footer.contact')}</Link>
-          <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer">
-            {t('footer.github')}
-          </a>
-        </nav>
-        <p className="pf-land-copy">© {new Date().getFullYear()} PRINTFILM. All rights reserved.</p>
-      </footer>
-
-      <CreateChoiceModal open={createOpen} onClose={() => setCreateOpen(false)} />
+        {loggedIn ? <HomeRecent /> : null}
+      </div>
     </AppShell>
   )
 }

@@ -812,7 +812,7 @@ export default function StoryboardPage() {
                 width: '100%',
                 aspectRatio: '16/10',
                 borderRadius: 12,
-                background: '#e8eaee',
+                background: 'var(--pf-surface-2)',
                 display: 'grid',
                 placeItems: 'center',
                 color: 'var(--pf-muted)',

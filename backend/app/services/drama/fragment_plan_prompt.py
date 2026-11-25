@@ -88,6 +88,21 @@ FRAGMENT_PLAN_SYSTEM_PROMPT = """你是短剧视频分镜导演，负责把「�
 """
 
 
+def _long_episode_lines() -> list[str]:
+    """长集（单集时长 > 90 秒）追加时长目标：防止模型过度合并、成片明显短于设定。"""
+    from app.services.drama.episode_length import current_episode_length
+
+    spec = current_episode_length()
+    if spec.is_default:
+        return []
+    low, high = max(4, round(spec.target_sec / 12)), spec.fragment_max
+    return [
+        f"- 本集为长集：所有 duration_sec 合计须达到约 {spec.target_sec} 秒（不少于 {int(spec.target_sec * 0.85)} 秒）。",
+        f"- fragments 约 {low}–{high} 条；正文里的每段动作与台词都要拍出来，不要为了压缩而删戏或合并不同场景。",
+        "- 单镜优先 10–15 秒，台词多的镜头按台词时长给足。",
+    ]
+
+
 def build_fragment_plan_user_prompt(
     *,
     episode_name: str,
@@ -168,6 +183,7 @@ def build_fragment_plan_user_prompt(
             "- 同场景、同角色组的连续对白合并为一镜；跳过纯过渡/重复反应。",
             "- 镜内 @duration 单段 3–15 秒，整镜合计不得超过 15 秒。",
             "- 每镜最多 3 个出镜角色、2 件道具；不要把整场出场人物都写进 character_names。",
+            *_long_episode_lines(),
             "",
             "【分集场记正文】",
             body_text,
@@ -175,7 +191,10 @@ def build_fragment_plan_user_prompt(
             "【可用资产目录｜拆镜时 character_names / scene_name / prop_names 尽量使用下列名称】",
         ]
     )
-    if body_len > 550:
+    # 长集（单集时长 > 90 秒）按目标篇幅上限判断是否「偏长」
+    from app.services.drama.episode_length import current_episode_length
+
+    if body_len > max(550, current_episode_length().chars_max):
         lines.insert(
             lines.index("【分集场记正文】"),
             f"【场记偏长（约 {body_len} 字）】规划时请主动压缩：合并场次、删次要动作，仍只输出 ≤10 条 fragments。",

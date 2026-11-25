@@ -30,7 +30,7 @@ export const enTasks = {
     result: "Result",
   },
   emptyHint: "Switch to “All” to see past tasks",
-  frozen: "Held ¥{amount}",
+  frozen: "Held {amount}",
   createdAt: "Created {time}",
   startedAt: "Started {time}",
   payloadFields: {

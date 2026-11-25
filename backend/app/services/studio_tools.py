@@ -173,6 +173,14 @@ async def run_image_tool(
                 size = RATIO_SIZE["9:16"]
             elif mode == "场景图":
                 size = RATIO_SIZE["16:9"]
+    elif tool_id == "cinema":
+        # cinema-look：保持构图，只换电影调色（mode = 预设 id）
+        if not files:
+            raise ValueError(_("请上传参考图"))
+        from app.services.creative_tools import cinema_prompt
+
+        refs = [publish_public(files[0])]
+        full_prompt = cinema_prompt(mode, full_prompt)
     elif tool_id == "ecom":
         pack_name = pack or "主图拼接"
         if pack_name == "卖点海报":
@@ -212,11 +220,19 @@ async def run_image_tool(
     return {"kind": "image", "urls": [url], "status": "succeeded"}
 
 
+# 后台生图协程的强引用：asyncio 只弱引用 task，不保存会被 GC 回收，导致 tool_runs 永远停在 running
+_IMAGE_TOOL_TASKS: set = set()
+# 超过该时长仍 queued / running 视为中断（进程重启、协程丢失），轮询时判失败
+IMAGE_TOOL_STALE_SEC = 600
+
+
 def _dispatch_tool_image(run_id: int) -> str:
-    """启动工具生图后台任务。"""
+    """启动工具生图后台任务（调用前 tool_runs 行必须已提交，否则新会话读不到）。"""
     import asyncio
 
-    asyncio.create_task(execute_image_tool_run(run_id))
+    task = asyncio.create_task(execute_image_tool_run(run_id))
+    _IMAGE_TOOL_TASKS.add(task)
+    task.add_done_callback(_IMAGE_TOOL_TASKS.discard)
     return f"local-{run_id}"
 
 
@@ -228,8 +244,12 @@ async def _ensure_image_tool_balance(db: AsyncSession, user: User, tool_id: str)
     need = await estimate_task_fen(db, synthetic)
     available = int(user.balance_fen or 0)
     if available < need:
+        from app.services.billing.currency import localize_money_symbol
+
         raise ValueError(
-            _("余额不足：需要 ¥{need}，当前 ¥{available}，请先充值", need=f"{need/100:.2f}", available=f"{available/100:.2f}")
+            localize_money_symbol(
+                _("余额不足：需要 ¥{need}，当前 ¥{available}，请先充值", need=f"{need/100:.2f}", available=f"{available/100:.2f}")
+            )
         )
 
 
@@ -262,9 +282,10 @@ async def enqueue_image_tool(
     )
     db.add(row)
     await db.flush()
+    row.task_id = f"local-{row.id}"
+    # 先提交再派发：后台协程用新会话读取 tool_runs，未提交时读不到行会直接返回、任务永远卡在 queued
+    await db.commit()
     task_id = _dispatch_tool_image(row.id)
-    row.task_id = task_id
-    await db.flush()
     return {
         "kind": "image",
         "urls": [],
@@ -334,11 +355,15 @@ async def execute_image_tool_run(run_id: int) -> dict:
             await db.commit()
             return {"ok": True, "run_id": run_id, "urls": urls, "billing_task_id": billing_task.id}
         except Exception as exc:  # noqa: BLE001
-            row.status = "failed"
-            row.error = str(exc)[:512]
-            await db.commit()
             logger.exception("execute_image_tool_run failed run_id=%s", run_id)
-            return {"ok": False, "run_id": run_id, "error": row.error}
+            # 事务可能已中止（死锁 / SQL 错误），必须先回滚，否则写 failed 也会失败、行永远卡在 running
+            await db.rollback()
+            failed = await db.get(ToolRun, run_id)
+            if failed is not None:
+                failed.status = "failed"
+                failed.error = str(exc)[:512]
+                await db.commit()
+            return {"ok": False, "run_id": run_id, "error": str(exc)[:512]}
 
 
 # 轮询工具生图任务状态。
@@ -359,6 +384,19 @@ async def poll_image_tool_task(db: AsyncSession, user: User, task_id: str) -> di
             "error": row.error or _("生成失败"),
         }
 
+    # 卡住保护：长时间 queued / running（进程重启丢了协程）→ 判失败，前端不再无限转圈
+    from datetime import UTC, datetime
+
+    started = row.updated_at or row.created_at
+    if started is not None:
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=UTC)
+        if (datetime.now(UTC) - started).total_seconds() > IMAGE_TOOL_STALE_SEC:
+            row.status = "failed"
+            row.error = _("任务中断，请重新生成")
+            await db.commit()
+            return {"status": "failed", "kind": "image", "urls": [], "error": row.error}
+
     return {"status": "running", "kind": "image", "urls": []}
 
 
@@ -373,7 +411,9 @@ async def start_video_tool(
     duration_raw: str | None,
     motion: str | None,
     files: list[Path],
+    model: str | None = None,
 ) -> dict:
+    """独立视频工具：先得到首帧图，再提交 Seedance；model 为前台选择的视频模型 id。"""
     ark = get_ark()
     duration = duration_seconds(duration_raw)
     still_path: Path | None = None
@@ -430,6 +470,7 @@ async def start_video_tool(
         duration,
         resolution="480p",
         generate_audio=False,
+        model=(model or "").strip() or None,
     )
     digest = hashlib.md5(f"{user.id}:{task_id}".encode()).hexdigest()[:8]
     logger.info("tool video queued user=%s tool=%s task=%s hash=%s", user.id, tool_id, task_id, digest)

@@ -7,6 +7,14 @@
 """
 from __future__ import annotations
 
+import os
+
+# 存量计费用例按开源版语义（人民币分、成本价）编写；商业版默认 USD + markup 2.3，
+# 这里在 Settings 首次实例化前钉回 CNY / 1.0。USD 语义见 test_billing_currency.py。
+os.environ.setdefault("BILLING_CURRENCY", "CNY")
+os.environ.setdefault("BILLING_MARKUP", "1.0")
+os.environ.setdefault("BILLING_FIRST_TOPUP_BONUS_FEN", "0")
+
 import re
 import uuid
 from collections.abc import AsyncIterator
@@ -54,6 +62,17 @@ async def _ensure_test_database(test_url: str, test_name: str) -> None:
 
 
 @pytest.fixture(autouse=True)
+def restore_cached_settings():
+    """部分用例直接改 lru_cache 的 Settings 字段（如 billing_markup），用例结束后还原，避免串味。"""
+    settings = get_settings()
+    snapshot = settings.model_dump()
+    yield
+    for key, value in snapshot.items():
+        if getattr(settings, key, None) != value:
+            object.__setattr__(settings, key, value)
+
+
+@pytest.fixture(autouse=True)
 def skip_tokenfree_pricing_network(monkeypatch: pytest.MonkeyPatch) -> None:
     """单测不打 TokenFree 公开价目，避免预估被外网拖慢或改数。"""
 
@@ -83,6 +102,7 @@ async def db_session(billing_enabled: None) -> AsyncIterator[AsyncSession]:
     import app.models  # noqa: F401
     import app.models_agent  # noqa: F401
     import app.models_api  # noqa: F401
+    import app.models_commerce  # noqa: F401
     import app.models_drama  # noqa: F401
     import app.models_settings  # noqa: F401
     import app.models_tasks  # noqa: F401

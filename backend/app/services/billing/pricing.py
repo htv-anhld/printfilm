@@ -7,13 +7,30 @@ from typing import Any
 
 from app.i18n import _
 from app.config import Settings, get_settings
+from app.services.billing.currency import billing_markup, cny_fen_to_minor
 
+# 人民币充值包（易支付，开源版）：amount/credit 单位为分
 SKUS: list[dict[str, Any]] = [
     {"id": "topup_10", "name": "体验充值", "amount_fen": 10000, "credit_fen": 10000},
     {"id": "topup_49", "name": "基础充值", "amount_fen": 49000, "credit_fen": 49000},
     {"id": "topup_99", "name": "进阶充值", "amount_fen": 99000, "credit_fen": 104000, "recommended": True},
     {"id": "topup_199", "name": "专业充值", "amount_fen": 199000, "credit_fen": 220000},
 ]
+
+# 美元 credit 包（Creem，对齐 Dravelio）：1 credit = 1 美分，永不过期
+SKUS_USD: list[dict[str, Any]] = [
+    {"id": "credits_900", "name": "入门积分包", "amount_fen": 900, "credit_fen": 900},
+    {"id": "credits_3900", "name": "标准积分包", "amount_fen": 3900, "credit_fen": 3900},
+    {"id": "credits_7900", "name": "进阶积分包", "amount_fen": 7900, "credit_fen": 7900, "recommended": True},
+    {"id": "credits_14900", "name": "专业积分包", "amount_fen": 14900, "credit_fen": 14900},
+]
+
+
+def active_skus(settings: Settings | None = None) -> list[dict[str, Any]]:
+    """当前计费币种可售的充值包。"""
+    from app.services.billing.currency import billing_currency
+
+    return SKUS_USD if billing_currency(settings) == "USD" else SKUS
 
 ORDER_EXPIRE_SECONDS = 300
 
@@ -54,14 +71,18 @@ def kie_credits_to_cost_fen(
         return None
     if amount <= 0:
         return None
-    return max(1, int(math.ceil(amount * kie_fen_per_credit(settings))))
+    # kie_fen_per_credit 按人民币分配置，折成计费币种最小单位
+    return max(1, int(math.ceil(cny_fen_to_minor(amount * kie_fen_per_credit(settings), settings))))
 
 
 def user_charge_fen(cost_fen: int, settings: Settings | None = None) -> int:
-    """用户扣费 = TokenFree / 上游成本，不再乘 markup。"""
+    """用户扣费 = 上游成本 × BILLING_MARKUP（向上取整，最少 1）。
+
+    开源版 markup=1 即按成本收；商业版默认 2.3（对齐 Dravelio）。
+    """
     if cost_fen <= 0:
         return 0
-    return max(1, int(cost_fen))
+    return max(1, int(math.ceil(int(cost_fen) * billing_markup(settings) - 1e-9)))
 
 
 def charge_fen_for_tokens(
@@ -74,7 +95,8 @@ def charge_fen_for_tokens(
     s = settings or get_settings()
     t = max(0, int(tokens))
     yuan_per_m = provider_yuan_per_m(billing_key, s)
-    cost = math.ceil(t / 1_000_000 * yuan_per_m * 100) if t else 0
+    # 本地兜底单价是「元/百万 token」，折成计费币种最小单位
+    cost = math.ceil(cny_fen_to_minor(t / 1_000_000 * yuan_per_m * 100, s)) if t else 0
     charge = user_charge_fen(cost, s)
     if t > 0 and charge < 1:
         charge = 1
@@ -138,7 +160,8 @@ def parse_upstream_cost_fen(
     for key in yuan_keys:
         if usage.get(key) is not None:
             try:
-                return max(0, int(math.ceil(float(usage[key]) * 100)))
+                # 火山等返回人民币元
+                return max(0, int(math.ceil(cny_fen_to_minor(float(usage[key]) * 100, settings))))
             except (TypeError, ValueError):
                 pass
     # Kie：任务级 creditsConsumed（usage 内或顶层）
@@ -201,9 +224,9 @@ def charge_fen_for_usage(
 
 
 def _catalog_image_fen_if_per_call(settings: Settings, model: str, *, size: str = "") -> int | None:
-    """gpt-image / Seedream（TokenFree 上改走 gpt-image）按张价；token 计价模型返回 None。"""
+    """gpt-image / Seedream（TokenFree 上改走 gpt-image）按张上游成本（未加价）；token 计价模型返回 None。"""
     from app.services.tokenfree_image import is_seedream_family, tokenfree_working_image_model
-    from app.services.tokenfree_pricing import charge_fen_official_image, lookup_rate, resolve_billing_image_size
+    from app.services.tokenfree_pricing import cost_fen_official_image, lookup_rate, resolve_billing_image_size
 
     raw = (model or getattr(settings, "model_image", "") or "").strip()
     mid = tokenfree_working_image_model(raw or "gpt-image-2-5")
@@ -212,9 +235,9 @@ def _catalog_image_fen_if_per_call(settings: Settings, model: str, *, size: str 
         return None
     resolved = resolve_billing_image_size(settings, model=raw, size=size)
     if rate and rate.billing == "per_call" and rate.cny_per_call > 0:
-        return charge_fen_official_image(settings, model=mid, size=resolved)
+        return cost_fen_official_image(settings, model=mid, size=resolved)
     if is_seedream_family(raw) or "gpt-image" in mid.lower():
-        return charge_fen_official_image(settings, model=mid, size=resolved)
+        return cost_fen_official_image(settings, model=mid, size=resolved)
     return None
 
 
@@ -261,8 +284,9 @@ def billing_model_rate_rows(settings: Settings | None = None) -> list[dict[str, 
     return build_official_rate_rows(cached_rates(), settings)
 
 
-def sku_by_id(sku_id: str) -> dict[str, Any] | None:
-    for item in SKUS:
+def sku_by_id(sku_id: str, settings: Settings | None = None) -> dict[str, Any] | None:
+    """按 ID 找当前币种的充值包（另一币种的包不可下单）。"""
+    for item in active_skus(settings):
         if item["id"] == sku_id:
             return item
     return None

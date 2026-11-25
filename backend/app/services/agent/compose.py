@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.i18n import _
 from app.models_agent import AgentSkill
 from app.services.agent.store import list_injectable_skills, list_skills_by_ids
 
@@ -96,8 +97,9 @@ def skill_to_public_dict(skill: AgentSkill) -> dict[str, Any]:
     return {
         "id": skill.id,
         "slug": skill.slug,
-        "name": skill.name,
-        "description": skill.description or "",
+        # 内置 skill 的中文种子名称/简介按界面语言翻译（用户上传的原样返回）
+        "name": _(skill.name) if skill.is_builtin and skill.name else skill.name,
+        "description": (_(skill.description) if skill.is_builtin and skill.description else skill.description or ""),
         "tasks": list(skill.tasks or []),
         "is_builtin": bool(skill.is_builtin),
         "is_active": bool(skill.is_active),

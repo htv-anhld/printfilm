@@ -14,7 +14,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 0.75rem;
-  background: #fff;
+  background: var(--pf-card);
 }
 
 .auth-panel-top {
@@ -41,7 +41,7 @@
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(circle at 30% 40%, rgba(182, 255, 0, 0.35), transparent 42%),
+    radial-gradient(circle at 30% 40%, color-mix(in srgb, var(--pf-lime) 35%, transparent), transparent 42%),
     radial-gradient(circle at 72% 58%, rgba(42, 111, 122, 0.35), transparent 38%),
     repeating-linear-gradient(
       -12deg,
@@ -81,7 +81,7 @@
 .btn.primary {
   background: var(--pf-lime);
   border-color: var(--pf-lime);
-  color: var(--pf-ink);
+  color: var(--pf-lime-ink);
 }
 
 .linkish {
@@ -116,4 +116,57 @@
   .ink-wash {
     animation: none !important;
   }
+}
+
+/* Google 登录 / 分隔线 */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0.75rem;
+  color: #8a8f98;
+  font-size: 0.82rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--pf-surface-2);
+}
+
+.btn.auth-google {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: var(--pf-card);
+  border: 1px solid #d5d8de;
+  color: #1f2329;
+  font-weight: 600;
+}
+
+.btn.auth-google:hover:not(:disabled) {
+  background: var(--pf-surface-2);
+}
+
+/* 未验证邮箱提示条 */
+.pf-verify-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  padding: 0.55rem 1rem;
+  background: color-mix(in srgb, #f59e0b 14%, var(--pf-card));
+  border-bottom: 1px solid #f3e2a9;
+  font-size: 0.86rem;
+  color: #6b5a12;
+}
+
+.pf-verify-banner a {
+  font-weight: 700;
+  color: inherit;
 }

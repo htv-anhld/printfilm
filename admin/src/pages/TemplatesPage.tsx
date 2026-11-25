@@ -19,7 +19,7 @@ import { PageHeader } from "@/components/ui/page";
 import { tr, useI18n } from "@/i18n";
 
 type ListRes = { items: AdminTemplate[]; meta: PageMeta };
-type MetaRes = { categories: string[] };
+type MetaRes = { categories: string[]; category_labels?: Record<string, string> };
 
 function statusOptions() {
   return [
@@ -61,6 +61,8 @@ export function TemplatesPage() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<ListRes | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  // categoryLabels 分类原值 → 界面语言名称
+  const [categoryLabels, setCategoryLabels] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AdminTemplate | null>(null);
@@ -97,6 +99,7 @@ export function TemplatesPage() {
     try {
       const meta = await api<MetaRes>("/api/admin/templates/meta");
       setCategories(meta.categories ?? []);
+      setCategoryLabels(meta.category_labels ?? {});
     } catch {
       /* 分类元数据失败不阻塞列表 */
     }
@@ -119,11 +122,11 @@ export function TemplatesPage() {
       { value: "", label: t("templates.allCategories"), count: items.length },
       ...categories.map((cat) => ({
         value: cat,
-        label: cat,
+        label: categoryLabels[cat] || cat,
         count: countFor(cat),
       })),
     ];
-  }, [categories, data?.items, t]);
+  }, [categories, categoryLabels, data?.items, t]);
 
   const filteredItems = useMemo(() => {
     const items = data?.items ?? [];

@@ -22,8 +22,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PageHeader } from "@/components/ui/page";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
 import { projectStatusOptions, projectStatusLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
-import { fenToYuan } from "@/lib/utils";
+
 import { formatDateTime, useI18n } from "@/i18n";
+import { money } from "@/lib/money";
 
 type ListRes = { items: AdminProject[]; meta: PageMeta };
 
@@ -154,7 +155,7 @@ export function ProjectsPage() {
                 </TableCell>
                 <TableCell>{p.progress}%</TableCell>
                 <TableCell>{p.shot_count}</TableCell>
-                <TableCell>¥{fenToYuan(p.charge_fen ?? 0)}</TableCell>
+                <TableCell>{money(p.charge_fen ?? 0)}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {formatDateTime(p.created_at)}
                 </TableCell>
@@ -246,8 +247,8 @@ export function ProjectsPage() {
             <AdminDetailSection title={t("projects.costSummary")}>
               <AdminDetailStatGrid
                 items={[
-                  { label: t("users.detail.colCharge"), value: `¥${fenToYuan(usage?.charge_fen ?? detail.charge_fen ?? 0)}` },
-                  { label: t("users.detail.colCost"), value: `¥${fenToYuan(usage?.cost_fen ?? 0)}` },
+                  { label: t("users.detail.colCharge"), value: money(usage?.charge_fen ?? detail.charge_fen ?? 0) },
+                  { label: t("users.detail.colCost"), value: money(usage?.cost_fen ?? 0) },
                   { label: "Tokens", value: usage?.tokens ?? 0 },
                   {
                     label: t("projects.fields.genCounts"),
@@ -321,7 +322,7 @@ export function ProjectsPage() {
                           <td>{taskTypeLabel(t.task_type)}</td>
                           <td>{taskStatusLabel(t.status)}</td>
                           <td>
-                            ¥{fenToYuan(t.billing_charged_fen)} / ¥{fenToYuan(t.billing_estimate_fen)}
+                            {money(t.billing_charged_fen)} / {money(t.billing_estimate_fen)}
                           </td>
                         </tr>
                       ))

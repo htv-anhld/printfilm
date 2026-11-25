@@ -1,30 +1,46 @@
+/*
+ * 主题 token（参照 Dravelio：浅色 + 深色，主色青柠绿）
+ * 深色由 <html class="dark"> 切换，见 src/lib/theme.ts 与 index.html 首屏脚本
+ */
 :root {
-  --pf-lime: #b6ff00;
-  --pf-lime-soft: #eefcc8;
-  --pf-ink: #111318;
-  --pf-muted: #6b7280;
-  --pf-bg: #f7f8fa;
+  /* 主色：亮绿底 + 深色字；--pf-accent-strong 用于浅底上的绿色文字/链接 */
+  --pf-lime: #62f53d;
+  --pf-lime-hover: #7bff5a;
+  --pf-lime-ink: #0a1406;
+  --pf-lime-soft: #e7fbe0;
+  --pf-accent-strong: #1c8a0e;
+
+  --pf-ink: #121512;
+  --pf-muted: #687068;
+  --pf-bg: #f7f8f6;
   --pf-card: #ffffff;
-  --pf-line: rgba(17, 19, 24, 0.1);
-  --pf-radius: 14px;
-  --pf-radius-sm: 10px;
-  --pf-shadow: 0 8px 28px rgba(17, 19, 24, 0.06);
-  --pf-nav-h: 64px;
+  /* 次级面：hover、输入底、分组底 */
+  --pf-surface-2: #f1f3f0;
+  --pf-line: rgba(15, 17, 19, 0.08);
+  --pf-line-strong: rgba(15, 17, 19, 0.14);
+  --pf-overlay: rgba(8, 12, 9, 0.45);
+  --pf-radius: 16px;
+  --pf-radius-sm: 12px;
+  --pf-shadow: 0 1px 2px rgba(15, 17, 19, 0.04), 0 10px 30px -12px rgba(15, 17, 19, 0.18);
+  --pf-nav-h: 0px;
+  --pf-side-w: 248px;
+  --pf-side-w-collapsed: 72px;
 
   /* legacy aliases used by residual styles */
   --ink: var(--pf-ink);
   --paper: var(--pf-bg);
-  --paper-deep: #e8eaee;
+  --paper-deep: var(--pf-surface-2);
   --accent: var(--pf-lime);
   --teal: #2a6f7a;
-  --crimson: #c43c2e;
+  --crimson: #d4402f;
   --moss: #2a6f7a;
   --muted: var(--pf-muted);
   --line: var(--pf-line);
   --shadow: var(--pf-shadow);
   --hero-ink: #e8eef2;
 
-  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  color-scheme: light;
+  font-family: 'Inter', 'Noto Sans SC', 'PingFang SC', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--pf-ink);
   background: var(--pf-bg);
   line-height: 1.5;
@@ -32,6 +48,27 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+html.dark {
+  --pf-lime: #62f53d;
+  --pf-lime-hover: #7bff5a;
+  --pf-lime-ink: #0a1406;
+  --pf-lime-soft: rgba(98, 245, 61, 0.14);
+  --pf-accent-strong: #62f53d;
+
+  --pf-ink: #f2f5f1;
+  --pf-muted: #919a92;
+  --pf-bg: #080c09;
+  --pf-card: #111712;
+  --pf-surface-2: #19201a;
+  --pf-line: rgba(255, 255, 255, 0.07);
+  --pf-line-strong: rgba(255, 255, 255, 0.14);
+  --pf-overlay: rgba(0, 0, 0, 0.6);
+  --pf-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 34px -14px rgba(0, 0, 0, 0.6);
+  --crimson: #ff6b5a;
+
+  color-scheme: dark;
 }
 
 * {
@@ -47,6 +84,7 @@ body,
 
 body {
   background: var(--pf-bg);
+  color: var(--pf-ink);
 }
 
 a {
@@ -59,8 +97,28 @@ input,
 textarea,
 select {
   font: inherit;
+  color: inherit;
+}
+
+input,
+textarea,
+select {
+  background-color: var(--pf-card);
 }
 
 button {
   cursor: pointer;
+  /* 不写背景的按钮在暗色 color-scheme 下会被浏览器画成系统灰；统一透明，由各自 class 决定外观 */
+  background-color: transparent;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--pf-accent-strong);
+}
+
+@media (max-width: 960px) {
+  :root {
+    --pf-nav-h: 56px;
+  }
 }

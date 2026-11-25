@@ -1336,12 +1336,12 @@ async def generate_asset_image(
         published = storage_svc.republish_url(url, sync=True)
         if published and str(published).startswith("https://"):
             url = str(published)
-        elif result.remote_url and str(result.remote_url).startswith("https://"):
-            url = str(result.remote_url)
-            logger.warning(
-                "OSS 未拿到 https，回退上游 CDN project_id=%s",
-                project.id,
-            )
+        else:
+            # 未开 OSS：保留本地图（上游 TOS 预签名 24h 过期，存进资产会变裂图）；
+            # Seedance 需要公网 https 时由 _resolve_image_ref 读旁边 .src 里的上游原链
+            logger.info("OSS 未拿到 https，资产保留本地图 project_id=%s", project.id)
+    elif result.remote_url and str(result.remote_url).startswith("https://"):
+        url = str(result.remote_url)
     if not (url or "").strip():
         raise RuntimeError(_("生图成功但未拿到可用图片 URL"))
     logger.info("Seedream 返回 project_id=%s url=%s", project.id, url[:100])
@@ -1485,6 +1485,76 @@ class FragmentVideoPrepared:
     model_id: str | None = None
     # 旧 payload 字段，反序列化仍读取；新任务不再写入
     kie_api_kind: str | None = None
+    # Draft 模式：Seedance 2.5 先出 480p 样片（draft=True），之后可凭样片任务 id 转 1080p
+    draft: bool = False
+
+
+DRAFT_RESOLUTION = "480p"
+FINAL_RESOLUTION = "1080p"
+# 样片任务 id 上游保留约 7 天
+DRAFT_TTL_DAYS = 7
+
+
+def read_fragment_draft(fragment: DramaEpisodeFragment) -> dict[str, Any] | None:
+    """读取分镜样片信息；过期（> 7 天）或缺 task_id 返回 None。"""
+    raw = (fragment.params or {}).get("draft")
+    if not isinstance(raw, dict) or not str(raw.get("task_id") or "").strip():
+        return None
+    try:
+        created = datetime.fromisoformat(str(raw.get("created_at") or ""))
+    except ValueError:
+        return None
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=UTC)
+    if (datetime.now(UTC) - created).days >= DRAFT_TTL_DAYS:
+        return None
+    return raw
+
+
+def is_draft_capable_model(upstream_model: str | None) -> bool:
+    """仅 Seedance 2.5（非 fast/lite）支持 Draft 样片。"""
+    s = (upstream_model or "").strip().lower()
+    if "seedance" not in s or any(k in s for k in ("fast", "lite", "flash", "mini")):
+        return False
+    return "2.5" in s or "2-5" in s
+
+
+def project_draft_enabled(project: DramaProject, model_id: str | None) -> bool:
+    """项目开启 draft_mode 且本次视频模型支持 Draft。"""
+    if not bool((project.params or {}).get("draft_mode")):
+        return False
+    from app.services.drama.build_seedance_generate_body import resolve_seedance_model_endpoint
+
+    return is_draft_capable_model(resolve_seedance_model_endpoint(model_id))
+
+
+def prepare_fragment_finalize(
+    project: DramaProject,
+    fragment: DramaEpisodeFragment,
+    *,
+    draft_task_id: str,
+    model_id: str | None,
+    aspect_ratio: str,
+) -> FragmentVideoPrepared:
+    """由 Draft 样片任务 id 生成 1080p 正片：内容只带 draft_task，时长/画幅/音频沿用样片。"""
+    from app.services.drama.build_seedance_generate_body import resolve_seedance_model_endpoint
+
+    body: dict[str, Any] = {
+        "model": resolve_seedance_model_endpoint(model_id),
+        "content": [{"type": "draft_task", "draft_task": {"id": draft_task_id}}],
+        "resolution": FINAL_RESOLUTION,
+        "watermark": False,
+        "return_last_frame": True,
+    }
+    return FragmentVideoPrepared(
+        submit_mode="seedance_body",
+        seedance_body=body,
+        prompt="",
+        duration=int(fragment.duration_sec or 8),
+        ratio=aspect_ratio,
+        resolution=FINAL_RESOLUTION,
+        model_id=model_id,
+    )
 
 
 # Worker 准备阶段：参考图 / 衔接帧 / 请求体（可耗时，但不等待上游成片）。
@@ -1522,7 +1592,16 @@ async def prepare_fragment_video_for_submit(
         if changed:
             episode.params = ep_params
 
-    mid = (model_id or "").strip() or None
+    # 本次请求未指定时，回退项目创建时选的视频模型
+    mid = (
+        (model_id or "").strip()
+        or str((project.params or {}).get("video_model") or "").strip()
+        or None
+    )
+    # Draft：样片固定 480p，转正片时再出 1080p
+    draft = project_draft_enabled(project, mid)
+    if draft:
+        resolution = DRAFT_RESOLUTION
 
     refs = (
         await db.execute(
@@ -1598,9 +1677,12 @@ async def prepare_fragment_video_for_submit(
                 "content_locale": project_content_locale(project),
             }
         )
+        if draft:
+            body["draft"] = True
         return FragmentVideoPrepared(
             submit_mode="seedance_body",
             seedance_body=body,
+            draft=draft,
             prompt=prompt,
             duration=duration,
             ratio=ratio,
@@ -1639,6 +1721,7 @@ async def prepare_fragment_video_for_submit(
         i2v_prompt = f"{lang_section}\n\n{prompt}"
     return FragmentVideoPrepared(
         submit_mode="i2v",
+        draft=draft,
         image_url=image_url,
         prompt=i2v_prompt,
         duration=duration,
@@ -1672,6 +1755,8 @@ async def submit_prepared_fragment_video(
             resolution=prepared.resolution,
             ratio=prepared.ratio,
             generate_audio=prepared.generate_audio,
+            model=prepared.model_id,
+            draft=prepared.draft,
         )
     raise RuntimeError(_("分镜视频提交上下文不完整"))
 
@@ -1691,6 +1776,7 @@ def serialize_fragment_video_prepared(prepared: FragmentVideoPrepared) -> dict[s
         "content_labels": prepared.content_labels,
         "model_id": prepared.model_id,
         "kie_api_kind": prepared.kie_api_kind,
+        "draft": prepared.draft,
     }
 
 
@@ -1723,6 +1809,7 @@ def deserialize_fragment_video_prepared(raw: dict[str, Any]) -> FragmentVideoPre
         content_labels=labels,
         model_id=str(raw.get("model_id") or "") or None,
         kie_api_kind=str(raw.get("kie_api_kind") or "") or None,
+        draft=bool(raw.get("draft")),
     )
 
 
@@ -1739,6 +1826,9 @@ async def apply_fragment_video_assets(
     attempt_limit: int = 3,
     task_result: "TaskResult | None" = None,
     provider_task_id: str | None = None,
+    draft: bool = False,
+    output_resolution: str | None = None,
+    model_id: str | None = None,
 ) -> DramaEpisodeFragment:
     from app.services import storage as storage_svc
     from app.services.ffmpeg_compose import extract_video_last_frame, extract_video_poster_frame
@@ -1786,7 +1876,7 @@ async def apply_fragment_video_assets(
     write_fragment_video_output_meta(
         fragment,
         aspect_ratio=ratio,
-        resolution=resolution,
+        resolution=(output_resolution or resolution),
         video_path=video_path,
     )
     params = dict(fragment.params or {})
@@ -1800,6 +1890,18 @@ async def apply_fragment_video_assets(
         "attempts": attempts,
         "attempt_limit": attempt_limit,
     })
+    # Draft 样片：记下样片任务 id，供「转 1080p」；正片/普通成片清掉样片标记
+    # 样片信息放在分镜 params.draft（不随 generation 状态被覆盖，转正片失败可重试）
+    if draft and provider_task_id:
+        gen["draft"] = True
+        params["draft"] = {
+            "task_id": provider_task_id,
+            "model": model_id or "",
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+    else:
+        gen.pop("draft", None)
+        params.pop("draft", None)
     params["generation"] = gen
     if last_frame_url:
         params["lastFrameUrl"] = last_frame_url

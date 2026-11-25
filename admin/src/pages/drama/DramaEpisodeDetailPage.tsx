@@ -12,10 +12,11 @@ import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { Button } from "@/components/ui/button";
 import { formatDramaGenerationStatus } from "@/lib/dramaLabels";
 import { formatDateTime, tr, useI18n } from "@/i18n";
+import { localizeDramaMarkers } from "@/lib/dramaMarkerDisplay";
 
 /** 漫剧分集详情：含分镜列表 */
 export function DramaEpisodeDetailPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { episodeId } = useParams<{ episodeId: string }>();
   const navigate = useNavigate();
   const [detail, setDetail] = useState<AdminDramaEpisode | null>(null);
@@ -120,7 +121,7 @@ export function DramaEpisodeDetailPage() {
                   <tr key={f.id}>
                     <td>{f.sort_order}</td>
                     <td>{f.id}</td>
-                    <td className="max-w-[240px] truncate">{f.content || "—"}</td>
+                    <td className="max-w-[240px] truncate">{localizeDramaMarkers(f.content || "", locale) || "—"}</td>
                     <td>{f.duration_sec != null ? `${f.duration_sec}s` : "—"}</td>
                     <td className="text-xs text-[var(--admin-muted)]">
                       {formatDramaGenerationStatus(f.generation_status)}

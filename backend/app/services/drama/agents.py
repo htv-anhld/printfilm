@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.i18n import _
+from app.services.drama.episode_length import adapt_episode_prompt, current_episode_length
 from app.services.drama.content_locale import (
+    localize_role_type,
     char_limit,
     content_text,
     default_episode_title,
@@ -23,8 +25,27 @@ MIN_EPISODE_CONTENT_CHARS = 450
 # 短剧单集目标篇幅（约 1–1.5 分钟成片，对应 6–10 镜）
 TARGET_EPISODE_CONTENT_CHARS = 550
 EPISODE_SCENE_COUNT_HINT = "2-3 场"
+
+
+def _target_chars() -> int:
+    """当前单集目标篇幅（默认 550 字；长集按项目单集时长放大）。"""
+    spec = current_episode_length()
+    return TARGET_EPISODE_CONTENT_CHARS if spec.is_default else (spec.chars_min + spec.chars_max) // 2
+
+
+def _min_body_chars() -> int:
+    """正文过短重写阈值（默认 450；长集取目标下限的 85%，避免成片明显短于设定时长）。"""
+    spec = current_episode_length()
+    return MIN_EPISODE_CONTENT_CHARS if spec.is_default else int(spec.chars_min * 0.85)
+
+
+def _scene_hint() -> str:
+    """场次数提示（默认 2-3 场）。"""
+    return current_episode_length().scenes
 # 手动加集标记；自动流水线不会填这些空集
 MANUAL_EPISODE_ORIGIN = "manual"
+# 上传剧本的集：原文即剧本，长短都算完成，自动流水线不得改写
+IMPORT_EPISODE_ORIGIN = "import"
 # 与创建项目上限对齐
 MAX_DRAMA_EPISODES = 120
 
@@ -314,7 +335,7 @@ async def run_episode_body_from_brief(
         "请撰写本集拍摄正文 content。",
     ]
     data = await drama_chat_json(
-        EPISODE_BODY_FROM_BRIEF_SYSTEM,
+        adapt_episode_prompt(EPISODE_BODY_FROM_BRIEF_SYSTEM),
         "\n\n".join(user_parts),
         max_tokens=8192,
     )
@@ -328,15 +349,15 @@ async def run_episode_body_from_brief(
     row = normalized[0]
     row["creative"] = brief or str(row.get("creative") or "")
     row["summary"] = syn or str(row.get("summary") or "")
-    if _content_char_len(str(row.get("body") or "")) < MIN_EPISODE_CONTENT_CHARS:
+    if _content_char_len(str(row.get("body") or "")) < _min_body_chars():
         # 短则再试一次强调长度
         retry = await drama_chat_json(
-            EPISODE_BODY_FROM_BRIEF_SYSTEM,
+            adapt_episode_prompt(EPISODE_BODY_FROM_BRIEF_SYSTEM),
             "\n\n".join(
                 user_parts
                 + [
-                    f"上一稿过短（不足 {MIN_EPISODE_CONTENT_CHARS} 字），请扩写至约 {TARGET_EPISODE_CONTENT_CHARS} 汉字，"
-                    f"含 {EPISODE_SCENE_COUNT_HINT}、每场 2-3 段 △ 与 2-3 句台词，仍只输出第 {number} 集。"
+                    f"上一稿过短（不足 {_min_body_chars()} 字），请扩写至约 {_target_chars()} 汉字，"
+                    f"含 {_scene_hint()}、每场 2-3 段 △ 与 2-3 句台词，仍只输出第 {number} 集。"
                 ]
             ),
             max_tokens=8192,
@@ -545,8 +566,8 @@ def merge_episode_bodies(
             merged["creative"] = creative
         if summary:
             merged["summary"] = summary
-        if origin == MANUAL_EPISODE_ORIGIN:
-            merged["origin"] = MANUAL_EPISODE_ORIGIN
+        if origin in (MANUAL_EPISODE_ORIGIN, IMPORT_EPISODE_ORIGIN):
+            merged["origin"] = origin
         by_number[number] = merged
     return [by_number[n] for n in sorted(by_number)]
 
@@ -574,6 +595,8 @@ def auto_missing_episode_numbers(existing: list[dict[str, Any]], total: int) -> 
         if _content_char_len(body) >= MIN_EPISODE_CONTENT_CHARS:
             continue
         if str(item.get("origin") or "") == MANUAL_EPISODE_ORIGIN:
+            continue
+        if str(item.get("origin") or "") == IMPORT_EPISODE_ORIGIN and body.strip():
             continue
         missing.append(number)
     return missing
@@ -621,7 +644,8 @@ def count_completed_episodes(episodes: list[dict[str, Any]], total: int) -> int:
         except (TypeError, ValueError):
             continue
         body = str(item.get("body") or "").strip()
-        if 1 <= number <= total and _content_char_len(body) >= MIN_EPISODE_CONTENT_CHARS:
+        imported = str(item.get("origin") or "") == IMPORT_EPISODE_ORIGIN and bool(body)
+        if 1 <= number <= total and (imported or _content_char_len(body) >= MIN_EPISODE_CONTENT_CHARS):
             done += 1
     return done
 
@@ -693,7 +717,7 @@ def format_summary_text(summary: dict[str, Any]) -> str:
                 t(
                     "- {name}（{role}/{title}）：{visual}；标签：{tags}；弧光：{arc}",
                     name=c.get("name", ""),
-                    role=c.get("roleType", ""),
+                    role=localize_role_type(c.get("roleType", "")),
                     title=c.get("title", ""),
                     visual=c.get("visualImage", ""),
                     tags=c.get("coreTags", ""),
@@ -853,7 +877,7 @@ async def run_episode_script_batch(
             f"当前任务：撰写第 {start} 集至第 {end} 集（共 {batch_size_n} 集）的完整剧本正文",
             f"全剧共 {target} 集",
             f"episodes 输出数组必须恰好 {batch_size_n} 项，episodeNumber 从 {start} 到 {end}",
-            f"每集 content 约 {TARGET_EPISODE_CONTENT_CHARS} 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词",
+            f"每集 content 约 {_target_chars()} 汉字（不少于 {_min_body_chars()}），含 {_scene_hint()}、精简 △ 与台词",
             "",
             f"原始创意：\n{(creative or '').strip() or '（无额外创意，以摘要为准）'}",
             "",
@@ -870,7 +894,7 @@ async def run_episode_script_batch(
     )
 
     data = await drama_chat_json(
-        EPISODE_BATCH_CONTENT_SYSTEM,
+        adapt_episode_prompt(EPISODE_BATCH_CONTENT_SYSTEM),
         user,
         temperature=0.6,
         max_tokens=16384,
@@ -885,17 +909,17 @@ async def run_episode_script_batch(
     too_short = [
         item
         for item in normalized
-        if _content_char_len(str(item.get("body") or "")) < MIN_EPISODE_CONTENT_CHARS
+        if _content_char_len(str(item.get("body") or "")) < _min_body_chars()
     ]
     if too_short:
         retry_user = (
             user
             + "\n\n上次输出过短。请重写本批次，每集 content 约 "
-            + str(TARGET_EPISODE_CONTENT_CHARS)
-            + f" 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词，不得压缩成梗概。"
+            + str(_target_chars())
+            + f" 汉字（不少于 {_min_body_chars()}），含 {_scene_hint()}、精简 △ 与台词，不得压缩成梗概。"
         )
         retry = await drama_chat_json(
-            EPISODE_BATCH_CONTENT_SYSTEM,
+            adapt_episode_prompt(EPISODE_BATCH_CONTENT_SYSTEM),
             retry_user,
             temperature=0.6,
             max_tokens=16384,
@@ -943,14 +967,14 @@ async def run_episode_script_from_draft(
             f"当前任务：把用户草稿优化为第 {number} 集完整拍摄剧本",
             f"episodeNumber 必须为 {number}，episodes 数组必须恰好 1 项",
             f"当前集名：{current_title}（可按草稿核心事件微调 title）",
-            f"每集 content 约 {TARGET_EPISODE_CONTENT_CHARS} 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词",
+            f"每集 content 约 {_target_chars()} 汉字（不少于 {_min_body_chars()}），含 {_scene_hint()}、精简 △ 与台词",
             *ctx,
             f"用户提供的第 {number} 集草稿：\n{draft_text}",
             f"请输出第 {number} 集的 title 与 content。",
         ]
     )
     data = await drama_chat_json(
-        EPISODE_OPTIMIZE_SYSTEM,
+        adapt_episode_prompt(EPISODE_OPTIMIZE_SYSTEM),
         user,
         temperature=0.55,
         max_tokens=16384,
@@ -962,7 +986,7 @@ async def run_episode_script_from_draft(
     too_short = [
         item
         for item in normalized
-        if _content_char_len(str(item.get("body") or "")) < MIN_EPISODE_CONTENT_CHARS
+        if _content_char_len(str(item.get("body") or "")) < _min_body_chars()
     ]
     if too_short:
         retry_user = (
@@ -970,11 +994,11 @@ async def run_episode_script_from_draft(
             + "\n\n上次输出过短。请按用户草稿重写第 "
             + str(number)
             + " 集，content 约 "
-            + str(TARGET_EPISODE_CONTENT_CHARS)
-            + f" 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词。"
+            + str(_target_chars())
+            + f" 汉字（不少于 {_min_body_chars()}），含 {_scene_hint()}、精简 △ 与台词。"
         )
         retry = await drama_chat_json(
-            EPISODE_OPTIMIZE_SYSTEM,
+            adapt_episode_prompt(EPISODE_OPTIMIZE_SYSTEM),
             retry_user,
             temperature=0.55,
             max_tokens=16384,

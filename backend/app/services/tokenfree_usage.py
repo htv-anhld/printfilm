@@ -42,26 +42,30 @@ def tokenfree_usage_configured() -> bool:
 
 
 def quota_to_cost_fen(quota: Any, settings: Settings | None = None) -> int:
-    """New API quota → 人民币分；500000 quota = 1 USD。"""
+    """New API quota → 计费最小单位（USD 美分 / CNY 分）；500000 quota = 1 USD。"""
     try:
         amount = int(quota or 0)
     except (TypeError, ValueError):
         return 0
     if amount <= 0:
         return 0
+    from app.services.billing.currency import minor_per_usd
+
     usd = amount / float(TOKENFREE_QUOTA_PER_USD)
-    return max(1, int(math.ceil(usd * usd_cny_rate(settings) * 100)))
+    return max(1, int(math.ceil(usd * minor_per_usd(settings))))
 
 
 def billing_usage_to_cost_fen(total_usage: Any, settings: Settings | None = None) -> int:
-    """OpenAI 兼容 total_usage（单位 0.01 USD）→ 人民币分。"""
+    """OpenAI 兼容 total_usage（单位 0.01 USD）→ 计费最小单位。"""
     try:
         raw = float(total_usage)
     except (TypeError, ValueError):
         return 0
     if raw <= 0:
         return 0
-    return max(1, int(math.ceil((raw / 100.0) * usd_cny_rate(settings) * 100)))
+    from app.services.billing.currency import minor_per_usd
+
+    return max(1, int(math.ceil((raw / 100.0) * minor_per_usd(settings))))
 
 
 def usage_dates_are_ignored(first: float, second: float, window: float, *, eps: float = 0.05) -> bool:

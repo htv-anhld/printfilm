@@ -46,6 +46,13 @@ EN: dict[str, str] = {
     "分镜文案未通过内容审核，请修改敏感表述后重试": (
         "Storyboard text failed content moderation. Please revise sensitive wording and try again"
     ),
+    "TokenFree 账户余额不足：剩余 ${left}，本次视频需预扣 ${need}。请到 TokenFree 充值，或改用更便宜的视频模型 / 更短时长后重试": (
+        "TokenFree balance is too low: ${left} left, this video needs a ${need} hold. "
+        "Top up TokenFree, or switch to a cheaper video model / shorter duration and try again"
+    ),
+    "TokenFree 账户余额不足，无法预扣本次视频费用。请到 TokenFree 充值后重试": (
+        "TokenFree balance is too low to hold the cost of this video. Top up TokenFree and try again"
+    ),
     "参考音频无法下载，请检查角色音色绑定后重试": "The reference audio can't be downloaded. Check the character's voice binding and try again",
     "提交内容第 {n} 项 / content[{idx}]": "item {n} / content[{idx}]",
     "某条参考音频": "a reference audio",
@@ -140,6 +147,13 @@ VI: dict[str, str] = {
     "分镜文案未通过内容审核": "Nội dung phân cảnh không vượt qua kiểm duyệt",
     "分镜文案未通过内容审核，请修改敏感表述后重试": (
         "Nội dung phân cảnh không vượt qua kiểm duyệt, vui lòng sửa các cụm từ nhạy cảm rồi thử lại"
+    ),
+    "TokenFree 账户余额不足：剩余 ${left}，本次视频需预扣 ${need}。请到 TokenFree 充值，或改用更便宜的视频模型 / 更短时长后重试": (
+        "Số dư TokenFree không đủ: còn ${left}, video này cần tạm giữ ${need}. "
+        "Hãy nạp thêm tiền vào TokenFree, hoặc đổi sang model video rẻ hơn / thời lượng ngắn hơn rồi thử lại"
+    ),
+    "TokenFree 账户余额不足，无法预扣本次视频费用。请到 TokenFree 充值后重试": (
+        "Số dư TokenFree không đủ để tạm giữ chi phí video này. Hãy nạp thêm tiền vào TokenFree rồi thử lại"
     ),
     "参考音频无法下载，请检查角色音色绑定后重试": "Không tải được âm thanh tham chiếu, hãy kiểm tra giọng đọc gắn với nhân vật rồi thử lại",
     "提交内容第 {n} 项 / content[{idx}]": "mục thứ {n} / content[{idx}]",

@@ -14,6 +14,8 @@ from app.services.kepu_stages import resolve_kepu_billing_phase
 from app.services.billing.pricing import (
     ORDER_EXPIRE_SECONDS,
     SKUS,
+    SKUS_USD,
+    active_skus,
     billing_key_label,
     billing_key_to_capability,
     charge_fen_for_tokens,
@@ -59,6 +61,8 @@ __all__ = [
     "parse_usage_dict",
     "pending_task_commitment_fen",
     "provider_yuan_per_m",
+    "SKUS_USD",
+    "active_skus",
     "record_line",
     "record_llm_chat_line",
     "record_usage",

@@ -29,6 +29,8 @@ export function resolveDramaMediaUrl(
     resolved = url.startsWith('/') ? `${API_BASE}${url}` : url
   }
   if (cacheBust == null || cacheBust === '') return resolved
+  // 带签名的外链（TOS / S3 / OSS 预签名）多加参数会签名失效 → 403，不做破缓存
+  if (/[?&](?:X-Tos-Signature|X-Amz-Signature|Signature|OSSAccessKeyId|Expires)=/i.test(resolved)) return resolved
   const sep = resolved.includes('?') ? '&' : '?'
   return `${resolved}${sep}v=${encodeURIComponent(String(cacheBust))}`
 }
@@ -65,6 +67,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json()
 }
 
+/** 整部成片合成状态 */
+export type DramaFilmState = {
+  status: 'idle' | 'running' | 'done' | 'failed'
+  done?: number
+  total?: number
+  url?: string
+  error?: string
+  episodes?: number[]
+  skipped_episodes?: number[]
+  started_at?: string
+  finished_at?: string
+}
+
 export type DramaScript = {
   id: number
   name: string
@@ -83,7 +98,7 @@ export type DramaEpisodeBody = {
   /** 本集剧情摘要（集级，非全剧 summary） */
   summary?: string
   body?: string
-  origin?: 'auto' | 'manual'
+  origin?: 'auto' | 'manual' | 'import'
 }
 
 export type DramaProjectUsageStats = {
@@ -263,6 +278,8 @@ export const dramaApi = {
     image_style_id?: string
     workflow?: 'script' | 'canvas'
     content_locale?: DramaContentLocale
+    /** 项目级生成设置：video_model / aspect_ratio / resolution 等 */
+    params?: Record<string, unknown>
   }) =>
     request<DramaProject>('/api/drama/projects', { method: 'POST', body: JSON.stringify(body) }),
   getProject: (id: number) => request<DramaProject>(`/api/drama/projects/${id}`),
@@ -373,6 +390,41 @@ export const dramaApi = {
       throw new Error(message || tr('common.uploadFailed'))
     }
     return res.json() as Promise<DramaAsset>
+  },
+  /** 上传剧本文件建项目（.txt/.md/.docx/.pdf ≤ 5MB）；原文按集保留，只做分集 */
+  importScriptProject: async (
+    file: File,
+    fields: {
+      title?: string
+      image_style_id?: string
+      content_locale?: DramaContentLocale
+      params?: Record<string, unknown>
+    },
+  ) => {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('file', file)
+    form.append('title', fields.title || '')
+    form.append('image_style_id', fields.image_style_id || '')
+    form.append('content_locale', fields.content_locale || '')
+    form.append('params', fields.params ? JSON.stringify(fields.params) : '')
+    const res = await fetch(`${API_BASE}/api/drama/projects/import`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      const detail = err.detail
+      const message =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
+            : res.statusText
+      throw new Error(message || tr('common.uploadFailed'))
+    }
+    return res.json() as Promise<DramaProject>
   },
   activateAssetImageVersion: (assetId: number, versionId: string) =>
     request<DramaAsset>(`/api/drama/assets/${assetId}/activate_image_version`, {
@@ -504,6 +556,19 @@ export const dramaApi = {
       method: 'POST',
       body: JSON.stringify({ version_id: versionId }),
     }),
+
+  /** 整部成片状态（后台合成：running 时带 done/total，done 时带 url） */
+  getFilmState: (projectId: number) =>
+    request<DramaFilmState>(`/api/drama/projects/${projectId}/film`),
+  /** 发起整部成片合成（按集序拼接所有已生成的分镜视频） */
+  composeFilm: (projectId: number) =>
+    request<DramaFilmState>(`/api/drama/projects/${projectId}/film`, { method: 'POST' }),
+  /** Draft 样片转 1080p 正片（Seedance 2.5，样片保留 7 天） */
+  finalizeDraft: (fragmentId: number) =>
+    request<{ ok: boolean; fragment_id: number; task_id: number; status: string }>(
+      `/api/drama/fragments/${fragmentId}/finalize_draft`,
+      { method: 'POST' },
+    ),
 
   cancelAllVideoJobs: () =>
     request<{ ok: boolean; purged: number; revoked: number; fragments: number }>(

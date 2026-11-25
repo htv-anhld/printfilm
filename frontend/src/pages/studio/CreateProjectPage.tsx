@@ -10,7 +10,8 @@ import { IconChevronLeft, IconRefresh, IconSparkles } from '../../components/ui/
 import { CATEGORY_ORDER } from '../../lib/categories'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
 import { messages, useI18n, type Locale } from '../../i18n'
-import { categoryLabel } from './categoryLabel'
+import { categoryLabel, templateCategoryLabel } from './categoryLabel'
+import { isMarketingPreset } from '../../lib/marketingPresets'
 
 type Inspiration = {
   title: string
@@ -34,15 +35,46 @@ function isDefaultTitle(value: string) {
   return !v || CONTENT_LOCALES.some((l) => messages[l].studio.create.untitled === v)
 }
 
+// 脚本行首的结构标签（[Visual]: / VO: / HOOK (0:00-0:03) / Cảnh 1 / 第1场 / 时间码），去掉后取正文
+const LEADING_LABEL_RE =
+  /^(?:\[[^\]]*\]\s*[:：]?|\(?\d{1,2}:\d{2}(?:\s*[-–]\s*\d{1,2}:\d{2})?\)?|(?:hook|cta|outro|intro|scene|cảnh|đoạn|shot|vo|v\.o\.|visual|audio|text|caption|bgm|music|nhạc nền|lời dẫn|画面|旁白|字幕|镜头)(?:\s*\d+)?(?:\s*\([^)]*\))?\s*[:：]?|第\s*\d+\s*[场幕镜集]\s*[:：]?)\s*/i
+
+/** 去掉一行开头的所有结构标签 */
+function stripLeadingLabels(line: string): string {
+  let out = line
+  for (let i = 0; i < 4; i++) {
+    const next = out.replace(LEADING_LABEL_RE, '')
+    if (next === out) break
+    out = next
+  }
+  return out.trim()
+}
+
+/**
+ * 从主题 / 脚本推一个项目名：去掉 Markdown 与引号和行首结构标签，
+ * 取第一句有意义的话，按词边界截到约 40 字（中文约 18 字）。
+ */
 function deriveTitle(text: string, untitled: string) {
-  const line = text
-    .trim()
-    .split(/\n/)[0]
-    .replace(/["""'']/g, '')
-    .replace(/[。！？!?：:].*$/, '')
-    .trim()
-  if (!line) return untitled
-  return line.slice(0, 18)
+  const lines = (text || '')
+    .split(/\n/)
+    .map((l) =>
+      stripLeadingLabels(
+        l
+          .replace(/[*_`#>]+/g, '')
+          .replace(/^\s*[-•·]\s*/, '')
+          .replace(/[“”"'‘’「」]/g, '')
+          .trim(),
+      ),
+    )
+    .filter((l) => /[\p{L}]{2,}/u.test(l))
+  const sentence = (lines[0] || '').split(/[。！？!?]|[.:：](?=\s|$)/)[0].trim()
+  if (!sentence) return untitled
+  const cjk = /[\u4e00-\u9fff]/.test(sentence)
+  const max = cjk ? 18 : 40
+  if (sentence.length <= max) return sentence
+  const cut = sentence.slice(0, max)
+  const space = cut.lastIndexOf(' ')
+  return (space > max * 0.5 ? cut.slice(0, space) : cut).trim() + '…'
 }
 
 export default function CreateProjectPage() {
@@ -64,6 +96,25 @@ export default function CreateProjectPage() {
   const [aiBusy, setAiBusy] = useState(false)
   const [error, setError] = useState('')
   const untitled = t('studio.create.untitled')
+
+  // 首页输入框带来的主题（/studio/new?topic=…）：主题模式 + 预填主题与标题
+  useEffect(() => {
+    const topic = params.get('topic')?.trim()
+    if (!topic) return
+    setInputTab('theme')
+    setSourceText(topic.slice(0, 2000))
+    setTitle(topic.slice(0, 24))
+  }, [params])
+
+  // 营销预设（/studio/new?preset=…）：脚本模式 + 预设脚本与标题
+  useEffect(() => {
+    const preset = params.get('preset')
+    if (!isMarketingPreset(preset)) return
+    setInputTab('script')
+    setSourceText(t(`marketing.presets.${preset}.script`))
+    setTitle(t(`marketing.presets.${preset}.title`))
+    setTitleTouched(true)
+  }, [params, t])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -245,7 +296,7 @@ export default function CreateProjectPage() {
                   <span>
                     {tpl.default_ratio} ·{' '}
                     {(tpl.category || [])[0]
-                      ? categoryLabel(t, (tpl.category || [])[0])
+                      ? templateCategoryLabel(t, tpl, 0)
                       : t('studio.category.general')}
                   </span>
                 </div>

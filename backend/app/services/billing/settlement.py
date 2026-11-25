@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.billing.currency import localize_money_symbol
 from app.i18n import _
 from app.config import Settings, get_settings
 from app.models import UsageEvent, User, WalletLedger
@@ -48,6 +49,11 @@ async def _ledger(
     note: str = "",
 ) -> None:
     user.balance_fen = int(user.balance_fen or 0) + int(delta_fen)
+    # 订阅月额度优先被消耗：任何扣减先吃 sub_credit_fen；它永远不超过可用余额
+    sub = int(getattr(user, "sub_credit_fen", 0) or 0)
+    if int(delta_fen) < 0:
+        sub = max(0, sub + int(delta_fen))
+    user.sub_credit_fen = max(0, min(sub, int(user.balance_fen)))
     db.add(
         WalletLedger(
             user_id=user.id,
@@ -59,6 +65,22 @@ async def _ledger(
             note=note[:255],
         )
     )
+
+
+async def _has_live_subscription(db: AsyncSession, user_id: int) -> bool:
+    """用户是否有仍在发放月额度的订阅（退冻结时决定是否还回月额度）。"""
+    try:
+        from app.models_commerce import Subscription
+    except ImportError:  # pragma: no cover
+        return False
+    from app.services.subscriptions.plans import LIVE_STATUSES
+
+    row = (
+        await db.execute(
+            select(Subscription.id).where(Subscription.user_id == user_id, Subscription.status.in_(LIVE_STATUSES)).limit(1)
+        )
+    ).scalar_one_or_none()
+    return row is not None
 
 
 async def _lock_user(db: AsyncSession, user_id: int) -> User | None:
@@ -111,10 +133,12 @@ async def pending_task_commitment_fen(
 
 def _insufficient(need: int, available: int) -> str:
     """余额不足提示（按当前语言）；译文须以「余额不足」的译文开头，供 402 映射识别。"""
-    return _(
-        "余额不足：需要 ¥{need}，当前 ¥{available}，请先充值",
-        need=f"{need / 100:.2f}",
-        available=f"{available / 100:.2f}",
+    return localize_money_symbol(
+        _(
+            "余额不足：需要 ¥{need}，当前 ¥{available}，请先充值",
+            need=f"{need / 100:.2f}",
+            available=f"{available / 100:.2f}",
+        )
     )
 
 
@@ -135,11 +159,13 @@ async def ensure_balance_for_task(db: AsyncSession, user: User, task: TaskRun) -
     if available < required:
         if pending > 0:
             raise ValueError(
-                _(
-                    "余额不足：本次需要 ¥{need}（含排队中 ¥{pending}），当前 ¥{available}，请先充值",
-                    need=f"{need/100:.2f}",
-                    pending=f"{pending/100:.2f}",
-                    available=f"{available/100:.2f}",
+                localize_money_symbol(
+                    _(
+                        "余额不足：本次需要 ¥{need}（含排队中 ¥{pending}），当前 ¥{available}，请先充值",
+                        need=f"{need/100:.2f}",
+                        pending=f"{pending/100:.2f}",
+                        available=f"{available/100:.2f}",
+                    )
                 )
             )
         raise ValueError(_insufficient(need, available))
@@ -168,12 +194,14 @@ async def ensure_balance_for_task_batch(
     available = int(locked.balance_fen or 0)
     if available < required:
         raise ValueError(
-            _(
-                "余额不足：批量生成 {qty} 项需 ¥{additional}（含排队中 ¥{pending}），当前 ¥{available}，请先充值",
-                qty=qty,
-                additional=f"{additional/100:.2f}",
-                pending=f"{pending/100:.2f}",
-                available=f"{available/100:.2f}",
+            localize_money_symbol(
+                _(
+                    "余额不足：批量生成 {qty} 项需 ¥{additional}（含排队中 ¥{pending}），当前 ¥{available}，请先充值",
+                    qty=qty,
+                    additional=f"{additional/100:.2f}",
+                    pending=f"{pending/100:.2f}",
+                    available=f"{available/100:.2f}",
+                )
             )
         )
     return {
@@ -210,6 +238,8 @@ async def freeze_for_task(db: AsyncSession, task: TaskRun) -> int:
     # 仅通过 _ledger 扣余额，避免双重扣款
     user.frozen_fen = int(user.frozen_fen or 0) + need
     task.billing_estimate_fen = need
+    # 记下这笔冻结里有多少来自月额度，退回时原路还回
+    task.billing_sub_fen = min(int(getattr(user, "sub_credit_fen", 0) or 0), need)
     task.billing_status = "frozen"
     await _ledger(
         db,
@@ -349,6 +379,11 @@ async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
             ref_id=str(task_id),
             note="refund_unused_freeze",
         )
+        # 实扣先消耗冻结里的月额度部分，剩余月额度原路还回（订阅已过期则不还）
+        sub_part = int(getattr(task, "billing_sub_fen", 0) or 0)
+        restore = max(0, min(refund, sub_part - min(sub_part, charged)))
+        if restore > 0 and await _has_live_subscription(db, int(user.id)):
+            user.sub_credit_fen = min(int(user.balance_fen), int(user.sub_credit_fen or 0) + restore)
 
     task.billing_charged_fen = charged
     task.billing_refunded_fen = refund
@@ -452,7 +487,9 @@ async def close_expired_pending_orders(
             continue
         if created.tzinfo is None:
             created = created.replace(tzinfo=timezone.utc)
-        if (now - created).total_seconds() < 300:
+        # 易支付扫码 5 分钟过期；Creem 托管收银台给 24 小时（迟到的回调仍会入账）
+        ttl = 86400 if (getattr(order, "provider", "") or "") == "creem" else 300
+        if (now - created).total_seconds() < ttl:
             continue
         order.status = "closed"
         closed += 1

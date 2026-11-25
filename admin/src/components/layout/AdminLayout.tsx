@@ -2,20 +2,26 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
+  Bug,
   Clapperboard,
   FileVideo,
   Film,
+  Handshake,
   Image,
   Layers,
+  Library,
   LayoutDashboard,
   ListVideo,
   LogOut,
   Maximize2,
+  Megaphone,
   Menu,
   Receipt,
+  Repeat,
   Settings,
   Shapes,
   Users,
+  UsersRound,
   Wallet,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
@@ -47,6 +53,10 @@ const navGroups: NavGroup[] = [
       { to: "/users", labelKey: "layout.nav.users", icon: Users },
       { to: "/orders", labelKey: "layout.nav.orders", icon: Receipt },
       { to: "/finance", labelKey: "layout.nav.finance", icon: Wallet },
+      { to: "/subscriptions", labelKey: "layout.nav.subscriptions", icon: Repeat },
+      { to: "/teams", labelKey: "layout.nav.teams", icon: UsersRound },
+      { to: "/partners", labelKey: "layout.nav.partners", icon: Handshake },
+      { to: "/partner-submissions", labelKey: "layout.nav.partnerSubmissions", icon: Megaphone },
       { to: "/projects", labelKey: "layout.nav.projects", icon: Clapperboard },
       { to: "/works", labelKey: "layout.nav.works", icon: FileVideo },
     ],
@@ -65,11 +75,15 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/templates", labelKey: "layout.nav.templates", icon: Shapes },
       { to: "/queues", labelKey: "layout.nav.queues", icon: Layers },
+      { to: "/library", labelKey: "layout.nav.library", icon: Library },
     ],
   },
   {
     labelKey: "layout.groups.system",
-    items: [{ to: "/settings", labelKey: "layout.nav.settings", icon: Settings }],
+    items: [
+      { to: "/settings", labelKey: "layout.nav.settings", icon: Settings },
+      { to: "/error-reports", labelKey: "layout.nav.errorReports", icon: Bug },
+    ],
   },
 ];
 
@@ -87,6 +101,12 @@ const titleKeys: Record<string, string> = {
   "/templates": "layout.nav.templates",
   "/settings": "layout.nav.settings",
   "/queues": "layout.nav.queues",
+  "/error-reports": "layout.nav.errorReports",
+  "/subscriptions": "layout.nav.subscriptions",
+  "/teams": "layout.nav.teams",
+  "/library": "layout.nav.library",
+  "/partners": "layout.nav.partners",
+  "/partner-submissions": "layout.nav.partnerSubmissions",
 };
 
 function resolveTitle(pathname: string, t: TFunction): string {

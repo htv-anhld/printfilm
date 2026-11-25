@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useI18n } from '../../i18n'
 import { GITHUB_REPO_URL } from '../../lib/siteLinks'
-import SiteNav, { type NavActive } from './SiteNav'
+import EmailVerifyBanner from './EmailVerifyBanner'
+import AppSidebar, { type NavActive } from './AppSidebar'
 
 type Props = {
   children: ReactNode
@@ -17,8 +18,10 @@ export default function AppShell({ children, active, wide, flush, hideFooter }: 
   const { t } = useI18n()
 
   return (
-    <div className="pf-shell">
-      <SiteNav active={active} />
+    <div className="pf-shell pf-shell-app">
+      <AppSidebar active={active} />
+      <div className="pf-shell-body">
+      <EmailVerifyBanner />
       <main className={['pf-shell-main', wide ? 'wide' : '', flush ? 'flush' : ''].filter(Boolean).join(' ')}>
         {children}
       </main>
@@ -27,6 +30,9 @@ export default function AppShell({ children, active, wide, flush, hideFooter }: 
           <nav className="pf-shell-footer-links" aria-label={t('footer.links')}>
             <Link to="/terms">{t('footer.terms')}</Link>
             <Link to="/privacy">{t('footer.privacy')}</Link>
+            <Link to="/refund">{t('footer.refund')}</Link>
+            <Link to="/acceptable-use">{t('footer.acceptableUse')}</Link>
+            <Link to="/partners">{t('footer.partners')}</Link>
             <Link to="/contact">{t('footer.contact')}</Link>
             <Link to="/help">{t('footer.help')}</Link>
             <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer">
@@ -36,6 +42,7 @@ export default function AppShell({ children, active, wide, flush, hideFooter }: 
           <p>© {new Date().getFullYear()} PRINTFILM. All rights reserved.</p>
         </footer>
       ) : null}
+      </div>
     </div>
   )
 }

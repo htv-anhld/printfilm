@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../ui/Modal'
 import { api, type BillingOrder } from '../../api'
 import { formatDateTime, tr, useI18n } from '../../i18n'
+import { formatOrderMoney, useBillingConfig } from '../../lib/money'
 
 type Props = {
   open: boolean
@@ -22,9 +23,6 @@ function orderStatusLabel(status: string): string {
   return label === key ? status : label
 }
 
-function yuan(fen: number) {
-  return (fen / 100).toFixed(2)
-}
 
 function formatTime(iso?: string | null) {
   return formatDateTime(iso)
@@ -32,6 +30,8 @@ function formatTime(iso?: string | null) {
 
 /** 充值记录弹窗：列出近期订单与到账状态（过期待支付由后台自动关闭） */
 export default function TopupHistoryModal({ open, onClose }: Props) {
+  // 计费币种配置到达后重渲染金额
+  useBillingConfig()
   const { t } = useI18n()
   /*
    * orders 订单列表
@@ -79,8 +79,8 @@ export default function TopupHistoryModal({ open, onClose }: Props) {
                 <span className="pf-muted">{formatTime(o.paid_at || o.created_at)}</span>
               </div>
               <div className="pf-topup-meta">
-                <em>¥{yuan(o.amount_fen)}</em>
-                <span className="pf-muted">{t('billing.topupHistory.credit', { amount: yuan(o.credit_fen) })}</span>
+                <em>{formatOrderMoney(o.amount_fen, o.currency)}</em>
+                <span className="pf-muted">{t('billing.topupHistory.credit', { amount: formatOrderMoney(o.credit_fen, o.currency) })}</span>
                 <span className={`pf-topup-status is-${o.status}`}>
                   {orderStatusLabel(o.status)}
                 </span>

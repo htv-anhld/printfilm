@@ -8,11 +8,12 @@ import {
   FRAGMENT_CONTENT_DURATION_MAX,
 } from '../../lib/dramaEpisodePromptEditor'
 import {
-  DIALOGUE_PREFIX,
-  DRAMA_NARRATION_PREFIX,
-  DRAMA_SUBTITLE_CUE,
-  VISUAL_PREFIX,
+  DIALOGUE_PREFIX as RAW_DIALOGUE_PREFIX,
+  DRAMA_NARRATION_PREFIX as RAW_NARRATION_PREFIX,
+  DRAMA_SUBTITLE_CUE as RAW_SUBTITLE_CUE,
+  VISUAL_PREFIX as RAW_VISUAL_PREFIX,
 } from '../../lib/dramaEpisodeScriptValidate'
+import { localizeDramaMarkers } from '../../lib/dramaMarkerDisplay'
 import { useI18n } from '../../i18n'
 import { richText } from './richText'
 
@@ -25,8 +26,13 @@ type Props = {
 
 // 渲染 Seedance 规则说明弹窗
 export function SeedanceRulesModal({ open, onClose }: Props) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [tab, setTab] = useState<Tab>('payload')
+  /* 结构标记按界面语言显示（与分集编辑器一致；存储仍为中文标记） */
+  const DRAMA_SUBTITLE_CUE = localizeDramaMarkers(RAW_SUBTITLE_CUE, locale)
+  const VISUAL_PREFIX = localizeDramaMarkers(RAW_VISUAL_PREFIX, locale)
+  const DIALOGUE_PREFIX = localizeDramaMarkers(RAW_DIALOGUE_PREFIX, locale)
+  const DRAMA_NARRATION_PREFIX = localizeDramaMarkers(RAW_NARRATION_PREFIX, locale)
   const r = (key: string, nodes: Record<string, ReactNode>) => richText(t(`drama.seedanceRules.${key}`), nodes)
 
   return (

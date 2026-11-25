@@ -385,9 +385,15 @@ async def _ensure_tokenfree_channel(db: AsyncSession, existing: list[SystemModel
     )
     from app.services.tokenfree_pricing import canonicalize_channel_models
 
+    from app.services.tokenfree_gateway import upstream_locked
+
+    locked = upstream_locked()
     runtime = [_channel_row_to_runtime(row) for row in existing]
     migrated_key = pick_migratable_api_key(runtime)
     token_row = next((row for row in existing if row.id == TOKENFREE_CHANNEL_ID), None)
+    if token_row is None and not locked:
+        # 解锁模式：管理员已删除 TokenFree 渠道就不再强行补回
+        return
     if token_row is None:
         token_row = SystemModelChannelRow(id=TOKENFREE_CHANNEL_ID)
         db.add(token_row)
@@ -396,9 +402,10 @@ async def _ensure_tokenfree_channel(db: AsyncSession, existing: list[SystemModel
     token_row.base_url = TOKENFREE_BASE_URL
     token_row.api_format = "openai"
     token_row.protocol = "auto"
-    token_row.enabled = True
-    token_row.sort_order = 0
-    token_row.advanced_config = None
+    if locked:
+        token_row.enabled = True
+        token_row.sort_order = 0
+        token_row.advanced_config = None
     if not current_key and migrated_key:
         token_row.api_key_ciphertext = _encrypt_secret(migrated_key)
         current_key = migrated_key
@@ -420,9 +427,10 @@ async def _ensure_tokenfree_channel(db: AsyncSession, existing: list[SystemModel
         merged = canonicalize_channel_models(token_row.models)
         if merged != list(token_row.models or []):
             token_row.models = merged
-    for row in existing:
-        if row.id != TOKENFREE_CHANNEL_ID:
-            row.enabled = False
+    if locked:
+        for row in existing:
+            if row.id != TOKENFREE_CHANNEL_ID:
+                row.enabled = False
     await db.commit()
 
 
@@ -573,12 +581,12 @@ async def get_admin_model_settings(db: AsyncSession) -> AdminModelSettingsOut:
 
 
 async def get_admin_routing_settings(db: AsyncSession) -> AdminRoutingSettingsOut:
-    from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID
+    from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID, upstream_locked
 
     channels, logical_models, defaults, _unused, app_row = await _compose_runtime_state(db)
-    admin_channels = [
-        item for item in await _load_channels(db, runtime=False) if item.id == TOKENFREE_CHANNEL_ID
-    ]
+    admin_channels = await _load_channels(db, runtime=False)
+    if upstream_locked():
+        admin_channels = [item for item in admin_channels if item.id == TOKENFREE_CHANNEL_ID]
     errors = model_routing_validation_errors(logical_models, admin_channels or channels, defaults)
     return AdminRoutingSettingsOut(
         system_channels=admin_channels,
@@ -586,6 +594,7 @@ async def get_admin_routing_settings(db: AsyncSession) -> AdminRoutingSettingsOu
         default_models=defaults,
         validation_errors=errors,
         updated_at=app_row.updated_at,
+        upstream_locked=upstream_locked(),
     )
 
 
@@ -669,60 +678,118 @@ async def import_admin_model_settings_from_env(
     return out, imported, skipped_secrets
 
 
+async def _save_unlocked_channels(
+    db: AsyncSession,
+    incoming: list,
+    existing_rows: dict[str, SystemModelChannelRow],
+) -> None:
+    """解锁模式保存渠道：整表替换（前端提交完整列表），未提交的渠道删除。
+
+    - api_key 为 None/空串 → 保留原 Key；clear_api_key → 清空
+    - id=tokenfree 固定官方 Base URL；其它渠道 Base URL 必须是 http(s)
+    """
+    from app.services.tokenfree_gateway import TOKENFREE_BASE_URL, TOKENFREE_CHANNEL_ID
+    from app.services.tokenfree_pricing import canonicalize_channel_models
+    from app.services.upstream_channels import is_valid_channel_id, reset_channel_health
+
+    seen: set[str] = set()
+    for index, item in enumerate(incoming):
+        cid = (item.id or "").strip().lower()
+        if not is_valid_channel_id(cid):
+            raise ValueError(_("渠道 ID「{id}」不合法：只能用小写字母、数字、- 和 _", id=item.id))
+        if cid in seen:
+            raise ValueError(_("渠道 ID「{id}」重复", id=cid))
+        seen.add(cid)
+        base = TOKENFREE_BASE_URL if cid == TOKENFREE_CHANNEL_ID else (item.base_url or "").strip().rstrip("/")
+        if item.protocol not in {"volc_tts", "kie"} and not base.lower().startswith(("http://", "https://")):
+            raise ValueError(_("渠道「{name}」的 Base URL 必须以 http:// 或 https:// 开头", name=item.name or cid))
+        row = existing_rows.get(cid) or SystemModelChannelRow(id=cid)
+        prev_key = _decrypt_secret(row.api_key_ciphertext or "") if row.api_key_ciphertext else ""
+        key = prev_key
+        if item.clear_api_key:
+            key = ""
+        elif item.api_key is not None and str(item.api_key).strip():
+            key = str(item.api_key).strip()
+        row.name = (item.name or cid).strip()[:128]
+        row.base_url = base
+        row.api_key_ciphertext = _encrypt_secret(key) if key else None
+        row.api_format = item.api_format
+        row.protocol = item.protocol
+        row.models = canonicalize_channel_models(list(item.models or []))
+        row.enabled = bool(item.enabled)
+        row.sort_order = int(item.sort_order if item.sort_order is not None else index)
+        row.advanced_config = item.advanced_config.model_dump() if item.advanced_config else None
+        db.add(row)
+    for cid, stale in existing_rows.items():
+        if cid not in seen:
+            await db.delete(stale)
+    await db.flush()
+    # 渠道配置变了，旧熔断记录不再可信
+    reset_channel_health()
+
+
 async def patch_admin_routing_settings(
     db: AsyncSession,
     body: AdminRoutingSettingsPatch,
 ) -> tuple[AdminRoutingSettingsOut, list[str]]:
     app_row = await _get_or_create_app_row(db)
     applied: list[str] = []
+    reorder_bindings = False
     existing_rows = {
         row.id: row
         for row in (await db.execute(select(SystemModelChannelRow))).scalars().all()
     }
 
     if body.system_channels is not None:
-        from app.services.tokenfree_gateway import (
-            TOKENFREE_BASE_URL,
-            TOKENFREE_CHANNEL_ID,
-            TOKENFREE_CHANNEL_NAME,
-            locked_tokenfree_channel,
-        )
-        from app.services.tokenfree_pricing import canonicalize_channel_models
+        from app.services.tokenfree_gateway import upstream_locked
 
-        incoming = next(
-            (item for item in body.system_channels if (item.id or "").strip() == TOKENFREE_CHANNEL_ID),
-            body.system_channels[0] if body.system_channels else None,
-        )
-        prev = existing_rows.get(TOKENFREE_CHANNEL_ID)
-        prev_key = _decrypt_secret(prev.api_key_ciphertext or "") if prev else ""
-        api_key = prev_key
-        if incoming is not None:
-            if incoming.clear_api_key:
-                api_key = ""
-            elif incoming.api_key is not None and str(incoming.api_key).strip():
-                api_key = str(incoming.api_key).strip()
-        models = canonicalize_channel_models(
-            list(incoming.models) if incoming is not None else (list(prev.models or []) if prev else [])
-        )
-        locked = locked_tokenfree_channel(api_key=api_key, models=models, enabled=True)
-        row = prev or SystemModelChannelRow(id=TOKENFREE_CHANNEL_ID)
-        row.name = TOKENFREE_CHANNEL_NAME
-        row.base_url = TOKENFREE_BASE_URL
-        row.api_key_ciphertext = _encrypt_secret(locked.api_key) if locked.api_key else None
-        row.api_format = "openai"
-        row.protocol = "auto"
-        row.models = locked.models
-        row.enabled = True
-        row.sort_order = 0
-        row.advanced_config = None
-        db.add(row)
-        for cid, stale in existing_rows.items():
-            if cid == TOKENFREE_CHANNEL_ID:
-                continue
-            stale.enabled = False
-            db.add(stale)
-        await db.flush()
-        applied.append("system_channels")
+        if not upstream_locked():
+            await _save_unlocked_channels(db, body.system_channels, existing_rows)
+            applied.append("system_channels")
+            reorder_bindings = True
+        else:
+            from app.services.tokenfree_gateway import (
+                TOKENFREE_BASE_URL,
+                TOKENFREE_CHANNEL_ID,
+                TOKENFREE_CHANNEL_NAME,
+                locked_tokenfree_channel,
+            )
+            from app.services.tokenfree_pricing import canonicalize_channel_models
+
+            incoming = next(
+                (item for item in body.system_channels if (item.id or "").strip() == TOKENFREE_CHANNEL_ID),
+                body.system_channels[0] if body.system_channels else None,
+            )
+            prev = existing_rows.get(TOKENFREE_CHANNEL_ID)
+            prev_key = _decrypt_secret(prev.api_key_ciphertext or "") if prev else ""
+            api_key = prev_key
+            if incoming is not None:
+                if incoming.clear_api_key:
+                    api_key = ""
+                elif incoming.api_key is not None and str(incoming.api_key).strip():
+                    api_key = str(incoming.api_key).strip()
+            models = canonicalize_channel_models(
+                list(incoming.models) if incoming is not None else (list(prev.models or []) if prev else [])
+            )
+            locked = locked_tokenfree_channel(api_key=api_key, models=models, enabled=True)
+            row = prev or SystemModelChannelRow(id=TOKENFREE_CHANNEL_ID)
+            row.name = TOKENFREE_CHANNEL_NAME
+            row.base_url = TOKENFREE_BASE_URL
+            row.api_key_ciphertext = _encrypt_secret(locked.api_key) if locked.api_key else None
+            row.api_format = "openai"
+            row.protocol = "auto"
+            row.models = locked.models
+            row.enabled = True
+            row.sort_order = 0
+            row.advanced_config = None
+            db.add(row)
+            for cid, stale in existing_rows.items():
+                if cid == TOKENFREE_CHANNEL_ID:
+                    continue
+                stale.enabled = False
+                db.add(stale)
+            await db.flush()
+            applied.append("system_channels")
 
     config = dict(app_row.config_json or {})
     channels_after = await _load_channels(db, runtime=False)
@@ -732,6 +799,20 @@ async def patch_admin_routing_settings(
     if body.logical_models is not None:
         logical_models = body.logical_models
         applied.append("logical_models")
+    elif reorder_bindings:
+        # 解锁模式：渠道排序即 failover 顺序，绑定优先级跟随渠道位置
+        order = {channel.id: index + 1 for index, channel in enumerate(channels_after)}
+        logical_models = [
+            model.model_copy(
+                update={
+                    "bindings": [
+                        binding.model_copy(update={"priority": order.get(binding.channel_id, binding.priority)})
+                        for binding in model.bindings
+                    ]
+                }
+            )
+            for model in logical_models
+        ]
 
     # 无论前端是否提交逻辑模型，最终都以渠道 models 为准同步（通用 OpenAI 兼容）
     synced = synchronize_logical_models_with_channels(logical_models, channels_after)

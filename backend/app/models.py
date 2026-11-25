@@ -44,16 +44,31 @@ class User(Base):
     balance_fen: Mapped[int] = mapped_column(Integer, default=0)
     frozen_fen: Mapped[int] = mapped_column(Integer, default=0)
     plan: Mapped[str] = mapped_column(String(32), default="free")
+    # balance_fen 中属于订阅月额度的部分：扣费优先消耗，计费月结束未用完即过期
+    sub_credit_fen: Mapped[int] = mapped_column(Integer, default=0)
     # user | admin
     role: Mapped[str] = mapped_column(String(16), default="user")
     avatar_url: Mapped[str] = mapped_column(String(512), default="")
     # 联系手机，仅记录，不走短信验证
     phone: Mapped[str] = mapped_column(String(32), default="")
+    # 邮箱验证时间；None = 未验证（存量用户在补列时视为已验证）
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # 是否已发放注册赠金（开启邮箱验证后改为验证时发放）
+    signup_grant_given: Mapped[bool] = mapped_column(Boolean, default=False)
+    # 推广归因：注册时带的合作伙伴（partner_accounts.id）
+    referred_by_partner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    # Google 账号 sub（OAuth 登录绑定）
+    google_sub: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
     # 用户消费里程碑告警：上次已提醒的累计扣费档位（分）
     billing_alert_last_milestone_fen: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     projects: Mapped[list["Project"]] = relationship(back_populates="owner")
+
+    @property
+    def email_verified(self) -> bool:
+        """邮箱是否已验证（UserOut 序列化用）。"""
+        return self.email_verified_at is not None
 
 
 class BillingAlertNotification(Base):
@@ -273,11 +288,19 @@ class Order(Base):
     sku_id: Mapped[str] = mapped_column(String(64))
     amount_fen: Mapped[int] = mapped_column(Integer)
     credit_fen: Mapped[int] = mapped_column(Integer)
-    pay_type: Mapped[str] = mapped_column(String(16))  # alipay | wxpay
-    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending|paid|closed
+    pay_type: Mapped[str] = mapped_column(String(16))  # alipay | wxpay | creem
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending|paid|closed|refunded
     trade_no: Mapped[str | None] = mapped_column(String(128), nullable=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # 下单时的计费币种（amount_fen / credit_fen 的单位）；存量订单都是人民币
+    currency: Mapped[str] = mapped_column(String(8), default="CNY")
+    # 支付渠道：epay | creem
+    provider: Mapped[str] = mapped_column(String(16), default="epay")
+    # 渠道侧会话 / checkout ID（Creem checkout_id 等），回调对账用
+    provider_ref: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    # 首充赠送（已含在入账里，单独记录便于对账）
+    bonus_fen: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class ToolRun(Base):

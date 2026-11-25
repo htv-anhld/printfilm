@@ -22,7 +22,7 @@ def test_parse_upstream_cost_fen_from_kie_credits():
     assert parse_upstream_cost_fen({"creditsConsumed": 10}, settings) == 35
 
 
-def test_charge_fen_for_usage_kie_credits_no_markup():
+def test_charge_fen_for_usage_kie_credits_applies_markup():
     settings = get_settings()
     settings.billing_markup = 1.5
     settings.billing_kie_fen_per_credit = 3.5
@@ -34,7 +34,8 @@ def test_charge_fen_for_usage_kie_credits_no_markup():
     )
     assert used is True
     assert cost == 35
-    assert charge == 35
+    # 用户价 = 成本 × markup，向上取整：35 × 1.5 = 52.5 → 53
+    assert charge == 53
 
 
 def test_charge_fen_for_usage_prefers_upstream_cost():
@@ -48,7 +49,7 @@ def test_charge_fen_for_usage_prefers_upstream_cost():
     )
     assert used is True
     assert cost == 1000
-    assert charge == 1000
+    assert charge == 1500
 
 
 def test_charge_fen_for_usage_falls_back_to_official_per_call():
@@ -64,9 +65,9 @@ def test_charge_fen_for_usage_falls_back_to_official_per_call():
         model="gpt-image-2-5",
     )
     assert used is False
-    # 2K sunburst 10 积分 × 3.5 分 = 35 分，而不是 8 元/百万 token
+    # 2K sunburst 10 积分 × 3.5 分 = 35 分，而不是 8 元/百万 token；用户价再乘 1.5
     assert cost == 35
-    assert charge == 35
+    assert charge == 53
 
 
 def test_charge_fen_for_usage_uses_raw_image_size():

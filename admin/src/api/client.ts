@@ -218,6 +218,9 @@ export type AdminOrder = {
   trade_no?: string | null;
   paid_at?: string | null;
   created_at: string;
+  currency?: "USD" | "CNY";
+  provider?: string;
+  bonus_fen?: number;
 };
 
 export type AdminLedger = {
@@ -596,6 +599,8 @@ export type AdminModelSettings = {
   drama_fragment_max_attempts: number;
   ark_mock: boolean;
   oss_enabled: boolean;
+  /** 存储提供方：aliyun | s3（Cloudflare R2 / AWS S3 / MinIO 等） */
+  oss_provider?: string;
   oss_endpoint: string;
   oss_region: string;
   oss_bucket: string;
@@ -622,6 +627,24 @@ export type AdminModelSettings = {
   has_epay_key: boolean;
   billing_enabled: boolean;
   billing_markup: number;
+  billing_currency?: "USD" | "CNY";
+  creem_test_mode?: boolean;
+  creem_credit_product_id?: string;
+  creem_sku_products?: string;
+  creem_plan_products?: string;
+  email_verification_required?: boolean;
+  google_client_id?: string;
+  google_redirect_uri?: string;
+  has_google_client_secret?: boolean;
+  elevenlabs_model?: string;
+  elevenlabs_voice_map?: string;
+  elevenlabs_usd_per_1k_chars?: number;
+  has_elevenlabs_api_key?: boolean;
+  app_public_url?: string;
+  has_creem_api_key?: boolean;
+  has_creem_webhook_secret?: boolean;
+  billing_usd_cny?: number;
+  billing_first_topup_bonus_fen?: number;
   billing_estimate_buffer: number;
   billing_seedance_video0: number;
   billing_seedance_video1: number;
@@ -703,6 +726,8 @@ export type AdminRoutingSettings = {
   default_models: AdminDefaultModels;
   validation_errors: string[];
   updated_at?: string | null;
+  /** true = 开源锁定只允许 TokenFree；false = 多渠道 failover */
+  upstream_locked?: boolean;
 };
 
 export type AdminTemplate = {
@@ -724,4 +749,8 @@ export type AdminTemplate = {
   sort_order: number;
   is_active: boolean;
   is_premium: boolean;
+  /** 展示用：按界面语言翻译的名称 / 简介 / 分类 */
+  display_name?: string;
+  display_description?: string;
+  category_labels?: string[];
 };

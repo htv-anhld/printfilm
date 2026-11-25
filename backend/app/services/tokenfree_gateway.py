@@ -1,4 +1,9 @@
-"""开源版固定对接 TokenFree New API，不允许切换其它上游。"""
+"""TokenFree New API 渠道常量与扁平配置同步。
+
+开源版把 TokenFree 锁成唯一上游；商业版默认解锁（UPSTREAM_LOCK_TOKENFREE=false），
+TokenFree 只是渠道之一，可与任意 OpenAI 兼容 / 方舟渠道并存并 failover。
+id=tokenfree 的渠道 Base URL 仍固定为官方地址（该 ID 就代表 TokenFree）。
+"""
 
 from __future__ import annotations
 
@@ -76,16 +81,53 @@ def pick_migratable_api_key(channels: list[SystemModelChannel]) -> str:
     return ""
 
 
+def upstream_locked() -> bool:
+    """是否保持开源版的「仅 TokenFree」锁定。"""
+    from app.config import Settings
+
+    # 直接读 env 基础配置，避免 get_settings() overlay 递归
+    return bool(Settings().upstream_lock_tokenfree)
+
+
 def apply_tokenfree_flat_overlay(flat: dict[str, Any], channels: list[SystemModelChannel]) -> dict[str, Any]:
-    """运行时把 TokenFree Key / Base 同步到 LLM 与方舟客户端共用字段。"""
-    channel = next((item for item in channels if item.id == TOKENFREE_CHANNEL_ID), None)
+    """运行时把主渠道 Key / Base 同步到 LLM 与方舟客户端共用的扁平字段。
+
+    锁定模式：只认 TokenFree 渠道（开源版行为）。
+    解锁模式：取 sort_order 最小的已启用且有 Key 的渠道；TokenFree 渠道固定官方 Base。
+    无路由命中时的兜底请求（轮询主渠道任务、下载鉴权等）都走这里写入的字段。
+    """
+    from app.services.upstream_channels import primary_channel
+
+    if upstream_locked():
+        channel = next((item for item in channels if item.id == TOKENFREE_CHANNEL_ID), None)
+    else:
+        channel = primary_channel(channels)
     if channel is None:
         return flat
     out = dict(flat)
-    out["openai_base_url"] = TOKENFREE_BASE_URL
-    out["ark_base_url"] = TOKENFREE_BASE_URL
+    base = TOKENFREE_BASE_URL if channel.id == TOKENFREE_CHANNEL_ID else (channel.base_url or "").strip().rstrip("/")
+    if base:
+        out["openai_base_url"] = base
+        out["ark_base_url"] = base
     key = (channel.api_key or "").strip()
     if key:
         out["openai_api_key"] = key
         out["ark_api_key"] = key
     return out
+
+
+def primary_channel_id(channels: list[SystemModelChannel] | None = None) -> str:
+    """当前主渠道 ID（任务 ID 绑定渠道时，主渠道不加前缀）。"""
+    from app.services.upstream_channels import primary_channel
+
+    if channels is None:
+        try:
+            from app.services.model_settings import get_routing_snapshot
+
+            channels = get_routing_snapshot().channels
+        except Exception:  # noqa: BLE001
+            channels = []
+    if upstream_locked():
+        return TOKENFREE_CHANNEL_ID
+    ch = primary_channel(channels or [])
+    return ch.id if ch else TOKENFREE_CHANNEL_ID

@@ -22,6 +22,7 @@ import {
   buildEpisodeContentUpdate,
   buildOutlineDirectory,
   episodeBodyCharLen,
+  isImportedEpisode,
   isSubstantialEpisodeBody,
   isSubstantialEpisodeCreative,
   mergeDirectoryEpisodeBodies,
@@ -456,7 +457,7 @@ export function OutlineEpisodePanel({
 
   async function handleConfirmEnter() {
     if (!selected?.episodeNumber) return
-    if (!isSubstantialEpisodeBody(selected.body)) {
+    if (!isSubstantialEpisodeBody(selected.body) && !isImportedEpisode(selected)) {
       setLocalError(t('drama.outlineEp.bodyBeforeStoryboard', { n: MIN_EPISODE_BODY_CHARS }))
       return
     }
@@ -572,11 +573,12 @@ export function OutlineEpisodePanel({
     const tags: string[] = []
     if (storyType) tags.push(storyType)
     if (selected?.origin === 'manual') tags.push(t('drama.outlineEp.tagManual'))
+    else if (selected?.origin === 'import') tags.push(t('drama.outlineEp.tagImport'))
     else if (selected?.body) tags.push(t('drama.outlineEp.tagAuto'))
     return tags
   }, [storyType, selected, t])
 
-  const bodyReady = isSubstantialEpisodeBody(selected?.body)
+  const bodyReady = isSubstantialEpisodeBody(selected?.body) || isImportedEpisode(selected)
   const charHint = selected
     ? [
         selected.creative ? t('drama.outlineEp.hintCreative', { n: episodeBodyCharLen(selected.creative) }) : null,
@@ -609,7 +611,7 @@ export function OutlineEpisodePanel({
       <ul className="drama-outline-ep-list">
         {directoryEpisodes.map((ep) => {
           const body = displayEpisodes.find((x) => x.episodeNumber === ep.episodeNumber)
-          const ready = isSubstantialEpisodeBody(body?.body)
+          const ready = isSubstantialEpisodeBody(body?.body) || isImportedEpisode(body)
           const active = activeEpisodeNumber === ep.episodeNumber
           const shot = episodeShotStats[ep.episodeNumber || 0]
           const statusLabel = shot && shot.fragmentCount > 0 && shot.totalSec > 0

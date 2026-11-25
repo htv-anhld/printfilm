@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -67,6 +67,7 @@ class AdminModelSettingsOut(BaseModel):
 
     # Aliyun OSS
     oss_enabled: bool = False
+    oss_provider: str = "aliyun"
     oss_endpoint: str = ""
     oss_region: str = ""
     oss_bucket: str = ""
@@ -96,9 +97,33 @@ class AdminModelSettingsOut(BaseModel):
     epay_return_url: str = ""
     has_epay_key: bool = False
 
+    # Creem
+    creem_api_key: str = ""
+    creem_webhook_secret: str = ""
+    creem_test_mode: bool = True
+    creem_credit_product_id: str = ""
+    creem_sku_products: str = ""
+    creem_plan_products: str = ""
+    app_public_url: str = ""
+    email_verification_required: bool = True
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+    has_google_client_secret: bool = False
+    elevenlabs_api_key: str = ""
+    elevenlabs_model: str = "eleven_flash_v2_5"
+    elevenlabs_voice_map: str = ""
+    elevenlabs_usd_per_1k_chars: float = 0.1
+    has_elevenlabs_api_key: bool = False
+    has_creem_api_key: bool = False
+    has_creem_webhook_secret: bool = False
+
     # Token 计费
     billing_enabled: bool = False
-    billing_markup: float = 1.0
+    billing_currency: str = "USD"
+    billing_markup: float = 2.3
+    billing_usd_cny: float = 7.0
+    billing_first_topup_bonus_fen: int = 500
     billing_estimate_buffer: float = 1.2
     billing_seedance_video0: float = 46.0
     billing_seedance_video1: float = 28.0
@@ -191,6 +216,7 @@ class AdminModelSettingsPatch(BaseModel):
     ark_mock: bool | None = None
 
     oss_enabled: bool | None = None
+    oss_provider: str | None = None
     oss_endpoint: str | None = None
     oss_region: str | None = None
     oss_bucket: str | None = None
@@ -218,8 +244,31 @@ class AdminModelSettingsPatch(BaseModel):
     epay_return_url: str | None = None
     clear_epay_key: bool = False
 
+    creem_api_key: str | None = None
+    creem_webhook_secret: str | None = None
+    clear_creem_api_key: bool = False
+    clear_creem_webhook_secret: bool = False
+    creem_test_mode: bool | None = None
+    creem_credit_product_id: str | None = None
+    creem_sku_products: str | None = None
+    creem_plan_products: str | None = None
+    app_public_url: str | None = None
+    email_verification_required: bool | None = None
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    clear_google_client_secret: bool = False
+    google_redirect_uri: str | None = None
+    elevenlabs_api_key: str | None = None
+    clear_elevenlabs_api_key: bool = False
+    elevenlabs_model: str | None = None
+    elevenlabs_voice_map: str | None = None
+    elevenlabs_usd_per_1k_chars: float | None = Field(default=None, ge=0, le=10)
+
     billing_enabled: bool | None = None
-    billing_markup: float | None = None
+    billing_currency: Literal["USD", "CNY"] | None = None
+    billing_markup: float | None = Field(default=None, ge=1.0, le=20.0)
+    billing_usd_cny: float | None = Field(default=None, gt=0, le=100)
+    billing_first_topup_bonus_fen: int | None = Field(default=None, ge=0)
     billing_estimate_buffer: float | None = None
     billing_seedance_video0: float | None = None
     billing_seedance_video1: float | None = None
@@ -311,6 +360,7 @@ def model_config_field_names() -> tuple[str, ...]:
         "drama_fragment_max_attempts",
         "ark_mock",
         "oss_enabled",
+        "oss_provider",
         "oss_endpoint",
         "oss_region",
         "oss_bucket",
@@ -330,8 +380,26 @@ def model_config_field_names() -> tuple[str, ...]:
         "epay_key",
         "epay_notify_url",
         "epay_return_url",
+        "creem_api_key",
+        "creem_webhook_secret",
+        "creem_test_mode",
+        "creem_credit_product_id",
+        "creem_sku_products",
+        "creem_plan_products",
+        "app_public_url",
+        "email_verification_required",
+        "google_client_id",
+        "google_client_secret",
+        "google_redirect_uri",
+        "elevenlabs_api_key",
+        "elevenlabs_model",
+        "elevenlabs_voice_map",
+        "elevenlabs_usd_per_1k_chars",
         "billing_enabled",
+        "billing_currency",
         "billing_markup",
+        "billing_usd_cny",
+        "billing_first_topup_bonus_fen",
         "billing_estimate_buffer",
         "billing_seedance_video0",
         "billing_seedance_video1",
@@ -377,6 +445,10 @@ SECRET_FIELD_FLAGS: dict[str, str] = {
     "tos_access_key": "has_tos_access_key",
     "tos_secret_key": "has_tos_secret_key",
     "epay_key": "has_epay_key",
+    "creem_api_key": "has_creem_api_key",
+    "creem_webhook_secret": "has_creem_webhook_secret",
+    "google_client_secret": "has_google_client_secret",
+    "elevenlabs_api_key": "has_elevenlabs_api_key",
     "smtp_password": "has_smtp_password",
 }
 

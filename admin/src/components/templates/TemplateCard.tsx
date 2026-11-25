@@ -30,7 +30,12 @@ export function TemplateCard({
 }: TemplateCardProps) {
   const { t } = useI18n();
   const src = coverSrc(template.preview_cover);
-  const categories = template.category?.length ? template.category : [t("labels.dramaAssetType.none")];
+  // 展示用翻译值（后端按界面语言给出），缺省回退原值
+  const displayName = template.display_name || template.name;
+  const displayDesc = template.display_description || template.description;
+  const categories = template.category?.length
+    ? template.category.map((c, i) => template.category_labels?.[i] || c)
+    : [t("labels.dramaAssetType.none")];
 
   return (
     <article
@@ -43,10 +48,10 @@ export function TemplateCard({
         type="button"
         className="template-card-cover"
         onClick={() => onEdit(template)}
-        aria-label={t("templates.editAria", { name: template.name })}
+        aria-label={t("templates.editAria", { name: displayName })}
       >
         {src ? (
-          <img src={src} alt={template.name} loading="lazy" className="template-card-cover-img" />
+          <img src={src} alt={displayName} loading="lazy" className="template-card-cover-img" />
         ) : (
           <div className="template-card-cover-fallback">
             <ImageOff className="h-8 w-8 text-white/70" />
@@ -70,7 +75,7 @@ export function TemplateCard({
       <div className="template-card-body">
         <div className="template-card-head">
           <div className="min-w-0 flex-1">
-            <h3 className="template-card-title">{template.name}</h3>
+            <h3 className="template-card-title">{displayName}</h3>
             <p className="template-card-id">{template.id}</p>
           </div>
           <div className="template-card-actions">
@@ -88,8 +93,8 @@ export function TemplateCard({
           </div>
         </div>
 
-        {template.description ? (
-          <p className="template-card-desc">{template.description}</p>
+        {displayDesc ? (
+          <p className="template-card-desc">{displayDesc}</p>
         ) : (
           <p className="template-card-desc template-card-desc--empty">{t("templates.noDesc")}</p>
         )}

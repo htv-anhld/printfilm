@@ -27,3 +27,13 @@ export function categoryLabel(t: TFunction, raw: string): string {
   const key = CATEGORY_MSG_KEY[raw]
   return key ? t(`studio.category.${key}`) : raw
 }
+
+/** 模板第 i 个分类的展示名：优先后端翻好的 category_labels，其次本地映射 */
+export function templateCategoryLabel(
+  t: TFunction,
+  tpl: { category?: string[]; category_labels?: string[] },
+  index: number,
+): string {
+  const raw = (tpl.category || [])[index] || ''
+  return tpl.category_labels?.[index] || categoryLabel(t, raw)
+}

@@ -10,6 +10,7 @@ import { enTemplates } from "./en/templates";
 import { enDrama } from "./en/drama";
 import { enDashboard } from "./en/dashboard";
 import { enSettings } from "./en/settings";
+import { enCommerce } from "./en/commerce";
 
 export const en = {
   ...enCommon,
@@ -24,4 +25,5 @@ export const en = {
   drama: enDrama,
   dashboard: enDashboard,
   settings: enSettings,
+  commerce: enCommerce,
 };

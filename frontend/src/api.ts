@@ -12,7 +12,7 @@ function defaultApiBase() {
 
 // Empty string = same-origin (nginx proxies /api). Undefined = LAN default :8000.
 const _viteApiBase = import.meta.env.VITE_API_BASE
-const API_BASE =
+export const API_BASE =
   _viteApiBase === undefined || _viteApiBase === null ? defaultApiBase() : String(_viteApiBase)
 
 function authHeaders(): HeadersInit {
@@ -41,6 +41,8 @@ export type Template = {
   name: string
   description: string
   category: string[]
+  /** 后端按界面语言翻好的分类名（与 category 一一对应） */
+  category_labels?: string[]
   preview_cover: string
   default_ratio: string
   shot_duration_min: number
@@ -210,6 +212,124 @@ export type User = {
   plan?: string
   avatar_url?: string
   phone?: string
+  email_verified?: boolean
+  sub_credit_fen?: number
+}
+
+export type OAuthAppRow = {
+  id: number
+  name: string
+  client_id: string
+  redirect_uris: string[]
+  confidential: boolean
+  registration: string
+  created_at?: string | null
+  client_secret?: string
+}
+
+export type McpRequestRow = {
+  id: number
+  app?: string | null
+  method: string
+  tool?: string | null
+  status: string
+  summary?: string | null
+  duration_ms: number
+  created_at?: string | null
+}
+
+export type CreativeItem = {
+  id: string
+  kind: 'image' | 'video' | 'text' | 'link'
+  url?: string | null
+  text?: string | null
+  note?: string
+  source?: string
+  added_at?: string
+}
+
+export type CreativeBoard = {
+  id: number
+  name: string
+  description: string
+  item_count: number
+  cover?: string | null
+  updated_at?: string | null
+  items?: CreativeItem[]
+}
+
+export type LibraryKind = 'avatar' | 'bgm' | 'sfx'
+
+export type LibraryItem = {
+  id: number | string
+  kind: LibraryKind
+  name: string
+  url: string
+  tags?: string[]
+  duration_sec?: number | null
+  scope: 'mine' | 'global' | 'project'
+  project?: string
+}
+
+export type PartnerInfo = {
+  status: 'none' | 'pending' | 'approved' | 'rejected' | 'suspended'
+  ref_code?: string | null
+  ref_link?: string | null
+  commission_rate?: number
+  channel?: string
+  website?: string
+  audience?: string
+  note?: string
+  review_note?: string
+}
+
+export type PartnerDashboard = {
+  partner: PartnerInfo
+  signups: number
+  paying_users: number
+  held_fen: number
+  available_fen: number
+  redeemed_fen: number
+  reversed_fen: number
+  hold_days: number
+  recent: { id: number; source_type: string; paid_fen: number; commission_fen: number; status: string; available_at: string; created_at?: string | null }[]
+}
+
+export type PartnerSubmission = {
+  id: number
+  url: string
+  platform: string
+  note: string
+  status: 'pending' | 'approved' | 'rejected'
+  reward_fen: number
+  review_note: string
+  created_at?: string | null
+}
+
+export type TeamRole = 'owner' | 'admin' | 'member'
+
+export type TeamSummary = { id: number; name: string; role: TeamRole; seats: number; members: number; owner_id: number }
+
+export type TeamMemberRow = {
+  user_id: number
+  email: string
+  nickname: string
+  role: TeamRole
+  joined_at?: string | null
+  balance_fen?: number
+  allocated_fen?: number
+  month_charge_fen?: number
+}
+
+export type TeamDetail = {
+  id: number
+  name: string
+  seats: number
+  owner_id: number
+  my_role: TeamRole
+  members: TeamMemberRow[]
+  invites: { id: number; email: string; role: TeamRole; expires_at: string; expired: boolean }[]
+  credits_per_seat: number
 }
 
 export type BillingSku = {
@@ -231,6 +351,9 @@ export type BillingOrder = {
   trade_no?: string | null
   paid_at?: string | null
   created_at?: string | null
+  currency?: BillingCurrency
+  provider?: string
+  bonus_fen?: number
 }
 
 export type UsageSummary = {
@@ -267,11 +390,65 @@ export type UsageChargeList = {
 export type Wallet = {
   balance_fen: number
   frozen_fen: number
+  /** 历史字段名：计费币种主单位（USD 下即美元） */
   balance_yuan: number
   frozen_yuan: number
+  currency?: BillingCurrency
+  symbol?: string
+  balance_display?: string
+  /** 余额中属于订阅月额度（期末过期）的部分 */
+  sub_credit_fen?: number
   plan: string
   billing_enabled: boolean
   markup: number
+}
+
+export type BillingCurrency = 'USD' | 'CNY'
+
+export type PlanInterval = 'month' | 'year'
+
+/** /api/billing/plans 单个套餐（金额单位美分） */
+export type SubscriptionPlan = {
+  id: string
+  name: string
+  credits_per_month: number
+  price_month: number
+  price_year: number
+  list_price_month?: number
+  max_concurrent: number
+  rank: number
+  recommended?: boolean
+  purchasable: Record<PlanInterval, boolean>
+}
+
+/** /api/billing/subscription */
+export type MySubscription = {
+  id?: number
+  plan_id: string
+  plan_name?: string
+  interval?: PlanInterval
+  status: string
+  credits_per_period?: number
+  max_concurrent?: number
+  current_period_start?: string | null
+  current_period_end?: string | null
+  next_grant_at?: string | null
+  cancel_at_period_end?: boolean
+  sub_credit_fen: number
+  can_manage?: boolean
+}
+
+/** /api/billing/config：全站计费展示配置 */
+export type BillingConfig = {
+  billing_enabled: boolean
+  currency: BillingCurrency
+  symbol: string
+  /** USD 下钱包整数单位是 credit（1 credit = 1 美分） */
+  unit: 'credit' | 'fen'
+  units_per_major: number
+  signup_grant_fen: number
+  first_topup_bonus_fen: number
+  pay_types: string[]
 }
 
 export type BillingPreflight = {
@@ -311,10 +488,10 @@ export const api = {
     const q = cacheBust != null && cacheBust !== '' ? `?v=${encodeURIComponent(String(cacheBust))}` : ''
     return `${API_BASE}${path}${q}`
   },
-  register(email: string, password: string, nickname: string) {
-    return request<{ access_token: string }>('/api/auth/register', {
+  register(email: string, password: string, nickname: string, ref?: string) {
+    return request<{ access_token: string; email_verification_required?: boolean }>('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, nickname }),
+      body: JSON.stringify({ email, password, nickname, ref }),
     })
   },
   login(email: string, password: string) {
@@ -337,6 +514,207 @@ export const api = {
   },
   me() {
     return request<User>('/api/auth/me')
+  },
+  authProviders() {
+    return request<{ google: boolean; email_verification: boolean }>('/api/auth/providers')
+  },
+  resendVerification() {
+    return request<{ ok: boolean; sent?: boolean; cooldown?: number; verified?: boolean }>(
+      '/api/auth/resend-verification',
+      { method: 'POST' },
+    )
+  },
+  verifyEmailCode(code: string) {
+    return request<User>('/api/auth/verify-email-code', { method: 'POST', body: JSON.stringify({ code }) })
+  },
+  verifyEmailToken(token: string) {
+    return request<{ access_token: string }>('/api/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    })
+  },
+  googleStart(next: string) {
+    return request<{ url: string }>(`/api/auth/google/start?next=${encodeURIComponent(next)}`)
+  },
+  googleExchange(code: string, state: string, ref?: string) {
+    return request<{ access_token: string; next: string; created: boolean }>('/api/auth/google/exchange', {
+      method: 'POST',
+      body: JSON.stringify({ code, state, ref }),
+    })
+  },
+  oauthApps() {
+    return request<{ items: OAuthAppRow[]; authorized: { id: number; name: string; client_id: string; authorized_at?: string | null }[] }>(
+      '/api/oauth/apps',
+    )
+  },
+  createOAuthApp(name: string, redirect_uris: string[]) {
+    return request<OAuthAppRow>('/api/oauth/apps', { method: 'POST', body: JSON.stringify({ name, redirect_uris, confidential: true }) })
+  },
+  deleteOAuthApp(id: number) {
+    return request<{ ok: boolean }>(`/api/oauth/apps/${id}`, { method: 'DELETE' })
+  },
+  revokeOAuthAuthorization(id: number) {
+    return request<{ ok: boolean }>(`/api/oauth/authorized/${id}`, { method: 'DELETE' })
+  },
+  oauthAuthorizePreview(client_id: string, redirect_uri: string) {
+    return request<{ name: string; redirect_host: string; scopes: string[] }>(
+      `/api/oauth/authorize/preview?client_id=${encodeURIComponent(client_id)}&redirect_uri=${encodeURIComponent(redirect_uri)}`,
+    )
+  },
+  oauthAuthorize(body: {
+    client_id: string
+    redirect_uri: string
+    scope?: string | null
+    state?: string | null
+    code_challenge: string
+    code_challenge_method: string
+    approve: boolean
+  }) {
+    return request<{ redirect_url: string }>('/api/oauth/authorize', { method: 'POST', body: JSON.stringify(body) })
+  },
+  mcpRequests(page = 1) {
+    return request<{ items: McpRequestRow[]; meta: { page: number; page_size: number; total: number } }>(
+      `/api/mcp/requests?page=${page}&page_size=20`,
+    )
+  },
+  subtitleTranslate(body: { content: string; target_lang: string; source_lang?: string }) {
+    return request<{ content: string; cues: number; task_id: number }>('/api/tools/subtitle-translate', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  scriptFormat(body: { content: string; format: string; lang: string }) {
+    return request<{ content: string; task_id: number }>('/api/tools/script-format', { method: 'POST', body: JSON.stringify(body) })
+  },
+  videoScript(body: { url?: string; material?: string; lang: string; duration: number; style: string }) {
+    return request<{ title: string; script: string; source_title: string; task_id: number }>('/api/tools/video-script', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  marketingPresets() {
+    return request<{ presets: { id: string; ratio: string; duration: number; prompt: string }[] }>('/api/marketing/presets')
+  },
+  avatarLibrary() {
+    return request<{ items: LibraryItem[]; characters: LibraryItem[] }>('/api/avatars/library')
+  },
+  timelineLibrary() {
+    return request<{
+      bgm: LibraryItem[]
+      sfx: LibraryItem[]
+      clips: { id: string; url: string; cover?: string | null; duration_sec?: number | null; project: string }[]
+      moods: string[]
+    }>('/api/drama/timeline/library')
+  },
+  async uploadLibraryItem(kind: LibraryKind, file: File, name: string, tags = '') {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('kind', kind)
+    form.append('name', name)
+    form.append('tags', tags)
+    form.append('file', file)
+    const res = await fetch(`${API_BASE}/api/library/items`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throwApiError(res.status, err.detail, res.statusText)
+    }
+    return (await res.json()) as LibraryItem
+  },
+  deleteLibraryItem(id: number | string) {
+    return request<{ ok: boolean }>(`/api/library/items/${id}`, { method: 'DELETE' })
+  },
+  upscaleOptions() {
+    return request<{ engine: string; ai: boolean; image: { scales: number[] }; video: { targets: string[]; max_seconds: number } }>(
+      '/api/drama/upscale/options',
+    )
+  },
+  async upscale(body: { kind: 'image' | 'video'; scale?: number; target?: string; url?: string; file?: File | null }) {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('kind', body.kind)
+    form.append('scale', String(body.scale ?? 2))
+    form.append('target', body.target ?? '1080p')
+    form.append('url', body.url ?? '')
+    if (body.file) form.append('file', body.file)
+    const res = await fetch(`${API_BASE}/api/drama/upscale`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throwApiError(res.status, err.detail, res.statusText)
+    }
+    return (await res.json()) as { url: string; width: number; height: number; engine: string }
+  },
+  studio3dScenes() {
+    return request<{ items: { id: number; name: string; snapshot_url?: string | null; updated_at?: string | null }[] }>(
+      '/api/studio3d/scenes',
+    )
+  },
+  studio3dScene(id: number) {
+    return request<{ id: number; name: string; data: unknown; snapshot_url?: string | null }>(`/api/studio3d/scenes/${id}`)
+  },
+  createStudio3dScene(body: { name: string; data: unknown }) {
+    return request<{ id: number; name: string }>('/api/studio3d/scenes', { method: 'POST', body: JSON.stringify(body) })
+  },
+  updateStudio3dScene(id: number, body: { name: string; data: unknown }) {
+    return request<{ id: number; name: string }>(`/api/studio3d/scenes/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+  },
+  async studio3dSnapshot(id: number, png: Blob) {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('file', png, 'snapshot.png')
+    const res = await fetch(`${API_BASE}/api/studio3d/scenes/${id}/snapshot`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throwApiError(res.status, err.detail, res.statusText)
+    }
+    return (await res.json()) as { url: string }
+  },
+  creativeBoards() {
+    return request<{ items: CreativeBoard[] }>('/api/creative/projects')
+  },
+  creativeBoard(id: number) {
+    return request<CreativeBoard>(`/api/creative/projects/${id}`)
+  },
+  createCreativeBoard(name: string, description = '') {
+    return request<CreativeBoard>('/api/creative/projects', { method: 'POST', body: JSON.stringify({ name, description }) })
+  },
+  deleteCreativeBoard(id: number) {
+    return request<{ ok: boolean }>(`/api/creative/projects/${id}`, { method: 'DELETE' })
+  },
+  addCreativeItem(id: number, item: { kind: CreativeItem['kind']; url?: string; text?: string; note?: string; source?: string }) {
+    return request<CreativeBoard>(`/api/creative/projects/${id}/items`, { method: 'POST', body: JSON.stringify(item) })
+  },
+  removeCreativeItem(id: number, itemId: string) {
+    return request<CreativeBoard>(`/api/creative/projects/${id}/items/${itemId}`, { method: 'DELETE' })
+  },
+  partnerMe() {
+    return request<PartnerInfo>('/api/partner-program/me')
+  },
+  partnerApply(body: { channel: string; website: string; audience: string; note: string }) {
+    return request<PartnerInfo>('/api/partner-program/apply', { method: 'POST', body: JSON.stringify(body) })
+  },
+  partnerDashboard() {
+    return request<PartnerDashboard>('/api/partner-program/dashboard')
+  },
+  partnerRedeem() {
+    return request<{ ok: boolean; redeemed_fen: number }>('/api/partner-program/redeem', { method: 'POST' })
+  },
+  partnerSubmissions() {
+    return request<{ items: PartnerSubmission[] }>('/api/partner-program/submissions')
+  },
+  partnerSubmit(body: { url: string; platform: string; note: string }) {
+    return request<PartnerSubmission>('/api/partner-program/submissions', { method: 'POST', body: JSON.stringify(body) })
   },
   updateProfile(body: { nickname: string; email: string; phone: string }) {
     return request<User>('/api/auth/me', {
@@ -590,7 +968,105 @@ export const api = {
     return request<Wallet>('/api/billing/wallet')
   },
   billingSkus() {
-    return request<{ skus: BillingSku[]; pay_types: string[]; markup: number }>('/api/billing/skus')
+    return request<{
+      skus: BillingSku[]
+      pay_types: string[]
+      markup: number
+      currency?: BillingCurrency
+      symbol?: string
+      first_topup_bonus_fen?: number
+    }>('/api/billing/skus')
+  },
+  creemCheckout(sku_id: string) {
+    return request<{ out_trade_no: string; checkout_url: string; amount_fen: number; credit_fen: number }>(
+      '/api/billing/creem/checkout',
+      { method: 'POST', body: JSON.stringify({ sku_id }) },
+    )
+  },
+  billingPlans() {
+    return request<{ plans: SubscriptionPlan[]; currency: BillingCurrency; symbol: string; enabled: boolean }>(
+      '/api/billing/plans',
+    )
+  },
+  mySubscription() {
+    return request<MySubscription>('/api/billing/subscription')
+  },
+  subscriptionCheckout(plan_id: string, interval: PlanInterval) {
+    return request<{ checkout_url: string }>('/api/billing/subscriptions/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ plan_id, interval }),
+    })
+  },
+  subscriptionChange(plan_id: string, interval: PlanInterval) {
+    return request<MySubscription>('/api/billing/subscriptions/upgrade', {
+      method: 'POST',
+      body: JSON.stringify({ plan_id, interval }),
+    })
+  },
+  subscriptionPortal() {
+    return request<{ url: string }>('/api/billing/subscriptions/portal', { method: 'POST' })
+  },
+  subscriptionCancel() {
+    return request<MySubscription>('/api/billing/subscriptions/cancel', { method: 'POST' })
+  },
+  myTeams() {
+    return request<{ items: TeamSummary[] }>('/api/teams')
+  },
+  createTeam(name: string) {
+    return request<TeamDetail>('/api/teams', { method: 'POST', body: JSON.stringify({ name }) })
+  },
+  team(id: number) {
+    return request<TeamDetail>(`/api/teams/${id}`)
+  },
+  inviteTeamMember(id: number, email: string, role: 'admin' | 'member') {
+    return request<{ id: number; email: string; link: string }>(`/api/teams/${id}/invites`, {
+      method: 'POST',
+      body: JSON.stringify({ email, role }),
+    })
+  },
+  revokeTeamInvite(id: number, inviteId: number) {
+    return request<{ ok: boolean }>(`/api/teams/${id}/invites/${inviteId}`, { method: 'DELETE' })
+  },
+  setTeamRole(id: number, userId: number, role: 'admin' | 'member') {
+    return request<{ ok: boolean }>(`/api/teams/${id}/members/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    })
+  },
+  removeTeamMember(id: number, userId: number) {
+    return request<{ ok: boolean }>(`/api/teams/${id}/members/${userId}`, { method: 'DELETE' })
+  },
+  allocateTeamCredits(id: number, userId: number, amount_fen: number) {
+    return request<{ giver_balance_fen: number; member_balance_fen: number }>(
+      `/api/teams/${id}/members/${userId}/allocate`,
+      { method: 'POST', body: JSON.stringify({ amount_fen }) },
+    )
+  },
+  reclaimTeamCredits(id: number, userId: number, amount_fen: number) {
+    return request<{ reclaimed_fen: number; member_balance_fen: number }>(
+      `/api/teams/${id}/members/${userId}/reclaim`,
+      { method: 'POST', body: JSON.stringify({ amount_fen }) },
+    )
+  },
+  teamSeatsCheckout(id: number, seats: number, interval: PlanInterval) {
+    return request<{ checkout_url: string }>(`/api/teams/${id}/seats/checkout`, {
+      method: 'POST',
+      body: JSON.stringify({ seats, interval }),
+    })
+  },
+  previewTeamInvite(token: string) {
+    return request<{ team_name: string; inviter: string; email: string; role: TeamRole; expires_at: string }>(
+      `/api/teams/invites/preview?token=${encodeURIComponent(token)}`,
+    )
+  },
+  acceptTeamInvite(token: string) {
+    return request<{ ok: boolean; team_id: number; team_name: string }>('/api/teams/invites/accept', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    })
+  },
+  billingConfig() {
+    return request<BillingConfig>('/api/billing/config')
   },
   createBillingOrder(sku_id: string, pay_type: 'alipay' | 'wxpay') {
     return request<{

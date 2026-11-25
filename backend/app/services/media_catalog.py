@@ -152,3 +152,12 @@ def is_valid_project_media_model(model_id: str | None, capability: LogicalModelC
     if normalize_model_name(fallback) == norm_mid:
         return True
     return False
+
+
+def is_enabled_video_model(model_id: str | None) -> bool:
+    """严格校验：只接受 /api/media-models 视频列表（后台启用）里的模型。"""
+    mid = normalize_model_name((model_id or "").strip())
+    if not mid:
+        return False
+    rows = catalog_payload().get("video_models") or []
+    return any(normalize_model_name(str(row.get("id") or "")) == mid for row in rows)

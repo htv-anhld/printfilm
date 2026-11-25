@@ -12,12 +12,13 @@ import { PageHeader } from "@/components/ui/page";
 import { DRAMA_GENERATION_STATUSES, formatDramaGenerationStatus } from "@/lib/dramaLabels";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useI18n } from "@/i18n";
+import { localizeDramaMarkers } from "@/lib/dramaMarkerDisplay";
 
 type ListRes = { items: AdminDramaFragment[]; meta: PageMeta };
 
 /** 全站漫剧分镜列表 */
 export function DramaFragmentsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [searchParams] = useSearchParams();
   const initialProjectId = searchParams.get("project_id");
   const initialEpisodeId = searchParams.get("episode_id");
@@ -102,7 +103,7 @@ export function DramaFragmentsPage() {
               <tr key={row.id}>
                 <td>{row.id}</td>
                 <td>{row.sort_order}</td>
-                <td className="max-w-[200px] truncate">{row.content || "—"}</td>
+                <td className="max-w-[200px] truncate">{localizeDramaMarkers(row.content || "", locale) || "—"}</td>
                 <td className="max-w-[100px] truncate">{row.episode_name || row.episode_id}</td>
                 <td>
                   <AdminEntityLink kind="drama" id={row.project_id} label={row.project_title ?? undefined} />

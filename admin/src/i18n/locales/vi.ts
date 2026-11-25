@@ -10,6 +10,7 @@ import { viTemplates } from "./vi/templates";
 import { viDrama } from "./vi/drama";
 import { viDashboard } from "./vi/dashboard";
 import { viSettings } from "./vi/settings";
+import { viCommerce } from "./vi/commerce";
 
 export const vi = {
   ...viCommon,
@@ -24,4 +25,5 @@ export const vi = {
   drama: viDrama,
   dashboard: viDashboard,
   settings: viSettings,
+  commerce: viCommerce,
 };

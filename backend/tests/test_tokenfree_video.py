@@ -56,7 +56,7 @@ def test_wrap_seedance_payload_uses_videos_metadata_input():
         "return_last_frame": True,
     }
     wrapped = wrap_seedance_payload_for_newapi(payload)
-    assert wrapped["model"] == "seedance-2-5"
+    assert wrapped["model"] == "seedance-2.5"
     assert wrapped["prompt"] == "镜头推进"
     assert wrapped["image"] == "https://cdn.example.com/a.jpg"
     assert wrapped["seconds"] == "5"

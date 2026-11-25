@@ -11,10 +11,11 @@ import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { Button } from "@/components/ui/button";
 import { formatDramaGenerationStatus } from "@/lib/dramaLabels";
 import { tr, useI18n } from "@/i18n";
+import { localizeDramaMarkers } from "@/lib/dramaMarkerDisplay";
 
 /** 漫剧分镜详情 */
 export function DramaFragmentDetailPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { fragmentId } = useParams<{ fragmentId: string }>();
   const navigate = useNavigate();
   const [detail, setDetail] = useState<AdminDramaFragment | null>(null);
@@ -95,7 +96,7 @@ export function DramaFragmentDetailPage() {
             { label: t("projects.fields.duration"), value: detail.duration_sec != null ? `${detail.duration_sec}s` : "—" },
             { label: t("drama.fields.generationStatus"), value: formatDramaGenerationStatus(detail.generation_status) },
             { label: t("drama.fields.assetRefCount"), value: detail.asset_ref_count },
-            { label: t("drama.fields.scriptText"), value: detail.content || "—", full: true },
+            { label: t("drama.fields.scriptText"), value: localizeDramaMarkers(detail.content || "", locale) || "—", full: true },
           ]}
         />
       </AdminDetailSection>

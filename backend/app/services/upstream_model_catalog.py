@@ -16,6 +16,14 @@ from app.services.tokenfree_gateway import TOKENFREE_BASE_URL
 logger = logging.getLogger(__name__)
 
 
+ANTHROPIC_VERSION = "2023-06-01"
+
+
+def is_anthropic_base(base_url: str) -> bool:
+    """是否为 Anthropic 官方接口（api.anthropic.com）。"""
+    return "anthropic.com" in (base_url or "").lower()
+
+
 def _model_id(item: dict[str, Any]) -> str:
     for key in ("id", "name", "model"):
         raw = item.get(key)
@@ -71,6 +79,11 @@ async def _list_openai_compatible_models(
 
     headers = {"Authorization": f"Bearer {api_key}"}
     url = f"{base_url.rstrip('/')}/models"
+    if is_anthropic_base(base_url):
+        # Anthropic 的 chat/completions 兼容层认 Bearer，但 /v1/models 是原生接口：
+        # 必须带 x-api-key + anthropic-version，默认每页 20 条
+        headers = {"x-api-key": api_key, "anthropic-version": ANTHROPIC_VERSION}
+        url += "?limit=1000"
     async with httpx.AsyncClient(timeout=60.0) as client:
         resp = await client.get(url, headers=headers)
         if resp.status_code >= 400:
@@ -124,7 +137,11 @@ async def list_upstream_models(
     if proto == "volc_tts":
         raise RuntimeError(_("豆包 TTS 暂不支持从上游拉取模型目录，请手动填写 speaker / 音色 ID"))
 
-    if proto == "kie" or proto == "ark" or "volces.com" in base.lower() or "kie.ai" in base.lower():
+    from app.services.tokenfree_gateway import upstream_locked
+
+    locked_vendor = proto == "kie" or proto == "ark" or "volces.com" in base.lower() or "kie.ai" in base.lower()
+    if locked_vendor and upstream_locked():
+        # 开源锁定模式：方舟 / Kie 目录统一走 TokenFree 聚合
         from app.services.tokenfree_gateway import TOKENFREE_BASE_URL, resolve_tokenfree_api_key
 
         base = TOKENFREE_BASE_URL

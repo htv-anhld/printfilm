@@ -8,9 +8,10 @@ import {
   YAxis,
 } from "recharts";
 import type { AdminDailyUsage } from "@/api/client";
-import { fenToYuan } from "@/lib/utils";
+
 import type { DashboardMetric } from "./DashboardFilters";
 import { tr } from "@/i18n";
+import { money } from "@/lib/money";
 
 type UsageTrendChartProps = {
   data: AdminDailyUsage[];
@@ -31,7 +32,7 @@ function readMetric(row: AdminDailyUsage, metric: DashboardMetric): number {
 
 function formatMetric(value: number, metric: DashboardMetric): string {
   if (metric === "calls") return String(value);
-  return `¥${fenToYuan(value)}`;
+  return money(value);
 }
 
 function shortDate(iso: string): string {
@@ -74,7 +75,7 @@ export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
             axisLine={false}
             tickLine={false}
             width={metric === "calls" ? 36 : 52}
-            tickFormatter={(v) => (metric === "calls" ? String(v) : `¥${fenToYuan(Number(v))}`)}
+            tickFormatter={(v) => (metric === "calls" ? String(v) : money(Number(v)))}
           />
           <Tooltip
             contentStyle={{

@@ -18,6 +18,7 @@ import { dialog } from '../../lib/dialog'
 import Modal from '../../components/ui/Modal'
 import { DramaImageStyleModal } from './DramaImageStyleModal'
 import { DramaProjectSettingsModal } from './DramaProjectSettingsModal'
+import DramaFilmComposeButton from './DramaFilmComposeButton'
 import { OutlineEpisodePanel } from './OutlineEpisodePanel'
 import { tr, useI18n } from '../../i18n'
 
@@ -373,6 +374,7 @@ export function OutlineStep({
           >
             {t('drama.outline.globalSetting')}
           </button>
+          <DramaFilmComposeButton projectId={projectId} onError={onError} />
           {(episodeError || episodeStatus === 'failed') && (
             <button type="button" className="drama-outline-chip-btn" onClick={() => void handleRegenerateEpisodes()}>
               {t('drama.outline.rerunAll')}

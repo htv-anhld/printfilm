@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     db_pool_timeout_sec: int = 30
     redis_url: str = "redis://127.0.0.1:6379/0"
 
+    # 开源版行为：只允许 TokenFree 一个上游。商业版默认 false，可配多渠道 + failover
+    upstream_lock_tokenfree: bool = False
     ark_api_key: str = ""
     ark_base_url: str = "https://www.tokenfree.com/v1"
     # 文字模型：开源版固定 TokenFree New API，后台选模型
@@ -53,6 +55,14 @@ class Settings(BaseSettings):
     volc_tts_resource_id: str = "seed-tts-2.0"
     volc_tts_speaker: str = "zh_female_cancan_uranus_bigtts"
     volc_tts_url: str = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
+    # ElevenLabs（越南语等多语种高质量配音）；音色在 speaker 里写成 el:<voice_id>
+    elevenlabs_api_key: str = ""
+    # eleven_flash_v2_5 支持越南语（vi）；eleven_multilingual_v2 不支持
+    elevenlabs_model: str = "eleven_flash_v2_5"
+    # 把 edge 音色升级为 ElevenLabs："vi-VN-HoaiMyNeural:<voice_id>,vi-VN-NamMinhNeural:<voice_id>"
+    elevenlabs_voice_map: str = ""
+    # 上游成本（美元 / 千字符），用于计费
+    elevenlabs_usd_per_1k_chars: float = 0.1
     # 新版控制台 API Key（与 app_id/access_key 二选一，优先 api_key）
     volc_tts_api_key: str = ""
     # 音色设计：控制台购买的 S_ 槽位，逗号分隔；配了且鉴权齐全则漫剧走 voice_design
@@ -79,6 +89,9 @@ class Settings(BaseSettings):
     kepu_seedance_sfx_audio: bool = True
 
     ark_mock: bool = False
+    # ARK_MOCK=true 时文字 LLM（科普分镜 / 主题扩写）是否也走 mock。
+    # 设为 false：图 / 视频仍是假素材，但脚本走真实 LLM（只配了文字渠道 Key 时联调用）
+    ark_mock_text: bool = True
     # 内置任务平台的进程内并发上限（全站 Worker 槽位）。
     task_runtime_max_concurrency: int = 4
     # 单用户同时进行中的 Worker 槽位（不含 awaiting_poll 注册项）。
@@ -102,9 +115,13 @@ class Settings(BaseSettings):
     # Legacy flag; prefer billing_enabled
     quota_enabled: bool = False
 
-    # Token 计费：用户扣费 = TokenFree 官方成本（billing_markup 保留兼容，不再乘）
+    # 计费币种：USD（1 = 1 美分 = 1 credit，商业版）| CNY（1 = 1 分，开源版）。列名仍叫 *_fen
+    billing_currency: str = "USD"
+    # 用户扣费 = 上游成本 × markup（Dravelio 为 2.3；开源版等价于 1.0）
     billing_enabled: bool = False
-    billing_markup: float = 1.0
+    billing_markup: float = 2.3
+    # 首次充值赠送（最小单位）；0 关闭
+    billing_first_topup_bonus_fen: int = 500
     # token / 视频时长估价缓冲；按张生图官价不再乘此系数（否则 5 元赠金冻不住一张图）
     billing_estimate_buffer: float = 1.2
     # Yuan per million tokens (provider cost)
@@ -154,7 +171,36 @@ class Settings(BaseSettings):
     epay_notify_url: str = ""
     epay_return_url: str = ""
 
+    # Creem（国际卡收款，Merchant of Record）：https://docs.creem.io
+    creem_api_key: str = ""
+    creem_webhook_secret: str = ""
+    # true → test-api.creem.io（测试 Key 与正式 Key 互不通用）
+    creem_test_mode: bool = True
+    # 一次性 credit 包：一个 Creem 产品 + custom_price（美分）；或逐包映射 "credits_900:prod_x,credits_3900:prod_y"
+    creem_credit_product_id: str = ""
+    creem_sku_products: str = ""
+    # 合作伙伴：默认佣金比例、归因有效月数（注册后多少个月内的付款计佣）、冷静期天数（覆盖退款窗口）
+    partner_commission_rate: float = 0.2
+    partner_commission_months: int = 12
+    partner_hold_days: int = 30
+    # 申请后自动通过（否则需管理员审核）
+    partner_auto_approve: bool = False
+    # 团队：每个席位每月发放的额度（美分）；未订阅团队的免费席位上限（含 owner）
+    team_credits_per_seat: int = 2000
+    team_free_seats: int = 3
+    # 订阅产品：plan_interval:prod，如 "starter_month:prod_a,starter_year:prod_b,pro_month:prod_c"
+    creem_plan_products: str = ""
+
     public_base_url: str = "http://127.0.0.1:8000"
+    # 用户端站点地址（支付完成跳回、邮件链接）；生产填正式域名
+    app_public_url: str = "http://localhost:5173"
+
+    # 邮箱验证：SMTP 可用时注册须验证邮箱，注册赠金在验证后才发放（防批量注册薅羊毛）
+    email_verification_required: bool = True
+    # Google 登录（OAuth 2.0 Web 客户端）；回调页默认 {APP_PUBLIC_URL}/auth/google/callback
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
 
@@ -166,6 +212,8 @@ class Settings(BaseSettings):
 
     # Aliyun OSS — 成片/分镜上传；FFmpeg 仍读本地文件
     oss_enabled: bool = False
+    # 存储提供方：aliyun（阿里云 OSS）| s3（Cloudflare R2 / AWS S3 / B2 / MinIO 等 S3 兼容）
+    oss_provider: str = "aliyun"
     oss_endpoint: str = "oss-cn-beijing.aliyuncs.com"
     oss_region: str = "cn-hangzhou"
     oss_bucket: str = ""

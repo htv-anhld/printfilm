@@ -226,7 +226,10 @@ def parse_pricing_payload(payload: dict[str, Any], settings: Settings | None = N
     items = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(items, list):
         return {}
-    rate = usd_cny_rate(settings)
+    # 官方价是美元；按计费币种折算（USD→×1，CNY→×汇率）。cny_* 字段实际是「计费币种主单位」
+    from app.services.billing.currency import major_per_usd
+
+    rate = major_per_usd(settings)
     out: dict[str, OfficialRate] = {}
     for raw in items:
         if not isinstance(raw, dict):
@@ -364,8 +367,8 @@ def resolve_billing_image_size(settings: Settings, *, model: str = "", size: str
     return raw
 
 
-def charge_fen_official_image(settings: Settings, *, model: str = "", size: str = "") -> int:
-    """生图预估：sunburst / Seedream / gpt-image 按 Kie 积分档；其它按张走价目。"""
+def cost_fen_official_image(settings: Settings, *, model: str = "", size: str = "") -> int:
+    """生图上游成本（未加价）：sunburst / Seedream / gpt-image 按 Kie 积分档；其它按张走价目。"""
     from app.services.billing.pricing import kie_credits_to_cost_fen
     from app.services.tokenfree_image import is_seedream_family, tokenfree_working_image_model
 
@@ -379,13 +382,16 @@ def charge_fen_official_image(settings: Settings, *, model: str = "", size: str 
     )
     if use_kie_table:
         credits = kie_sunburst_credits_for_size(size or getattr(settings, "ark_image_size", "") or "2K")
-        fen = kie_credits_to_cost_fen(credits, settings) or 1
-        return _markup_charge(fen, settings)
+        return kie_credits_to_cost_fen(credits, settings) or 1
     if rate and rate.billing == "per_call" and rate.cny_per_call > 0:
-        return _markup_charge(max(1, int(math.ceil(rate.cny_per_call * 100))), settings)
+        return max(1, int(math.ceil(rate.cny_per_call * 100)))
     credits = kie_sunburst_credits_for_size("2K")
-    fen = kie_credits_to_cost_fen(credits, settings) or 1
-    return _markup_charge(fen, settings)
+    return kie_credits_to_cost_fen(credits, settings) or 1
+
+
+def charge_fen_official_image(settings: Settings, *, model: str = "", size: str = "") -> int:
+    """生图预估用户价 = 上游成本 × markup。"""
+    return _markup_charge(cost_fen_official_image(settings, model=model, size=size), settings)
 
 
 def charge_fen_official_llm(tokens: int, settings: Settings, *, model: str = "") -> int:

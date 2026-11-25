@@ -50,7 +50,7 @@ from app.services.tasks.service import (
     create_task,
     list_active_tasks_for_owner,
 )
-from app.services.voices import ensure_voice_preview, list_voices
+from app.services.voices import ensure_voice_preview
 from app.services.kepu_stages import resolve_kepu_billing_phase
 
 router = APIRouter(tags=["projects"])
@@ -81,7 +81,10 @@ def _demote_after_edit(project: Project) -> None:
 
 @router.get("/voices")
 async def get_voices() -> list[dict]:
-    return list_voices()
+    """全部可选音色（含 ElevenLabs 账号音色）。"""
+    from app.services.voices import list_voices_all
+
+    return await list_voices_all()
 
 
 @router.get("/media-models")

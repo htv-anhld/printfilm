@@ -6,6 +6,8 @@ POST /v1/videos、GET /v1/videos/:id、GET /v1/videos/:id/content。
 
 from __future__ import annotations
 
+import re
+
 from app.i18n import _
 
 from typing import Any
@@ -67,6 +69,20 @@ def _media_url_from_item(item: dict[str, Any], key: str) -> str | None:
     if isinstance(url, str) and url.strip():
         return url.strip()
     return None
+
+
+# seedance-2-5 / doubao-seedance-2-0-fast-260128 → seedance-2.5 / seedance-2.0-fast
+_SEEDANCE_ID_RE = re.compile(r"^(?:doubao-)?seedance-(\d+)[-.](\d+)(?:-(fast|pro|lite))?(?:-\d{6})?$")
+
+
+def normalize_tokenfree_seedance(model: str) -> str:
+    """TokenFree 目录里 Seedance 是带点的短名（2026-11 实测 seedance-2-5 无渠道）。"""
+    raw = (model or "").strip()
+    m = _SEEDANCE_ID_RE.match(raw.lower())
+    if not m:
+        return raw
+    major, minor, tier = m.groups()
+    return f"seedance-{major}.{minor}" + (f"-{tier}" if tier else "")
 
 
 def wrap_seedance_payload_for_newapi(payload: dict[str, Any]) -> dict[str, Any]:
@@ -137,6 +153,9 @@ def wrap_seedance_payload_for_newapi(payload: dict[str, Any]) -> dict[str, Any]:
         meta_input["watermark"] = bool(src.get("watermark"))
     if "return_last_frame" in src:
         meta_input["return_last_frame"] = bool(src.get("return_last_frame"))
+    # Seedance 2.5 Draft 样片；正片通过 content[].draft_task 引用样片任务
+    if src.get("draft"):
+        meta_input["draft"] = True
     if isinstance(content, list) and content:
         if uses_reference_images:
             # 下游会把 content 里的图也算进参考图上限，多参考只留文案/音频
@@ -170,7 +189,7 @@ def wrap_seedance_payload_for_newapi(payload: dict[str, Any]) -> dict[str, Any]:
     if audios:
         meta_input["reference_audio_urls"] = audios[:10]
     out: dict[str, Any] = {
-        "model": src.get("model"),
+        "model": normalize_tokenfree_seedance(str(src.get("model") or "")),
         "prompt": prompt,
         "metadata": {"input": meta_input},
     }

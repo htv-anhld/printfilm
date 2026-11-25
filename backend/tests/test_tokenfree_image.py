@@ -31,7 +31,7 @@ def test_uses_tokenfree_image_on_tokenfree_host():
 
 def test_build_tokenfree_image_body_matches_live_success():
     body = build_tokenfree_image_body(model="gpt-image-2-5", prompt="橘猫", size="2K")
-    assert body["model"] == "gpt-image-2-5"
+    assert body["model"] == "gpt-image-2.5"
     assert "橘猫" in body["input"]
     assert "size:" not in body["input"]
     assert "prompt" not in body
@@ -52,12 +52,26 @@ def test_build_tokenfree_image_body_separates_style_and_subject_refs():
 
 
 def test_tokenfree_working_image_model_remaps_seedream():
-    assert tokenfree_working_image_model("seedream-5-0-pro") == "gpt-image-2-5"
-    assert tokenfree_working_image_model("gpt-image-2-5") == "gpt-image-2-5"
-    assert tokenfree_working_image_model("gpt-image-2-5-sunburst") == "gpt-image-2-5"
-    assert tokenfree_working_image_model("doubao-seedream-5-0-260128") == "gpt-image-2-5"
-    assert tokenfree_working_image_model("gpt-image-2") == "gpt-image-2-5"
-    assert tokenfree_working_image_model("gpt-image-2.0") == "gpt-image-2-5"
+    assert tokenfree_working_image_model("seedream-5-0-pro") == "seedream-5.0-pro"
+    assert tokenfree_working_image_model("doubao-seedream-5-0-260128") == "seedream-5.0"
+    assert tokenfree_working_image_model("doubao-seedream-4-5-251128") == "seedream-4.5"
+    assert tokenfree_working_image_model("seedream-5.0") == "seedream-5.0"
+    assert tokenfree_working_image_model("gpt-image-2-5") == "gpt-image-2.5"
+    assert tokenfree_working_image_model("gpt-image-2-5-sunburst") == "gpt-image-2.5"
+    # gpt-image-2 在 default 分组有渠道，不再升成 2.5（2.5 无渠道）
+    assert tokenfree_working_image_model("gpt-image-2") == "gpt-image-2"
+
+
+def test_gpt_image_2_uses_images_generations_with_valid_size():
+    """gpt-image-2 走 /images/generations；尺寸按横竖映射到 OpenAI 支持的三档。"""
+    from app.services.tokenfree_image import gpt_image_size, tokenfree_uses_responses_api
+
+    assert not tokenfree_uses_responses_api("gpt-image-2")
+    assert tokenfree_uses_responses_api("gpt-image-2.5")
+    assert gpt_image_size("1728x2304") == "1024x1536"
+    assert gpt_image_size("2304x1728") == "1536x1024"
+    assert gpt_image_size("2048x2048") == "1024x1024"
+    assert gpt_image_size("2K") == "auto"
 
 
 def test_extract_tokenfree_image_url_from_img_tag():

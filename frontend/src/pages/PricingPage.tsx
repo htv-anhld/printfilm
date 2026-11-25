@@ -12,36 +12,37 @@ import AppShell from '../components/layout/AppShell'
 import PaymentBrandIcon from '../components/billing/PaymentBrandIcon'
 import PaymentModal, { type PayCheckout } from '../components/billing/PaymentModal'
 import PricingWalletCard from '../components/billing/PricingWalletCard'
+import SubscriptionPlans from '../components/billing/SubscriptionPlans'
 import TopupHistoryModal from '../components/billing/TopupHistoryModal'
 import { api, type BillingSku, type UsageSummary, type Wallet } from '../api'
 import { useI18n } from '../i18n'
 import { GITHUB_REPO_URL } from '../lib/siteLinks'
+import { formatCredits, formatMoney, useBillingConfig, usesCredits } from '../lib/money'
 
-type PayType = 'alipay' | 'wxpay'
+type PayType = 'alipay' | 'wxpay' | 'creem'
 
 type SkuView = BillingSku & { recommended?: boolean }
 
 const HERO_FEATURE_KEYS = ['featInstant', 'featSafe', 'featForever'] as const
 
-function yuan(fen: number) {
-  return (fen / 100).toFixed(2)
-}
 
-function yuanShort(fen: number) {
-  const v = fen / 100
-  return Number.isInteger(v) ? String(v) : v.toFixed(2)
-}
 
 /** 定价与充值页 */
 export default function PricingPage() {
   const nav = useNavigate()
   const { t, m } = useI18n()
+  const { symbol, currency } = useBillingConfig()
+  // USD 下展示 credit 数，CNY 下展示金额
+  const creditLabel = (minor: number) =>
+    usesCredits() ? `${formatCredits(minor)} credits` : formatMoney(minor, { short: true })
   const [params] = useSearchParams()
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [usage, setUsage] = useState<UsageSummary | null>(null)
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
   const [skus, setSkus] = useState<SkuView[]>([])
   const [payType, setPayType] = useState<PayType>('alipay')
+  /* 当前币种后端开放的支付方式（USD → creem；CNY → alipay / wxpay） */
+  const [payTypes, setPayTypes] = useState<string[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [hint, setHint] = useState('')
@@ -75,10 +76,15 @@ export default function PricingPage() {
   }
 
   useEffect(() => {
-    api.billingSkus().then((r) => setSkus((r.skus || []) as SkuView[]))
+    api.billingSkus().then((r) => {
+      setSkus((r.skus || []) as SkuView[])
+      const types = r.pay_types || []
+      setPayTypes(types)
+      if (types.length && !types.includes(payType)) setPayType(types[0] as PayType)
+    })
     refresh()
-    if (params.get('paid') === '1') {
-      setHint(t('pricing.paidHint'))
+    if (params.get('paid') === '1' || params.get('subscribed') === '1') {
+      setHint(params.get('subscribed') === '1' ? t('pricing.plans.subscribedHint') : t('pricing.paidHint'))
       const timerId = window.setInterval(() => refresh(), 2500)
       return () => window.clearInterval(timerId)
     }
@@ -92,6 +98,12 @@ export default function PricingPage() {
     setBusy(sku.id)
     setError('')
     try {
+      if (payType === 'creem') {
+        // Creem 托管收银台：整页跳转，付款后带 ?paid=1&order=… 回到本页
+        const res = await api.creemCheckout(sku.id)
+        window.location.assign(res.checkout_url)
+        return
+      }
       const order = await api.createBillingOrder(sku.id, payType)
       const label = m.pricing.skus[sku.id as keyof typeof m.pricing.skus] || sku.name
       setCheckout({
@@ -185,6 +197,26 @@ export default function PricingPage() {
             {payTip ? <p className="pf-pricing-pay-tip">{payTip}</p> : null}
 
             <div className="pf-pricing-pay-grid">
+              {payTypes.includes('creem') ? (
+                <button
+                  type="button"
+                  className={`pf-pricing-pay-tile${payType === 'creem' ? ' is-active' : ''}`}
+                  onClick={() => pickPay('creem')}
+                  aria-pressed={payType === 'creem'}
+                >
+                  <span className="pf-pricing-pay-tile-icon" aria-hidden>
+                    <CreditCard size={22} strokeWidth={1.8} />
+                  </span>
+                  <span className="pf-pricing-pay-tile-label">{t('pricing.card')}</span>
+                  <span className="pf-pricing-pay-tile-sub">{t('pricing.cardSub')}</span>
+                  {payType === 'creem' ? (
+                    <span className="pf-pricing-pay-tile-check" aria-hidden>
+                      <Check size={14} strokeWidth={3} />
+                    </span>
+                  ) : null}
+                </button>
+              ) : null}
+              {payTypes.includes('alipay') ? (
               <button
                 type="button"
                 className={`pf-pricing-pay-tile${payType === 'alipay' ? ' is-active' : ''}`}
@@ -200,7 +232,9 @@ export default function PricingPage() {
                   </span>
                 ) : null}
               </button>
+              ) : null}
 
+              {payTypes.includes('wxpay') ? (
               <button
                 type="button"
                 className={`pf-pricing-pay-tile${payType === 'wxpay' ? ' is-active' : ''}`}
@@ -215,7 +249,11 @@ export default function PricingPage() {
                   </span>
                 ) : null}
               </button>
+              ) : null}
 
+              {/* 银联 / 对公转账只对人民币站点有意义 */}
+              {currency === 'CNY' ? (
+              <>
               <button
                 type="button"
                 className="pf-pricing-pay-tile is-disabled"
@@ -239,8 +277,12 @@ export default function PricingPage() {
                 <span className="pf-pricing-pay-tile-label">{t('pricing.transfer')}</span>
                 <span className="pf-pricing-pay-tile-sub">{t('pricing.enterprise')}</span>
               </button>
+              </>
+              ) : null}
             </div>
           </section>
+
+          <SubscriptionPlans loggedIn={loggedIn} onChanged={() => void refresh()} />
 
           <section className="pf-pricing-skus" id="pricing-skus">
             <header className="pf-pricing-section-head">
@@ -264,14 +306,14 @@ export default function PricingPage() {
                     <p className="pf-pricing-sku-tier">{label}</p>
                     <p className="pf-pricing-sku-hint">{tierHint}</p>
                     <div className="pf-pricing-sku-price">
-                      <span className="yen">¥</span>
+                      <span className="yen">{symbol}</span>
                       <strong>{(sku.amount_fen / 100).toFixed(0)}</strong>
                     </div>
                     <p className="pf-pricing-sku-credit">
-                      {t('pricing.credit')} <em>¥{yuan(sku.credit_fen)}</em>
+                      {t('pricing.credit')} <em>{creditLabel(sku.credit_fen)}</em>
                     </p>
                     {bonus > 0 ? (
-                      <p className="pf-pricing-sku-bonus">{t('pricing.bonus', { amount: yuanShort(bonus) })}</p>
+                      <p className="pf-pricing-sku-bonus">{t('pricing.bonus', { amount: creditLabel(bonus) })}</p>
                     ) : (
                       <p className="pf-pricing-sku-bonus is-empty">&nbsp;</p>
                     )}

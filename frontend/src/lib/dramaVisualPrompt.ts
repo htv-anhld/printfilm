@@ -1,5 +1,7 @@
 /** 从资产 params 读取/拼装视觉生图提示词（对齐 manju buildCharacterParams + 弱提示检测） */
 import type { DramaAsset } from '../api/drama'
+import { tr } from '../i18n'
+import { formatDramaRoleType } from './dramaRoleType'
 
 const WEAK_PROMPT = /^(character|scene|prop|material|none|image|audio|video)\s+\S+$/i
 
@@ -8,6 +10,8 @@ const GENERIC_MARKERS = [
   '构图层次分明、光影有戏剧张力',
   '适合短剧横屏拍摄',
   '影视级写实场景，构图清晰，适合短剧拍摄',
+  'bối cảnh chân thực chuẩn điện ảnh, bố cục rõ ràng',
+  'cinematic realistic setting, clear composition',
   '影视级写实人物',
   '白底全身定妆照',
 ]
@@ -50,14 +54,15 @@ function manjuJoinCharacterPrompt(params: Record<string, unknown>): string {
   const roleType = String(params.roleType || '').trim()
   const coreTags = String(params.coreTags || '').trim()
   const personality = String(params.personality || '').trim()
+  // 字段标签按界面语言（与后端 seed_asset_params 一致）
   const parts = [
     visual,
-    title ? `身份：${title}` : '',
-    roleType ? `定位：${roleType}` : '',
-    coreTags ? `标签：${coreTags}` : '',
-    personality ? `性格：${personality}` : '',
+    title ? tr('lib.visualPrompt.identity', { v: title }) : '',
+    roleType ? tr('lib.visualPrompt.role', { v: formatDramaRoleType(roleType) }) : '',
+    coreTags ? tr('lib.visualPrompt.tags', { v: coreTags }) : '',
+    personality ? tr('lib.visualPrompt.personality', { v: personality }) : '',
   ].filter(Boolean)
-  return parts.join('。')
+  return parts.join(tr('lib.visualPrompt.sep'))
 }
 
 /**
@@ -90,7 +95,7 @@ export function readVisualPrompt(asset: DramaAsset): string {
   }
 
   if (kind === 'scene' && name) {
-    return `场景：${name}，影视级写实场景，构图清晰，适合短剧拍摄`
+    return tr('lib.visualPrompt.scene', { name })
   }
 
   if (stored) return stored

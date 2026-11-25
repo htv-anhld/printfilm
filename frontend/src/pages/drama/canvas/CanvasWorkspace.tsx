@@ -1,7 +1,8 @@
 /** 画布工作区：React Flow 与 overlay UI 组合 */
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ReactFlowProvider, useReactFlow } from '@xyflow/react'
 import { CanvasBottomControls } from './CanvasBottomControls'
+import { CanvasContextMenu, type CanvasContextMenuState } from './CanvasContextMenu'
 import { CanvasLeftToolbar } from './CanvasLeftToolbar'
 import { CanvasNodeSelector } from './CanvasNodeSelector'
 import { CanvasStoreProvider, useCanvasStore } from './CanvasStore'
@@ -34,6 +35,19 @@ function CanvasWorkspaceContent({
   } = useCanvasStore()
   const { screenToFlowPosition } = useReactFlow()
   const embedded = variant === 'embedded'
+  // contextMenu 右键菜单位置（null = 关闭）
+  const [contextMenu, setContextMenu] = useState<CanvasContextMenuState | null>(null)
+  const closeContextMenu = useCallback(() => setContextMenu(null), [])
+
+  // 右键菜单选中：节点放在右键点击处（以点击点为节点左上角）
+  const handleContextSelect = useCallback(
+    (kind: CanvasNodeKind) => {
+      if (!contextMenu) return
+      const position = screenToFlowPosition({ x: contextMenu.x, y: contextMenu.y })
+      void addNodeOfKind(kind, position)
+    },
+    [addNodeOfKind, contextMenu, screenToFlowPosition],
+  )
 
   const handleSelectNode = useCallback(
     (kind: CanvasNodeKind) => {
@@ -64,18 +78,24 @@ function CanvasWorkspaceContent({
 
   return (
     <div className={`free-canvas-page${embedded ? ' is-embedded' : ''}`}>
-      <FreeCanvasFlow projectId={projectId} />
+      <FreeCanvasFlow
+        projectId={projectId}
+        onPaneContextMenu={(event) => setContextMenu({ x: event.clientX, y: event.clientY })}
+      />
       <CanvasTopBar variant={variant} />
       <CanvasLeftToolbar onSelectNode={handleSelectNode} />
       <CanvasBottomControls />
       {showNodeSelector ? <CanvasNodeSelector onSelect={handleSelectNode} /> : null}
+      {contextMenu ? (
+        <CanvasContextMenu menu={contextMenu} onSelect={handleContextSelect} onClose={closeContextMenu} />
+      ) : null}
       {errorMessage ? (
         <p className="fc-error-toast" role="alert" onAnimationEnd={() => setErrorMessage('')}>
           {errorMessage}
         </p>
       ) : null}
       {loading ? (
-        <p className="fc-error-toast" style={{ background: '#fff', color: '#64748b' }}>
+        <p className="fc-error-toast" style={{ background: 'var(--pf-card)', color: 'var(--pf-muted)' }}>
           {tr('episode.canvas.loading')}
         </p>
       ) : null}

@@ -6,18 +6,23 @@ import {
   SettingsStatusBar,
   SettingsTabShell,
 } from "@/components/settings/SettingsPanel";
+import { CreemSettingsSection } from "@/components/settings/CreemSettingsSection";
+import { EMPTY_CREEM_SECRETS, creemPatch, creemReady, type CreemSecretsDraft } from "@/lib/creemSettings";
 import { SecretField } from "@/components/settings/SecretField";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
 import { api } from "@/api/client";
 import { useI18n } from "@/i18n";
+import { majorMoney, money } from "@/lib/money";
 
 // 易支付与 Token 计费配置
 export function PaymentSettingsPanel() {
   const { t } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();
   const [epayKeyInput, setEpayKeyInput] = useState("");
+  /* Creem 密钥本地编辑态（保存后清空） */
+  const [creemDraft, setCreemDraft] = useState<CreemSecretsDraft>(EMPTY_CREEM_SECRETS);
   const [clearEpayKey, setClearEpayKey] = useState(false);
   const [smtpPasswordInput, setSmtpPasswordInput] = useState("");
   const [clearSmtpPassword, setClearSmtpPassword] = useState(false);
@@ -69,8 +74,12 @@ export function PaymentSettingsPanel() {
         clear_epay_key: clearEpayKey,
         epay_notify_url: form.epay_notify_url,
         epay_return_url: form.epay_return_url,
+        ...creemPatch(form, creemDraft),
         billing_enabled: form.billing_enabled,
-        billing_markup: 1.0,
+        billing_currency: form.billing_currency ?? "USD",
+        billing_markup: form.billing_markup,
+        billing_usd_cny: form.billing_usd_cny ?? 7,
+        billing_first_topup_bonus_fen: form.billing_first_topup_bonus_fen ?? 0,
         billing_estimate_buffer: form.billing_estimate_buffer,
         billing_seedance_video0: form.billing_seedance_video0,
         billing_seedance_video1: form.billing_seedance_video1,
@@ -102,6 +111,7 @@ export function PaymentSettingsPanel() {
     );
     setEpayKeyInput("");
     setClearEpayKey(false);
+    setCreemDraft(EMPTY_CREEM_SECRETS);
     setSmtpPasswordInput("");
     setClearSmtpPassword(false);
   }
@@ -138,11 +148,11 @@ export function PaymentSettingsPanel() {
       setTokenfreeInfo(
         t("settings.payment.quotaInfo", {
           quota: res.quota ?? "—",
-          remainYuan: res.remain_yuan,
+          remainYuan: majorMoney(res.remain_yuan),
           remainUsd,
           rate: res.usd_cny,
           used: res.used_quota ?? "—",
-          usedYuan: res.used_yuan,
+          usedYuan: majorMoney(res.used_yuan),
           console: res.console_url,
         }),
       );
@@ -162,6 +172,13 @@ export function PaymentSettingsPanel() {
       <SettingsStatusBar
         title={t("settings.payment.statusTitle")}
         items={[
+          {
+            id: "creem",
+            label: "Creem",
+            ready: creemReady(form, creemDraft),
+            readyText: t("settings.payment.configured"),
+            pendingText: t("settings.payment.incomplete"),
+          },
           {
             id: "epay",
             label: t("settings.payment.epay"),
@@ -194,6 +211,8 @@ export function PaymentSettingsPanel() {
       />
 
       <div className="settings-routing-grid">
+        <CreemSettingsSection form={form} draft={creemDraft} onDraft={setCreemDraft} patchField={patchField} />
+
         <SettingsPanel
           className="settings-panel--compact"
           title={t("settings.payment.p1Title")}
@@ -263,6 +282,46 @@ export function PaymentSettingsPanel() {
                 min={1}
                 value={form.billing_estimate_buffer}
                 onChange={(e) => patchField("billing_estimate_buffer", Number(e.target.value))}
+              />
+            </LabeledControl>
+            <LabeledControl label={t("settings.payment.currency")} hint={t("settings.payment.currencyHint")}>
+              <select
+                className="settings-select"
+                value={form.billing_currency ?? "USD"}
+                onChange={(e) => patchField("billing_currency", e.target.value as "USD" | "CNY")}
+              >
+                <option value="USD">USD (credit)</option>
+                <option value="CNY">CNY</option>
+              </select>
+            </LabeledControl>
+            <LabeledControl label={t("settings.payment.markup")} hint={t("settings.payment.markupHint")}>
+              <input
+                className="settings-input"
+                type="number"
+                step="0.1"
+                min={1}
+                max={20}
+                value={form.billing_markup}
+                onChange={(e) => patchField("billing_markup", Number(e.target.value))}
+              />
+            </LabeledControl>
+            <LabeledControl label={t("settings.payment.usdCny")} hint={t("settings.payment.usdCnyHint")}>
+              <input
+                className="settings-input"
+                type="number"
+                step="0.01"
+                min={0.01}
+                value={form.billing_usd_cny ?? 7}
+                onChange={(e) => patchField("billing_usd_cny", Number(e.target.value))}
+              />
+            </LabeledControl>
+            <LabeledControl label={t("settings.payment.firstTopupBonus")} hint={t("settings.payment.firstTopupBonusHint")}>
+              <input
+                className="settings-input"
+                type="number"
+                min={0}
+                value={form.billing_first_topup_bonus_fen ?? 0}
+                onChange={(e) => patchField("billing_first_topup_bonus_fen", Number(e.target.value))}
               />
             </LabeledControl>
             <LabeledControl label={t("settings.payment.signupGrant")}>
@@ -372,10 +431,10 @@ export function PaymentSettingsPanel() {
                       </td>
                       <td className="p-2">{row.capability}</td>
                       <td className="p-2">
-                        {row.official_cost_yuan ? `¥${row.official_cost_yuan}` : "—"}
+                        {row.official_cost_yuan ? majorMoney(row.official_cost_yuan) : "—"}
                       </td>
                       <td className="p-2">
-                        {row.user_charge_yuan ? `¥${row.user_charge_yuan}` : "—"}
+                        {row.user_charge_yuan ? majorMoney(row.user_charge_yuan) : "—"}
                       </td>
                       <td className="p-2">
                         <div>{row.rate_label}</div>
@@ -447,7 +506,7 @@ export function PaymentSettingsPanel() {
             />
           </div>
           <div className="settings-field-grid mt-2">
-            <LabeledControl label={t("settings.payment.alertInterval")} hint={t("settings.payment.alertIntervalHint")}>
+            <LabeledControl label={t("settings.payment.alertInterval")} hint={t("settings.payment.alertIntervalHint", { amount: money(10000) })}>
               <input
                 className="settings-input"
                 type="number"

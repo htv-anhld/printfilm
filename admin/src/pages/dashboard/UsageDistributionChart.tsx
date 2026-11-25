@@ -10,9 +10,10 @@ import {
   YAxis,
 } from "recharts";
 import type { AdminUsageBucket } from "@/api/client";
-import { fenToYuan } from "@/lib/utils";
+
 import type { DashboardMetric } from "./DashboardFilters";
 import { tr } from "@/i18n";
+import { money } from "@/lib/money";
 
 const CHART_COLORS = [
   "var(--admin-forest)",
@@ -40,7 +41,7 @@ function readMetric(row: AdminUsageBucket, metric: DashboardMetric): number {
 
 function formatMetric(value: number, metric: DashboardMetric): string {
   if (metric === "calls") return String(value);
-  return `¥${fenToYuan(value)}`;
+  return money(value);
 }
 
 /** 能力 / 领域分布图 */

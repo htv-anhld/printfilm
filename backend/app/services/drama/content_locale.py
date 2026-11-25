@@ -254,3 +254,19 @@ def is_default_episode_title(title: str | None, number: int | None = None) -> bo
 def content_text(source: str, locale: str | None = None, /, **vars: object) -> str:
     """按内容语言翻译服务端写进剧本/字幕的固定文案（key 为中文原文）。"""
     return translate(source, _resolve(locale), **vars)
+
+
+# 摘要 roleType 的常见中文取值（数据保持中文：分镜人物介绍按它判断主次），展示时按内容语言翻译
+_ROLE_TYPE_TOKENS = ("女主角", "男主角", "重要配角", "主角", "配角", "反派", "群众", "客串", "旁白")
+
+
+def localize_role_type(raw: str | None, locale: str | None = None) -> str:
+    """把「主角（重要配角）」这类 roleType 中的已知词按内容语言替换；zh 或未知词原样返回。"""
+    text = str(raw or "").strip()
+    loc = _resolve(locale)
+    if not text or loc == "zh":
+        return text
+    for token in _ROLE_TYPE_TOKENS:
+        if token in text:
+            text = text.replace(token, translate(token, loc))
+    return text.replace("（", " (").replace("）", ")")

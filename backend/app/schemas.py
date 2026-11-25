@@ -24,6 +24,8 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=6, max_length=64)
     # 为空时由注册接口按请求语言填默认昵称
     nickname: str | None = Field(default=None, max_length=64)
+    # 合作伙伴推广码（?ref=）
+    ref: str | None = Field(default=None, max_length=32)
 
 
 class LoginRequest(BaseModel):
@@ -34,6 +36,22 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    # 注册后是否需要先验证邮箱（前端据此展示验证码输入）
+    email_verification_required: bool = False
+
+
+class VerifyEmailCodeRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=12)
+
+
+class VerifyEmailTokenRequest(BaseModel):
+    token: str = Field(min_length=8, max_length=256)
+
+
+class GoogleExchangeRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=2048)
+    state: str = Field(min_length=8, max_length=1024)
+    ref: str | None = Field(default=None, max_length=32)
 
 
 class UserOut(BaseModel):
@@ -47,6 +65,8 @@ class UserOut(BaseModel):
     role: str = "user"
     avatar_url: str = ""
     phone: str = ""
+    email_verified: bool = True
+    sub_credit_fen: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -531,6 +551,9 @@ class AdminOrderOut(BaseModel):
     trade_no: str | None
     paid_at: datetime | None
     created_at: datetime
+    currency: str = "CNY"
+    provider: str = "epay"
+    bonus_fen: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -640,6 +663,10 @@ class AdminTemplateOut(BaseModel):
     sort_order: int
     is_active: bool
     is_premium: bool
+    # 展示用：按请求语言翻译后的名称 / 简介 / 分类（编辑仍用上面的原值）
+    display_name: str = ""
+    display_description: str = ""
+    category_labels: list[str] = []
 
     model_config = {"from_attributes": True}
 

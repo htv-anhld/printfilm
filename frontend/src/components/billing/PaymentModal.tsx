@@ -4,6 +4,7 @@ import Modal from '../ui/Modal'
 import PaymentBrandIcon from './PaymentBrandIcon'
 import { api } from '../../api'
 import { useI18n } from '../../i18n'
+import { formatMoney, useBillingConfig } from '../../lib/money'
 
 export type PayCheckout = {
   out_trade_no: string
@@ -27,9 +28,6 @@ type Props = {
   onPaid: () => void
 }
 
-function yuan(fen: number) {
-  return (fen / 100).toFixed(2)
-}
 
 function formatRemain(sec: number) {
   const m = Math.floor(sec / 60)
@@ -39,6 +37,8 @@ function formatRemain(sec: number) {
 
 /** 扫码支付弹窗：展示二维码或等待收银台回跳，并轮询订单状态 */
 export default function PaymentModal({ open, checkout, onClose, onPaid }: Props) {
+  // 计费币种配置到达后重渲染金额
+  useBillingConfig()
   const { t } = useI18n()
   /*
    * qrDataUrl 二维码 data URL
@@ -229,12 +229,12 @@ export default function PaymentModal({ open, checkout, onClose, onPaid }: Props)
 
         <div className="pf-pay-sku-box">
           <strong>{checkout.sku_name}</strong>
-          <span>{t('billing.pay.credit', { amount: yuan(checkout.credit_fen) })}</span>
+          <span>{t('billing.pay.credit', { amount: formatMoney(checkout.credit_fen) })}</span>
         </div>
 
         <div className="pf-pay-amount">
           <span>{t('billing.pay.amount')}</span>
-          <em>¥{yuan(checkout.amount_fen)}</em>
+          <em>{formatMoney(checkout.amount_fen)}</em>
         </div>
 
         <div className="pf-pay-qr-wrap">

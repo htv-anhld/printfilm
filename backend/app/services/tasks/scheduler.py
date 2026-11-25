@@ -139,6 +139,36 @@ async def _scheduler_loop() -> None:
         await asyncio.sleep(1.0)
 
 
+async def _user_limits(db, user_ids: set[int], default: int) -> dict[int, int]:
+    """按订阅套餐取每个用户的并发上限（免费用户用全站默认）。"""
+    if not user_ids:
+        return {}
+    from app.models import User
+    from app.services.subscriptions.plans import plan_concurrency
+
+    rows = (await db.execute(select(User.id, User.plan).where(User.id.in_(user_ids)))).all()
+    return {int(uid): plan_concurrency(plan, default) for uid, plan in rows}
+
+
+_SUBSCRIPTION_MAINTENANCE_SEC = 300
+_last_subscription_maintenance_mono = 0.0
+
+
+async def _maybe_run_subscription_maintenance() -> None:
+    """低频（5 分钟）订阅维护：年付按月发额度、过期未续费订阅。失败不影响调度。"""
+    global _last_subscription_maintenance_mono
+    if time.monotonic() - _last_subscription_maintenance_mono < _SUBSCRIPTION_MAINTENANCE_SEC:
+        return
+    _last_subscription_maintenance_mono = time.monotonic()
+    try:
+        from app.services.payments.subscriptions import run_maintenance
+
+        async with AsyncSessionLocal() as db:
+            await run_maintenance(db)
+    except Exception:  # noqa: BLE001
+        logger.exception("subscription maintenance failed")
+
+
 # 扫描并租约抢占可执行任务。
 async def _tick() -> None:
     global _last_orphan_check_mono
@@ -150,6 +180,7 @@ async def _tick() -> None:
         async with AsyncSessionLocal() as reconcile_db:
             await reconcile_terminal_frozen_tasks(reconcile_db)
         _last_orphan_check_mono = time.monotonic()
+    await _maybe_run_subscription_maintenance()
 
     async with AsyncSessionLocal() as db:
         await reconcile_sequential_batches(db)
@@ -183,6 +214,7 @@ async def _tick() -> None:
         )
         candidates = list((await db.execute(stmt)).all())
         user_active_cache: dict[int, int] = {}
+        user_limits = await _user_limits(db, {int(row.requested_by) for row in candidates}, user_limit)
         for row in candidates:
             if len(claimed_ids) >= available_slots:
                 break
@@ -193,7 +225,7 @@ async def _tick() -> None:
                 continue
             if user_id not in user_active_cache:
                 user_active_cache[user_id] = await count_user_active_runtime_tasks(db, user_id)
-            if user_active_cache[user_id] >= user_limit:
+            if user_active_cache[user_id] >= user_limits.get(user_id, user_limit):
                 continue
             lease_token = uuid.uuid4().hex
             next_status = "leased" if current_status != "cancel_requested" else "cancel_requested"

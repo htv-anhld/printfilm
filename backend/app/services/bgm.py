@@ -44,6 +44,15 @@ def resolve_bgm_path(mood: str | None) -> Path | None:
         if pattern.search(blob):
             stem = name
             break
+    # 管理员在素材库上传的 BGM 按情绪放在 static/bgm/<mood>/，优先使用（同情绪多首时取最早上传的）
+    for folder in (root / stem, root / "default"):
+        if folder.is_dir():
+            uploaded = sorted(
+                (p for p in folder.iterdir() if p.suffix.lower() in {".mp3", ".m4a", ".wav", ".aac"}),
+                key=lambda p: p.stat().st_mtime,
+            )
+            if uploaded:
+                return uploaded[0]
     for candidate in (
         root / f"{stem}.mp3",
         root / f"{stem}.m4a",

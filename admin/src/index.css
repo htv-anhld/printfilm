@@ -3973,3 +3973,44 @@ textarea.admin-control {
   }
 }
 
+
+/* 存储提供方切换（阿里云 OSS / S3·R2） */
+.settings-segmented {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-muted);
+}
+
+.settings-segmented-btn {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-muted-foreground);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.settings-segmented-btn.is-active {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+/* R2 配置步骤说明 */
+.settings-hint-box {
+  margin-bottom: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}

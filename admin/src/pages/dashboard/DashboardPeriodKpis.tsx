@@ -1,10 +1,11 @@
 import { Activity, Film, Percent, TrendingUp } from "lucide-react";
 import type { AdminStats } from "@/api/client";
-import { fenToYuan } from "@/lib/utils";
+
 import { dashboardRangeLabel, type DashboardFilterState } from "@/pages/dashboard/DashboardFilters";
 import { DashboardKpiCard } from "@/pages/dashboard/DashboardKpiCard";
 import { calcProfitFen, sumDailyUsage } from "@/pages/dashboard/dashboardMetrics";
 import { tr } from "@/i18n";
+import { money } from "@/lib/money";
 
 type DashboardPeriodKpisProps = {
   stats: AdminStats | null;
@@ -32,15 +33,15 @@ export function DashboardPeriodKpis({ stats, filters, loading }: DashboardPeriod
       />
       <DashboardKpiCard
         label={tr("dashboard.period.charge", { range: rangeLabel })}
-        value={stats ? `¥${fenToYuan(period.charge_fen)}` : placeholder}
-        hint={stats ? tr("dashboard.period.monthAmount", { amount: fenToYuan(stats.usage_charge_month_fen ?? 0) }) : tr("dashboard.period.userCharge")}
+        value={stats ? money(period.charge_fen) : placeholder}
+        hint={stats ? tr("dashboard.period.monthAmount", { amount: money(stats.usage_charge_month_fen ?? 0) }) : tr("dashboard.period.userCharge")}
         icon={TrendingUp}
         tone="blue"
       />
       <DashboardKpiCard
         label={tr("dashboard.period.profit", { range: rangeLabel })}
-        value={stats ? `¥${fenToYuan(profitFen)}` : placeholder}
-        hint={stats ? tr("dashboard.period.costAmount", { amount: fenToYuan(period.cost_fen) }) : tr("dashboard.period.profitHint")}
+        value={stats ? money(profitFen) : placeholder}
+        hint={stats ? tr("dashboard.period.costAmount", { amount: money(period.cost_fen) }) : tr("dashboard.period.profitHint")}
         icon={Percent}
         tone="rose"
         trend={profitPct ? tr("dashboard.profitRate", { pct: profitPct }) : undefined}

@@ -38,7 +38,15 @@ async def create_ephemeral_task_row(
     asset_id: int | None = None,
     episode_id: int | None = None,
 ) -> TaskRun:
-    """创建并立即执行的轻量任务行（不经过调度器排队）。"""
+    """创建并立即执行的轻量任务行（不经过调度器排队）。
+
+    先对用户行加 FOR UPDATE 再插入：插 task_runs 时外键会对 users 行加 KEY SHARE，
+    之后 freeze 再申请 FOR UPDATE；同一用户并发时双方都持 KEY SHARE 等对方 → 死锁。
+    先拿排他锁让同一用户的预扣串行化。
+    """
+    from app.services.billing.settlement import _lock_user
+
+    await _lock_user(db, int(user.id))
     handler = get_task_handler(domain, task_type)
     planned = handler.plan_steps(TaskCreateRequest(domain=domain, task_type=task_type)) if handler else []
     first = planned[0] if planned else None

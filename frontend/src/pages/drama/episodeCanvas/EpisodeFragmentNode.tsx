@@ -3,7 +3,8 @@ import { memo, useCallback, type ChangeEvent } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { Clapperboard, Plus } from 'lucide-react'
 import type { EpisodeFragmentNodeData } from './buildEpisodeFlow'
-import { tr } from '../../../i18n'
+import { getActiveLocale, tr } from '../../../i18n'
+import { delocalizeDramaMarkers, localizeDramaMarkers } from '../../../lib/dramaMarkerDisplay'
 
 type Props = NodeProps<Node<EpisodeFragmentNodeData>> & {
   onPromptChange?: (fragmentId: number, content: string) => void
@@ -22,7 +23,8 @@ function EpisodeFragmentNodeComponent({
 
   const handlePromptChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
-      onPromptChange?.(data.fragmentId, event.target.value)
+      // 界面显示本地化标记，回写前还原成后端认识的中文标记
+      onPromptChange?.(data.fragmentId, delocalizeDramaMarkers(event.target.value, getActiveLocale()))
     },
     [data.fragmentId, onPromptChange],
   )
@@ -72,14 +74,15 @@ function EpisodeFragmentNodeComponent({
         {selected ? (
           <textarea
             className="ep-frag-prompt-input nodrag nowheel"
-            value={data.content}
+            value={localizeDramaMarkers(data.content || '', getActiveLocale())}
             onChange={handlePromptChange}
             placeholder={tr('episode.storyboard.promptPlaceholder')}
             rows={5}
           />
         ) : (
           <p className="ep-frag-prompt-text">
-            {(data.content || '').trim() || tr('episode.storyboard.emptyPrompt')}
+            {localizeDramaMarkers((data.content || '').trim(), getActiveLocale()) ||
+              tr('episode.storyboard.emptyPrompt')}
           </p>
         )}
       </div>

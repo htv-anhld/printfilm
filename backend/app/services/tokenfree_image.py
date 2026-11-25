@@ -36,29 +36,67 @@ def is_seedream_family(model: str) -> bool:
     return "seedream" in mid
 
 
-# TokenFree 分组里实际可通的 GPT Image；sunburst 是 Kie 价目名，default 组没有 distributor
-TOKENFREE_WORKING_IMAGE_MODEL = "gpt-image-2-5"
+# TokenFree 上的 GPT Image 名（目录里是带点的 gpt-image-2.5）；sunburst 是 Kie 价目名
+TOKENFREE_WORKING_IMAGE_MODEL = "gpt-image-2.5"
 TOKENFREE_KIE_IMAGE_MODEL = "gpt-image-2-5-sunburst"
+
+# doubao-seedream-5-0-260128 / seedream-5-0-pro → seedream-5.0 / seedream-5.0-pro
+_SEEDREAM_ID_RE = re.compile(r"^(?:doubao-)?seedream-(\d+)[-.](\d+)(?:-(\d{6}))?(?:-(pro|lite|flash))?(?:-(\d{6}))?$")
+
+
+def normalize_tokenfree_seedream(model: str) -> str:
+    """方舟版本号 ID 转成 TokenFree 目录里的短名（2026-11 实测：只有短名有渠道）。"""
+    raw = (model or "").strip()
+    m = _SEEDREAM_ID_RE.match(raw.lower())
+    if not m:
+        return raw
+    major, minor, _d1, tier, _d2 = m.groups()
+    return f"seedream-{major}.{minor}" + (f"-{tier}" if tier else "")
 
 
 def tokenfree_working_image_model(model: str) -> str:
-    """Seedream / sunburst 改走实测可通的 gpt-image-2-5；计费仍按 Kie 积分档。"""
+    """TokenFree 上实际请求的模型名。
+
+    Seedream 走 /images/generations（短名）；gpt-image 系列统一成 gpt-image-2.5 走 /responses。
+    计费按这里返回的名字查价目。
+    """
     raw = (model or "").strip()
     low = raw.lower()
-    if (
-        not raw
-        or is_seedream_family(raw)
-        or low in {
-            "gpt-image-2-5",
-            "gpt-image-2.5",
-            TOKENFREE_KIE_IMAGE_MODEL,
-            "gpt-image-2.5-sunburst",
-            "gpt-image-2",
-            "gpt-image-2.0",
-        }
-    ):
+    if not raw:
         return TOKENFREE_WORKING_IMAGE_MODEL
+    if is_seedream_family(raw):
+        return normalize_tokenfree_seedream(raw)
+    if low in {
+        "gpt-image-2-5",
+        "gpt-image-2.5",
+        TOKENFREE_KIE_IMAGE_MODEL,
+        "gpt-image-2.5-sunburst",
+    }:
+        return TOKENFREE_WORKING_IMAGE_MODEL
+    # 2026-11 实测：gpt-image-2 在 default 分组有渠道（走 /images/generations），
+    # 而 gpt-image-2.5 在 default 分组无渠道，不能再把 2 升成 2.5
+    if low in {"gpt-image-2", "gpt-image-2.0"}:
+        return "gpt-image-2"
     return raw
+
+
+def tokenfree_uses_responses_api(model: str) -> bool:
+    """只有 gpt-image-2.5 系列走 /v1/responses；gpt-image-2、Seedream 等走标准 /v1/images/generations。"""
+    low = (model or "").lower()
+    return "gpt-image" in low and ("2.5" in low or "2-5" in low)
+
+
+def gpt_image_size(size: str | None) -> str:
+    """gpt-image 只认 1024x1024 / 1024x1536 / 1536x1024：按 WxH 的横竖选档，其余用 auto。"""
+    m = re.match(r"^\s*(\d+)\s*[x×*]\s*(\d+)\s*$", str(size or ""))
+    if not m:
+        return "auto"
+    w, h = int(m.group(1)), int(m.group(2))
+    if h > w * 1.1:
+        return "1024x1536"
+    if w > h * 1.1:
+        return "1536x1024"
+    return "1024x1024"
 
 
 def build_tokenfree_image_body(

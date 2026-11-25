@@ -38,6 +38,7 @@ import {
 } from '../../lib/dramaAssetImage'
 import { richText } from '../../components/drama/richText'
 import { tr, useI18n } from '../../i18n'
+import { formatMajor } from '../../lib/money'
 
 type AssetTabKey = 'character' | 'scene' | 'prop' | 'voice'
 
@@ -350,9 +351,9 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       message: t('drama.assetsStep.batchImageMessage', {
         tab: assetTabs().find((item) => item.key === tab)?.label || t('drama.assetsStep.category'),
         n: targets.length,
-        unit: unitYuan.toFixed(2),
-        total: totalYuan.toFixed(2),
-        balance: balanceYuan.toFixed(2),
+        unit: formatMajor(unitYuan),
+        total: formatMajor(totalYuan),
+        balance: formatMajor(balanceYuan),
       }),
       confirmText: t('drama.assetsStep.startGenerate'),
     })

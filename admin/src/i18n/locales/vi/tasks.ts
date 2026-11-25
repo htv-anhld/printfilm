@@ -30,7 +30,7 @@ export const viTasks = {
     result: "Kết quả",
   },
   emptyHint: "Chuyển sang “Tất cả” để xem tác vụ cũ",
-  frozen: "Tạm giữ ¥{amount}",
+  frozen: "Tạm giữ {amount}",
   createdAt: "Tạo {time}",
   startedAt: "Bắt đầu {time}",
   payloadFields: {

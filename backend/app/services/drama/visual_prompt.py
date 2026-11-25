@@ -108,10 +108,24 @@ def is_weak_visual_prompt(prompt: str, asset_name: str, kind: str) -> bool:
         return True
     # 角色若只有「身份：」「标签：」字段堆叠而无足够 visualImage 密度
     if kind_lower == "character" and text.count("：") >= 3 and len(text) < 160:
-        label_hits = sum(1 for label in ("身份：", "定位：", "标签：", "性格：", "背景：") if label in text)
+        label_hits = sum(1 for label in _character_field_labels() if label in text)
         if label_hits >= 2 and "，" not in text[:40]:
             return True
     return False
+
+
+def _character_field_labels() -> tuple[str, ...]:
+    """角色字段标签（中文 + en/vi 译文），用于判断 prompt 是否只是字段堆叠。"""
+    from app.i18n import translate
+
+    base = ("身份：", "定位：", "标签：", "性格：", "背景：")
+    out = list(base)
+    for loc in ("en", "vi"):
+        for key in ("身份：{v}", "定位：{v}", "标签：{v}", "性格：{v}"):
+            head = translate(key, loc, v="").strip()
+            if head and head not in out:
+                out.append(head)
+    return tuple(out)
 
 
 # 从资产 params 与摘要拼角色上下文

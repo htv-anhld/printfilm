@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell'
 import { useI18n } from '../i18n'
 import { getLegalDoc, type LegalDoc } from '../lib/legalContent'
+import { getPolicyDoc, withCommercialBilling, type PolicySlug } from '../lib/legalPolicies'
+import { useBillingConfig } from '../lib/money'
 import { GITHUB_REPO_URL } from '../lib/siteLinks'
 
 /** 渲染单份法律文档正文 */
@@ -41,6 +43,8 @@ function LegalBody({ doc }: { doc: LegalDoc }) {
       <nav className="pf-legal-foot-nav" aria-label={t('legal.related')}>
         <Link to="/terms">{t('footer.terms')}</Link>
         <Link to="/privacy">{t('footer.privacy')}</Link>
+        <Link to="/refund">{t('footer.refund')}</Link>
+        <Link to="/acceptable-use">{t('footer.acceptableUse')}</Link>
         <Link to="/contact">{t('footer.contact')}</Link>
         <Link to="/help">{t('footer.help')}</Link>
         <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer">
@@ -54,7 +58,10 @@ function LegalBody({ doc }: { doc: LegalDoc }) {
 /** 用户协议页 */
 export function TermsPage() {
   const { locale } = useI18n()
-  const doc = getLegalDoc('terms', locale)
+  const { currency } = useBillingConfig()
+  // 美元计费（商业版）换上 credit / 订阅 / Creem 的计费条款
+  const base = getLegalDoc('terms', locale)
+  const doc = currency === 'USD' ? withCommercialBilling(base, locale) : base
   return (
     <AppShell>
       <div className="pf-legal-page">
@@ -75,4 +82,26 @@ export function PrivacyPage() {
       </div>
     </AppShell>
   )
+}
+
+/** 退款政策 / 可接受使用政策页 */
+function PolicyPage({ slug }: { slug: PolicySlug }) {
+  const { locale } = useI18n()
+  return (
+    <AppShell>
+      <div className="pf-legal-page">
+        <LegalBody doc={getPolicyDoc(slug, locale)} />
+      </div>
+    </AppShell>
+  )
+}
+
+/** 退款政策页 */
+export function RefundPage() {
+  return <PolicyPage slug="refund" />
+}
+
+/** 可接受使用政策页 */
+export function AcceptableUsePage() {
+  return <PolicyPage slug="acceptable-use" />
 }

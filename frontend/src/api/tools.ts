@@ -81,6 +81,8 @@ export type ToolRunPayload = {
   pack?: string
   duration?: string
   motion?: string
+  /** 视频工具：后台启用的视频模型 id（空 = 默认） */
+  model?: string
   files?: File[]
 }
 
@@ -97,6 +99,7 @@ export async function runStudioTool(payload: ToolRunPayload): Promise<ToolRunRes
   body.append('pack', payload.pack || '')
   body.append('duration', payload.duration || '')
   body.append('motion', payload.motion || '')
+  body.append('model', payload.model || '')
   for (const file of payload.files || []) {
     body.append('files', file)
   }

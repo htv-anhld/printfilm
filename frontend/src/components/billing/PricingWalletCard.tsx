@@ -2,6 +2,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import type { UsageSummary, Wallet } from '../../api'
 import { formatDateTime, useI18n } from '../../i18n'
+import { formatMajor, formatMoney, useBillingConfig } from '../../lib/money'
 
 type Props = {
   wallet: Wallet | null
@@ -19,6 +20,7 @@ function formatUpdated(d: Date | null) {
 export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, onHistory }: Props) {
   const { t } = useI18n()
   const [balanceVisible, setBalanceVisible] = useState(true)
+  const { symbol } = useBillingConfig()
 
   const balanceYuan = wallet?.balance_yuan ?? usage?.balance_yuan ?? 0
   const frozenYuan = wallet?.frozen_yuan ?? usage?.frozen_yuan ?? 0
@@ -50,18 +52,24 @@ export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, 
       </div>
 
       <strong className="pf-pricing-wallet-dark-balance">
-        {balanceVisible ? `¥${balanceYuan.toFixed(2)}` : '¥ ****'}
+        {balanceVisible ? formatMajor(balanceYuan) : `${symbol} ****`}
       </strong>
 
       <dl className="pf-pricing-wallet-dark-meta">
         <div>
           <dt>{t('pricing.monthCharge')}</dt>
-          <dd>{loggedIn ? `¥${monthCharge.toFixed(2)}` : '—'}</dd>
+          <dd>{loggedIn ? formatMajor(monthCharge) : '—'}</dd>
         </div>
         <div>
           <dt>{t('billing.wallet.frozen')}</dt>
-          <dd>{loggedIn ? `¥${frozenYuan.toFixed(2)}` : '—'}</dd>
+          <dd>{loggedIn ? formatMajor(frozenYuan) : '—'}</dd>
         </div>
+        {(wallet?.sub_credit_fen ?? 0) > 0 ? (
+          <div>
+            <dt>{t('billing.wallet.monthly')}</dt>
+            <dd>{formatMoney(wallet?.sub_credit_fen)}</dd>
+          </div>
+        ) : null}
       </dl>
 
       <p className="pf-pricing-wallet-dark-updated">{t('pricing.updatedAt', { time: formatUpdated(updatedAt) })}</p>

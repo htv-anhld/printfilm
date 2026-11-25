@@ -73,3 +73,35 @@ def seedream_still_size_for_video_ratio(aspect_ratio: str | None) -> str:
 
     ratio = _pick_ratio(aspect_ratio) or "9:16"
     return SEEDREAM_SIZE_2K.get(ratio, SEEDREAM_SIZE_2K["9:16"])
+
+
+# 项目级生成设置：校验并清洗 video_model / aspect_ratio / resolution（非法值直接丢弃，模型非法抛 ValueError）
+def clean_project_generation_params(params: dict | None) -> dict | None:
+    if not isinstance(params, dict):
+        return params
+    out = dict(params)
+    if "aspect_ratio" in out and not _pick_ratio(out.get("aspect_ratio")):
+        out.pop("aspect_ratio", None)
+    if "resolution" in out and not _pick_resolution(out.get("resolution")):
+        out.pop("resolution", None)
+    if "episode_duration_sec" in out:
+        from app.services.drama.episode_length import normalize_episode_duration
+
+        sec = normalize_episode_duration(out.get("episode_duration_sec"))
+        if sec is None:
+            out.pop("episode_duration_sec", None)
+        else:
+            out["episode_duration_sec"] = sec
+    if "draft_mode" in out:
+        out["draft_mode"] = bool(out.get("draft_mode"))
+    if "video_model" in out:
+        model = str(out.get("video_model") or "").strip()
+        if not model:
+            out.pop("video_model", None)
+        else:
+            from app.services.media_catalog import is_enabled_video_model
+
+            if not is_enabled_video_model(model):
+                raise ValueError(model)
+            out["video_model"] = model
+    return out

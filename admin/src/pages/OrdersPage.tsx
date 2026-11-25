@@ -18,9 +18,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/page";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
-import { fenToYuan } from "@/lib/utils";
+
 import { formatDateTime, tr, useI18n } from "@/i18n";
 import { ledgerKindLabel, orderStatusLabel, payTypeLabel, taskDomainLabel } from "@/lib/statusLabels";
+import { money, orderMoney } from "@/lib/money";
 
 type OrderRes = { items: AdminOrder[]; meta: PageMeta };
 type LedgerRes = { items: AdminLedger[]; meta: PageMeta };
@@ -251,8 +252,8 @@ export function OrdersPage() {
                       <AdminEntityLink kind="user" id={o.user_id} label={o.user_email ?? undefined} />
                     </TableCell>
                     <TableCell>{o.sku_id}</TableCell>
-                    <TableCell>¥{fenToYuan(o.amount_fen)}</TableCell>
-                    <TableCell>¥{fenToYuan(o.credit_fen)}</TableCell>
+                    <TableCell>{orderMoney(o.amount_fen, o.currency)}</TableCell>
+                    <TableCell>{orderMoney(o.credit_fen, o.currency)}</TableCell>
                     <TableCell>{payTypeLabel(o.pay_type)}</TableCell>
                     <TableCell>
                       <Badge variant={o.status === "paid" ? "success" : "secondary"}>
@@ -328,9 +329,9 @@ export function OrdersPage() {
                     </TableCell>
                     <TableCell className={e.delta_fen >= 0 ? "text-emerald-700" : "text-red-600"}>
                       {e.delta_fen >= 0 ? "+" : ""}
-                      ¥{fenToYuan(e.delta_fen)}
+                      {money(e.delta_fen)}
                     </TableCell>
-                    <TableCell>¥{fenToYuan(e.balance_after)}</TableCell>
+                    <TableCell>{money(e.balance_after)}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{ledgerKindLabel(e.kind)}</Badge>
                     </TableCell>
@@ -462,8 +463,8 @@ export function OrdersPage() {
                     <TableCell>{row.capability ?? row.billing_key}</TableCell>
                     <TableCell className="max-w-[120px] truncate text-xs">{row.model || "—"}</TableCell>
                     <TableCell>{row.total_tokens ?? 0}</TableCell>
-                    <TableCell>¥{fenToYuan(row.charge_fen ?? 0)}</TableCell>
-                    <TableCell>¥{fenToYuan(row.cost_fen ?? 0)}</TableCell>
+                    <TableCell>{money(row.charge_fen ?? 0)}</TableCell>
+                    <TableCell>{money(row.cost_fen ?? 0)}</TableCell>
                     <TableCell>
                       <Badge
                         variant={
@@ -532,8 +533,8 @@ export function OrdersPage() {
                   ),
                 },
                 { label: "SKU", value: orderDetail.sku_id },
-                { label: t("orders.cols.amount"), value: `¥${fenToYuan(orderDetail.amount_fen)}` },
-                { label: t("orders.cols.credit"), value: `¥${fenToYuan(orderDetail.credit_fen)}` },
+                { label: t("orders.cols.amount"), value: orderMoney(orderDetail.amount_fen, orderDetail.currency) },
+                { label: t("orders.cols.credit"), value: orderMoney(orderDetail.credit_fen, orderDetail.currency) },
                 { label: t("orders.payMethod"), value: payTypeLabel(orderDetail.pay_type) },
                 { label: t("common.status"), value: orderStatusLabel(orderDetail.status) },
                 { label: t("orders.cols.tradeNo"), value: orderDetail.trade_no || "—" },
@@ -573,8 +574,8 @@ export function OrdersPage() {
                   ),
                 },
                 { label: t("common.type"), value: ledgerKindLabel(ledgerDetail.kind) },
-                { label: t("users.detail.colDelta"), value: `¥${fenToYuan(ledgerDetail.delta_fen)}` },
-                { label: t("users.detail.colBalanceAfter"), value: `¥${fenToYuan(ledgerDetail.balance_after)}` },
+                { label: t("users.detail.colDelta"), value: money(ledgerDetail.delta_fen) },
+                { label: t("users.detail.colBalanceAfter"), value: money(ledgerDetail.balance_after) },
                 { label: t("orders.cols.ref"), value: ledgerRefLink(ledgerDetail) },
                 { label: t("users.detail.colNote"), value: ledgerDetail.note || "—" },
                 {

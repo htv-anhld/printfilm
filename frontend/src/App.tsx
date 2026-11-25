@@ -1,16 +1,27 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import DialogHost from './components/ui/DialogHost'
 import BillingAlertHost from './components/billing/BillingAlertHost'
 import { DramaGenQueuePanel } from './components/drama/DramaGenQueuePanel'
 import WeChatGroupFab from './components/layout/WeChatGroupFab'
 import AuthPage from './pages/AuthPage'
+import GoogleCallbackPage from './pages/GoogleCallbackPage'
+import TeamInvitePage from './pages/TeamInvitePage'
+import PartnersPage from './pages/PartnersPage'
+import OAuthAuthorizePage from './pages/OAuthAuthorizePage'
+import TextToolPage from './pages/TextToolPage'
+import UpscalePage from './pages/UpscalePage'
+// three.js 较大，3D 工作室按需加载
+const Studio3DPage = lazy(() => import('./pages/Studio3DPage'))
+import LibraryPage from './pages/LibraryPage'
+import CreativeBoardsPage from './pages/CreativeBoardsPage'
 import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
 import MethodPage from './pages/MethodPage'
 import ToolsPage from './pages/ToolsPage'
 import ToolDetailPage from './pages/ToolDetailPage'
 import HelpPage from './pages/HelpPage'
-import { PrivacyPage, TermsPage } from './pages/LegalDocPage'
+import { AcceptableUsePage, PrivacyPage, RefundPage, TermsPage } from './pages/LegalDocPage'
 import ContactPage from './pages/ContactPage'
 import SettingsPage from './pages/SettingsPage'
 import PricingPage from './pages/PricingPage'
@@ -28,6 +39,8 @@ import EpisodesPage from './pages/drama/EpisodesPage'
 import CanvasPage from './pages/drama/canvas/CanvasPage'
 import EpisodeStoryboardPage from './pages/drama/episodeCanvas/EpisodeStoryboardPage'
 import './styles/printfilm.css'
+import './styles/appShell.css'
+import './styles/picker.css'
 import './App.css'
 
 export default function App() {
@@ -37,13 +50,31 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/method" element={<MethodPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
+        <Route path="/teams/invite" element={<TeamInvitePage />} />
+        <Route path="/partners" element={<PartnersPage />} />
+        <Route path="/oauth/authorize" element={<OAuthAuthorizePage />} />
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/tools" element={<ToolsPage />} />
+        <Route path="/tools/text/:kind" element={<TextToolPage />} />
+        <Route path="/tools/upscale" element={<UpscalePage />} />
+        <Route
+          path="/studio3d"
+          element={
+            <Suspense fallback={null}>
+              <Studio3DPage />
+            </Suspense>
+          }
+        />
+        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/creative" element={<CreativeBoardsPage />} />
         <Route path="/tools/:toolId" element={<ToolDetailPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/refund" element={<RefundPage />} />
+        <Route path="/acceptable-use" element={<AcceptableUsePage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/pricing" element={<PricingPage />} />

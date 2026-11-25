@@ -68,6 +68,8 @@ class TaskRun(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     billing_estimate_fen: Mapped[int] = mapped_column(Integer, default=0)
+    # 预扣中来自订阅月额度的部分；退回未用冻结时按此还回月额度（其余回到永久 credit）
+    billing_sub_fen: Mapped[int] = mapped_column(Integer, default=0)
     billing_charged_fen: Mapped[int] = mapped_column(Integer, default=0)
     billing_refunded_fen: Mapped[int] = mapped_column(Integer, default=0)
     billing_status: Mapped[str] = mapped_column(String(16), default="none", index=True)

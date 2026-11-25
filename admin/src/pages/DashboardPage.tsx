@@ -18,7 +18,7 @@ import { PageSection } from "@/components/admin/PageSection";
 import { PageHeader } from "@/components/ui/page";
 import { api, type AdminOrder, type AdminStats, type AdminUpstreamUsage, type PageMeta } from "@/api/client";
 import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
-import { fenToYuan } from "@/lib/utils";
+
 import { formatDateTime, tr, useI18n } from "@/i18n";
 import { projectStatusLabel, taskDomainLabel } from "@/lib/statusLabels";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ import { sumDailyUsage } from "@/pages/dashboard/dashboardMetrics";
 import { UsageDistributionChart } from "@/pages/dashboard/UsageDistributionChart";
 import { TopUsersRankingChart } from "@/pages/dashboard/TopUsersRankingChart";
 import { UsageTrendChart } from "@/pages/dashboard/UsageTrendChart";
+import { money } from "@/lib/money";
 
 type OrderRes = { items: AdminOrder[]; meta: PageMeta };
 
@@ -154,22 +155,22 @@ export function DashboardPage() {
         />
         <DashboardKpiCard
           label={t("dashboard.page.paidTotal")}
-          value={kpiReady ? `¥${fenToYuan(stats!.order_paid_total_fen)}` : kpiPlaceholder}
+          value={kpiReady ? money(stats!.order_paid_total_fen) : kpiPlaceholder}
           hint={t("dashboard.page.paidTotalHint")}
           icon={Banknote}
           tone="blue"
         />
         <DashboardKpiCard
           label={t("dashboard.page.monthCharge")}
-          value={kpiReady ? `¥${fenToYuan(stats!.usage_charge_month_fen ?? 0)}` : kpiPlaceholder}
-          hint={kpiReady ? t("dashboard.todayAmount", { amount: fenToYuan(stats!.usage_charge_today_fen ?? 0) }) : t("dashboard.page.todayCharge")}
+          value={kpiReady ? money(stats!.usage_charge_month_fen ?? 0) : kpiPlaceholder}
+          hint={kpiReady ? t("dashboard.todayAmount", { amount: money(stats!.usage_charge_today_fen ?? 0) }) : t("dashboard.page.todayCharge")}
           icon={Zap}
           tone="purple"
         />
         <DashboardKpiCard
           label={t("dashboard.page.monthCost")}
-          value={kpiReady ? `¥${fenToYuan(stats!.usage_cost_month_fen ?? 0)}` : kpiPlaceholder}
-          hint={kpiReady ? t("dashboard.todayAmount", { amount: fenToYuan(stats!.usage_cost_today_fen ?? 0) }) : t("dashboard.page.costSummary")}
+          value={kpiReady ? money(stats!.usage_cost_month_fen ?? 0) : kpiPlaceholder}
+          hint={kpiReady ? t("dashboard.todayAmount", { amount: money(stats!.usage_cost_today_fen ?? 0) }) : t("dashboard.page.costSummary")}
           icon={Wallet}
           tone="sand"
         />
@@ -360,13 +361,13 @@ export function DashboardPage() {
                     [...(upstreamUsage?.series ?? [])].reverse().slice(0, 14).map((row) => (
                       <tr key={row.date}>
                         <td className="font-mono text-xs">{row.date}</td>
-                        <td>¥{fenToYuan(row.local_cost_fen)}</td>
+                        <td>{money(row.local_cost_fen)}</td>
                         <td>{row.local_tokens.toLocaleString()}</td>
                         <td>{row.official_tokens > 0 ? row.official_tokens.toLocaleString() : "—"}</td>
-                        <td>{row.official_cost_fen > 0 ? `¥${fenToYuan(row.official_cost_fen)}` : "—"}</td>
+                        <td>{row.official_cost_fen > 0 ? money(row.official_cost_fen) : "—"}</td>
                         <td>
                           {row.official_cost_fen > 0
-                            ? `¥${fenToYuan(row.delta_fen)}${row.delta_pct != null ? ` (${row.delta_pct}%)` : ""}`
+                            ? `${money(row.delta_fen)}${row.delta_pct != null ? ` (${row.delta_pct}%)` : ""}`
                             : "—"}
                         </td>
                       </tr>
@@ -410,7 +411,7 @@ export function DashboardPage() {
                         <td>
                           <AdminEntityLink kind="user" id={o.user_id} label={o.user_email ?? undefined} />
                         </td>
-                        <td className="font-semibold text-[var(--admin-forest)]">¥{fenToYuan(o.amount_fen)}</td>
+                        <td className="font-semibold text-[var(--admin-forest)]">{money(o.amount_fen)}</td>
                         <td className="text-xs text-[var(--admin-muted)]">
                           {formatDateTime(o.paid_at)}
                         </td>

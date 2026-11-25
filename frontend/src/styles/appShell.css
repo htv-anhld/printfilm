@@ -1,0 +1,537 @@
+/*
+ * 应用外壳：左侧导航 + 主内容（参照 Dravelio 的 ax-app 布局）
+ * 桌面：固定侧栏，可折叠成图标栏（html.pf-side-collapsed）
+ * ≤960px：顶栏 + 抽屉
+ */
+
+.pf-shell-app {
+  flex-direction: row;
+}
+
+.pf-shell-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin-left: var(--pf-side-w);
+  transition: margin-left 0.2s ease;
+}
+
+html.pf-side-collapsed .pf-shell-body {
+  margin-left: var(--pf-side-w-collapsed);
+}
+
+/* 侧栏 */
+.pf-side {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 60;
+  width: var(--pf-side-w);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.9rem 0.75rem 0.75rem;
+  background: color-mix(in srgb, var(--pf-card) 82%, transparent);
+  border-right: 1px solid var(--pf-line);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  transition: width 0.2s ease, transform 0.22s ease;
+  /* 不裁剪：「更多」弹层需要伸出侧栏；长列表滚动交给 .pf-side-nav */
+  overflow: visible;
+}
+
+html.dark .pf-side {
+  background: linear-gradient(170deg, rgba(20, 22, 20, 0.86) 0%, rgba(17, 23, 18, 0.72) 100%);
+}
+
+.pf-side.is-collapsed {
+  width: var(--pf-side-w-collapsed);
+}
+
+.pf-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.25rem 0.35rem;
+  min-height: 40px;
+}
+
+.pf-side-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: var(--pf-ink);
+  white-space: nowrap;
+}
+
+.pf-side-brand img {
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.pf-side-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 1px solid var(--pf-line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--pf-muted);
+}
+
+.pf-side-toggle:hover {
+  color: var(--pf-ink);
+  background: var(--pf-surface-2);
+}
+
+.pf-side.is-collapsed .pf-side-head {
+  flex-direction: column;
+  padding: 0;
+}
+
+.pf-side.is-collapsed .pf-side-create {
+  padding: 0;
+}
+
+.pf-side.is-collapsed .pf-side-text,
+.pf-side.is-collapsed .pf-side-tag,
+.pf-side.is-collapsed .pf-side-section,
+.pf-side.is-collapsed .pf-side-guest {
+  display: none;
+}
+
+/* 新建按钮（主色） */
+.pf-side-create {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 40px;
+  margin: 0.15rem 0 0.35rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--pf-lime);
+  color: var(--pf-lime-ink);
+  font-weight: 650;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--pf-lime) 70%, transparent);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.pf-side-create:hover {
+  background: var(--pf-lime-hover);
+  transform: translateY(-1px);
+}
+
+/* 链接列表 */
+.pf-side-nav {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+
+.pf-side-section {
+  margin: 0.85rem 0.6rem 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
+  opacity: 0.85;
+}
+
+.pf-side-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 0.65rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--pf-muted);
+  font-size: 0.9rem;
+  font-weight: 550;
+  text-align: left;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.pf-side-link svg {
+  flex-shrink: 0;
+}
+
+.pf-side-link:hover {
+  color: var(--pf-ink);
+  background: var(--pf-surface-2);
+}
+
+.pf-side-link.is-active {
+  color: var(--pf-ink);
+  background: var(--pf-lime-soft);
+  font-weight: 650;
+}
+
+.pf-side-link.is-active svg {
+  color: var(--pf-accent-strong);
+}
+
+.pf-side-link.is-active::before {
+  content: '';
+  position: absolute;
+  left: -0.25rem;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--pf-lime);
+  color: var(--pf-lime-ink);
+}
+
+.pf-side.is-collapsed .pf-side-link {
+  justify-content: center;
+  padding: 0;
+}
+
+.pf-side-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-side-tag {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pf-side-tag.is-new {
+  background: var(--pf-lime);
+  color: var(--pf-lime-ink);
+}
+
+.pf-side-tag.is-beta {
+  background: var(--pf-surface-2);
+  color: var(--pf-muted);
+  border: 1px solid var(--pf-line);
+}
+
+/* 底部：访客卡 + 更多 */
+.pf-side-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--pf-line);
+}
+
+.pf-side-guest {
+  padding: 0.85rem;
+  border: 1px solid var(--pf-line);
+  border-radius: 14px;
+  background: var(--pf-surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.pf-side-guest strong {
+  font-size: 0.88rem;
+}
+
+.pf-side-guest p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--pf-muted);
+}
+
+.pf-side-guest .pf-btn {
+  justify-content: center;
+}
+
+.pf-side-guest-signup {
+  font-size: 0.76rem;
+  color: var(--pf-accent-strong);
+  text-align: center;
+}
+
+.pf-side-more-wrap {
+  position: relative;
+}
+
+.pf-side-more .pf-user-avatar {
+  flex-shrink: 0;
+}
+
+.pf-side-badge {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--pf-lime-soft);
+  color: var(--pf-accent-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pf-side-more-pop {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: 260px;
+  padding: 0.4rem;
+  border: 1px solid var(--pf-line);
+  border-radius: 14px;
+  background: var(--pf-card);
+  box-shadow: var(--pf-shadow);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pf-side-more-user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.6rem 0.65rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--pf-line);
+}
+
+.pf-side-more-user span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pf-side-more-user strong,
+.pf-side-more-user small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-side-more-user small {
+  color: var(--pf-muted);
+  font-size: 0.75rem;
+}
+
+.pf-side-more-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 0.6rem;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--pf-ink);
+  font-size: 0.86rem;
+  text-align: left;
+}
+
+.pf-side-more-row:hover:not(.is-static) {
+  background: var(--pf-surface-2);
+}
+
+.pf-side-more-row.is-static {
+  justify-content: space-between;
+  color: var(--pf-muted);
+}
+
+.pf-side-more-row.is-danger {
+  color: var(--crimson);
+}
+
+/* 侧栏里的语言切换与弹层底色一致 */
+.pf-side-more-pop .pf-nav-lang button.is-active {
+  background: var(--pf-ink);
+  color: var(--pf-bg);
+}
+
+/* 移动端顶栏（桌面隐藏） */
+.pf-topbar {
+  display: none;
+}
+
+.pf-side-scrim {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .pf-shell-app {
+    flex-direction: column;
+  }
+
+  .pf-shell-body,
+  html.pf-side-collapsed .pf-shell-body {
+    margin-left: 0;
+  }
+
+  .pf-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    height: var(--pf-nav-h);
+    padding: 0 0.85rem;
+    background: color-mix(in srgb, var(--pf-card) 88%, transparent);
+    border-bottom: 1px solid var(--pf-line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .pf-topbar .pf-side-brand {
+    margin-right: auto;
+  }
+
+  .pf-topbar-burger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--pf-line);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--pf-ink);
+  }
+
+  .pf-topbar .pf-btn {
+    gap: 0.3rem;
+  }
+
+  /* 抽屉：始终展开态宽度 */
+  .pf-side,
+  .pf-side.is-collapsed {
+    width: min(84vw, 300px);
+    transform: translateX(-105%);
+    background: var(--pf-card);
+  }
+
+  .pf-side.is-open {
+    transform: translateX(0);
+    box-shadow: var(--pf-shadow);
+  }
+
+  .pf-side.is-collapsed .pf-side-text,
+  .pf-side.is-collapsed .pf-side-tag {
+    display: inline;
+  }
+
+  .pf-side.is-collapsed .pf-side-section {
+    display: block;
+  }
+
+  .pf-side.is-collapsed .pf-side-guest {
+    display: flex;
+  }
+
+  .pf-side.is-collapsed .pf-side-head {
+    flex-direction: row;
+  }
+
+  .pf-side.is-collapsed .pf-side-link {
+    justify-content: flex-start;
+    padding: 0 0.65rem;
+  }
+
+  .pf-side-toggle {
+    display: none;
+  }
+
+  .pf-side-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: var(--pf-overlay);
+  }
+}
+
+/* React Flow 自带控件/小地图默认白底：跟随主题（画布、分镜故事板共用） */
+.react-flow .react-flow__controls {
+  box-shadow: var(--pf-shadow);
+}
+
+.react-flow .react-flow__controls-button {
+  background: var(--pf-card);
+  border-bottom-color: var(--pf-line);
+  color: var(--pf-ink);
+  fill: currentColor;
+}
+
+.react-flow .react-flow__controls-button:hover {
+  background: var(--pf-surface-2);
+}
+
+.react-flow .react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.react-flow .react-flow__minimap {
+  background: var(--pf-card);
+  border: 1px solid var(--pf-line);
+  border-radius: 10px;
+}
+
+.react-flow .react-flow__minimap-mask {
+  fill: color-mix(in srgb, var(--pf-bg) 70%, transparent);
+}
+
+.react-flow .react-flow__attribution {
+  background: transparent;
+  color: var(--pf-muted);
+}
+
+/* 通用旋转加载图标 */
+.pf-spin {
+  animation: pf-spin 0.9s linear infinite;
+}
+
+@keyframes pf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 大纲工具栏：整部成片按钮组 */
+.drama-film-compose {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drama-film-compose .drama-outline-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}

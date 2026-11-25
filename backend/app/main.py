@@ -11,6 +11,14 @@ from app.api import auth, billing, projects, tasks, templates, tools
 from app.api import api_keys as user_api_keys
 from app.api.v1 import router as v1_router
 from app.api.admin import router as admin_router
+from app.api import error_reports as error_reports_api
+from app.api import teams as teams_api
+from app.api import partners as partners_api
+from app.api import oauth as oauth_api
+from app.api import creative_tools as creative_tools_api
+from app.api import library as library_api
+from app.api import studio3d as studio3d_api
+from app.api import creative as creative_api
 from app.api.drama import router as drama_router
 from app.config import get_settings
 from app.database import AsyncSessionLocal, engine, init_db
@@ -99,6 +107,15 @@ app.include_router(tools.router, prefix="/api")
 app.include_router(user_api_keys.router, prefix="/api")
 app.include_router(v1_router, prefix="/api")
 app.include_router(drama_router, prefix="/api")
+app.include_router(error_reports_api.router, prefix="/api")
+app.include_router(teams_api.router, prefix="/api")
+app.include_router(partners_api.router, prefix="/api")
+app.include_router(oauth_api.router, prefix="/api")
+app.include_router(creative_tools_api.router, prefix="/api")
+app.include_router(library_api.router, prefix="/api")
+app.include_router(studio3d_api.router, prefix="/api")
+app.include_router(creative_api.router, prefix="/api")
+app.include_router(oauth_api.well_known)
 app.include_router(admin_router, prefix="/api")
 
 
@@ -218,8 +235,57 @@ async def _apply_schema_patches() -> None:
         if "capability" not in uecols:
             await conn.execute(text("ALTER TABLE usage_events ADD COLUMN capability VARCHAR(16)"))
 
+        # 邮箱验证 / Google 登录：存量用户视为已验证、赠金已发
+        if "email_verified_at" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMPTZ"))
+            await conn.execute(text("UPDATE users SET email_verified_at = COALESCE(created_at, now())"))
+        if "signup_grant_given" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN signup_grant_given BOOLEAN DEFAULT FALSE"))
+            await conn.execute(text("UPDATE users SET signup_grant_given = TRUE"))
+        if "google_sub" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN google_sub VARCHAR(64)"))
+            await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users (google_sub)"))
+
+        if "referred_by_partner_id" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN referred_by_partner_id INTEGER"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_referred_by_partner_id ON users (referred_by_partner_id)"))
+
+        # 订阅月额度
+        if "sub_credit_fen" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN sub_credit_fen INTEGER DEFAULT 0"))
+
+        # 订阅：团队席位
+        scols = await _pg_columns(conn, "subscriptions")
+        if scols and "seats" not in scols:
+            await conn.execute(text("ALTER TABLE subscriptions ADD COLUMN seats INTEGER DEFAULT 1"))
+        if scols and "team_id" not in scols:
+            await conn.execute(text("ALTER TABLE subscriptions ADD COLUMN team_id INTEGER"))
+
+        # API Key：OAuth 访问令牌
+        kcols = await _pg_columns(conn, "user_api_keys")
+        if kcols and "oauth_app_id" not in kcols:
+            await conn.execute(text("ALTER TABLE user_api_keys ADD COLUMN oauth_app_id INTEGER"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_api_keys_oauth_app_id ON user_api_keys (oauth_app_id)"))
+        if kcols and "expires_at" not in kcols:
+            await conn.execute(text("ALTER TABLE user_api_keys ADD COLUMN expires_at TIMESTAMPTZ"))
+
+        # 订单：币种 / 支付渠道 / 渠道单号 / 首充赠送
+        ocols = await _pg_columns(conn, "orders")
+        if ocols and "currency" not in ocols:
+            # 存量订单都是易支付人民币
+            await conn.execute(text("ALTER TABLE orders ADD COLUMN currency VARCHAR(8) DEFAULT 'CNY'"))
+        if ocols and "provider" not in ocols:
+            await conn.execute(text("ALTER TABLE orders ADD COLUMN provider VARCHAR(16) DEFAULT 'epay'"))
+        if ocols and "provider_ref" not in ocols:
+            await conn.execute(text("ALTER TABLE orders ADD COLUMN provider_ref VARCHAR(128)"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_orders_provider_ref ON orders (provider_ref)"))
+        if ocols and "bonus_fen" not in ocols:
+            await conn.execute(text("ALTER TABLE orders ADD COLUMN bonus_fen INTEGER DEFAULT 0"))
+
         # Task platform additive columns
         trcols = await _pg_columns(conn, "task_runs")
+        if "billing_sub_fen" not in trcols:
+            await conn.execute(text("ALTER TABLE task_runs ADD COLUMN billing_sub_fen INTEGER DEFAULT 0"))
         if "locale" not in trcols:
             # 旧任务都是中文界面发起的，保持 zh
             await conn.execute(text("ALTER TABLE task_runs ADD COLUMN locale VARCHAR(8) DEFAULT 'zh'"))
@@ -342,6 +408,17 @@ async def health() -> dict:
 
     runtime = runtime_summary()
     runtime_ok = bool(runtime.get("healthy"))
+    from app.services.logical_model_router import resolve_logical_model
+    from app.services.upstream_channels import channel_health_snapshot
+
+    # 每种能力当前实际会命中的渠道（含熔断降级后的结果），不回传 Key
+    active: dict[str, str | None] = {}
+    for capability in ("text", "image", "video", "audio"):
+        try:
+            route = resolve_logical_model(capability, "")
+        except Exception:  # noqa: BLE001
+            route = None
+        active[capability] = route.channel_id if route else None
     return {
         "ok": runtime_ok,
         "ark_mock": s.ark_mock,
@@ -356,6 +433,11 @@ async def health() -> dict:
         "quality": {
             "image_size": s.ark_image_size,
             "video_resolution": s.ark_video_resolution,
+        },
+        "upstream": {
+            "locked": s.upstream_lock_tokenfree,
+            "active_channels": active,
+            "breaker": channel_health_snapshot(),
         },
         "app": s.app_name,
     }

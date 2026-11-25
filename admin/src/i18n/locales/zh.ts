@@ -10,6 +10,7 @@ import { zhTemplates } from "./zh/templates";
 import { zhDrama } from "./zh/drama";
 import { zhDashboard } from "./zh/dashboard";
 import { zhSettings } from "./zh/settings";
+import { zhCommerce } from "./zh/commerce";
 
 export const zh = {
   ...zhCommon,
@@ -24,4 +25,5 @@ export const zh = {
   drama: zhDrama,
   dashboard: zhDashboard,
   settings: zhSettings,
+  commerce: zhCommerce,
 };
