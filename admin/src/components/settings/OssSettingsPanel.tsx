@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { api } from "@/api/client";
 import {
   LabeledControl,
   SettingsLoading,
@@ -7,14 +9,20 @@ import {
   SettingsTabShell,
 } from "@/components/settings/SettingsPanel";
 import { SecretField } from "@/components/settings/SecretField";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
 import { useI18n } from "@/i18n";
 
-// 阿里云 OSS 存储配置
+type StorageCheck = { ok: boolean; upload_ok: boolean; public_ok: boolean; url: string; error: string };
+
+// 对象存储配置：阿里云 OSS 或 S3 兼容（Cloudflare R2 / AWS S3 / MinIO）
 export function OssSettingsPanel() {
   const { t } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();
+  // testing 连接测试中
+  const [testing, setTesting] = useState(false);
+  const isS3 = (form?.oss_provider || "aliyun") === "s3";
   const [ossKeyIdInput, setOssKeyIdInput] = useState("");
   const [ossKeySecretInput, setOssKeySecretInput] = useState("");
   const [clearOssId, setClearOssId] = useState(false);
@@ -34,6 +42,7 @@ export function OssSettingsPanel() {
     await save(
       {
         oss_enabled: form.oss_enabled,
+        oss_provider: form.oss_provider || "aliyun",
         oss_endpoint: form.oss_endpoint,
         oss_region: form.oss_region,
         oss_bucket: form.oss_bucket,
@@ -54,6 +63,26 @@ export function OssSettingsPanel() {
     setClearOssSecret(false);
   }
 
+  // 先保存再测试：后端用已保存的配置上传小文件并从公网 URL 读回
+  async function handleTest() {
+    if (!form?.oss_enabled) {
+      toast.error(t("settings.oss.testDisabled"));
+      return;
+    }
+    setTesting(true);
+    try {
+      await handleSave();
+      const res = await api<StorageCheck>("/api/admin/settings/storage/test", { method: "POST" });
+      if (res.ok) toast.success(t("settings.oss.testOk"));
+      else if (!res.upload_ok) toast.error(t("settings.oss.testUploadFail", { error: res.error || "-" }), { duration: 10000 });
+      else toast.error(t("settings.oss.testPublicFail", { error: res.error || "-" }), { duration: 12000 });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setTesting(false);
+    }
+  }
+
   if (loading || !form) {
     return <SettingsLoading />;
   }
@@ -65,7 +94,7 @@ export function OssSettingsPanel() {
         items={[
           {
             id: "oss",
-            label: t("settings.oss.aliyunOss"),
+            label: isS3 ? t("settings.oss.providerS3") : t("settings.oss.aliyunOss"),
             ready: ossReady,
             readyText: t("settings.oss.ready"),
             pendingText: form.oss_enabled ? t("settings.oss.incompleteCreds") : t("settings.oss.disabled"),
@@ -98,11 +127,32 @@ export function OssSettingsPanel() {
             </div>
             <Switch checked={form.oss_enabled} onCheckedChange={(v) => patchField("oss_enabled", v)} />
           </div>
+          <div className="settings-toggle-row mt-3">
+            <div>
+              <strong>{t("settings.oss.provider")}</strong>
+              <span>{isS3 ? t("settings.oss.providerS3Desc") : t("settings.oss.panelDesc")}</span>
+            </div>
+            <div className="settings-segmented" role="radiogroup" aria-label={t("settings.oss.provider")}>
+              {(["aliyun", "s3"] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  role="radio"
+                  aria-checked={(form.oss_provider || "aliyun") === p}
+                  className={`settings-segmented-btn${(form.oss_provider || "aliyun") === p ? " is-active" : ""}`}
+                  onClick={() => patchField("oss_provider", p)}
+                >
+                  {p === "s3" ? t("settings.oss.providerS3") : t("settings.oss.providerAliyun")}
+                </button>
+              ))}
+            </div>
+          </div>
+          {isS3 ? <p className="settings-hint-box mt-3">{t("settings.oss.r2Guide")}</p> : null}
           <div className="settings-field-grid mt-3">
             <LabeledControl label="Endpoint">
               <input
                 className="settings-input"
-                placeholder="oss-cn-beijing.aliyuncs.com"
+                placeholder={isS3 ? "https://<account_id>.r2.cloudflarestorage.com" : "oss-cn-beijing.aliyuncs.com"}
                 value={form.oss_endpoint}
                 onChange={(e) => patchField("oss_endpoint", e.target.value)}
               />
@@ -110,7 +160,7 @@ export function OssSettingsPanel() {
             <LabeledControl label="Region">
               <input
                 className="settings-input"
-                placeholder="cn-hangzhou"
+                placeholder={isS3 ? "auto" : "cn-hangzhou"}
                 value={form.oss_region}
                 onChange={(e) => patchField("oss_region", e.target.value)}
               />
@@ -132,12 +182,12 @@ export function OssSettingsPanel() {
             </LabeledControl>
             <LabeledControl
               label={t("settings.oss.publicBase")}
-              hint={t("settings.oss.publicBaseHint")}
+              hint={isS3 ? t("settings.oss.publicBaseHintS3") : t("settings.oss.publicBaseHint")}
               className="settings-field-span-full"
             >
               <input
                 className="settings-input"
-                placeholder="https://cdn.example.com"
+                placeholder={isS3 ? "https://pub-xxxxxxxx.r2.dev" : "https://cdn.example.com"}
                 value={form.oss_public_base}
                 onChange={(e) => patchField("oss_public_base", e.target.value)}
               />
@@ -176,6 +226,11 @@ export function OssSettingsPanel() {
               <span>{t("settings.oss.asyncUploadDesc")}</span>
             </div>
             <Switch checked={form.oss_upload_async} onCheckedChange={(v) => patchField("oss_upload_async", v)} />
+          </div>
+          <div className="mt-3">
+            <Button type="button" variant="outline" disabled={testing || saving} onClick={() => void handleTest()}>
+              {testing ? t("settings.oss.testing") : t("settings.oss.test")}
+            </Button>
           </div>
         </SettingsPanel>
       </div>

@@ -145,3 +145,15 @@ async def admin_tokenfree_account_quota(
     except RuntimeError as exc:
         logger.warning("tokenfree quota query failed: %s", exc)
         raise HTTPException(status_code=502, detail=_("TokenFree 额度查询失败")) from exc
+
+
+@router.post("/settings/storage/test")
+async def test_storage(
+    _admin: User = Depends(get_current_admin),
+) -> dict:
+    """测试对象存储（阿里云 OSS / S3 兼容）：上传小文件并从公网 URL 读回，确认 Seedance 能拉到参考图。"""
+    from starlette.concurrency import run_in_threadpool
+
+    from app.services.oss import check_storage
+
+    return await run_in_threadpool(check_storage)

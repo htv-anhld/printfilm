@@ -19,3 +19,4 @@ edge-tts==7.2.3
 oss2==2.19.1
 # Optional: pip install "volcengine-python-sdk[ark]" if you prefer official SDK
 pypdf==5.1.0
+boto3==1.35.36

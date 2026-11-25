@@ -212,6 +212,8 @@ class Settings(BaseSettings):
 
     # Aliyun OSS — 成片/分镜上传；FFmpeg 仍读本地文件
     oss_enabled: bool = False
+    # 存储提供方：aliyun（阿里云 OSS）| s3（Cloudflare R2 / AWS S3 / B2 / MinIO 等 S3 兼容）
+    oss_provider: str = "aliyun"
     oss_endpoint: str = "oss-cn-beijing.aliyuncs.com"
     oss_region: str = "cn-hangzhou"
     oss_bucket: str = ""

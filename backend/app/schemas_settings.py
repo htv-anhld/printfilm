@@ -67,6 +67,7 @@ class AdminModelSettingsOut(BaseModel):
 
     # Aliyun OSS
     oss_enabled: bool = False
+    oss_provider: str = "aliyun"
     oss_endpoint: str = ""
     oss_region: str = ""
     oss_bucket: str = ""
@@ -215,6 +216,7 @@ class AdminModelSettingsPatch(BaseModel):
     ark_mock: bool | None = None
 
     oss_enabled: bool | None = None
+    oss_provider: str | None = None
     oss_endpoint: str | None = None
     oss_region: str | None = None
     oss_bucket: str | None = None
@@ -358,6 +360,7 @@ def model_config_field_names() -> tuple[str, ...]:
         "drama_fragment_max_attempts",
         "ark_mock",
         "oss_enabled",
+        "oss_provider",
         "oss_endpoint",
         "oss_region",
         "oss_bucket",
