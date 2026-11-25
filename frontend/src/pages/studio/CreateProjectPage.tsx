@@ -35,15 +35,46 @@ function isDefaultTitle(value: string) {
   return !v || CONTENT_LOCALES.some((l) => messages[l].studio.create.untitled === v)
 }
 
+// 脚本行首的结构标签（[Visual]: / VO: / HOOK (0:00-0:03) / Cảnh 1 / 第1场 / 时间码），去掉后取正文
+const LEADING_LABEL_RE =
+  /^(?:\[[^\]]*\]\s*[:：]?|\(?\d{1,2}:\d{2}(?:\s*[-–]\s*\d{1,2}:\d{2})?\)?|(?:hook|cta|outro|intro|scene|cảnh|đoạn|shot|vo|v\.o\.|visual|audio|text|caption|bgm|music|nhạc nền|lời dẫn|画面|旁白|字幕|镜头)(?:\s*\d+)?(?:\s*\([^)]*\))?\s*[:：]?|第\s*\d+\s*[场幕镜集]\s*[:：]?)\s*/i
+
+/** 去掉一行开头的所有结构标签 */
+function stripLeadingLabels(line: string): string {
+  let out = line
+  for (let i = 0; i < 4; i++) {
+    const next = out.replace(LEADING_LABEL_RE, '')
+    if (next === out) break
+    out = next
+  }
+  return out.trim()
+}
+
+/**
+ * 从主题 / 脚本推一个项目名：去掉 Markdown 与引号和行首结构标签，
+ * 取第一句有意义的话，按词边界截到约 40 字（中文约 18 字）。
+ */
 function deriveTitle(text: string, untitled: string) {
-  const line = text
-    .trim()
-    .split(/\n/)[0]
-    .replace(/["""'']/g, '')
-    .replace(/[。！？!?：:].*$/, '')
-    .trim()
-  if (!line) return untitled
-  return line.slice(0, 18)
+  const lines = (text || '')
+    .split(/\n/)
+    .map((l) =>
+      stripLeadingLabels(
+        l
+          .replace(/[*_`#>]+/g, '')
+          .replace(/^\s*[-•·]\s*/, '')
+          .replace(/[“”"'‘’「」]/g, '')
+          .trim(),
+      ),
+    )
+    .filter((l) => /[\p{L}]{2,}/u.test(l))
+  const sentence = (lines[0] || '').split(/[。！？!?]|[.:：](?=\s|$)/)[0].trim()
+  if (!sentence) return untitled
+  const cjk = /[\u4e00-\u9fff]/.test(sentence)
+  const max = cjk ? 18 : 40
+  if (sentence.length <= max) return sentence
+  const cut = sentence.slice(0, max)
+  const space = cut.lastIndexOf(' ')
+  return (space > max * 0.5 ? cut.slice(0, space) : cut).trim() + '…'
 }
 
 export default function CreateProjectPage() {

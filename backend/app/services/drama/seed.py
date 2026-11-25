@@ -91,11 +91,43 @@ def _character_name_for_seed(name: str) -> str | None:
     return norm
 
 
+# 角色名前的称谓/职衔（越/英）：同一人常以「Tiến sĩ Dương Vĩnh Thụy」「Dương Vĩnh Thụy」两种写法出现。
+# 不含 anh/chị/em 等也可能是真名的词（如「Anh Tuấn」）。
+_CHARACTER_TITLE_PREFIXES = (
+    "quý ngài", "phu nhân", "tiến sĩ", "giáo sư", "bác sĩ", "kỹ sư", "kĩ sư", "đội trưởng", "thuyền trưởng",
+    "trưởng phòng", "giám đốc", "thám tử", "trung úy", "đại úy", "thiếu tá", "đại tá", "tướng quân", "ngài",
+    "sếp", "lão", "ông", "bà", "cụ", "cô", "chú", "bác", "dì", "thầy",
+    "doctor", "dr.", "dr", "mr.", "mr", "mrs.", "mrs", "ms.", "ms", "miss", "captain", "capt.", "professor",
+    "prof.", "detective", "officer", "sir", "lady", "lord",
+)
+_PAREN_RE = re.compile(r"\s*[（(][^）)]*[）)]\s*")
+
+
+def character_identity_key(name: str) -> str:
+    """
+    角色身份键：去括号注记（「Minh（hình chiếu）」）、去句首称谓职衔、统一大小写与空白。
+    仅用于判重，不改显示名；去完为空时退回原名。
+    """
+    base = _PAREN_RE.sub(" ", _normalize_asset_name(name)).strip()
+    low = re.sub(r"\s+", " ", base.lower()).strip()
+    changed = True
+    while changed:
+        changed = False
+        for title in _CHARACTER_TITLE_PREFIXES:
+            if low.startswith(title + " ") and len(low) > len(title) + 1:
+                low = low[len(title) + 1 :].strip()
+                changed = True
+                break
+    return low or _normalize_asset_name(name).lower()
+
+
 def _asset_dedupe_key(asset_type: str, name: str) -> tuple[str, str]:
-    """(类型, 规范化名称) 作为去重键；none 与 material 视为同类。"""
+    """(类型, 规范化名称) 作为去重键；none 与 material 视为同类；角色按身份键合并称谓/括号变体。"""
     kind = (asset_type or "").lower()
     if kind == "none":
         kind = "material"
+    if kind == "character":
+        return (kind, character_identity_key(name))
     return (kind, _normalize_asset_name(name))
 
 
@@ -110,6 +142,26 @@ def _duplicate_asset_keep_score(asset: DramaAsset) -> tuple[int, int, int]:
     if isinstance(canvas.get("voiceAudio"), dict) and canvas["voiceAudio"]:
         has_voice = 1
     return (has_media, has_voice, -int(asset.id or 0))
+
+
+async def _rewrite_asset_mentions(db: AsyncSession, project_id: int, old_id: int, new_id: int) -> None:
+    """把本项目分镜正文里的 @asset:old_id 改成 @asset:new_id（合并重复资产后避免悬空引用）。"""
+    pattern = re.compile(rf"@asset:{int(old_id)}(?!\d)")
+    frags = (
+        (
+            await db.execute(
+                select(DramaEpisodeFragment)
+                .join(DramaEpisode, DramaEpisode.id == DramaEpisodeFragment.episode_id)
+                .where(DramaEpisode.project_id == int(project_id))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for frag in frags:
+        content = frag.content or ""
+        if pattern.search(content):
+            frag.content = pattern.sub(f"@asset:{int(new_id)}", content)
 
 
 async def merge_duplicate_library_assets(db: AsyncSession, project_id: int) -> int:
@@ -186,6 +238,7 @@ async def merge_duplicate_library_assets(db: AsyncSession, project_id: int) -> i
                     await db.delete(link)
                 else:
                     link.asset_id = keep_id
+            await _rewrite_asset_mentions(db, int(project_id), dup_id, keep_id)
             await db.delete(dup)
             removed += 1
             logger.info(
@@ -1445,8 +1498,10 @@ def _extract_cast_names_from_bodies(bodies: list[str]) -> list[str]:
                 continue
             for name in parse_cast_names(match.group(1)):
                 seed_name = _character_name_for_seed(name)
-                if seed_name and seed_name not in seen:
-                    seen.add(seed_name)
+                # 按身份键判重：「Đội trưởng Vũ-9」与「Vũ-9」只保留先出现的写法
+                key = character_identity_key(seed_name) if seed_name else ""
+                if seed_name and key not in seen:
+                    seen.add(key)
                     names.append(seed_name)
     return names
 
