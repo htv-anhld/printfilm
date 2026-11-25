@@ -1,3 +1,4 @@
+import { USER_UPDATED_EVENT } from '../lib/userEvents'
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -67,6 +68,7 @@ export default function AuthPage() {
       .verifyEmailToken(resetToken)
       .then((res) => {
         localStorage.setItem('token', res.access_token)
+        window.dispatchEvent(new Event(USER_UPDATED_EVENT))
         nav(nextPath)
       })
       .catch((err) => setError(err instanceof Error ? err.message : t('common.fail')))
@@ -216,6 +218,7 @@ export default function AuthPage() {
         setNotice(t('auth.verify.sent', { email: trimmedEmail }))
         return
       }
+      window.dispatchEvent(new Event(USER_UPDATED_EVENT))
       nav(nextPath)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.fail'))

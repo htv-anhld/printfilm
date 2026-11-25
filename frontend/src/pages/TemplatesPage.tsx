@@ -8,6 +8,7 @@ import PillTabs from '../components/ui/PillTabs'
 import { CATEGORY_ORDER, HOME_CATEGORY_LABELS } from '../lib/categories'
 import { useI18n } from '../i18n'
 import { templateCategoryLabel } from './studio/categoryLabel'
+import { shortVideoCreatePath } from '../lib/shortVideoRoutes'
 
 export default function TemplatesPage() {
   const nav = useNavigate()
@@ -52,12 +53,9 @@ export default function TemplatesPage() {
     return list
   }, [templates, category, q])
 
-  function openTemplate(t: Template) {
-    if (!localStorage.getItem('token')) {
-      nav('/auth')
-      return
-    }
-    nav(`/studio/new?template=${t.id}`)
+  function openTemplate(tpl: Template) {
+    const path = shortVideoCreatePath(tpl.id)
+    nav(localStorage.getItem('token') ? path : `/auth?next=${encodeURIComponent(path)}`)
   }
 
   return (

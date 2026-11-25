@@ -32,6 +32,7 @@ async def _local_usage_daily(
                 func.coalesce(func.sum(UsageEvent.charge_fen), 0).label("charge_fen"),
                 func.coalesce(func.sum(UsageEvent.cost_fen), 0).label("cost_fen"),
                 func.coalesce(func.sum(UsageEvent.total_tokens), 0).label("tokens"),
+                func.count(UsageEvent.id).label("calls"),
             )
             .where(day_expr >= since, day_expr <= until)
             .group_by(day_expr)
@@ -45,6 +46,7 @@ async def _local_usage_daily(
             "charge_fen": int(row.charge_fen or 0),
             "cost_fen": int(row.cost_fen or 0),
             "tokens": int(row.tokens or 0),
+            "calls": int(row.calls or 0),
         }
     return out
 
@@ -80,6 +82,7 @@ async def build_finance_daily_list(
         "charge_fen": 0,
         "cost_fen": 0,
         "tokens": 0,
+        "calls": 0,
         "actual_cost_fen": 0,
         "profit_fen": 0,
     }
@@ -88,12 +91,13 @@ async def build_finance_daily_list(
     cur = start
     while cur <= today:
         key = cur.isoformat()
-        local_hit = local_map.get(key) or {"charge_fen": 0, "cost_fen": 0, "tokens": 0}
+        local_hit = local_map.get(key) or {"charge_fen": 0, "cost_fen": 0, "tokens": 0, "calls": 0}
         snap = upstream_map.get(key)
         actual_cost_fen = int(snap.official_cost_fen if snap else 0)
         charge_fen = int(local_hit["charge_fen"])
         cost_fen = int(local_hit["cost_fen"])
         tokens = int(local_hit["tokens"])
+        calls = int(local_hit["calls"])
         profit_fen = _profit_fen(
             charge_fen=charge_fen,
             cost_fen=cost_fen,
@@ -109,6 +113,7 @@ async def build_finance_daily_list(
                 "charge_fen": charge_fen,
                 "cost_fen": cost_fen,
                 "tokens": tokens,
+                "calls": calls,
                 "actual_cost_fen": actual_cost_fen,
                 "profit_fen": profit_fen,
                 "profit_pct": profit_pct,
@@ -117,6 +122,7 @@ async def build_finance_daily_list(
         totals["charge_fen"] += charge_fen
         totals["cost_fen"] += cost_fen
         totals["tokens"] += tokens
+        totals["calls"] += calls
         totals["actual_cost_fen"] += actual_cost_fen
         totals["profit_fen"] += profit_fen
         if snap and snap.fetched_at:

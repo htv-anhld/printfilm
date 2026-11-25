@@ -45,9 +45,10 @@ function matchAssetTab(asset: DramaAsset, tab: GlobalAssetTabKey): boolean {
   return t === tab
 }
 
-// asset visible in picker (voice always; image needs cover/url)
+// asset visible in picker (voice/audio with url; image needs cover/url)
 function hasMedia(asset: DramaAsset): boolean {
-  if ((asset.type || '').toLowerCase() === 'voice') return true
+  const t = (asset.type || '').toLowerCase()
+  if (t === 'voice' || t === 'audio') return Boolean(asset.url || asset.cover)
   return Boolean(asset.url || asset.cover)
 }
 
@@ -83,6 +84,8 @@ export function GlobalAssetPickerModal({
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [page, setPage] = useState(1)
+  const allowedTypesKey = allowedTypes?.join(',') || ''
 
   useEffect(() => {
     if (!open) return
@@ -92,13 +95,21 @@ export function GlobalAssetPickerModal({
     setQuery('')
     setSelectedId(null)
     setError('')
-    setLoading(true)
-    dramaApi
-      .listAssets(undefined, { libraryOnly: true })
-      .then((rows) => setAllAssets(filterDramaLibraryAssets(rows)))
-      .catch((err) => setError(err instanceof Error ? err.message : tr('drama.globalPicker.loadFailed')))
-      .finally(() => setLoading(false))
+    setPage(1)
   }, [open, defaultTab])
+
+  useEffect(() => {
+    if (!open) return
+    const controller = new AbortController()
+    let active = true
+    setLoading(true); setError('')
+    const timer = window.setTimeout(() => {
+      void dramaApi.listAssets(undefined, { libraryOnly: true }).then(rows => {
+        if (active) { setAllAssets(filterDramaLibraryAssets(rows)) }
+      }).catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : tr('drama.globalPicker.loadFailed')) }).finally(() => { if (active) setLoading(false) })
+    }, 180)
+    return () => { active = false; controller.abort(); window.clearTimeout(timer) }
+  }, [open, projectId, query, tab, page, allowedTypesKey])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -244,25 +255,13 @@ export async function importGlobalAssetToProject(
   if (!source.url && !source.cover) {
     throw new Error(tr('drama.globalPicker.noImage'))
   }
-  const params = {
-    ...(source.params || {}),
-    importedFromAssetId: source.id,
-    importedFromProjectId: source.project_id,
-  }
-  return dramaApi.createAsset({
-    project_id: projectId,
-    type: source.type || 'none',
-    asset_type: source.asset_type || 'image',
-    name: source.name || tr('drama.assetLibrary.unnamed'),
-    cover: source.cover || source.url,
-    url: source.url || source.cover,
-    params,
-  })
+  return dramaApi.copyAsset(source, projectId)
 }
 
 // 画布 kind → 资产 type 筛选
 export function canvasKindToLibraryTypes(kind: string): string[] {
   if (kind === 'character') return ['character']
   if (kind === 'scene') return ['scene']
+  if (kind === 'audio') return DRAMA_VOICE_BINDING_ENABLED ? ['audio', 'voice'] : ['audio']
   return ['prop', 'image']
 }

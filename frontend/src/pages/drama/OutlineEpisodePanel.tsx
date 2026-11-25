@@ -1,6 +1,9 @@
-/** 剧情大纲：左栏分集目录 + 右栏本集创意/摘要/剧本（对齐截图样式） */
+import { readEpisodeJob } from '../../lib/dramaEpisodeJobs'
+import { isRequestAborted } from '../../api/http'
+import { TeamEditingBoundary } from '../../features/teams/TeamEditingBoundary'
+/** 剧情大纲：左栏分集目录 + 右栏本集梗概/剧本与可选创作备注 */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   BookOpen,
   Check,
@@ -19,7 +22,6 @@ import { dramaApi, resolveDramaMediaUrl, type DramaEpisode, type DramaEpisodeBod
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
 import { dialog } from '../../lib/dialog'
 import {
-  buildEpisodeContentUpdate,
   buildOutlineDirectory,
   episodeBodyCharLen,
   isImportedEpisode,
@@ -33,8 +35,18 @@ import {
 import { sumFragmentContentDuration } from './dramaEpisodeEditUtils'
 import { OutlineScriptParseModal, OutlineScriptPreview } from './outlineScriptPreview'
 import { tr, useI18n } from '../../i18n'
+import DramaStatusNotice, { DramaErrorNotice } from './DramaStatusNotice'
 
 type SectionKey = 'creative' | 'summary' | 'body'
+
+const GENERATION_MODES = ['creative', 'summary', 'brief', 'body', 'full']
+
+/** 单集生成中的状态条标题（按生成模式） */
+function generationTitle(mode: string | null): string {
+  return mode && GENERATION_MODES.includes(mode)
+    ? tr(`drama.outlineEp.genTitles.${mode}`)
+    : tr('drama.outlineEp.genTitles.default')
+}
 
 /** 分集目录用的镜头合计文案 */
 function formatOutlineShotDuration(sec: number): string {
@@ -50,7 +62,13 @@ type OutlineEpisodePanelProps = {
   script: DramaScript | null
   episodeCount: number
   summaryReady: boolean
+  /** 全剧摘要生成中（外部目录/空态需显示，不依赖弹窗） */
+  summaryGenerating?: boolean
+  /** 整剧摘要后抽取资产中 */
+  assetsSeeding?: boolean
   episodeGenerating: boolean
+  /** 整剧分集剧本进度 */
+  episodeProgress?: { done: number; total: number }
   imageStyleLabel?: string
   storyType?: string
   onScriptChange: (script: DramaScript) => void
@@ -79,7 +97,7 @@ type SectionCardProps = {
   onCancel: () => void
   onSave: () => void
   onDraftChange: (v: string) => void
-  onRegenerate: () => void
+  onRegenerate?: () => void
   onCopy: () => void
   /** 剧本区：解析预览 + 分段编辑 */
   scriptPreview?: ReactNode
@@ -127,10 +145,12 @@ function SectionCard({
             <Pencil size={14} strokeWidth={2} />
             {t('drama.common.edit')}
           </button>
-          <button type="button" className="drama-outline-text-btn" disabled={genBusy} onClick={onRegenerate}>
-            <RefreshCw size={14} strokeWidth={2} />
-            {regenerateLabel}
-          </button>
+          {onRegenerate ? (
+            <button type="button" className="drama-outline-text-btn" disabled={genBusy} onClick={onRegenerate}>
+              <RefreshCw size={14} strokeWidth={2} />
+              {regenerateLabel}
+            </button>
+          ) : null}
           <button type="button" className="drama-outline-text-btn" onClick={onCopy}>
             <Copy size={14} strokeWidth={2} />
             {t('drama.outlineEp.copy')}
@@ -193,13 +213,16 @@ function SectionCard({
     </article>
   )
 }
-// 分集目录 + 本集三卡片
+// 分集目录 + 本集梗概、拍摄剧本、可选备注
 export function OutlineEpisodePanel({
   projectId,
   script,
   episodeCount,
   summaryReady,
+  summaryGenerating = false,
+  assetsSeeding = false,
   episodeGenerating,
+  episodeProgress = { done: 0, total: 0 },
   imageStyleLabel,
   storyType,
   onScriptChange,
@@ -212,23 +235,23 @@ export function OutlineEpisodePanel({
   const { t } = useI18n()
   const [activeEpisodeNumber, setActiveEpisodeNumber] = useState(1)
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(
-    () => new Set(['creative', 'summary', 'body']),
+    () => new Set(['summary', 'body']),
   )
   const [editingSection, setEditingSection] = useState<SectionKey | null>(null)
   const [sectionDraft, setSectionDraft] = useState('')
   const [titleDraft, setTitleDraft] = useState('')
   const [saving, setSaving] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [generatingMode, setGeneratingMode] = useState<string | null>(null)
-  const [generatingEpisodeNumber, setGeneratingEpisodeNumber] = useState<number | null>(null)
+  const [localJobs, setLocalJobs] = useState<Record<number, string>>({})
   const [confirming, setConfirming] = useState(false)
   const [enterSkillOpen, setEnterSkillOpen] = useState(false)
   const [localError, setLocalError] = useState('')
   const [localNotice, setLocalNotice] = useState('')
   const [scriptModalOpen, setScriptModalOpen] = useState(false)
+  const [sceneEditing, setSceneEditing] = useState(false)
   const [episodeCovers, setEpisodeCovers] = useState<Record<number, string>>({})
   const [episodeShotStats, setEpisodeShotStats] = useState<
-    Record<number, { fragmentCount: number; totalSec: number }>
+    Record<number, { episodeId: number; fragmentCount: number; totalSec: number; planStatus: string; scriptChanged: boolean }>
   >({})
 
   const episodeBodies = parseEpisodeBodies(script)
@@ -236,6 +259,10 @@ export function OutlineEpisodePanel({
   const displayEpisodes = mergeDirectoryEpisodeBodies(directoryEpisodes, episodeBodies)
   const selected =
     displayEpisodes.find((ep) => ep.episodeNumber === activeEpisodeNumber) || displayEpisodes[0] || null
+
+  const selectedJob = readEpisodeJob(script, selected?.episodeNumber || 0)
+  const generatingMode = selected ? localJobs[selected.episodeNumber || 0] || selectedJob.mode || null : null
+  const generatingEpisodeNumber = Number(Object.keys(localJobs).find((number) => Number(number) !== selected?.episodeNumber) || 0) || null
 
   useEffect(() => {
     if (!selected) return
@@ -251,66 +278,105 @@ export function OutlineEpisodePanel({
     setLocalError('')
     setLocalNotice('')
     setScriptModalOpen(false)
+    setSceneEditing(false)
   }, [selected?.episodeNumber])
 
-  // 拉取已切分分集，用首镜封面/成片作目录缩略图
   useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        let rows: DramaEpisode[] = await dramaApi.listEpisodes(projectId)
-        if (!rows.length) {
-          try {
-            rows = await dramaApi.seedEpisodes(projectId, false)
-          } catch {
-            rows = []
-          }
-        }
-        if (cancelled) return
-        const map: Record<number, string> = {}
-        const shotMap: Record<number, { fragmentCount: number; totalSec: number }> = {}
-        for (const ep of rows) {
-          const epNo = Number(ep.params?.episodeNumber) || 0
-          if (!epNo) continue
-          const frags = [...(ep.fragments || [])].sort(
-            (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-          )
-          if (frags.length > 0) {
-            const totalSec = frags.reduce((sum, f) => {
+    if (!editingSection) setTitleDraft(selected?.title || '')
+  }, [selected?.title, editingSection])
+
+  // 读取分集 AI 分镜状态（含自动入队）
+  function readPlanStatus(ep: DramaEpisode): string {
+    const active = (ep.active_tasks || []).find((task) => task.task_type === 'fragment_plan')
+    if (
+      active &&
+      !active.cancel_requested &&
+      ['pending', 'leased', 'running', 'awaiting_poll', 'awaiting_review'].includes(active.status)
+    ) {
+      return 'generating'
+    }
+    const st = ep.params?.fragment_plan_status
+    return typeof st === 'string' ? st : ''
+  }
+
+  // 从分集列表刷新封面 / 镜数 / 分镜状态
+  function applyEpisodeRows(rows: DramaEpisode[]) {
+    const map: Record<number, string> = {}
+    const shotMap: Record<number, { episodeId: number; fragmentCount: number; totalSec: number; planStatus: string; scriptChanged: boolean }> =
+      {}
+    for (const ep of rows) {
+      const epNo = Number(ep.params?.episodeNumber) || 0
+      if (!epNo) continue
+      const frags = [...(ep.fragments || [])].sort(
+        (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+      )
+      const planStatus = readPlanStatus(ep)
+      const totalSec =
+        frags.length > 0
+          ? frags.reduce((sum, f) => {
               const stored = Number(f.duration_sec)
               if (Number.isFinite(stored) && stored > 0) return sum + Math.round(stored)
               return sum + sumFragmentContentDuration(f.content || '')
             }, 0)
-            shotMap[epNo] = { fragmentCount: frags.length, totalSec }
-          }
-          const first = frags.find((f) => (f.cover || '').trim() || (f.video || '').trim())
-          if (!first) continue
-          const raw = (first.cover || first.video || '').trim()
-          if (raw) map[epNo] = resolveDramaMediaUrl(raw)
+          : 0
+      shotMap[epNo] = {
+        episodeId: ep.id,
+        fragmentCount: frags.length,
+        totalSec,
+        planStatus,
+        scriptChanged: ep.params?.fragment_script_changed === true,
+      }
+      const first = frags.find((f) => (f.cover || '').trim() || (f.video || '').trim())
+      if (!first) continue
+      const raw = (first.cover || first.video || '').trim()
+      if (raw) map[epNo] = resolveDramaMediaUrl(raw)
+    }
+    setEpisodeCovers(map)
+    setEpisodeShotStats(shotMap)
+  }
+
+  // 只读已有分集行；勿提前规则 seed（否则会假显示「1 镜」）。分镜中持续轮询。
+  useEffect(() => {
+    let cancelled = false
+    let timer: number | undefined
+
+    async function refresh() {
+      try {
+        const rows: DramaEpisode[] = await dramaApi.listEpisodes(projectId)
+        if (cancelled) return
+        applyEpisodeRows(rows)
+        const anyPlanning = rows.some((ep) => readPlanStatus(ep) === 'generating')
+        // 分集剧本还在跑时也继续刷，以便每集完成后立刻看到「AI 分镜中」
+        if (anyPlanning || episodeGenerating) {
+          timer = window.setTimeout(() => {
+            void refresh()
+          }, 2500)
         }
-        setEpisodeCovers(map)
-        setEpisodeShotStats(shotMap)
       } catch {
         if (!cancelled) {
           setEpisodeCovers({})
           setEpisodeShotStats({})
         }
       }
-    })()
+    }
+
+    void refresh()
     return () => {
       cancelled = true
+      if (timer) window.clearTimeout(timer)
     }
-  }, [projectId, script?.id, episodeCount])
+  }, [projectId, script?.id, script?.episode_content, episodeCount, episodeGenerating, generatingMode])
 
-  const selectedGenerating =
-    Boolean(generatingMode) && generatingEpisodeNumber === (selected?.episodeNumber ?? null)
-  const anyEpisodeGenerating = Boolean(generatingMode)
+  const selectedGenerating = Boolean(selected && localJobs[selected.episodeNumber || 0]) || ['queued', 'generating', 'running'].includes(selectedJob.status)
+  const anyEpisodeGenerating = Object.keys(localJobs).length > 0
   const effectiveCreative =
     editingSection === 'creative' ? sectionDraft : selected?.creative || ''
   const effectiveSummary =
     editingSection === 'summary' ? sectionDraft : selected?.summary || ''
   const canGenerateBody =
     episodeBodyCharLen(effectiveCreative) >= 10 || episodeBodyCharLen(effectiveSummary) >= 40
+  const canRegenerateEpisode =
+    isSubstantialEpisodeCreative(effectiveCreative) || episodeBodyCharLen(effectiveSummary) >= 40
   const canAdd =
     summaryReady &&
     !episodeGenerating &&
@@ -319,38 +385,44 @@ export function OutlineEpisodePanel({
     !confirming &&
     directoryEpisodes.length < 120
 
-  // 仅锁正在生成的那一集；其他集可浏览/编辑（单集任务全局串行，故禁止并行再点生成）
-  const busy = episodeGenerating || selectedGenerating || confirming || saving || adding
-  const generateBusy = episodeGenerating || anyEpisodeGenerating || confirming || saving || adding
+  // 整剧批量生成时：已写完正文的集可编辑 / 进分镜 / 重生成；未完成集仍锁生成
+  // 单集任务按集号独立；只禁用当前正在生成的一集
+  const selectedBodyReady = isSubstantialEpisodeBody(selected?.body)
+  const summaryGenerateMode = selectedBodyReady
+    ? 'brief'
+    : isSubstantialEpisodeCreative(selected?.creative) ? 'summary' : null
+  const batchLocksThisEpisode = episodeGenerating && !selectedBodyReady
+  const busy = selectedGenerating || confirming || saving || adding
+  const generateBusy =
+    selectedGenerating || batchLocksThisEpisode || confirming || saving || adding
+  // 上传导入的分集正文可能较短，同样允许进入分镜
+  const selectedEnterReady = selectedBodyReady || isImportedEpisode(selected ?? undefined)
+  const enterBusy = busy || !selectedEnterReady
 
   async function pollOptimize(tokenEpisode: number) {
     const started = Date.now()
     let lastErr: Error | null = null
     while (Date.now() - started < 8 * 60 * 1000) {
       await new Promise((r) => setTimeout(r, 2000))
-      try {
-        const cur = await dramaApi.getScript(projectId)
-        onScriptChange(cur)
-        lastErr = null
-        const st = String((cur.params || {}).episode_optimize_status || '')
-        const num = Number((cur.params || {}).episode_optimize_number || 0)
-        if (num === tokenEpisode && st === 'completed') return cur
-        if (num === tokenEpisode && st === 'failed') {
-          throw new Error(String((cur.params || {}).episode_optimize_error || tr('drama.common.generateFailed')))
-        }
-        if (st !== 'generating') return cur
-      } catch (err) {
-        // 瞬时网络失败不中断轮询，避免 Failed to fetch 把界面卡在「生成中」
-        lastErr = err instanceof Error ? err : new Error(tr('drama.outlineEp.pollFailed'))
-      }
+      let cur: DramaScript
+      try { cur = await dramaApi.getScript(projectId) }
+      catch (err) { if (isRequestAborted(err)) throw err; lastErr = err instanceof Error ? err : new Error(tr('drama.outlineEp.pollFailed')); continue }
+      onScriptChange(cur)
+      lastErr = null
+      const job = readEpisodeJob(cur, tokenEpisode)
+      if (job.status === 'completed') return cur
+      if (job.status === 'failed' || job.status === 'cancelled') throw new Error(job.error || tr('drama.outlineEp.jobFailedOrCancelled'))
+
     }
     throw lastErr || new Error(tr('drama.outlineEp.genTimeout'))
   }
 
   async function saveBodies(nextBodies: DramaEpisodeBody[]) {
-    const updated = await dramaApi.updateScript(projectId, {
-      episode_content: buildEpisodeContentUpdate(script, nextBodies),
-    })
+    if (!selected?.episodeNumber) throw new Error(tr('drama.outlineEp.selectEpisodeFirst'))
+    const current = nextBodies.find((item) => item.episodeNumber === selected.episodeNumber)
+    if (!current) throw new Error(tr('drama.outlineEp.episodeMissing'))
+    await dramaApi.updateScriptEpisode(projectId, selected.episodeNumber, { title: current.title, creative: current.creative, summary: current.summary, body: current.body, version: Number((script?.params?.episode_versions as Record<string, number> | undefined)?.[String(selected.episodeNumber)] ?? 0) })
+    const updated = await dramaApi.getScript(projectId)
     onScriptChange(updated)
     return updated
   }
@@ -365,10 +437,12 @@ export function OutlineEpisodePanel({
       const p = await dramaApi.getProject(projectId)
       onProjectChange(p)
       setActiveEpisodeNumber(res.episode_number)
-      setEditingSection('creative')
+      setEditingSection('summary')
       setSectionDraft('')
+      setOpenSections((prev) => new Set(prev).add('summary'))
       onOpenEpisodes()
     } catch (err) {
+      if (isRequestAborted(err)) return
       const msg = err instanceof Error ? err.message : t('drama.outlineEp.addFailed')
       setLocalError(msg)
       onError(msg)
@@ -392,6 +466,7 @@ export function OutlineEpisodePanel({
       await saveBodies(next)
       setEditingSection(null)
     } catch (err) {
+      if (isRequestAborted(err)) return
       const msg = err instanceof Error ? err.message : t('drama.common.saveFailed')
       setLocalError(msg)
       onError(msg)
@@ -402,79 +477,71 @@ export function OutlineEpisodePanel({
 
   async function handleGenerate(mode: 'summary' | 'body' | 'full' | 'brief') {
     if (!selected?.episodeNumber) return
-    const creative = editingSection === 'creative' ? sectionDraft : selected.creative || ''
-    const summary = editingSection === 'summary' ? sectionDraft : selected.summary || ''
-    if ((mode === 'summary' || mode === 'full') && !isSubstantialEpisodeCreative(creative)) {
+    if (editingSection || sceneEditing) {
+      setLocalError(t('drama.outlineEp.saveBeforeGenerate'))
+      return
+    }
+    const creative = selected.creative || ''
+    const summary = selected.summary || ''
+    if (mode === 'summary' && !isSubstantialEpisodeCreative(creative)) {
       setLocalError(t('drama.outlineEp.creativeTooShort', { n: MIN_EPISODE_CREATIVE_CHARS }))
+      return
+    }
+    if (mode === 'full' && !isSubstantialEpisodeCreative(creative) && episodeBodyCharLen(summary) < 40) {
+      setLocalError(t('drama.outlineEp.needSummaryOrCreative', { n: MIN_EPISODE_CREATIVE_CHARS }))
       return
     }
     // 与后端 run_episode_body_from_brief 一致：创意≥10 或摘要≥40
     if (mode === 'body' && episodeBodyCharLen(creative) < 10 && episodeBodyCharLen(summary) < 40) {
-      setLocalError(t('drama.outlineEp.needCreativeOrSummary'))
+      setLocalError(t('drama.outlineEp.needSummaryBeforeBody'))
       return
     }
     if (mode === 'brief' && !isSubstantialEpisodeBody(selected.body)) {
-      setLocalError(t('drama.outlineEp.bodyBeforeBrief', { n: MIN_EPISODE_BODY_CHARS }))
+      setLocalError(t('drama.outlineEp.bodyBeforeExtract', { n: MIN_EPISODE_BODY_CHARS }))
       return
     }
     if (mode === 'full') {
       const ok = await dialog.confirm({
         title: t('drama.outlineEp.regenTitle'),
-        message: t('drama.outlineEp.regenMessage'),
+        message: t('drama.outlineEp.regenMessageV2'),
         confirmText: t('drama.outline.regenerate'),
         tone: 'danger',
       })
       if (!ok) return
     }
     const targetEpisode = selected.episodeNumber
-    setGeneratingMode(mode)
-    setGeneratingEpisodeNumber(targetEpisode)
+    setLocalJobs((jobs) => ({ ...jobs, [targetEpisode]: mode }))
     setLocalError('')
     setLocalNotice('')
     try {
-      // 生成前落盘创意/摘要/标题草稿，避免 body 模式只读库内空字段
-      if (
-        editingSection === 'creative' ||
-        editingSection === 'summary' ||
-        titleDraft !== selected.title
-      ) {
-        const next = displayEpisodes.map((ep) =>
-          ep.episodeNumber === targetEpisode
-            ? {
-                ...ep,
-                creative: editingSection === 'creative' ? sectionDraft : ep.creative,
-                summary: editingSection === 'summary' ? sectionDraft : ep.summary,
-                title: titleDraft || ep.title,
-              }
-            : ep,
-        )
-        await saveBodies(next)
-        setEditingSection(null)
-      }
       await dramaApi.episodeScript({
         project_id: projectId,
         episode_number: targetEpisode,
         generate_mode: mode,
         creative: creative || undefined,
-        title: titleDraft || selected.title,
+        title: selected.title,
       })
       const cur = await pollOptimize(targetEpisode)
-      const created = Number((cur.params || {}).episode_optimize_assets_created || 0)
+      const created = readEpisodeJob(cur, targetEpisode).assetsCreated
       if ((mode === 'body' || mode === 'full') && created > 0) {
         setLocalNotice(t('drama.outlineEp.assetsCreated', { n: created }))
       }
     } catch (err) {
+      if (isRequestAborted(err)) return
       const msg = err instanceof Error ? err.message : t('drama.common.generateFailed')
       setLocalError(msg)
       onError(msg)
     } finally {
-      setGeneratingMode(null)
-      setGeneratingEpisodeNumber(null)
+      setLocalJobs((jobs) => { const next = { ...jobs }; delete next[targetEpisode]; return next })
     }
   }
 
   async function handleConfirmEnter() {
     if (!selected?.episodeNumber) return
+    if (editingSection || sceneEditing) {
+      setLocalError(t('drama.outlineEp.saveBeforeEnter'))
+      return
+    }
     if (!isSubstantialEpisodeBody(selected.body) && !isImportedEpisode(selected)) {
       setLocalError(t('drama.outlineEp.bodyBeforeStoryboard', { n: MIN_EPISODE_BODY_CHARS }))
       return
@@ -482,17 +549,24 @@ export function OutlineEpisodePanel({
     setLocalError('')
     setConfirming(true)
     try {
-      // 本集已有分镜：直接进入，不再弹 Skill / 重切
+      // 已自动入队/完成 AI 分镜：直接进入编辑页（页内会轮询「AI 分镜中」）
       const rows = await dramaApi.listEpisodes(projectId)
       const existing = rows.find(
         (ep) => Number(ep.params?.episodeNumber) === Number(selected.episodeNumber),
       )
-      if (existing && (existing.fragments || []).length > 0) {
+      const planSt = existing ? readPlanStatus(existing) : ''
+      if (
+        existing &&
+        (planSt === 'generating' ||
+          planSt === 'completed' ||
+          (existing.fragments || []).length > 0)
+      ) {
         navigate(`/drama/projects/${projectId}/episodes/${existing.id}`)
         return
       }
       setEnterSkillOpen(true)
     } catch (err) {
+      if (isRequestAborted(err)) return
       const msg = err instanceof Error ? err.message : t('drama.outlineEp.enterFailed')
       setLocalError(msg)
       onError(msg)
@@ -520,10 +594,12 @@ export function OutlineEpisodePanel({
           skill_ids: skillIds,
         })
       } catch (planErr) {
+        if (isRequestAborted(planErr)) return
         onError(planErr instanceof Error ? planErr.message : t('drama.outlineEp.planQueueFailed'))
       }
       navigate(`/drama/projects/${projectId}/episodes/${episodeId}`)
     } catch (err) {
+      if (isRequestAborted(err)) return
       const msg = err instanceof Error ? err.message : t('drama.outlineEp.enterFailed')
       setLocalError(msg)
       onError(msg)
@@ -543,6 +619,7 @@ export function OutlineEpisodePanel({
       )
       await saveBodies(next)
     } catch (err) {
+      if (isRequestAborted(err)) return
       const msg = err instanceof Error ? err.message : t('drama.common.saveFailed')
       setLocalError(msg)
       onError(msg)
@@ -568,6 +645,10 @@ export function OutlineEpisodePanel({
 
   function startEdit(section: SectionKey) {
     if (!selected) return
+    if (sceneEditing) {
+      setLocalError(t('drama.outlineEp.saveSceneFirst'))
+      return
+    }
     setEditingSection(section)
     setSectionDraft(
       section === 'creative'
@@ -596,10 +677,10 @@ export function OutlineEpisodePanel({
     return tags
   }, [storyType, selected, t])
 
-  const bodyReady = isSubstantialEpisodeBody(selected?.body) || isImportedEpisode(selected)
+  const bodyReady = selectedEnterReady
+  const selectedShot = episodeShotStats[selected?.episodeNumber || 0]
   const charHint = selected
     ? [
-        selected.creative ? t('drama.outlineEp.hintCreative', { n: episodeBodyCharLen(selected.creative) }) : null,
         selected.summary ? t('drama.outlineEp.hintSummary', { n: episodeBodyCharLen(selected.summary) }) : null,
         selected.body ? t('drama.outlineEp.hintBody', { n: episodeBodyCharLen(selected.body) }) : null,
       ]
@@ -632,13 +713,32 @@ export function OutlineEpisodePanel({
           const ready = isSubstantialEpisodeBody(body?.body) || isImportedEpisode(body)
           const active = activeEpisodeNumber === ep.episodeNumber
           const shot = episodeShotStats[ep.episodeNumber || 0]
-          const statusLabel = shot && shot.fragmentCount > 0 && shot.totalSec > 0
-            ? t('drama.outlineEp.shotStatus', { n: shot.fragmentCount, d: formatOutlineShotDuration(shot.totalSec) })
-            : ready
-              ? t('drama.outlineEp.bodyReady')
-              : body?.creative
-                ? t('drama.outlineEp.needScript')
-                : t('drama.outlineEp.needCreative')
+          const shotLabel = shot ? t('drama.outlineEp.shotStatus', { n: shot.fragmentCount, d: formatOutlineShotDuration(shot.totalSec) }) : ''
+          const statusLabel = summaryGenerating
+            ? t('drama.outline.pipelineSummary')
+            : assetsSeeding
+              ? t('drama.outline.pipelineAssets')
+              : shot?.planStatus === 'generating'
+                ? t('drama.outlineEp.planGenerating')
+                : shot?.planStatus === 'failed'
+                  ? t('drama.outlineEp.planFailed')
+                  : shot?.scriptChanged && shot.fragmentCount > 0
+                    ? t('drama.outlineEp.shotStatusStale', { s: shotLabel })
+                    : shot?.planStatus === 'completed' &&
+                      shot.fragmentCount > 0 &&
+                      shot.totalSec > 0
+                    ? shot.fragmentCount <= 1 && ready
+                      ? t('drama.outlineEp.shotStatusFew', { s: shotLabel })
+                      : shotLabel
+                    : episodeGenerating && !ready && !body?.summary && !body?.creative
+                      ? episodeProgress.total > 0
+                        ? t('drama.outlineEp.wholeProgress', { done: episodeProgress.done, total: episodeProgress.total })
+                        : t('drama.outlineEp.waitingScript')
+                      : ready
+                        ? t('drama.outlineEp.waitingPlan')
+                        : body?.summary || body?.creative
+                          ? t('drama.outlineEp.needScript')
+                          : t('drama.outlineEp.needSummary')
           return (
             <li key={ep.episodeNumber}>
               <button
@@ -662,7 +762,19 @@ export function OutlineEpisodePanel({
                 <span className="drama-outline-ep-meta">
                   <strong>{t('drama.common.episodeN', { n: ep.episodeNumber })}</strong>
                   <small>{ep.title || t('drama.outlineEp.untitled')}</small>
-                  <em className={shot && shot.fragmentCount > 0 ? 'is-shot' : undefined}>
+                  <em
+                    className={
+                      summaryGenerating ||
+                      assetsSeeding ||
+                      shot?.planStatus === 'generating' ||
+                      (episodeGenerating && !ready) ||
+                      (ready && shot?.planStatus !== 'completed')
+                        ? 'is-waiting'
+                        : shot?.planStatus === 'completed' && shot.fragmentCount > 0
+                          ? 'is-shot'
+                          : undefined
+                    }
+                  >
                     {statusLabel}
                   </em>
                 </span>
@@ -679,7 +791,15 @@ export function OutlineEpisodePanel({
 
   const bodies = !selected ? (
     <div className="drama-outline-detail-empty">
-      <p>{summaryReady ? t('drama.outlineEp.emptyReady') : t('drama.outlineEp.emptyNotReady')}</p>
+      <p>
+        {summaryGenerating
+          ? t('drama.outlineEp.emptySummaryGenerating')
+          : assetsSeeding
+            ? t('drama.outlineEp.emptyAssetsSeeding')
+            : summaryReady
+              ? t('drama.outlineEp.emptyReady')
+              : t('drama.outlineEp.emptyNotReady')}
+      </p>
     </div>
   ) : (
     <section className="drama-outline-detail">
@@ -709,17 +829,17 @@ export function OutlineEpisodePanel({
           </div>
         </div>
         <div className="drama-outline-detail-actions">
-          <span className={`drama-outline-saved${bodyReady ? ' is-ready' : ''}`}>
+          <span className={`drama-outline-saved${bodyReady && !editingSection && !sceneEditing && !selectedShot?.scriptChanged ? ' is-ready' : ''}`}>
             <Check size={14} strokeWidth={2.5} />
-            {bodyReady
-              ? t('drama.outlineEp.canStoryboard')
-              : saving
-                ? t('drama.outlineEp.savingShort')
-                : t('drama.outlineEp.synced')}
+            {editingSection || sceneEditing
+              ? t('drama.outlineEp.unsavedEdit')
+              : selectedShot?.scriptChanged
+                ? t('drama.outlineEp.planStale')
+                : bodyReady
+                  ? t('drama.outlineEp.canStoryboard')
+                  : saving ? t('drama.outlineEp.savingShort') : t('drama.outlineEp.synced')}
           </span>
-          {bodyReady &&
-          (!isSubstantialEpisodeCreative(selected.creative) ||
-            episodeBodyCharLen(selected.summary) < 40) ? (
+          {bodyReady && episodeBodyCharLen(selected.summary) < 40 ? (
             <button
               type="button"
               className="drama-btn-ghost"
@@ -727,112 +847,124 @@ export function OutlineEpisodePanel({
               onClick={() => void handleGenerate('brief')}
             >
               {selectedGenerating && generatingMode === 'brief'
-                ? t('drama.outlineEp.filling')
-                : t('drama.outlineEp.fillBrief')}
+                ? t('drama.outlineEp.extracting')
+                : t('drama.outlineEp.extractBrief')}
             </button>
           ) : null}
           <button
             type="button"
             className="drama-outline-regen-btn"
-            disabled={generateBusy || !isSubstantialEpisodeCreative(selected.creative)}
+            disabled={generateBusy || !canRegenerateEpisode}
             onClick={() => void handleGenerate('full')}
+            title={
+              batchLocksThisEpisode
+                ? t('drama.outlineEp.batchLocksHint')
+                : anyEpisodeGenerating
+                  ? t('drama.outlineEp.otherJobHint')
+                  : undefined
+            }
           >
             <RefreshCw size={15} strokeWidth={2.25} />
             {selectedGenerating && generatingMode === 'full'
               ? t('drama.common.generating')
               : t('drama.outlineEp.regenTitle')}
           </button>
+          {selectedShot?.episodeId && !editingSection && !sceneEditing ? (
+            <Link className="drama-btn-primary" to={`/drama/projects/${projectId}/episodes/${selectedShot.episodeId}`}>
+              {t('drama.outlineEp.enterStoryboard')}
+            </Link>
+          ) : (
           <button
             type="button"
-            className="drama-btn-ghost"
-            disabled={busy || !bodyReady}
+            className="drama-btn-primary"
+            disabled={enterBusy}
             onClick={() => void handleConfirmEnter()}
+            title={!selectedEnterReady ? t('drama.outlineEp.bodyMinHint', { n: MIN_EPISODE_BODY_CHARS }) : undefined}
           >
             {confirming ? t('drama.outlineEp.entering') : t('drama.outlineEp.enterStoryboard')}
           </button>
+          )}
         </div>
       </header>
 
-      {localError ? <p className="drama-error">{localError}</p> : null}
-      {localNotice ? <p className="drama-outline-notice">{localNotice}</p> : null}
-      {episodeGenerating ? <p className="drama-loader">{t('drama.outlineEp.allGenerating')}</p> : null}
-      {selectedGenerating ? (
-        <p className="drama-loader">
-          {t('drama.outlineEp.thisGenerating', {
-            mode: generatingMode ? t(`drama.outlineEp.modes.${generatingMode}`) : '',
-          })}
-        </p>
-      ) : anyEpisodeGenerating && generatingEpisodeNumber ? (
-        <p className="drama-loader">
-          {t('drama.outlineEp.otherGenerating', { n: generatingEpisodeNumber })}
-        </p>
-      ) : null}
+      <div className="drama-outline-status-list">
+        {localError ? <DramaErrorNotice message={localError} onDismiss={() => setLocalError('')} /> : null}
+        {localNotice ? <DramaStatusNotice tone="success" title={localNotice} onDismiss={() => setLocalNotice('')} /> : null}
+        {selectedShot?.scriptChanged ? (
+          <DramaStatusNotice tone="warning" title={t('drama.outlineEp.noticeScriptChangedTitle')}>
+            {t('drama.outlineEp.noticeScriptChangedBody')}
+          </DramaStatusNotice>
+        ) : null}
+        {summaryGenerating ? (
+          <DramaStatusNotice tone="busy" title={t('drama.outlineEp.noticeSummaryTitle')}>
+            {t('drama.outlineEp.noticeSummaryBody')}
+          </DramaStatusNotice>
+        ) : null}
+        {assetsSeeding ? (
+          <DramaStatusNotice tone="busy" title={t('drama.outlineEp.noticeAssetsTitle')}>
+            {t('drama.outlineEp.noticeAssetsBody')}
+          </DramaStatusNotice>
+        ) : null}
+        {episodeGenerating ? (
+          <DramaStatusNotice tone="busy" title={t('drama.outlineEp.noticeEpisodesTitle')}>
+            {episodeProgress.total > 0
+              ? t('drama.outlineEp.noticeEpisodesProgress', { done: episodeProgress.done, total: episodeProgress.total })
+              : t('drama.outlineEp.noticeEpisodesBody')}
+          </DramaStatusNotice>
+        ) : null}
+        {selectedGenerating ? (
+          <DramaStatusNotice tone="busy" title={generationTitle(generatingMode)}>
+            {t('drama.outlineEp.noticeThisBody')}
+          </DramaStatusNotice>
+        ) : anyEpisodeGenerating && generatingEpisodeNumber ? (
+          <DramaStatusNotice tone="busy" title={t('drama.outlineEp.noticeOtherTitle', { n: generatingEpisodeNumber })}>
+            {t('drama.outlineEp.noticeOtherBody')}
+          </DramaStatusNotice>
+        ) : null}
+        {selected && episodeShotStats[selected.episodeNumber || 0]?.planStatus === 'generating' ? (
+          <DramaStatusNotice tone="busy" title={t('drama.outlineEp.noticePlanTitle')}>
+            {t('drama.outlineEp.noticePlanBody')}
+          </DramaStatusNotice>
+        ) : null}
+        {selected &&
+        isSubstantialEpisodeBody(selected.body) &&
+        !episodeShotStats[selected.episodeNumber || 0]?.planStatus &&
+        !selectedGenerating &&
+        !episodeGenerating &&
+        !summaryGenerating &&
+        !assetsSeeding ? (
+          <DramaStatusNotice tone="busy" title={t('drama.outlineEp.noticePlanPreparing')} />
+        ) : null}
+      </div>
 
       <div className="drama-outline-sections">
-        <SectionCard
-          sectionKey="creative"
-          icon={<Lightbulb size={18} strokeWidth={1.9} />}
-          title={t('drama.outlineEp.creativeTitle')}
-          subtitle={t('drama.outlineEp.creativeSub')}
-          text={selected.creative || ''}
-          editing={editingSection === 'creative'}
-          draft={sectionDraft}
-          open={openSections.has('creative')}
-          busy={busy}
-          generateBusy={generateBusy}
-          placeholder={t('drama.outlineEp.creativePlaceholder', { n: MIN_EPISODE_CREATIVE_CHARS })}
-          regenerateLabel={
-            selectedGenerating && generatingMode === 'brief'
-              ? t('drama.outlineEp.filling')
-              : selectedGenerating && generatingMode === 'summary'
-                ? t('drama.common.generating')
-                : isSubstantialEpisodeCreative(selected.creative)
-                  ? t('drama.outlineEp.genSummary')
-                  : t('drama.outlineEp.fillBrief')
-          }
-          onToggle={() => toggleSection('creative')}
-          onEdit={() => startEdit('creative')}
-          onCancel={() => setEditingSection(null)}
-          onSave={() => void handleSaveSection('creative')}
-          onDraftChange={setSectionDraft}
-          onRegenerate={() =>
-            void handleGenerate(
-              isSubstantialEpisodeCreative(selected.creative) ? 'summary' : 'brief',
-            )
-          }
-          onCopy={() => void copyText(selected.creative || '')}
-        />
         <SectionCard
           sectionKey="summary"
           icon={<BookOpen size={18} strokeWidth={1.9} />}
           title={t('drama.outlineEp.summaryTitle')}
-          subtitle={t('drama.outlineEp.summarySub')}
+          subtitle={t('drama.outlineEp.summarySubV2')}
           text={selected.summary || ''}
           editing={editingSection === 'summary'}
           draft={sectionDraft}
           open={openSections.has('summary')}
           busy={busy}
           generateBusy={generateBusy}
-          placeholder={t('drama.outlineEp.summaryPlaceholder')}
+          placeholder={t('drama.outlineEp.summaryPlaceholderV2')}
           regenerateLabel={
             selectedGenerating && generatingMode === 'brief'
-              ? t('drama.outlineEp.filling')
+              ? t('drama.outlineEp.extracting')
               : selectedGenerating && generatingMode === 'summary'
                 ? t('drama.common.generating')
-                : isSubstantialEpisodeCreative(selected.creative)
-                  ? t('drama.outline.regenerate')
-                  : t('drama.outlineEp.fillBrief')
+                : summaryGenerateMode === 'brief'
+                  ? t('drama.outlineEp.extractFromScript')
+                  : t('drama.outlineEp.genFromNotes')
           }
           onToggle={() => toggleSection('summary')}
           onEdit={() => startEdit('summary')}
           onCancel={() => setEditingSection(null)}
           onSave={() => void handleSaveSection('summary')}
           onDraftChange={setSectionDraft}
-          onRegenerate={() =>
-            void handleGenerate(
-              isSubstantialEpisodeCreative(selected.creative) ? 'summary' : 'brief',
-            )
-          }
+          onRegenerate={summaryGenerateMode ? () => void handleGenerate(summaryGenerateMode) : undefined}
           onCopy={() => void copyText(selected.summary || '')}
         />
         <SectionCard
@@ -861,13 +993,34 @@ export function OutlineEpisodePanel({
           onCopy={() => void copyText(selected.body || '')}
           scriptPreview={
             <OutlineScriptPreview
+              key={selected.episodeNumber}
               text={selected.body || ''}
               empty={t('drama.outlineEp.bodyPlaceholder', { n: MIN_EPISODE_BODY_CHARS })}
               busy={busy}
               shotStats={episodeShotStats[selected.episodeNumber || 0] || null}
               onSaveScenes={handleSaveScenes}
+              onEditingChange={setSceneEditing}
             />
           }
+        />
+        <SectionCard
+          sectionKey="creative"
+          icon={<Lightbulb size={18} strokeWidth={1.9} />}
+          title={t('drama.outlineEp.notesTitle')}
+          subtitle={t('drama.outlineEp.notesSub')}
+          text={selected.creative || ''}
+          editing={editingSection === 'creative'}
+          draft={sectionDraft}
+          open={openSections.has('creative')}
+          busy={busy}
+          placeholder={t('drama.outlineEp.notesPlaceholder')}
+          regenerateLabel={t('drama.outlineEp.genSummary')}
+          onToggle={() => toggleSection('creative')}
+          onEdit={() => startEdit('creative')}
+          onCancel={() => setEditingSection(null)}
+          onSave={() => void handleSaveSection('creative')}
+          onDraftChange={setSectionDraft}
+          onCopy={() => void copyText(selected.creative || '')}
         />
       </div>
       <OutlineScriptParseModal
@@ -879,10 +1032,12 @@ export function OutlineEpisodePanel({
     </section>
   )
 
+  const editableBodies = <TeamEditingBoundary projectId={projectId} type="episode" resourceId={selected?.episodeNumber || 0} enabled={Boolean(selected)} showReadOnlyNotice={false} allowReadOnlyNavigation onAcquired={async (isCurrent) => { const fresh = await dramaApi.getScript(projectId); if (isCurrent()) onScriptChange(fresh) }}>{bodies}</TeamEditingBoundary>
+
   if (children) {
     return (
       <>
-        {children({ directory, bodies })}
+        {children({ directory, bodies: editableBodies })}
         <FragmentPlanSkillModal
           open={enterSkillOpen}
           title={t('drama.outlineEp.enterStoryboard')}
@@ -899,7 +1054,7 @@ export function OutlineEpisodePanel({
   return (
     <div className="drama-outline drama-outline-v2">
       {directory}
-      <div className="drama-outline-main">{bodies}</div>
+      <div className="drama-outline-main">{editableBodies}</div>
       <FragmentPlanSkillModal
         open={enterSkillOpen}
         title={t('drama.outlineEp.enterStoryboard')}

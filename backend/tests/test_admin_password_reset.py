@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
@@ -9,7 +11,7 @@ from tests.conftest import make_user
 
 
 @pytest.mark.asyncio
-async def test_admin_reset_targets_only_regular_users(db_session):
+async def test_admin_reset_targets_only_active_regular_users(db_session):
     admin = await make_user(db_session)
     admin.role = "admin"
     member = await make_user(db_session)
@@ -32,3 +34,9 @@ async def test_admin_reset_targets_only_regular_users(db_session):
         assert result.status_code == 200 and result.json() == {"ok": True}
         await db_session.refresh(member)
         assert verify_password(password, member.hashed_password)
+        stored_hash = member.hashed_password
+        member.closed_at = datetime.now(timezone.utc)
+        await db_session.commit()
+        assert (await reset(member, admin)).status_code == 404
+        await db_session.refresh(member)
+        assert member.hashed_password == stored_hash

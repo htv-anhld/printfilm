@@ -11,6 +11,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import AsyncAdaptedQueuePool
 
+import app.models_teams  # noqa: F401 — resolve team foreign keys for isolated SQLite DDL
 from app.config import get_settings
 from app.models import UsageEvent, User
 from app.models_tasks import TaskEvent, TaskRun, TaskStep, TaskTarget
@@ -194,4 +195,5 @@ async def test_interrupted_provider_wait_uses_latest_cancellation_and_preserves_
             assert task.finished_at is not None
         else:
             assert task.steps[0].status == "pending"
+            assert task.payload["provider_task_id"] == "accepted-before-interruption"
             assert task.next_action_at is not None

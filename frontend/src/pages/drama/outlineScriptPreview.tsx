@@ -1,5 +1,5 @@
 /** 大纲页：剧本按场次解析展示 / 分段编辑 / 弹窗预览 */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pencil } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import { tr, useI18n } from '../../i18n'
@@ -38,6 +38,7 @@ export type OutlineSceneStats = {
 export type OutlineShotDurationStats = {
   fragmentCount: number
   totalSec: number
+  scriptChanged?: boolean
 }
 
 const SPEAKER_COLORS = ['#059669', '#dc2626', '#ea580c', '#2563eb', '#7c3aed', '#db2777']
@@ -307,6 +308,7 @@ type OutlineScriptPreviewProps = {
   shotStats?: OutlineShotDurationStats | null
   /** 分段保存：返回更新后的完整 body */
   onSaveScenes?: (nextBody: string) => Promise<void> | void
+  onEditingChange?: (editing: boolean) => void
 }
 
 // 场次卡片列表 + 分段编辑
@@ -316,6 +318,7 @@ export function OutlineScriptPreview({
   busy,
   shotStats,
   onSaveScenes,
+  onEditingChange,
 }: OutlineScriptPreviewProps) {
   const { t, locale } = useI18n()
   const blocks = useMemo(() => parseOutlineSceneBlocks(text), [text])
@@ -327,11 +330,18 @@ export function OutlineScriptPreview({
     () => blockStats.reduce((sum, s) => sum + (s.estimatedSec || 0), 0),
     [blockStats],
   )
-  const hasShotDuration = Boolean(shotStats && shotStats.fragmentCount > 0 && shotStats.totalSec > 0)
+  const hasShotDuration = Boolean(
+    shotStats && !shotStats.scriptChanged && shotStats.fragmentCount > 0 && shotStats.totalSec > 0,
+  )
   const displayTotalSec = hasShotDuration ? shotStats!.totalSec : estimateTotalSec
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [draft, setDraft] = useState('')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    onEditingChange?.(editingIndex != null)
+    return () => onEditingChange?.(false)
+  }, [editingIndex, onEditingChange])
 
   function startEdit(index: number) {
     setEditingIndex(index)
@@ -377,7 +387,9 @@ export function OutlineScriptPreview({
         <span className="drama-outline-script-summary-hint">
           {hasShotDuration
             ? t('drama.outlinePreview.durationFromShots')
-            : t('drama.outlinePreview.durationEstimated')}
+            : shotStats?.scriptChanged
+              ? t('drama.outlinePreview.durationScriptChanged')
+              : t('drama.outlinePreview.durationEstimated')}
         </span>
       </div>
     ) : null

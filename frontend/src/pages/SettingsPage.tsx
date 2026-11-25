@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell'
 import UserAvatar from '../components/UserAvatar'
@@ -17,6 +17,8 @@ import { formatDateTime, useI18n, type Locale } from '../i18n'
 import { formatMajor, useBillingConfig } from '../lib/money'
 import TeamPanel from './settings/TeamPanel'
 import OAuthAppsPanel from './settings/OAuthAppsPanel'
+import CanvasProjectTeams from '../features/printfilm-studio/CanvasProjectTeams'
+import { USER_UPDATED_EVENT } from '../lib/userEvents'
 
 type SettingsTab =
   | 'account'
@@ -119,8 +121,8 @@ export default function SettingsPage() {
     const load = async () => {
       try {
         if (tab === 'projects') {
-          const rows = await dramaApi.listProjects()
-          if (!cancelled) setDramaItems(rows.slice(0, 8))
+          const res = await dramaApi.listProjects({ page: 1, page_size: 8 })
+          if (!cancelled) setDramaItems(res.items)
         } else {
           const res = await api.listProjects({ page: 1, page_size: 8 })
           if (!cancelled) setKepuItems(res.items)
@@ -148,6 +150,7 @@ export default function SettingsPage() {
 
   function logout() {
     localStorage.removeItem('token')
+    window.dispatchEvent(new Event(USER_UPDATED_EVENT))
     nav('/')
   }
 
@@ -328,7 +331,12 @@ export default function SettingsPage() {
             </>
           ) : null}
 
-          {tab === 'team' ? <TeamPanel /> : null}
+          {tab === 'team' ? (
+            <>
+              <TeamPanel />
+              <CanvasProjectTeams />
+            </>
+          ) : null}
 
           {tab === 'notify' ? (
             <section className="pf-settings-card">

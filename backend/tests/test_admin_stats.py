@@ -12,6 +12,22 @@ from app.services.admin.stats import aggregate_usage_summary, build_admin_dashbo
 from tests.conftest import make_user
 
 
+@pytest.mark.asyncio
+async def test_sandbox_recharges_are_excluded_from_real_income(db_session):
+    from app.models import Order
+    import uuid
+    user = await make_user(db_session)
+    baseline = await build_admin_dashboard_stats(db_session)
+    for environment, amount in [('Production', 100), ('Sandbox', 60000)]:
+        db_session.add(Order(out_trade_no=uuid.uuid4().hex, user_id=user.id, sku_id='test',
+            amount_fen=amount, credit_fen=amount, pay_type='apple_iap', status='paid',
+            paid_at=datetime.now(timezone.utc), payment_environment=environment))
+    await db_session.flush()
+    result = await build_admin_dashboard_stats(db_session)
+    assert result['order_paid_total_fen'] - baseline['order_paid_total_fen'] == 100
+    assert result['order_paid_today_fen'] - baseline['order_paid_today_fen'] == 100
+
+
 def _utc_days_ago(days: int, *, hour: int = 12) -> datetime:
     base = datetime.now(timezone.utc).replace(hour=hour, minute=0, second=0, microsecond=0)
     return base - timedelta(days=days)
@@ -176,27 +192,38 @@ async def test_dashboard_today_window(db_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
-async def test_admin_stats_http_query_days_accepts_string_query() -> None:
+async def test_admin_stats_http_query_days_accepts_string_query(db_session: AsyncSession) -> None:
     """HTTP ?days=7 应能解析为 int，不能因 Literal 校验返回 422。"""
     import httpx
     from httpx import ASGITransport
 
+    from app.database import get_db
+    from app.deps import get_current_admin
     from app.main import app
 
-    transport = ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        login = await client.post("/api/auth/login", json={"email": "demo@example.com", "password": "demo1234"})
-        if login.status_code != 200:
-            pytest.skip("demo 账号不可用，跳过 HTTP stats 回归")
-        token = login.json()["access_token"]
-        res = await client.get(
-            "/api/admin/stats?days=7",
-            headers={"Authorization": f"Bearer {token}"},
-        )
+    admin = await make_user(db_session)
+    admin.role = "admin"
+
+    async def override_db():
+        yield db_session
+
+    previous_overrides = app.dependency_overrides.copy()
+    app.dependency_overrides[get_current_admin] = lambda: admin
+    app.dependency_overrides[get_db] = override_db
+    try:
+        transport = ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            res = await client.get("/api/admin/stats?days=7")
+    finally:
+        app.dependency_overrides = previous_overrides
+
     assert res.status_code == 200, res.text
     body = res.json()
     assert "usage_calls_month" in body
     assert "usage_calls_total" in body
+    # 本分支管理端保留成本/利润口径
+    assert "usage_cost_month_fen" in body
+    assert all(set(row) == {"date", "calls", "charge_fen", "cost_fen"} for row in body["daily_usage"])
 
 
 @pytest.mark.asyncio

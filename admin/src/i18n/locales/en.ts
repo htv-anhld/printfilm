@@ -1,3 +1,5 @@
+import { deepMergeMessages } from "./deepMerge";
+import { enExtra } from "./en/extra";
 import { enCommon } from "./en/common";
 import { enLabels } from "./en/labels";
 import { enUsers } from "./en/users";
@@ -12,7 +14,7 @@ import { enDashboard } from "./en/dashboard";
 import { enSettings } from "./en/settings";
 import { enCommerce } from "./en/commerce";
 
-export const en = {
+export const en = deepMergeMessages({
   ...enCommon,
   labels: enLabels,
   users: enUsers,
@@ -26,4 +28,4 @@ export const en = {
   dashboard: enDashboard,
   settings: enSettings,
   commerce: enCommerce,
-};
+}, enExtra);

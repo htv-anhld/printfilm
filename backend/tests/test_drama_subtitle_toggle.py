@@ -84,4 +84,27 @@ def test_seedance_prompt_text_post_mode_strips_cues():
     prompt = build_seedance_prompt_text(content, [], burn_subtitles=False)
     assert "【字幕" not in prompt
     assert "同步字幕" not in prompt
-    assert "禁止在画面内烧录字幕" in prompt
+    # 上游：提交的提示词只含画风 + 分镜正文，不再附加制作约束段（含「禁止烧录字幕」）
+    assert "【强制约束：" not in prompt
+    assert "【对白·慢速清晰】禹：水患未平。" in prompt
+
+
+def test_build_seedance_generate_body_defaults_no_burn():
+    """缺省不传开关时按后期模式：禁止烧录字幕。"""
+    from app.services.drama.build_seedance_generate_body import build_seedance_generate_body
+
+    body = build_seedance_generate_body(
+        {
+            "content": "@duration:4\n【对白·慢速清晰·同步字幕】禹：水患未平。",
+            "reference": [],
+            "duration_fallback": 4,
+        }
+    )
+    text = ""
+    for item in body.get("content") or []:
+        if isinstance(item, dict) and item.get("type") == "text":
+            text += str(item.get("text") or "")
+    # 上游已不再附加制作约束段；后期模式只需去掉烧字幕 cue
+    assert "同步字幕" not in text
+    assert "【字幕" not in text
+    assert "烧录简体中文字幕" not in text

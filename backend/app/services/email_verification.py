@@ -122,6 +122,15 @@ async def grant_signup_bonus(db: AsyncSession, user: User) -> int:
     user.signup_grant_given = True
     if grant <= 0:
         return 0
+    from app.services.billing import wallet
+
+    if wallet.enabled():
+        # 统一钱包：赠金必须登记零现金资金来源，否则余额与来源对不上（WALLET_ACCOUNT_INCONSISTENT）
+        await wallet.initialize_account(db, user)
+        await wallet.credit(
+            db, user.id, grant, source_type="signup_grant", source_ref=str(user.id), note="signup_grant"
+        )
+        return grant
     user.balance_fen = int(user.balance_fen or 0) + grant
     db.add(
         WalletLedger(

@@ -58,6 +58,10 @@ async def test_narration_edit_invalidates_continuous_audio(
     monkeypatch.setattr(
         "app.services.storage.project_dir", lambda _pid: tmp_path
     )
+    # 上游默认 full 模式用 Seedance 内置口播（无需外部配音）；本用例验证外部 TTS 音轨作废，显式关闭
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "kepu_seedance_native_audio", False)
 
     await update_shot(
         project.id,

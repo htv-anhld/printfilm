@@ -2,6 +2,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { buildPageItems, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { Select } from "@/components/ui/select";
+import "@/styles/admin-primitives.css";
 
 type Props = {
   page: number;
@@ -33,19 +35,20 @@ export function PaginationBar({
 
   return (
     <div
-      className={cn("admin-pagination", className)}
+      className={cn("admin-pagination admin-ui-pagination", className)}
     >
       <div className="flex flex-wrap items-center gap-3">
-        <span>
+        <span className="admin-ui-pagination-summary">
           {t("common.pagination.totalPrefix")}<em className="not-italic font-semibold text-[var(--admin-text)]">{total}</em>{t("common.pagination.totalSuffix")}
           <span className="mx-1.5 text-[var(--admin-border)]">·</span>
           {from}-{to}
         </span>
         {onPageSizeChange && (
-          <label className="flex items-center gap-1.5 text-xs">
+          <label className="admin-ui-pagination-size flex items-center gap-2 text-xs">
             <span>{t("common.pagination.perPage")}</span>
-            <select
-              className="admin-select !h-7 !min-w-[4rem] !text-xs"
+            <Select
+              className="admin-ui-pagination-select !h-9 !min-w-[4.5rem] !text-xs"
+              aria-label={t("common.pagination.perPageAria")}
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
             >
@@ -54,13 +57,13 @@ export function PaginationBar({
                   {n}
                 </option>
               ))}
-            </select>
+            </Select>
             <span>{t("common.pagination.perPageSuffix")}</span>
           </label>
         )}
       </div>
 
-      <div className="flex items-center gap-1">
+      <nav className="admin-ui-pagination-pages flex items-center gap-1" aria-label={t("common.pagination.nav")}>
         <button
           type="button"
           className="admin-page-btn"
@@ -80,6 +83,8 @@ export function PaginationBar({
               key={n}
               type="button"
               className={cn("admin-page-btn", n === page && "is-active")}
+              aria-current={n === page ? "page" : undefined}
+              aria-label={t("common.pagination.pageN", { n })}
               onClick={() => onPageChange(n)}
             >
               {n}
@@ -95,7 +100,7 @@ export function PaginationBar({
         >
           <ChevronRight className="h-4 w-4" />
         </button>
-      </div>
+      </nav>
     </div>
   );
 }

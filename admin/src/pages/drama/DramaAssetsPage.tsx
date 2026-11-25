@@ -1,3 +1,4 @@
+import { Select } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -61,15 +62,15 @@ export function DramaAssetsPage() {
         <Input placeholder={t("drama.assets.searchPlaceholder")} value={q} onChange={(e) => setQ(e.target.value)} />
         <AdminUserSearchSelect value={userId} onChange={setUserId} />
         <Input placeholder={t("drama.fields.projectId")} value={projectId} onChange={(e) => setProjectId(e.target.value)} />
-        <select className="admin-native-select" value={type} onChange={(e) => setType(e.target.value)}>
+        <Select className="admin-native-select" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">{t("orders.allTypes")}</option>
           {ASSET_TYPES.map((ty) => (
             <option key={ty} value={ty}>
               {dramaAssetTypeLabel(ty)}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           className="admin-native-select"
           value={generationStatus}
           onChange={(e) => setGenerationStatus(e.target.value)}
@@ -80,7 +81,7 @@ export function DramaAssetsPage() {
               {formatDramaGenerationStatus(s)}
             </option>
           ))}
-        </select>
+        </Select>
         <Button
           size="sm"
           variant="secondary"

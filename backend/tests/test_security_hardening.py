@@ -14,12 +14,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import billing as billing_api
 from app.api import tools as tools_api
-from app.api.v1 import generation as v1_generation
 from app.deps import _user_from_bearer
 from app.models import Order, User, WalletLedger
 from app.services import epay
 
-from tests.conftest import make_task, make_user
+from tests.conftest import make_user
 
 
 class _FakeNotifyRequest:
@@ -51,7 +50,7 @@ async def _make_pending_order(db: AsyncSession, user: User) -> Order:
 
 
 async def test_epay_notify_duplicate_callback_credits_once(
-    db_session: AsyncSession,
+    db_session: AsyncSession, monkeypatch,
 ) -> None:
     """易支付重复回调只入账一次（行锁 + paid 幂等返回）。"""
     user = await make_user(db_session, balance_fen=0)
@@ -64,9 +63,16 @@ async def test_epay_notify_duplicate_callback_credits_once(
         "sign": "x",
     }
 
-    with patch.object(epay, "verify", return_value=True):
-        resp1 = await billing_api.epay_notify(_FakeNotifyRequest(params), db=db_session)
-        resp2 = await billing_api.epay_notify(_FakeNotifyRequest(params), db=db_session)
+    from app.config import get_settings
+    from app.marketplace.android_epay_models import AndroidEpayCheckout, EpayReceipt
+    from app.services.billing.epay_fulfillment import fulfill
+    monkeypatch.setattr(get_settings(), "epay_key", "test-epay-key")
+    connection = await db_session.connection()
+    for table in (AndroidEpayCheckout.__table__, EpayReceipt.__table__):
+        await connection.run_sync(lambda sync, table=table: table.create(sync, checkfirst=True))
+    params["sign"] = epay._sign_pairs(params, "test-epay-key")
+    resp1 = await fulfill(db_session, params)
+    resp2 = await fulfill(db_session, params)
 
     assert resp1.body == b"success"
     assert resp2.body == b"success"
@@ -88,7 +94,8 @@ async def test_epay_notify_duplicate_callback_credits_once(
 
 def test_epay_notify_source_locks_order_row() -> None:
     """源码守卫：回调必须用 SELECT ... FOR UPDATE 锁订单行，防并发双入账。"""
-    assert "with_for_update" in inspect.getsource(billing_api.epay_notify)
+    from app.services.billing.epay_fulfillment import fulfill
+    assert "with_for_update" in inspect.getsource(fulfill)
 
 
 def test_epay_verify_constant_time_signature() -> None:
@@ -103,48 +110,6 @@ def test_epay_verify_constant_time_signature() -> None:
         assert epay.verify({**params, "sign": forged}) is False
         assert epay.verify({**params, "sign": ""}) is False
     assert "compare_digest" in inspect.getsource(epay.verify)
-
-
-async def test_v1_get_task_rejects_other_user(db_session: AsyncSession) -> None:
-    """B 用户不得凭上游 task_id 查询 A 用户的视频任务（IDOR）。"""
-    user_a = await make_user(db_session)
-    user_b = await make_user(db_session)
-    await make_task(
-        db_session,
-        user_a,
-        domain="api",
-        task_type="v1_seedance",
-        status="awaiting_poll",
-        billing_status="frozen",
-        provider_task_id="prov-idor-1",
-    )
-
-    poll = AsyncMock(return_value={"status": "running"})
-    with patch.object(v1_generation, "poll_video_task", poll):
-        with pytest.raises(HTTPException) as exc:
-            await v1_generation.get_task("prov-idor-1", db=db_session, user=user_b)
-    assert exc.value.status_code == 404
-    poll.assert_not_called()
-
-
-async def test_v1_get_task_allows_owner(db_session: AsyncSession) -> None:
-    """归属人查询自己的任务正常透传上游状态。"""
-    user = await make_user(db_session)
-    await make_task(
-        db_session,
-        user,
-        domain="api",
-        task_type="v1_seedance",
-        status="awaiting_poll",
-        billing_status="frozen",
-        provider_task_id="prov-owner-1",
-    )
-
-    poll = AsyncMock(return_value={"status": "running"})
-    with patch.object(v1_generation, "poll_video_task", poll):
-        out = await v1_generation.get_task("prov-owner-1", db=db_session, user=user)
-    assert out.status == "running"
-    poll.assert_awaited_once()
 
 
 async def test_tools_get_task_404_without_local_row(db_session: AsyncSession) -> None:

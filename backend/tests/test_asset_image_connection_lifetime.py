@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app import models_teams  # noqa: F401 - resolve team foreign key column types
 from app.models import User
 from app.models_drama import DramaAsset, DramaProject, DramaScript
 from app.services.drama import generation, jobs

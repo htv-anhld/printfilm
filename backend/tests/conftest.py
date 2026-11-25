@@ -14,6 +14,9 @@ import os
 os.environ.setdefault("BILLING_CURRENCY", "CNY")
 os.environ.setdefault("BILLING_MARKUP", "1.0")
 os.environ.setdefault("BILLING_FIRST_TOPUP_BONUS_FEN", "0")
+# 上游 Printfilm Studio 用例默认依赖开发者 backend/.env 里的 PRINTFILM_STUDIO_ENABLED=true；
+# 配置项仅来自环境变量（无 DB overlay），测试环境在此显式开启，关闭路径的用例自行 monkeypatch。
+os.environ.setdefault("PRINTFILM_STUDIO_ENABLED", "true")
 
 import re
 import uuid
@@ -29,6 +32,13 @@ from app.config import get_settings
 from app.database import Base
 from app.models import User
 from app.models_tasks import TaskRun
+
+
+@pytest.fixture(autouse=True)
+def isolate_direct_llm_launch(monkeypatch):
+    """普通测试不启动真实模型后台调用；执行生命周期用例显式替换此入口。"""
+    from unittest.mock import Mock
+    monkeypatch.setattr("app.services.tasks.direct.launch_direct_task", Mock())
 
 _DB_NAME_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
@@ -82,9 +92,69 @@ def skip_tokenfree_pricing_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr("app.services.tokenfree_pricing.ensure_official_rates", _empty)
     monkeypatch.setattr("app.services.billing.estimates.ensure_official_rates", _empty)
+
+    async def _no_newapi_bills(_events):
+        """单测不拉 New API 消费日志。"""
+        return 0
+
+    monkeypatch.setattr("app.services.billing.newapi_bill.apply_newapi_bills", _no_newapi_bills)
     from app.services.tokenfree_pricing import set_cached_rates
 
     set_cached_rates(None)
+
+
+class _NoDbBarrierResult:
+    """空查询结果：钱包迁移状态行不存在。"""
+
+    def one_or_none(self):
+        return None
+
+    def scalar(self):
+        return None
+
+
+class _NoDbBarrierSession:
+    """不连库的屏障会话：非集成用例走 HTTP 时不触达任何数据库。"""
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_exc):
+        return False
+
+    async def execute(self, *_args, **_kwargs):
+        return _NoDbBarrierResult()
+
+    async def scalar(self, *_args, **_kwargs):
+        return None
+
+    async def rollback(self):
+        return None
+
+
+_barrier_test_engine = None
+
+
+@pytest.fixture(autouse=True)
+def isolate_wallet_cutover_barrier(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """钱包迁移屏障中间件默认用模块级连接池连业务库：跨用例事件循环会报
+    「attached to a different loop」，且会读到业务库。集成用例改连测试库（NullPool，
+    无跨 loop 复用连接）；纯单测换成不连库的空会话。需要验证屏障的用例自行 monkeypatch 覆盖。"""
+    global _barrier_test_engine
+    from app import wallet_cutover_middleware as barrier
+
+    if "db_session" in request.fixturenames:
+        from sqlalchemy.ext.asyncio import async_sessionmaker
+        from sqlalchemy.pool import NullPool
+
+        if _barrier_test_engine is None:
+            test_url, _name = _resolve_test_database_url(get_settings().database_url)
+            _barrier_test_engine = create_async_engine(test_url, poolclass=NullPool)
+        factory = async_sessionmaker(_barrier_test_engine, expire_on_commit=False)
+    else:
+        factory = _NoDbBarrierSession
+    monkeypatch.setattr(barrier, "BarrierSession", factory)
+    monkeypatch.setattr(barrier, "AsyncSessionLocal", factory)
 
 
 @pytest.fixture
@@ -106,6 +176,9 @@ async def db_session(billing_enabled: None) -> AsyncIterator[AsyncSession]:
     import app.models_drama  # noqa: F401
     import app.models_settings  # noqa: F401
     import app.models_tasks  # noqa: F401
+    import app.models_teams  # noqa: F401
+    import app.models_team_billing  # noqa: F401
+    import app.models_team_locks  # noqa: F401
 
     url = (get_settings().database_url or "").strip()
     if not url.startswith("postgresql"):
@@ -164,8 +237,8 @@ async def make_task(
     db: AsyncSession,
     user: User,
     *,
-    domain: str = "api",
-    task_type: str = "v1_image",
+    domain: str = "studio",
+    task_type: str = "tool_image",
     status: str = "pending",
     billing_status: str = "none",
     provider_task_id: str | None = None,

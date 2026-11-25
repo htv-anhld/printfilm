@@ -33,15 +33,11 @@ _SEED_TTS_MARKERS = ("seed-tts",)
 
 
 def uses_tokenfree_audio(*, base_url: str = "", channel_id: str = "") -> bool:
-    """判断 TTS 是否应走 TokenFree（与视频、LLM 同一 Base URL / Key）。"""
+    """判断 TTS 是否应走 TokenFree（与视频、LLM 同一 Base URL / Key）；火山 openspeech 等其他渠道返回 False。"""
     if (channel_id or "").strip().lower() == TOKENFREE_CHANNEL_ID:
         return True
     raw = (base_url or "").strip().lower()
-    if "tokenfree.com" in raw:
-        return True
-    if "volces.com" in raw or "volcengineapi.com" in raw:
-        return False
-    return False
+    return "tokenfree.com" in raw
 
 
 def resolve_tokenfree_tts_model(model: str | None) -> str:

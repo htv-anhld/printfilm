@@ -18,6 +18,7 @@ from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
 from app.models_drama import DramaAsset, DramaProject
+from app.models_teams import Team, TeamMember
 from app.schemas_drama import DramaCanvasSaveRequest
 
 
@@ -40,15 +41,19 @@ async def canvas_store(tmp_path):
     engine = create_async_engine(f"sqlite+aiosqlite:///{(tmp_path / 'canvas.sqlite3').as_posix()}")
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     async with engine.begin() as connection:
-        for model in (User, DramaProject, DramaAsset):
+        for model in (User, Team, TeamMember, DramaProject, DramaAsset):
             await connection.run_sync(model.__table__.create)
     async with sessions() as db:
         user = User(email="canvas-owner@test.local", hashed_password="test")
         other = User(email="canvas-other@test.local", hashed_password="test")
         db.add_all([user, other])
         await db.flush()
+        team = Team(name="Canvas team", owner_user_id=user.id)
+        db.add(team)
+        await db.flush()
+        db.add(TeamMember(team_id=team.id, user_id=user.id, role="owner"))
         projects = [DramaProject(user_id=user.id, title="Personal", content={"notes": "keep"}),
-                    DramaProject(user_id=user.id, title="Second"),
+                    DramaProject(user_id=user.id, team_id=team.id, title="Team"),
                     DramaProject(user_id=other.id, title="Other")]
         db.add_all(projects)
         await db.flush()
@@ -156,6 +161,23 @@ async def test_generation_completed_after_initial_load_is_not_overwritten_by_sta
         assert (asset.url, asset.cover) == (NEW_URL, NEW_COVER)
         assert asset.params["media_metadata"] == METADATA
         assert asset.params["generation"] == {"status": "done"}
+
+
+@pytest.mark.asyncio
+async def test_team_save_keeps_asset_fields_authoritative_and_prompt_editable(canvas_store):
+    store = canvas_store
+    node = stale_node(store.assets[1].id)
+    async with await client_for(store) as client:
+        response = await client.post("/canvas", json={"project_id": store.projects[1].id, "nodes": [node]})
+        loaded = await client.get(f"/canvas/{store.projects[1].id}")
+    assert response.status_code == 200
+    data = loaded.json()["nodes"][0]["data"]
+    assert (data["mediaUrl"], data["cover"], data["label"]) == (NEW_URL, NEW_COVER, "Server title")
+    assert data["promptHint"] == "Edited prompt"
+    async with store.sessions() as db:
+        asset = await db.get(DramaAsset, store.assets[1].id)
+        assert (asset.url, asset.cover, asset.name) == (NEW_URL, NEW_COVER, "Server title")
+        assert asset.params == {"media_metadata": METADATA, "generation": {"status": "done"}}
 
 
 @pytest.mark.asyncio

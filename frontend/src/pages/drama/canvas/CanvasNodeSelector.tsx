@@ -32,7 +32,7 @@ export function CanvasNodeSelector({ onSelect }: CanvasNodeSelectorProps) {
         </div>
         <p className="fc-node-hint">
           <MousePointer2 size={16} strokeWidth={1.8} />
-          {tr('episode.canvas.quickAdd')}
+          {tr('episode.canvas.quickAddDblClick')}
         </p>
       </div>
     </div>

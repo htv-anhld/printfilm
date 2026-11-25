@@ -1,20 +1,31 @@
-/** 画布顶栏：返回、标题、已保存指示、设置占位 */
+/** 画布顶栏：返回、标题、保存状态、设置占位 */
 import { useState } from 'react'
 import { ChevronLeft, Maximize2, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCanvasStore } from './CanvasStore'
 import { tr } from '../../../i18n'
+import type { CanvasSaveStatus } from './useCanvasAutoSave'
 
 type Props = {
   variant?: 'fullscreen' | 'embedded'
 }
 
+/** 保存状态文案 */
+function saveStatusLabel(status: CanvasSaveStatus): string | null {
+  if (status === 'dirty') return tr('episode.storyboard.unsaved')
+  if (status === 'saving') return tr('episode.storyboard.saving')
+  if (status === 'saved') return tr('episode.canvas.saved')
+  if (status === 'error') return tr('episode.storyboard.saveFailed')
+  return null
+}
+
 /** 渲染画布页顶部工具栏 */
 export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
   const navigate = useNavigate()
-  const { saveStatusVisible, projectId, freeCanvasMode } = useCanvasStore()
+  const { saveStatus, projectId, freeCanvasMode } = useCanvasStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const embedded = variant === 'embedded'
+  const statusText = saveStatusLabel(saveStatus)
 
   return (
     <>
@@ -28,7 +39,7 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
               title={tr('episode.canvas.back')}
               onClick={() => {
                 if (freeCanvasMode) {
-                  navigate('/drama')
+                  navigate('/canvas')
                   return
                 }
                 if (window.history.length > 1) navigate(-1)
@@ -45,10 +56,20 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
                 ? tr('episode.canvas.titleFreeCanvas')
                 : tr('episode.canvas.titleLibraryLayout')}
           </span>
-          {saveStatusVisible ? (
-            <span className="fc-save-pill">
+          {statusText ? (
+            <span
+              className={`fc-save-pill${
+                saveStatus === 'error'
+                  ? ' is-error'
+                  : saveStatus === 'dirty'
+                    ? ' is-dirty'
+                    : saveStatus === 'saving'
+                      ? ' is-saving'
+                      : ''
+              }`}
+            >
               <span className="fc-save-dot" />
-              {tr('episode.canvas.saved')}
+              {statusText}
             </span>
           ) : null}
         </div>

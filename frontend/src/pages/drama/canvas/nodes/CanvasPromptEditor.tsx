@@ -232,6 +232,7 @@ export function CanvasPromptEditor({
         role="textbox"
         aria-multiline="true"
         aria-label={tr('episode.canvas.promptAria')}
+        aria-disabled={disabled}
         contentEditable={!disabled}
         suppressContentEditableWarning
         data-placeholder={placeholder}

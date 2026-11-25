@@ -12,6 +12,11 @@ import { SecretField } from "@/components/settings/SecretField";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
+import { MediaPriceSettings } from "./MediaPriceSettings";
+import { AppleProductSettings } from "./AppleProductSettings";
+import { AppleConnectionSettings } from "./AppleConnectionSettings";
+import { AndroidEpaySettings } from "./AndroidEpaySettings";
+import { GooglePlaySettings } from "./GooglePlaySettings";
 import { api } from "@/api/client";
 import { useI18n } from "@/i18n";
 import { majorMoney, money } from "@/lib/money";
@@ -66,14 +71,14 @@ export function PaymentSettingsPanel() {
 
   async function handleSave() {
     if (!form) return;
-    await save(
+    const saved = await save(
       {
-        epay_api_url: form.epay_api_url,
-        epay_pid: form.epay_pid,
-        epay_key: epayKeyInput.trim() || undefined,
+        epay_api_url: form.epay_api_url.trim(),
+        epay_pid: form.epay_pid.trim(),
+        epay_key: clearEpayKey ? undefined : epayKeyInput.trim() || undefined,
         clear_epay_key: clearEpayKey,
-        epay_notify_url: form.epay_notify_url,
-        epay_return_url: form.epay_return_url,
+        epay_notify_url: form.epay_notify_url.trim(),
+        epay_return_url: form.epay_return_url.trim(),
         ...creemPatch(form, creemDraft),
         billing_enabled: form.billing_enabled,
         billing_currency: form.billing_currency ?? "USD",
@@ -102,13 +107,14 @@ export function PaymentSettingsPanel() {
         smtp_host: form.smtp_host,
         smtp_port: form.smtp_port,
         smtp_user: form.smtp_user,
-        smtp_password: smtpPasswordInput.trim() || undefined,
+        smtp_password: clearSmtpPassword ? undefined : smtpPasswordInput.trim() || undefined,
         clear_smtp_password: clearSmtpPassword,
         smtp_from: form.smtp_from,
         smtp_use_tls: form.smtp_use_tls,
       },
       t("settings.payment.saved"),
     );
+    if (!saved) return;
     setEpayKeyInput("");
     setClearEpayKey(false);
     setCreemDraft(EMPTY_CREEM_SECRETS);
@@ -168,6 +174,7 @@ export function PaymentSettingsPanel() {
   }
 
   return (
+    <div className="space-y-5">
     <SettingsTabShell onSave={() => void handleSave()} saving={saving}>
       <SettingsStatusBar
         title={t("settings.payment.statusTitle")}
@@ -618,5 +625,20 @@ export function PaymentSettingsPanel() {
         </SettingsPanel>
       </div>
     </SettingsTabShell>
+    {/* Upstream modules (app stores / points media pricing); self-contained, saved independently */}
+    <details className="settings-advanced">
+      <summary>
+        <span>{t("settings.payment.upstreamModules")}</span>
+        <span>{t("settings.payment.upstreamModulesDesc")}</span>
+      </summary>
+      <div className="space-y-5">
+        <AppleConnectionSettings />
+        <AppleProductSettings />
+        <GooglePlaySettings />
+        <AndroidEpaySettings />
+        <MediaPriceSettings />
+      </div>
+    </details>
+    </div>
   );
 }

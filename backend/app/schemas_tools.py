@@ -2,11 +2,56 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field, model_validator
+
+from app.schemas_drama import DramaAssetOut
+
+
+VideoMode = Literal["text_to_video", "first_last_frame", "omni_reference"]
+ReferenceRole = Literal["first_frame", "last_frame", "reference_image", "reference_video", "reference_audio"]
+MAX_GENERATION_PROMPT_CHARS = 15_000
+MAX_TOOL_REFERENCES = 50
+
+
+class ToolReference(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    role: ReferenceRole
+    file_index: int | None = Field(default=None, ge=0, lt=MAX_TOOL_REFERENCES, strict=True)
+    asset_id: int | None = Field(default=None, ge=1, strict=True)
+
+    @model_validator(mode="after")
+    def exactly_one_source(self):
+        if (self.file_index is None) == (self.asset_id is None):
+            raise ValueError("每个参考资料须选择一个上传文件或资产")
+        return self
+
+
+class ToolEstimateRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    tool_id: Literal["t2v", "v2v"] = "t2v"
+    prompt: str = Field(default="", max_length=MAX_GENERATION_PROMPT_CHARS)
+    model_id: str = Field(default="", max_length=128)
+    video_mode: VideoMode
+    generate_audio: bool | None = None
+    ratio: str = Field(default="9:16", max_length=16)
+    resolution: str = Field(default="480p", max_length=16)
+    duration: str | int = "5s"
+    references: list[ToolReference] = Field(default_factory=list, max_length=MAX_TOOL_REFERENCES)
+
+
+class ToolReferenceAssetOut(DramaAssetOut):
+    media_kind: Literal["image", "video", "audio"]
 
 
 class ToolRunOut(BaseModel):
-    kind: str = Field(description="image | video | images")
+    kind: str = Field(description="image | video | audio")
+    run_id: int | None = None
+    platform_task_id: int | None = None
     urls: list[str] = Field(default_factory=list)
     task_id: str | None = None
     status: str = "succeeded"
@@ -19,6 +64,35 @@ class ToolTaskOut(BaseModel):
     kind: str = "video"
     urls: list[str] = Field(default_factory=list)
     error: str | None = None
+    platform_task_id: int | None = None
+    provider_task_id: str | None = None
+    queue_type: str | None = None
+    preview_url: str | None = None
+
+
+class ToolTaskQueryRequest(BaseModel):
+    """按任务编号批量查询画布生成状态。"""
+
+    ids: list[str] = Field(default_factory=list, max_length=50)
+
+
+class ToolTaskQueryItem(BaseModel):
+    """单条生成任务，字段对齐画布批量轮询。"""
+
+    id: str
+    status: str
+    result: dict | None = None
+    error: str | None = None
+    user_id: str
+    node_id: str = ""
+    created_at: float = 0
+    spec: dict = Field(default_factory=dict)
+    kind: str = "image"
+
+
+class ToolTaskQueryOut(BaseModel):
+    data: list[ToolTaskQueryItem] = Field(default_factory=list)
+    missing_ids: list[str] = Field(default_factory=list)
 
 
 class ToolRunRecordOut(BaseModel):
@@ -35,6 +109,14 @@ class ToolRunRecordOut(BaseModel):
     params: dict | None = None
     error: str | None = None
     created_at: str
+    platform_task_id: int | None = None
+    provider_task_id: str | None = None
+    provider_name: str | None = None
+    provider_status: str | None = None
+    queue_type: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    billing_charged_fen: int = 0
 
 
 class ToolRunListOut(BaseModel):
@@ -42,3 +124,4 @@ class ToolRunListOut(BaseModel):
     total: int
     page: int
     page_size: int
+    counts: dict[str, int] = Field(default_factory=dict)

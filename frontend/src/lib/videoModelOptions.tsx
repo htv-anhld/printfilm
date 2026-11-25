@@ -60,7 +60,7 @@ export function useVideoModelOptions(): {
     return {
       models,
       options,
-      defaultId: catalog?.defaults.video_model || models[0]?.id || '',
+      defaultId: catalog?.defaults?.video_model || models[0]?.id || '',
       loading: catalog === null,
     }
   }, [catalog, t])

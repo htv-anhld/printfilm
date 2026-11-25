@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+import app.models_teams  # noqa: F401
 from app.models import User
 from app.models_drama import DramaAsset, DramaProject, DramaScript
 from app.services.drama import jobs

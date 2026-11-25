@@ -5,7 +5,7 @@ import { SeedanceRulesModal } from '../../../../components/drama/SeedanceRulesMo
 import { useCanvasStore } from '../CanvasStore'
 import { CANVAS_GENERATABLE_KINDS, type CanvasNodeKind } from '../canvasTypes'
 import {
-  defaultOptionsForAssetKind,
+  readImageGenerationOptions,
   type ImageGenerationOptions,
 } from '../../../../lib/dramaGenerationOptions'
 import {
@@ -15,11 +15,13 @@ import {
 } from '../../../../lib/dramaVideoGenerationOptions'
 import { optimizePromptWithSkills } from '../../../../api/agentSkills'
 import { useAgentSkillSelection } from '../../../../hooks/useAgentSkillSelection'
+import { ensureStructureInPrompt } from '../../../../lib/dramaStructurePrompt'
 import { DramaImageGenOptionsBar } from './DramaImageGenOptionsBar'
 import { DramaSkillOptionsBar } from './DramaSkillOptionsBar'
 import { DramaVideoGenOptionsBar } from './DramaVideoGenOptionsBar'
 import { CanvasPromptEditor } from './CanvasPromptEditor'
 import { tr } from '../../../../i18n'
+import { useMediaModelsCatalog } from '../../../../hooks/useMediaModelsCatalog'
 
 type CanvasNodeGeneratePanelProps = {
   nodeId: string
@@ -32,6 +34,8 @@ type CanvasNodeGeneratePanelProps = {
   hasMedia?: boolean
   /** 视频节点已保存的 Seedance 参数 */
   videoOptions?: Record<string, unknown>
+  /** 生图节点已保存的模型/比例/清晰度 */
+  imageOptions?: Record<string, unknown>
 }
 
 /** 按节点类型返回面板文案 */
@@ -39,8 +43,8 @@ function panelCopy(kind: CanvasNodeKind, hasMedia: boolean) {
   if (kind === 'video') {
     return {
       title: hasMedia ? tr('episode.canvas.gen.videoTitleEdit') : tr('episode.canvas.gen.videoTitle'),
-      placeholder: tr('episode.canvas.gen.videoPlaceholder'),
-      hint: tr('episode.canvas.gen.videoHint'),
+      placeholder: tr('episode.canvas.gen.videoPlaceholderConnected'),
+      hint: tr('episode.canvas.gen.videoHintConnected'),
     }
   }
   if (kind === 'character') {
@@ -59,8 +63,8 @@ function panelCopy(kind: CanvasNodeKind, hasMedia: boolean) {
   }
   return {
     title: hasMedia ? tr('episode.canvas.gen.imageTitleEdit') : tr('episode.canvas.gen.imageTitle'),
-    placeholder: tr('episode.canvas.gen.imagePlaceholder'),
-    hint: tr('episode.canvas.gen.imageHint'),
+    placeholder: tr('episode.canvas.gen.imagePlaceholderConnected'),
+    hint: tr('episode.canvas.gen.imageHintConnected'),
   }
 }
 
@@ -84,16 +88,19 @@ export function CanvasNodeGeneratePanel({
   label = '',
   hasMedia = false,
   videoOptions: savedVideoOptions,
+  imageOptions: savedImageOptions,
 }: CanvasNodeGeneratePanelProps) {
   const {
+    projectId,
     generateNodeImage,
     generateNodeVideo,
     setErrorMessage,
     projectImageStyleId,
     updateNodePrompt,
     updateNodeVideoOptions,
+    updateNodeImageOptions,
     mentionableNodes,
-    projectId,
+    edges,
   } = useCanvasStore()
   const [prompt, setPrompt] = useState(() => sanitizePrompt(defaultPrompt, kind, label))
   /*
@@ -106,11 +113,14 @@ export function CanvasNodeGeneratePanel({
   const [optimizing, setOptimizing] = useState(false)
   const { skills, selectedIds, toggleSkill, selectAll, selectNone, uploadSkill, uploading, uploadError } =
     useAgentSkillSelection()
-  // imageOptions 生图风格/模型/画幅
-  const [imageOptions, setImageOptions] = useState<ImageGenerationOptions>(() => ({
-    ...defaultOptionsForAssetKind(kind),
-    image_style_id: projectImageStyleId || undefined,
-  }))
+  // imageOptions 生图风格/模型/画幅（优先恢复节点上已保存选择）
+  const [imageOptions, setImageOptions] = useState<ImageGenerationOptions>(() => {
+    const saved = readImageGenerationOptions(savedImageOptions, kind)
+    return {
+      ...saved,
+      image_style_id: saved.image_style_id || projectImageStyleId || undefined,
+    }
+  })
   // videoOpts Seedance 时长/比例/清晰度
   const [videoOpts, setVideoOpts] = useState<VideoGenerationOptions>(() => {
     const saved = readVideoGenerationOptions(savedVideoOptions)
@@ -123,12 +133,21 @@ export function CanvasNodeGeneratePanel({
   const copy = panelCopy(kind, hasMedia)
   const allowMention = kind === 'video' || kind === 'image'
   const isVideo = kind === 'video'
+  const mediaCatalog = useMediaModelsCatalog()
+  const selectedModelId = isVideo ? videoOpts.model_id || mediaCatalog?.defaults.video_model : imageOptions.model_id || mediaCatalog?.defaults.image_model
+  const referenceLimits = (isVideo ? mediaCatalog?.video_models : mediaCatalog?.image_models)?.find(model => model.id === selectedModelId)?.reference_limits
 
-  /* 可引用：排除当前节点自身 */
-  const mentionItems = useMemo(
-    () => mentionableNodes.filter((n) => n.nodeId !== nodeId),
-    [mentionableNodes, nodeId],
-  )
+  /* 可引用：仅已连线邻居（双向），并排除自身 */
+  const mentionItems = useMemo(() => {
+    const neighborIds = new Set<string>()
+    for (const edge of edges) {
+      if (edge.source === nodeId) neighborIds.add(edge.target)
+      if (edge.target === nodeId) neighborIds.add(edge.source)
+    }
+    return mentionableNodes.filter(
+      (n) => n.nodeId !== nodeId && neighborIds.has(n.nodeId),
+    )
+  }, [edges, mentionableNodes, nodeId])
 
   const lastNodeIdRef = useRef(nodeId)
 
@@ -144,15 +163,15 @@ export function CanvasNodeGeneratePanel({
     setPrompt((prev) => next || prev)
   }, [defaultPrompt, nodeId, kind, label])
 
-  /* 节点类型或项目风格变化时同步默认选项 */
+  /* 仅切换节点时从节点恢复生图选项；编辑过程不覆盖本地选择 */
   useEffect(() => {
-    setImageOptions((prev) => ({
-      ...defaultOptionsForAssetKind(kind),
-      image_style_id: prev.image_style_id || projectImageStyleId || undefined,
-      model_id: prev.model_id,
-      resolution: prev.resolution,
-    }))
-  }, [kind, nodeId, projectImageStyleId])
+    const saved = readImageGenerationOptions(savedImageOptions, kind)
+    setImageOptions({
+      ...saved,
+      image_style_id: saved.image_style_id || projectImageStyleId || undefined,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 只在换节点时恢复
+  }, [nodeId, kind])
 
   useEffect(() => {
     const saved = readVideoGenerationOptions(savedVideoOptions)
@@ -162,7 +181,7 @@ export function CanvasNodeGeneratePanel({
       image_style_id: saved.image_style_id || projectImageStyleId || undefined,
     })
     // 仅切换节点时恢复已保存参数，避免编辑选项时被回写覆盖
-  }, [nodeId, projectImageStyleId])
+  }, [nodeId])
 
   const isBusy = busy || generating || optimizing
   const canSubmit = prompt.trim().length > 0 && !isBusy
@@ -178,14 +197,15 @@ export function CanvasNodeGeneratePanel({
     if (!canSubmit) return
     setBusy(true)
     try {
-      updateNodePrompt(nodeId, prompt)
+      // 提示词以框内为准（抽取/生成提示词时已含三视图等结构）；生图不再动态拼接
+      const finalPrompt = prompt.trim()
+      updateNodePrompt(nodeId, finalPrompt)
       if (isVideo) {
         updateNodeVideoOptions(nodeId, videoOpts)
-      }
-      if (isVideo) {
-        await generateNodeVideo(nodeId, prompt, videoOpts)
+        await generateNodeVideo(nodeId, finalPrompt, videoOpts)
       } else {
-        await generateNodeImage(nodeId, prompt, imageOptions)
+        updateNodeImageOptions(nodeId, imageOptions)
+        await generateNodeImage(nodeId, finalPrompt, imageOptions)
       }
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : tr('episode.canvas.generateFailed'))
@@ -199,24 +219,27 @@ export function CanvasNodeGeneratePanel({
     void submit()
   }
 
-  // 按勾选 Skill 改写当前提示词，保留 @asset 引用
+  // 按勾选 Skill 改写当前提示词；若优化丢掉结构前缀则补回（写入框内，非生图时静默携带）
   const optimizePrompt = async () => {
     if (!canOptimize) return
     setOptimizing(true)
     try {
       const result = await optimizePromptWithSkills({
+        project_id: projectId,
         prompt,
         skill_ids: selectedIds,
         task: isVideo ? 'video_prompt' : 'image_prompt',
-        project_id: projectId,
       })
-      const next = (result.prompt || '').trim()
+      let next = (result.prompt || '').trim()
+      if (next && !isVideo) {
+        next = ensureStructureInPrompt(next, kind)
+      }
       if (next) {
         setPrompt(next)
         updateNodePrompt(nodeId, next)
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : tr('episode.canvas.gen.skillFailed'))
+      setErrorMessage(err instanceof Error ? err.message : tr('episode.canvas.gen.optimizeFailed'))
     } finally {
       setOptimizing(false)
     }
@@ -236,7 +259,7 @@ export function CanvasNodeGeneratePanel({
       }}
     >
       <div className="fc-generate-head">
-        <Sparkles size={14} strokeWidth={1.8} />
+        <span className="fc-generate-head-icon" aria-hidden="true"><Sparkles size={15} strokeWidth={1.8} /></span>
         <span>{copy.title}</span>
         {hasMedia ? <em className="fc-generate-tag">{tr('episode.canvas.gen.regenTag')}</em> : null}
         {isVideo ? (
@@ -252,6 +275,10 @@ export function CanvasNodeGeneratePanel({
           </button>
         ) : null}
       </div>
+      <div className="fc-generate-prompt-meta">
+        <span>{tr('episode.canvas.gen.promptLabel')}{allowMention ? <span className="fc-generate-mention-hint">{tr('episode.canvas.gen.mentionHint')}</span> : null}</span>
+        <span className="fc-generate-count">{tr('episode.canvas.gen.charCount', { n: Array.from(prompt).length.toLocaleString() })}</span>
+      </div>
       <CanvasPromptEditor
         value={prompt}
         placeholder={copy.placeholder}
@@ -263,43 +290,61 @@ export function CanvasNodeGeneratePanel({
         }}
         onSubmit={() => void submit()}
       />
-      {isVideo ? (
-        <DramaVideoGenOptionsBar
-          value={videoOpts}
+      <div className="fc-generate-settings">
+        {isVideo ? (
+          <DramaVideoGenOptionsBar
+            value={videoOpts}
+            disabled={isBusy}
+            onChange={(next) => {
+              setVideoOpts(next)
+              updateNodeVideoOptions(nodeId, next)
+            }}
+          />
+        ) : (
+          <DramaImageGenOptionsBar
+            value={imageOptions}
+            disabled={isBusy}
+            onChange={(next) => {
+              setImageOptions(next)
+              updateNodeImageOptions(nodeId, next)
+            }}
+          />
+        )}
+        <DramaSkillOptionsBar
+          skills={skills}
+          selectedIds={selectedIds}
           disabled={isBusy}
-          onChange={(next) => {
-            setVideoOpts(next)
-            updateNodeVideoOptions(nodeId, next)
-          }}
+          onToggle={toggleSkill}
+          onSelectAll={selectAll}
+          onSelectNone={selectNone}
+          onUpload={(file) => void uploadSkill(file)}
+          uploading={uploading}
+          uploadError={uploadError}
         />
-      ) : (
-        <DramaImageGenOptionsBar value={imageOptions} onChange={setImageOptions} disabled={isBusy} />
-      )}
-      <DramaSkillOptionsBar
-        skills={skills}
-        selectedIds={selectedIds}
-        disabled={isBusy}
-        onToggle={toggleSkill}
-        onSelectAll={selectAll}
-        onSelectNone={selectNone}
-        onUpload={(file) => void uploadSkill(file)}
-        uploading={uploading}
-        uploadError={uploadError}
-      />
+        {referenceLimits ? (
+          <span className="fc-generate-reference-limits" title={tr('episode.canvas.gen.refLimitsTitle')}>
+            {tr('episode.canvas.gen.refLimits', { images: referenceLimits.images, videos: referenceLimits.videos, audios: referenceLimits.audios })}
+          </span>
+        ) : null}
+      </div>
       <div className="fc-generate-actions">
-        <span className="fc-generate-hint">{copy.hint}</span>
+        <span className="fc-generate-hint" title={copy.hint}>
+          <span><kbd>Enter</kbd> {tr('episode.canvas.gen.kbdGenerate')}</span>
+          <span><kbd>Shift + Enter</kbd> {tr('episode.canvas.gen.kbdNewline')}</span>
+        </span>
         <div className="fc-generate-action-btns">
           <button
             type="button"
             className="fc-generate-optimize"
             disabled={!canOptimize}
-            title={selectedIds.length ? tr('episode.canvas.gen.skillRewrite') : tr('episode.canvas.gen.selectSkillFirst')}
+            title={selectedIds.length ? tr('episode.canvas.gen.optimizeTitle') : tr('episode.canvas.gen.selectSkillFirst')}
             onClick={() => void optimizePrompt()}
           >
             {optimizing ? <Loader2 size={14} className="fc-spin" /> : <Wand2 size={14} strokeWidth={1.8} />}
-            {tr('episode.canvas.gen.skillOptimize')}
+            {tr('episode.canvas.gen.optimize')}
           </button>
-          <button type="submit" className="fc-generate-submit" disabled={!canSubmit} aria-label={tr('episode.canvas.gen.submit')}>
+          <button type="submit" className="fc-generate-submit" disabled={!canSubmit} aria-label={generating || busy ? tr('episode.canvas.gen.submitting') : tr('episode.canvas.gen.submit')}>
+            <span>{generating || busy ? tr('episode.canvas.gen.submitting') : tr('episode.canvas.gen.submit')}</span>
             {isBusy && !optimizing ? (
               <Loader2 size={16} className="fc-spin" />
             ) : (

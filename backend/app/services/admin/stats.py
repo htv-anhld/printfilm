@@ -164,7 +164,7 @@ async def build_admin_dashboard_stats(
     paid_total = int(
         (
             await db.execute(
-                select(func.coalesce(func.sum(Order.amount_fen), 0)).where(Order.status == "paid")
+                select(func.coalesce(func.sum(Order.amount_fen), 0)).where(Order.status == "paid", func.coalesce(Order.payment_environment, "Production") == "Production")
             )
         ).scalar_one()
         or 0
@@ -174,6 +174,7 @@ async def build_admin_dashboard_stats(
             await db.execute(
                 select(func.coalesce(func.sum(Order.amount_fen), 0)).where(
                     Order.status == "paid",
+                    func.coalesce(Order.payment_environment, "Production") == "Production",
                     Order.paid_at.is_not(None),
                     Order.paid_at >= today,
                 )
@@ -482,7 +483,7 @@ async def aggregate_usage_summary(
     项目级用量汇总。
     - 单项目：传 project_id 或 drama_project_id，返回一条 dict
     - 批量：传 project_ids 或 drama_project_ids，返回 {id: dict}
-    扣费 = TaskRun 实扣 + 无任务孤儿用量；调用/成本按去重后的 usage 行统计。
+    扣费 = TaskRun 实扣 + 无任务孤儿用量；调用/成本/token 按去重后的 usage 行统计。
     """
     empty = _empty_usage_summary()
 

@@ -34,11 +34,12 @@ LEGACY_NARRATION_PREFIX = "【旁白·慢速清晰·同步字幕】"
 DIALOGUE_PREFIX = "【对白·慢速清晰·同步字幕】"
 VISUAL_PREFIX = "【画面·无配音仅环境音】"
 EMPTY_SHOT_PREFIX = "【空镜·可仅环境音与 BGM】"
-SUBTITLE_CUE = "【字幕：后期叠旁白字幕，简体中文逐句同步】"
+SUBTITLE_CUE = "【字幕：后期叠旁白字幕，保持原文语言逐句同步】"
 DRAMA_SUBTITLE_CUE = "【字幕：底部居中·简体中文·逐句轮换·与口播同步】"
 # 历史 cue，提交前统一替换为现行文案
 LEGACY_KEPU_SUBTITLE_CUES = (
     "【字幕：全程简体中文字幕，旁白逐句同步烧录】",
+    "【字幕：后期叠旁白字幕，简体中文逐句同步】",
 )
 LEGACY_DRAMA_SUBTITLE_CUES = (
     "【字幕：底部居中·简体中文·仅标记段落同步】",
@@ -230,6 +231,8 @@ def classify_voice_body(body: str) -> str:
     text = (body or "").strip()
     if not text:
         return "keep"
+    # 画布 @asset:123 含冒号，禁止当成「说话人：台词」
+    text = re.sub(r"@asset:\d+", lambda m: m.group(0).replace(":", "_", 1), text)
     if match_visual_shot_label(text) or starts_with_empty_shot(text) or text.startswith("△"):
         return "visual"
     stage = STAGE_ONLY_SPEAKER_RE.match(text)
@@ -508,8 +511,18 @@ def script_bgm_mood(segment_script: str) -> str:
     return infer_bgm_mood(segment_script)
 
 
-def build_production_cues(bgm_mood: str, content_locale: str | None = None) -> list[str]:
-    """字幕 / BGM cue；vi / en 内容项目用英文 cue（zh 与旧版逐字一致）。"""
+def build_production_cues(
+    bgm_mood: str,
+    content_locale: str | None = None,
+    *,
+    language: str | None = None,
+) -> list[str]:
+    """字幕 / BGM cue；vi / en 内容项目用英文 cue（zh 与旧版逐字一致）。
+
+    language 为上游调用的旧参数（"zh" / "en"），未传 content_locale 时据此取语言。
+    """
+    if content_locale is None and language:
+        content_locale = language
     if _cue_locale(content_locale) != "zh":
         from app.services.templates_prompts_en import prompt_en
 
@@ -567,12 +580,15 @@ def build_seedance_production_section(
     segment_script: str,
     *,
     ambient_only: bool = False,
-    burn_subtitles: bool = True,
-    character_intro: bool = True,
+    burn_subtitles: bool = False,
+    character_intro: bool = False,
+    no_bgm: bool = False,
 ) -> str:
     """组装 Seedance 音频/字幕/BGM 强制约束（科普旁白 / 漫剧画面+对白混排）。
 
-    ambient_only：科普后期 TTS 模式——模型只出操作环境音，禁止口播与 BGM。
+    ambient_only：回退模式——模型只出操作环境音，禁止口播与 BGM（口播由后期 TTS）。
+    默认科普 full 为环境音+口播同出（ambient_only=False）。
+    no_bgm：禁止模型出 BGM（科普内置口播时由后期叠可控 BGM）。
     burn_subtitles=False：成片后再烧 SRT——保留口播，禁止画面内字幕。
     character_intro=False：禁止人物介绍叠字/字卡（与字幕开关独立）。
     """
@@ -586,6 +602,8 @@ def build_seedance_production_section(
         ]
         return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n" + "\n".join(lines)
 
+    # 系统说明可为中文，但绝不把实际旁白/字幕翻译为中文。
+    language_guard = "0. 语言：旁白、对白及字幕严格保持脚本原文语言，禁止翻译；英文原文必须英文配音和英文字幕。"
     has_vo = script_has_narration_cue(segment_script)
     has_dialogue = script_has_dialogue_cue(segment_script)
     drama_mixed = script_is_drama_mixed(segment_script)
@@ -600,6 +618,16 @@ def build_seedance_production_section(
         "口播仅出声，文字叠字由后期完成。"
     )
 
+    def _bgm_line(idx: int) -> str:
+        if no_bgm:
+            return (
+                f"{idx}. 背景音乐：禁止任何 BGM、配乐、旋律、哼唱垫乐；"
+                "BGM 由后期统一叠加，视频内只保留口播与环境音效。"
+            )
+        return (
+            f"{idx}. 背景音乐：{bgm_mood}；BGM 音量低于人声约 30%，不得盖过旁白与关键音效。"
+        )
+
     if drama_mixed:
         lines = [
             "1. 配音范围：仅【旁白·…】【对白·…】标记的段落需要口播；"
@@ -610,7 +638,7 @@ def build_seedance_production_section(
                 f"3. 字幕：{no_burn}"
                 if not burn_subtitles
                 else (
-                    "3. 字幕：仅【旁白·…】【对白·…】口播内容烧录简体中文字幕，底部居中；"
+                    "3. 字幕：仅【旁白·…】【对白·…】口播内容按原文语言烧录字幕，底部居中；"
                     "同一时刻只显示一行（一句），随口播进度逐句轮换，禁止把整段对白一次性叠满屏幕；"
                     "禁止重复字、叠字、口吃式重复；字幕必须与当前正在说的那一句逐字一致；"
                     "画面描述段不出现字幕。"
@@ -633,11 +661,10 @@ def build_seedance_production_section(
             )
         else:
             lines.append(
-                "4. 人声：本镜若无旁白/对白标记，则全程无口播，仅环境音与 BGM。"
+                "4. 人声：本镜若无旁白/对白标记，则全程无口播，仅环境音"
+                + ("。" if no_bgm else "与 BGM。")
             )
-        lines.append(
-            f"5. 背景音乐：{bgm_mood}；BGM 音量低于人声约 30%。"
-        )
+        lines.append(_bgm_line(5))
         lines.append(
             "6. 音效：环境音与动作音效与画面同步，层次低于人声。"
         )
@@ -652,7 +679,7 @@ def build_seedance_production_section(
             lines.append(
                 "7. 人物介绍：本镜禁止任何人物介绍叠字/字卡；身份信息不写入画面。"
             )
-        return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n" + "\n".join(lines)
+        return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n{language_guard}\n" + "\n".join(lines)
 
     # 科普旁白模式：整镜以旁白段为主（语速自然偏快，避免拖沓）
     lines = [
@@ -662,7 +689,7 @@ def build_seedance_production_section(
             f"2. 字幕：{no_burn}"
             if not burn_subtitles
             else (
-                "2. 字幕：全程烧录简体中文字幕，位置底部居中，字号清晰可读；"
+                "2. 字幕：全程按原文语言烧录字幕，位置底部居中，字号清晰可读；"
                 "旁白须逐句同步显示，字幕与口播一致。"
             )
         ),
@@ -679,13 +706,11 @@ def build_seedance_production_section(
             + ("；口播仅出声，画面不叠字幕；" if not burn_subtitles else "，并同步烧录字幕；")
             + "视频内不要自行添加嘈杂对白。"
         )
-    lines.append(
-        f"4. 背景音乐：{bgm_mood}；BGM 音量低于人声约 30%，不得盖过旁白与关键音效。"
-    )
+    lines.append(_bgm_line(4))
     lines.append(
         "5. 音效：环境音与动作音效与画面同步，层次低于人声。"
     )
-    return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n" + "\n".join(lines)
+    return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n{language_guard}\n" + "\n".join(lines)
 
 
 def format_segment_line(kind: str, text: str, content_locale: str | None = None) -> str:
@@ -858,8 +883,11 @@ def build_segment_script(
     bgm_mood: str,
     max_total: int = SHOT_DURATION_MAX,
     content_locale: str | None = None,
+    language: str | None = None,
 ) -> str:
-    """content_locale 为 vi / en 时 cue 与旁白前缀用英文。"""
+    """content_locale 为 vi / en 时 cue 与旁白前缀用英文；language 为上游旧参数（zh / en）。"""
+    if content_locale is None and language:
+        content_locale = language
     lines = build_production_cues(bgm_mood, content_locale)
     used = 0
     for beat in beats:
@@ -973,6 +1001,7 @@ def build_seedance_prompt(
     burn_subtitles: bool = True,
     character_intro: bool = True,
     content_locale: str | None = None,
+    no_bgm: bool = False,
 ) -> str:
     """Assemble final Seedance text: style lock + production constraints + timed body.
 
@@ -996,6 +1025,7 @@ def build_seedance_prompt(
             ambient_only=ambient_only,
             burn_subtitles=burn_subtitles and not ambient_only,
             character_intro=character_intro and not ambient_only,
+            no_bgm=no_bgm and not ambient_only,
         )
     )
     if not ambient_only:

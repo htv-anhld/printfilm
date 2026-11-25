@@ -8,7 +8,10 @@ from app.models import User
 from app.services.api_keys import API_KEY_PREFIX, user_from_api_key
 from app.services.auth import decode_token, get_user_by_id
 
-security = HTTPBearer(auto_error=False)
+security = HTTPBearer(
+    auto_error=False,
+    description="站内登录令牌：通过 POST /api/auth/login 获取 access_token，请求时发送 Authorization: Bearer <access_token>；对外 API 也可发送 pf_live_ API Key。",
+)
 
 
 async def _user_from_bearer(db: AsyncSession, token: str) -> User | None:

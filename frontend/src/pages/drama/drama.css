@@ -1379,13 +1379,6 @@
   font-weight: 600;
 }
 
-.drama-asset-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 14px;
-  margin-top: 14px;
-}
-
 .drama-assets-page-meta {
   margin: 12px 0 0;
   font-size: 0.875rem;
@@ -2331,7 +2324,6 @@
   align-self: flex-start;
 }
 
-.drama-assets-tips,
 .drama-episodes-tips {
   display: flex;
   align-items: center;
@@ -2346,7 +2338,6 @@
   line-height: 1.45;
 }
 
-.drama-assets-tips strong,
 .drama-episodes-tips strong {
   color: var(--drama-ink);
   font-weight: 600;
@@ -2398,6 +2389,91 @@
 .drama-outline-toolbar-meta {
   font-size: 13px;
   color: var(--pf-muted);
+}
+
+.drama-outline-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #eab308 10%, var(--pf-card)) 0%,
+    color-mix(in srgb, #22c55e 8%, var(--pf-card)) 100%
+  );
+  border: 1px solid rgba(202, 138, 4, 0.28);
+  border-radius: 14px;
+}
+
+.drama-outline-pipeline-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.drama-outline-pipeline-pulse {
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #ca8a04;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0 rgba(202, 138, 4, 0.45);
+  animation: drama-outline-pulse 1.4s ease-out infinite;
+}
+
+@keyframes drama-outline-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(202, 138, 4, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(202, 138, 4, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(202, 138, 4, 0);
+  }
+}
+
+.drama-outline-pipeline-main strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: color-mix(in srgb, #ca8a04 70%, var(--pf-ink));
+}
+
+.drama-outline-pipeline-main p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--pf-muted);
+  line-height: 1.45;
+}
+
+.drama-outline-pipeline-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pf-ink) 8%, transparent);
+  overflow: hidden;
+}
+
+.drama-outline-pipeline-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #eab308, #22c55e);
+  transition: width 0.35s ease;
+}
+
+.drama-outline-pipeline-bar.is-indeterminate .drama-outline-pipeline-bar-fill {
+  width: 36%;
+  animation: drama-outline-indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes drama-outline-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
 }
 
 .drama-outline-chip-btn {
@@ -2593,6 +2669,11 @@
 
 .drama-outline-ep-meta em.is-shot {
   color: #059669;
+  font-weight: 600;
+}
+
+.drama-outline-ep-meta em.is-waiting {
+  color: #ca8a04;
   font-weight: 600;
 }
 
@@ -3566,15 +3647,6 @@
   padding: 28px 20px 72px;
 }
 
-.drama-assets-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
 .drama-episodes-hero-actions {
   display: flex;
   align-items: center;
@@ -3646,6 +3718,38 @@
   100% {
     background-position: -100% 0;
   }
+}
+
+/* 分集编辑/画布页首屏骨架：外壳内占位，避免白屏与布局跳动 */
+.drama-workspace-skeleton {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-height: 40vh;
+  padding: 28px 4px;
+}
+.drama-workspace-skeleton > span {
+  display: block;
+  height: 16px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--pf-surface-2) 0%,
+    color-mix(in srgb, var(--pf-ink) 6%, var(--pf-surface-2)) 50%,
+    var(--pf-surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: drama-ep-skeleton 1.2s ease-in-out infinite;
+}
+.drama-workspace-skeleton > span:nth-child(1) {
+  width: 42%;
+  height: 26px;
+}
+.drama-workspace-skeleton > span:nth-child(2) {
+  width: 78%;
+}
+.drama-workspace-skeleton > span:nth-child(3) {
+  width: 64%;
 }
 
 .drama-ep-card-poster {
@@ -4847,19 +4951,6 @@
 .drama-ep-asset-op-btn:hover {
   background: var(--pf-surface-2);
   border-color: var(--pf-line-strong);
-}
-
-.drama-ep-asset-voice {
-  position: absolute;
-  bottom: 28px;
-  left: 6px;
-  z-index: 1;
-  font-size: 9px;
-  line-height: 1;
-  padding: 2px 5px;
-  border-radius: 999px;
-  background: rgba(17, 17, 17, 0.78);
-  color: #b7f34a;
 }
 
 .drama-ep-asset-voice-btn {
@@ -6419,7 +6510,6 @@
   }
 }
 
-
 /* Global image generation queue ? bottom-right FAB + half-height panel */
 .drama-gen-fab-root {
   position: fixed;
@@ -6452,6 +6542,16 @@
   color: var(--pf-bg);
   cursor: pointer;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  touch-action: none;
+  user-select: none;
+}
+
+.drama-gen-fab-btn.is-draggable {
+  cursor: grab;
+}
+
+.drama-gen-fab-btn.is-draggable:active {
+  cursor: grabbing;
 }
 
 .drama-gen-fab-btn:hover {
@@ -7232,4 +7332,17 @@
   font-style: normal;
   line-height: 1.2;
   pointer-events: none;
+}
+
+/* 项目列表：团队参与（非本人创建）的项目角标，放右下角避免与画布 / 封面角标重叠 */
+.pf-drama-card-cover-badge.is-joined {
+  left: auto;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pf-drama-list-pagination {
+  margin-top: 20px;
 }

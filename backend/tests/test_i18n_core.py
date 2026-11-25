@@ -1,7 +1,6 @@
 """后端核心 i18n：语言归一、翻译回退、中间件语言头、项目 content_locale、任务 locale 传播。"""
 from __future__ import annotations
 
-import uuid
 from contextlib import asynccontextmanager
 from unittest.mock import patch
 
@@ -134,10 +133,15 @@ def test_project_schema_content_locale_validation() -> None:
 
 async def _make_template(db: AsyncSession):
     from app.models import Template
+    from app.services.creation_templates import DEFAULT_CREATION_TEMPLATE_ID
 
-    tpl = Template(id=f"tpl-i18n-{uuid.uuid4().hex[:8]}", name="i18n", style_prefix="x")
-    db.add(tpl)
-    await db.flush()
+    # 创建项目只接受公开的创作模板 id（上游收口）；测试库里没有则临时插入
+    tpl = await db.get(Template, DEFAULT_CREATION_TEMPLATE_ID)
+    if tpl is None:
+        tpl = Template(id=DEFAULT_CREATION_TEMPLATE_ID, name="i18n", style_prefix="x")
+        db.add(tpl)
+        await db.flush()
+    tpl.is_active = True
     return tpl
 
 
@@ -228,7 +232,13 @@ async def test_executor_writes_error_in_task_locale(db_session: AsyncSession) ->
     assert done is not None
     assert done.status == "failed"
     assert done.error_message == "No task handler registered: api/v1_image"
-    assert any(ev.message == "No task handler registered: api/v1_image" for ev in done.events)
+    # 运行时加载不再预取 events（上游收口），单独查询事件表
+    from sqlalchemy import select
+
+    from app.models_tasks import TaskEvent
+
+    messages = (await db_session.scalars(select(TaskEvent.message).where(TaskEvent.task_id == task_id))).all()
+    assert "No task handler registered: api/v1_image" in messages
 
 
 def test_task_text_uses_task_locale() -> None:

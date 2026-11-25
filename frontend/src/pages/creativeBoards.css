@@ -1,0 +1,36 @@
+/* 创意看板：复用项目列表页外壳（pf-project-list-*），这里只补表单行、看板切换与卡片 */
+.pf-creative-page { display: grid; gap: 22px; }
+.pf-creative-page .pf-project-page-header { margin-bottom: 12px; }
+.pf-creative-row { display: flex; align-items: stretch; gap: 10px; margin: 20px 0 0; }
+.pf-creative-row .pf-type-select { min-height: 43px; min-width: 130px; border-color: var(--pf-line-strong); background: var(--pf-surface-2); }
+.pf-creative-input { flex: 1; min-width: 0; min-height: 43px; padding: 10px 14px; border: 1px solid var(--pf-line-strong); border-radius: 10px; background: var(--pf-surface-2); color: var(--pf-ink); font-size: 13px; outline: none; }
+.pf-creative-input::placeholder { color: var(--pf-muted); }
+.pf-creative-input:focus { border-color: color-mix(in srgb, var(--pf-lime) 70%, var(--pf-line)); box-shadow: 0 0 0 3px var(--pf-lime-soft); }
+.pf-creative-page .pf-creative-row .pf-btn { min-height: 43px; }
+/* 主按钮禁用时用中性灰，避免和选中态的亮绿看起来像两套样式 */
+.pf-creative-page .pf-btn-lime:disabled { opacity: 1; background: var(--pf-surface-2); border-color: var(--pf-line-strong); color: var(--pf-muted); box-shadow: none; }
+.pf-creative-boards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.pf-creative-boards .pf-pill { display: inline-flex; align-items: center; gap: 8px; border-radius: 9px; font-size: 13px; }
+.pf-creative-count { display: inline-grid; place-items: center; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: var(--pf-surface-2); color: var(--pf-muted); font-size: 11px; font-weight: 600; }
+.pf-creative-boards .pf-pill.active .pf-creative-count { background: color-mix(in srgb, var(--pf-lime-ink) 14%, transparent); color: var(--pf-lime-ink); }
+.pf-creative-empty { margin: 18px 0 0; }
+.pf-creative-page .pf-btn.pf-creative-danger { color: var(--crimson); }
+.pf-creative-page .pf-btn.pf-creative-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--crimson) 12%, var(--pf-card)); border-color: color-mix(in srgb, var(--crimson) 40%, var(--pf-line)); }
+.pf-creative-subhead { margin: 26px 0 12px; font-size: 14px; font-weight: 650; color: var(--pf-ink); }
+.pf-creative-board .pf-creative-recent button { flex-basis: 104px; height: 104px; border-color: var(--pf-line-strong); transition: border-color .15s, transform .15s; }
+.pf-creative-board .pf-creative-recent button:hover { border-color: var(--pf-lime); transform: translateY(-2px); }
+.pf-creative-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; align-items: start; margin-top: 22px; }
+.pf-creative-card { display: flex; flex-direction: column; min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--pf-line-strong); border-radius: 14px; background: var(--pf-card); }
+.pf-creative-card > .pf-creative-media,
+.pf-creative-card > .pf-creative-missing { width: 100%; aspect-ratio: 4 / 3; }
+.pf-creative-media { display: block; width: 100%; height: 100%; object-fit: cover; background: var(--pf-surface-2); }
+.pf-creative-missing { display: grid; place-content: center; justify-items: center; gap: 6px; width: 100%; height: 100%; background: var(--pf-surface-2); color: var(--pf-muted); font-size: 11px; }
+.pf-creative-card figcaption { display: grid; gap: 8px; flex: 1; align-content: start; padding: 12px 14px 14px; font-size: 12px; color: var(--pf-ink); }
+.pf-creative-card figcaption em { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-style: normal; line-height: 1.6; }
+.pf-creative-card figcaption a { overflow-wrap: anywhere; color: var(--pf-accent-strong); }
+.pf-creative-card figcaption .pf-btn { justify-self: start; margin-top: 4px; }
+@media (max-width: 760px) {
+  .pf-creative-row { flex-wrap: wrap; }
+  .pf-creative-row .pf-type-select { flex: 1 0 100%; }
+  .pf-creative-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}

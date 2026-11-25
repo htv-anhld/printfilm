@@ -17,9 +17,13 @@ export function isPlayableVideoUrl(url: string) {
   return VIDEO_EXT.test(url)
 }
 
-/** URL 是否为音频文件 */
+/** URL 是否为音频文件（含 OSS 路径带扩展名，或 audio/ MIME 伪装查询） */
 export function isAudioUrl(url: string) {
-  return AUDIO_EXT.test(url)
+  const raw = (url || '').trim()
+  if (!raw) return false
+  if (AUDIO_EXT.test(raw)) return true
+  // 部分上传落盘无扩展名，靠路径片段识别
+  return /\/asset_\d+_[a-f0-9]+\.(mp3|wav|m4a|aac|ogg|webm)\b/i.test(raw)
 }
 
 /** 从展示名生成安全文件名主干 */

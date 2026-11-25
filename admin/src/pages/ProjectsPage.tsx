@@ -249,6 +249,7 @@ export function ProjectsPage() {
                 items={[
                   { label: t("users.detail.colCharge"), value: money(usage?.charge_fen ?? detail.charge_fen ?? 0) },
                   { label: t("users.detail.colCost"), value: money(usage?.cost_fen ?? 0) },
+                  { label: t("drama.fields.calls"), value: usage?.calls ?? 0 },
                   { label: "Tokens", value: usage?.tokens ?? 0 },
                   {
                     label: t("projects.fields.genCounts"),

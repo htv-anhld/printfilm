@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { isAssetsReadyComposeError } from '../../lib/apiError'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, defaultsFromTemplate, resolveVoiceId } from '../../api'
-import type { MediaModelOption, MediaModelsCatalog, PipelineMode, Project, Template, VoicePreset } from '../../api'
+import type { MediaModelOption, PipelineMode, Project, Template, VoicePreset } from '../../api'
+import { resolveCatalogModelSelection, useMediaModelsCatalog } from '../../hooks/useMediaModelsCatalog'
+import { MediaCostNotice } from '../../components/billing/MediaCostNotice'
 import AppShell from '../../components/layout/AppShell'
 import Stepper from '../../components/ui/Stepper'
 import ComingSoon from '../../components/ui/ComingSoon'
@@ -73,12 +75,31 @@ export default function StyleConfigPage() {
   const [ratio, setRatio] = useState('16:9')
   const [imageModel, setImageModel] = useState('')
   const [videoModel, setVideoModel] = useState('')
-  const [mediaCatalog, setMediaCatalog] = useState<MediaModelsCatalog | null>(null)
+  const mediaCatalog = useMediaModelsCatalog()
+  const [imageResolution, setImageResolution] = useState('2K')
+  const [videoResolution, setVideoResolution] = useState('480p')
   const [busy, setBusy] = useState(false)
   const [previewBusy, setPreviewBusy] = useState<string | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    if (!mediaCatalog) return
+    setImageModel(previous => resolveCatalogModelSelection(mediaCatalog, 'image', previous))
+    setVideoModel(previous => resolveCatalogModelSelection(mediaCatalog, 'video', previous))
+  }, [mediaCatalog, imageModel, videoModel])
+
+  // 所选模型不支持当前分辨率时回落到该模型的第一个可用档位
+  useEffect(() => {
+    if (!mediaCatalog) return
+    const pick = (opt: MediaModelOption | undefined, current: string) => {
+      const list = opt?.available_resolutions ?? opt?.allowed_resolutions ?? []
+      return list.length && !list.includes(current) ? list[0] : current
+    }
+    setImageResolution((prev) => pick(mediaCatalog.image_models.find((item) => item.id === imageModel), prev))
+    setVideoResolution((prev) => pick(mediaCatalog.video_models.find((item) => item.id === videoModel), prev))
+  }, [mediaCatalog, imageModel, videoModel])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -88,19 +109,15 @@ export default function StyleConfigPage() {
     if (!projectId) {
       nav('/studio/new')
     }
-    api.templates().then(setTemplates)
     api.voices().then(setVoices)
-    api
-      .mediaModels()
-      .then((cat) => {
-        setMediaCatalog(cat)
-        setImageModel((prev) => prev || cat.defaults.image_model)
-        setVideoModel((prev) => prev || cat.defaults.video_model)
-      })
-      .catch(() => setMediaCatalog(null))
-    api
-      .getProject(projectId)
-      .then((p) => {
+    Promise.all([api.templates(), api.getProject(projectId)])
+      .then(async ([list, p]) => {
+        // 下架的风格不再展示给新用户，历史项目仍可加载其原模板。
+        if (p.template_id && !list.some((item) => item.id === p.template_id)) {
+          const legacy = await api.getTemplate(p.template_id)
+          list = [...list, legacy]
+        }
+        setTemplates(list)
         setProject(p)
         setStylePrompt(p.style_prompt || '')
         setExtraPrompt(p.extra_prompt || '')
@@ -109,6 +126,8 @@ export default function StyleConfigPage() {
         setRatio(p.output_ratio || (p.pipeline_mode === 'image_text' ? '9:16' : '16:9'))
         if (p.image_model) setImageModel(p.image_model)
         if (p.video_model) setVideoModel(p.video_model)
+        if (p.image_resolution) setImageResolution(p.image_resolution)
+        if (p.video_resolution) setVideoResolution(p.video_resolution)
       })
       .catch((err) => setError(err instanceof Error ? err.message : t('studio.style.errLoad')))
   }, [nav, projectId, t])
@@ -201,6 +220,23 @@ export default function StyleConfigPage() {
 
   async function generate() {
     if (!project) return
+    // 目录可用时校验所选模型/分辨率/画幅（目录或字段缺失时不拦截，交给后端校验）
+    const image = mediaCatalog?.image_models.find((item) => item.id === imageModel)
+    const video = mediaCatalog?.video_models.find((item) => item.id === videoModel)
+    const unsupported = (opt: MediaModelOption | undefined, resolution: string) => {
+      if (!opt) return true
+      if (opt.available === false) return true
+      const resolutions = opt.available_resolutions ?? opt.allowed_resolutions ?? []
+      if (resolutions.length && !resolutions.includes(resolution)) return true
+      return Boolean(opt.allowed_aspect_ratios?.length && !opt.allowed_aspect_ratios.includes(ratio))
+    }
+    if (
+      mediaCatalog &&
+      (unsupported(image, imageResolution) || (pipelineMode === 'full' && unsupported(video, videoResolution)))
+    ) {
+      setError(t('studio.style.errModelUnsupported'))
+      return
+    }
     stopPreview()
     setBusy(true)
     setError('')
@@ -223,6 +259,8 @@ export default function StyleConfigPage() {
         output_ratio: ratio,
         image_model: imageModel,
         video_model: videoModel,
+        image_resolution: imageResolution,
+        video_resolution: videoResolution,
       })
       const started = await api.generate(project.id)
       nav(`/studio/${started.id}`)
@@ -455,6 +493,19 @@ export default function StyleConfigPage() {
           {mediaCatalog ? (
             <div className="pf-style-block">
               <h3>{t('studio.style.imageModel')}</h3>
+              <label className="pf-field">
+                <span className="pf-field-label">{t('studio.style.resolution')}</span>
+                <select className="pf-field-input" value={imageResolution} onChange={(e) => setImageResolution(e.target.value)}>
+                  {(mediaCatalog.image_models.find((item) => item.id === imageModel)?.available_resolutions ??
+                    mediaCatalog.image_models.find((item) => item.id === imageModel)?.allowed_resolutions ??
+                    []).map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <MediaCostNotice modelId={imageModel} resolution={imageResolution} />
               <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0 0 0.65rem' }}>
                 {t('studio.style.imageModelHint')}
               </p>
@@ -464,6 +515,7 @@ export default function StyleConfigPage() {
                     key={m.id}
                     type="button"
                     className={imageModel === m.id ? 'pf-model-opt selected' : 'pf-model-opt'}
+                    disabled={m.available === false}
                     onClick={() => setImageModel(m.id)}
                   >
                     <div className="pf-model-opt-title">
@@ -481,6 +533,19 @@ export default function StyleConfigPage() {
           {mediaCatalog && pipelineMode === 'full' ? (
             <div className="pf-style-block">
               <h3>{t('studio.style.videoModel')}</h3>
+              <label className="pf-field">
+                <span className="pf-field-label">{t('studio.style.resolution')}</span>
+                <select className="pf-field-input" value={videoResolution} onChange={(e) => setVideoResolution(e.target.value)}>
+                  {(mediaCatalog.video_models.find((item) => item.id === videoModel)?.available_resolutions ??
+                    mediaCatalog.video_models.find((item) => item.id === videoModel)?.allowed_resolutions ??
+                    []).map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <MediaCostNotice modelId={videoModel} resolution={videoResolution} seconds={1} />
               <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0 0 0.65rem' }}>
                 {t('studio.style.videoModelHint')}
               </p>
@@ -490,6 +555,7 @@ export default function StyleConfigPage() {
                     key={m.id}
                     type="button"
                     className={videoModel === m.id ? 'pf-model-opt selected' : 'pf-model-opt'}
+                    disabled={m.available === false}
                     onClick={() => setVideoModel(m.id)}
                   >
                     <div className="pf-model-opt-title">

@@ -3,6 +3,30 @@
 from app.services.ark import _format_seedance_create_error
 
 
+def test_format_seedance_invalid_image_format():
+    body = (
+        '{"error":{"code":"InvalidParameter","message":'
+        '"The parameter `content[3]` specified in the request is not valid: '
+        'invalid image format (detected format); received: M4A. '
+        'Request id: 021792136049408d"}}'
+    )
+    labels = ["分镜文案", "角色「甲」", "场景「室」", "参考图「试听」"]
+    msg = _format_seedance_create_error(400, body, content_labels=labels)
+    assert "参考图格式无效" in msg
+    assert "试听" in msg
+    assert "1.8" not in msg
+
+
+def test_privacy_rejection_identifies_voice_instead_of_image():
+    message = _format_seedance_create_error(
+        400, '{"error":{"code":"PrivacyInformation","message":"content[2]"}}',
+        ["分镜文案", "角色「飞流」", "角色音色「飞流」"],
+    )
+    assert "参考音频未通过隐私审核" in message
+    assert "角色音色「飞流」" in message
+    assert "参考图疑似真人" not in message
+
+
 def test_format_seedance_audio_duration_too_short_with_label():
     body = (
         '{"error":{"code":"InvalidParameter","message":'
@@ -34,3 +58,29 @@ def test_format_seedance_audio_duration_without_labels():
     msg = _format_seedance_create_error(400, body, content_labels=None)
     assert "参考音频过短" in msg
     assert "content[3]" in msg
+
+
+def test_format_seedance_output_duration_invalid_for_2_0():
+    body = (
+        '{"code":"fail_to_fetch_task","message":"{\\"error\\":{\\"code\\":\\"InvalidParameter\\",'
+        '\\"message\\":\\"the parameter duration specified in the request is not valid for model '
+        'doubao-seedance-2-0 in r2v\\"}}"}'
+    )
+    msg = _format_seedance_create_error(400, body)
+    assert "4–15" in msg
+    assert "15 秒" in msg
+
+
+def test_format_seedance_model_not_found_2_5():
+    body = (
+        '{"error":{"code":"model_not_found","message":'
+        '"分组 default 下模型 seedance-2.5 无可用渠道（distributor）","type":"new_api_error"}}'
+    )
+    msg = _format_seedance_create_error(503, body)
+    assert "未开通" in msg
+    assert "2.0" in msg
+
+
+def test_duplicate_first_frame_has_actionable_chinese_message():
+    msg = _format_seedance_create_error(400, 'expected at most one first frame image content but got 2 instead')
+    assert "首帧只能设置一张" in msg and "全能参考" in msg

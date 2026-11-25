@@ -5,6 +5,7 @@ import { dramaApi } from '../../api/drama'
 import { DramaGenTaskDetail } from './DramaGenTaskDetail'
 import { formatDramaGenError } from '../../lib/dramaGenError'
 import BillingTopupLink from '../billing/BillingTopupLink'
+import { useFabDragPosition } from '../../hooks/useFabDragPosition'
 import {
   clearFinishedDramaGenJobs,
   DRAMA_GEN_SUBTYPE_FRAGMENT_VIDEO,
@@ -19,6 +20,7 @@ import { tr, useI18n } from '../../i18n'
 import '../../pages/drama/drama.css'
 
 const OPEN_STORAGE_KEY = 'drama-gen-queue-fab-open'
+const POS_STORAGE_KEY = 'drama-gen-queue-fab-pos'
 
 const IMAGE_SUBTYPES = new Set(['character', 'scene', 'prop', 'material'])
 
@@ -50,6 +52,11 @@ export function DramaGenQueuePanel() {
   const queue = useDramaGenQueue()
   const [open, setOpen] = useState(readOpenPreference)
   const [detailJob, setDetailJob] = useState<DramaGenJob | null>(null)
+  const { style: fabStyle, bindDrag, consumeDragSuppressClick } = useFabDragPosition(
+    POS_STORAGE_KEY,
+    { right: 20, bottom: 96 },
+    56,
+  )
 
   const active = useMemo(
     () => queue.filter((j) => j.status === 'queued' || j.status === 'running'),
@@ -61,11 +68,12 @@ export function DramaGenQueuePanel() {
   )
   const failed = useMemo(() => queue.filter((j) => j.status === 'failed'), [queue])
 
-  // 列表按入队时间倒序（最新在上）；排队序号仍按先入先出
+  // 列表按入队时间倒序；本地列表不代表服务端资源调度顺序。
   const sortedQueue = useMemo(
     () => [...queue].sort((a, b) => b.createdAt - a.createdAt),
     [queue],
   )
+  // queuedOnly 排队/运行中的任务（按创建先后），用于显示排队序号
   const queuedOnly = useMemo(
     () =>
       queue
@@ -73,7 +81,6 @@ export function DramaGenQueuePanel() {
         .sort((a, b) => a.createdAt - b.createdAt),
     [queue],
   )
-
   useEffect(() => {
     try {
       localStorage.setItem(OPEN_STORAGE_KEY, open ? '1' : '0')
@@ -108,8 +115,9 @@ export function DramaGenQueuePanel() {
   }, [queue, detailJob])
 
   const toggleOpen = useCallback(() => {
+    if (consumeDragSuppressClick()) return
     setOpen((prev) => !prev)
-  }, [])
+  }, [consumeDragSuppressClick])
 
   const close = useCallback(() => {
     setOpen(false)
@@ -130,7 +138,7 @@ export function DramaGenQueuePanel() {
   const badgeCount = active.length
 
   return (
-    <div className="drama-gen-fab-root">
+    <div className="drama-gen-fab-root is-draggable" style={fabStyle}>
       {open ? (
         <div className="drama-gen-fab-panel" role="dialog" aria-label={t('drama.genQueue.title')}>
           {detailJob ? (
@@ -190,8 +198,8 @@ export function DramaGenQueuePanel() {
 
               <ul className="drama-gen-fab-list">
                 {sortedQueue.map((job) => {
-                  const queueIndex = queuedOnly.findIndex((j) => j.id === job.id)
                   const errView = job.status === 'failed' ? formatDramaGenError(job.error) : null
+                  const queueIndex = queuedOnly.findIndex((j) => j.id === job.id)
                   return (
                     <li key={job.id}>
                       <button
@@ -262,11 +270,12 @@ export function DramaGenQueuePanel() {
 
       <button
         type="button"
-        className={`drama-gen-fab-btn${active.length > 0 ? ' is-busy' : ''}${failed.length > 0 && active.length === 0 ? ' is-failed' : ''}`}
+        className={`drama-gen-fab-btn is-draggable${active.length > 0 ? ' is-busy' : ''}${failed.length > 0 && active.length === 0 ? ' is-failed' : ''}`}
         onClick={toggleOpen}
         title={open ? t('drama.genQueue.collapse') : t('drama.genQueue.expand')}
         aria-expanded={open}
         aria-label={t('drama.genQueue.title')}
+        {...bindDrag}
       >
         <Layers size={22} strokeWidth={1.75} aria-hidden />
         {badgeCount > 0 ? <span className="drama-gen-fab-badge">{badgeCount}</span> : null}

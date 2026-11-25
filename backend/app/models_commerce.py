@@ -98,9 +98,9 @@ class ClientErrorReport(Base):
 
 
 class Team(Base):
-    """团队：成员共用席位，owner 购买席位订阅并把额度分配给成员。"""
+    """席位团队（本分支商业版，表 seat_teams；上游的 teams 表另作他用）：成员共用席位，owner 购买席位订阅并把额度分配给成员。"""
 
-    __tablename__ = "teams"
+    __tablename__ = "seat_teams"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(64))
@@ -113,11 +113,11 @@ class Team(Base):
 class TeamMember(Base):
     """团队成员；(team_id, user_id) 唯一。"""
 
-    __tablename__ = "team_members"
-    __table_args__ = (UniqueConstraint("team_id", "user_id", name="uq_team_members_team_user"),)
+    __tablename__ = "seat_team_members"
+    __table_args__ = (UniqueConstraint("team_id", "user_id", name="uq_seat_team_members_team_user"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="CASCADE"), index=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey("seat_teams.id", ondelete="CASCADE"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     # owner | admin | member
     role: Mapped[str] = mapped_column(String(16), default="member")
@@ -129,10 +129,10 @@ class TeamMember(Base):
 class TeamInvite(Base):
     """团队邀请：邮件链接里的 token 只存哈希，7 天有效，一次性。"""
 
-    __tablename__ = "team_invites"
+    __tablename__ = "seat_team_invites"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="CASCADE"), index=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey("seat_teams.id", ondelete="CASCADE"), index=True)
     email: Mapped[str] = mapped_column(String(255), index=True)
     role: Mapped[str] = mapped_column(String(16), default="member")
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)

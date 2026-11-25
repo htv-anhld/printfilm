@@ -3,6 +3,7 @@
 import { dialog } from './dialog'
 import { isBillingError } from './billingError'
 import { tr } from '../i18n'
+import { formatCopyrightError } from './generationError.ts'
 
 export type DramaGenErrorView = {
   /** 短标题 */
@@ -32,7 +33,8 @@ function extractContentIndex(raw: string): number | null {
 
 /** 判断文案是否像「具体根因」（优先于「重试上限」等包装句） */
 function looksLikeRootCause(text: string): boolean {
-  return /PrivacyInformation|InputImageSensitive|SensitiveContentDetected|参考图疑似|参考音频过短|may contain real person|Seedance create error|上一镜失败|无法衔接|分镜已变更|分镜上下文|InputTextSensitive|resource download failed|audio_url|audio duration|Credits insufficient|File type not supported|参考图格式不支持|previous shot failed|storyboard (has )?changed|reference audio too short/i.test(
+  if (formatCopyrightError(text)) return true
+  return /PrivacyInformation|InputImageSensitive|SensitiveContentDetected|参考图疑似|参考音频过短|参考音频过长|无法读取参考音频时长|may contain real person|Seedance create error|上一镜失败|无法衔接|分镜已变更|分镜上下文|InputTextSensitive|resource download failed|audio_url|audio duration|Credits insufficient|File type not supported|参考图格式不支持|invalid image format|参考图格式无效|未开通|previous shot failed|storyboard (has )?changed|reference audio too short/i.test(
     text,
   )
 }
@@ -96,6 +98,8 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
   const text = String(raw || '').trim()
   const g = (key: string, vars?: Record<string, string | number>) => tr(`lib.genError.${key}`, vars)
   const clip = (n: number) => (text.length > n ? `${text.slice(0, n)}…` : text)
+  const copyright = formatCopyrightError(text)
+  if (copyright) return copyright
   if (!text) {
     return {
       title: g('failedTitle'),
@@ -147,6 +151,14 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
       message: /余额不足|请先充值|insufficient balance|top up|số dư/i.test(text) ? text : g('billing.message'),
       suggestion: g('billing.suggestion'),
       billingBlocked: true,
+    }
+  }
+
+  if (text.includes('参考音频未通过隐私审核')) {
+    return {
+      title: g('audioPrivacy.title'),
+      message: text,
+      suggestion: g('audioPrivacy.suggestion'),
     }
   }
 
@@ -212,18 +224,42 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
     }
   }
 
+  if (/无法读取参考音频时长|参考音频地址为空/i.test(text)) {
+    const named = extractNamedSlot(text)
+    return {
+      title: g('audioUnreadable.title'),
+      message: named ? g('audioUnreadable.message', { named }) : clip(160),
+      suggestion: g('audioUnreadable.suggestion'),
+    }
+  }
+
+  if (/参考音频过长/i.test(text)) {
+    const named = extractNamedSlot(text)
+    const dur = text.match(/当前约\s*([\d.]+)\s*秒/)
+    return {
+      title: g('audioLong.title'),
+      message: named
+        ? dur
+          ? g('audioLong.messageDur', { named, sec: dur[1] })
+          : g('audioLong.message', { named })
+        : clip(160),
+      suggestion: g('audioLong.suggestion'),
+    }
+  }
+
   // Seedance r2v：reference_audio 须 ≥ 1.8 秒（不是参考图）
   if (
-    /audio duration|参考音频过短|reference audio too short|1\.8/i.test(text) &&
-    /audio|音色|reference_audio|content\[/i.test(text)
+    /参考音频过短|reference audio too short/i.test(text) ||
+    (/audio duration|1\.8/i.test(text) && /audio|音色|reference_audio|content\[/i.test(text))
   ) {
     const idx = extractContentIndex(text)
     const named = extractNamedSlot(text)
+    const dur = text.match(/当前约\s*([\d.]+)\s*秒/)
     const where =
       named || (idx != null ? g('audioShort.whereIndex', { n: idx + 1, idx }) : g('audioShort.whereAny'))
     return {
       title: g('audioShort.title'),
-      message: g('audioShort.message', { where }),
+      message: dur ? g('audioShort.messageDur', { where, sec: dur[1] }) : g('audioShort.message', { where }),
       suggestion: g('audioShort.suggestion'),
     }
   }
@@ -245,6 +281,14 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
     }
   }
 
+  if (/未开通|无可用渠道|distributor/i.test(text)) {
+    return {
+      title: g('notEnabled.title'),
+      message: clip(180),
+      suggestion: g('notEnabled.suggestion'),
+    }
+  }
+
   if (/File type not supported|参考图格式不支持|不支持 SVG|unsupported reference image/i.test(text)) {
     return {
       title: g('fileType.title'),
@@ -253,6 +297,20 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
           ? text
           : g('fileType.message'),
       suggestion: g('fileType.suggestion'),
+    }
+  }
+
+  // 参考图槽位收到非图片（常见：音色 mp3 误进 image_url）
+  if (/invalid image format|参考图格式无效/i.test(text)) {
+    const idx = extractContentIndex(text)
+    const named = extractNamedSlot(text)
+    const where =
+      named ||
+      (idx != null ? g('invalidImage.whereIndex', { n: idx + 1, idx }) : g('invalidImage.whereAny'))
+    return {
+      title: g('invalidImage.title'),
+      message: g('invalidImage.message', { where }),
+      suggestion: g('invalidImage.suggestion'),
     }
   }
 
@@ -292,6 +350,24 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
       title: /取消|cancel/i.test(text) ? g('cancelled.title') : g('interrupted.title'),
       message: text,
       suggestion: g('cancelled.suggestion'),
+    }
+  }
+
+  // 成片下载被对端掐断（上游 content / CDN），不是参考图或脚本问题
+  if (/RemoteProtocolError|peer closed|complete message body|incomplete download/i.test(text)) {
+    return {
+      title: g('downloadInterrupted.title'),
+      message: g('downloadInterrupted.message'),
+      suggestion: g('downloadInterrupted.suggestion'),
+    }
+  }
+
+  // 浏览器层断连：不是脚本/参考图问题，常因后端热重载或瞬时网络
+  if (/failed to fetch|networkerror|load failed|connection reset|连接被重置/i.test(text)) {
+    return {
+      title: g('fetchFailed.title'),
+      message: g('fetchFailed.message'),
+      suggestion: g('fetchFailed.suggestion'),
     }
   }
 

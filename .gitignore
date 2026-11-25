@@ -22,6 +22,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+pip-metadata-*/
+pip-unpack-*/
+pytest-of-*/
 .coverage
 htmlcov/
 backend/.venv/
@@ -59,11 +62,14 @@ id_rsa
 id_ed25519
 *.id_rsa
 *.id_ed25519
+/buy-cert.der
 !**/example*.pem
 .netrc
 .npmrc
 
 # Backend runtime data
+backend/var/wallet-backups/
+.pytest-wallet-cutover*/
 backend/ai_movie.db
 backend/*.db
 backend/.celery_autoscale/
@@ -74,6 +80,7 @@ backend/frontend/
 # Frontend build
 frontend/node_modules/
 frontend/dist/
+frontend/dist-*/
 
 # 本地 Agent / IDE（不上库）
 .claude/
@@ -87,3 +94,5 @@ CLAUDE.local.md
 # 素材库上传（全站 BGM / 音效 / 头像）属于运行时数据
 backend/static/bgm/
 backend/static/library/
+.learnings/
+printfilm/

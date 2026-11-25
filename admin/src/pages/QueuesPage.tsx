@@ -1,89 +1,46 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Activity, Ban, Eye, Layers, Loader2, RefreshCw } from "lucide-react";
+import { Select } from "@/components/ui/select";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, Ban, Layers, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { api, type AdminTaskListRes, type AdminTaskRow, type AdminTaskStats } from "@/api/client";
-import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { AdminSearchInput } from "@/components/admin/AdminSearchInput";
 import { AdminUserSearchSelect } from "@/components/admin/AdminUserSearchSelect";
 import { StatCard } from "@/components/admin/StatCard";
 import { PageSection } from "@/components/admin/PageSection";
 import { TaskDetailDialog } from "@/components/tasks/TaskDetailDialog";
+import { TaskListRow } from "@/components/tasks/TaskListRow";
 import { PageHeader, Toolbar } from "@/components/ui/page";
 import { PaginationBar } from "@/components/PaginationBar";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
-import { compactJsonPreview, hasJsonContent } from "@/lib/jsonPreview";
+import { useTaskClock } from "@/hooks/useTaskClock";
+import { canCancelTask, taskBilling, taskUpstream } from "@/lib/taskObservability";
+import { queueLaneText } from "@/lib/taskObservabilityText";
 import { cn } from "@/lib/utils";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { taskDomainLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
-import { formatDateTime, formatTime as formatClock, tr, useI18n } from "@/i18n";
-import { money } from "@/lib/money";
+import { formatTime as formatClock, tr, useI18n } from "@/i18n";
 
 const REFRESH_MS = 15000;
 const TERMINAL_STATUSES = new Set(["succeeded", "failed", "cancelled"]);
 
-// 任务状态 → 样式
-function statusClass(status: string): string {
-  if (status === "running" || status === "leased") return "is-run";
-  if (status === "succeeded") return "is-done";
-  if (status === "failed") return "is-fail";
-  if (status === "cancelled" || status === "cancel_requested") return "is-warn";
-  return "is-warn";
-}
+const STATUS_FILTERS = [
+  "pending",
+  "leased",
+  "running",
+  "awaiting_poll",
+  "cancel_requested",
+  "succeeded",
+  "failed",
+  "cancelled",
+] as const;
 
-function formatTime(value: string | null | undefined): string {
-  return formatDateTime(value);
-}
-
-// 阻止冒泡到行 onClick，避免链接跳转时同时打开详情
-function stopRowClick(e: { stopPropagation: () => void }) {
-  e.stopPropagation();
-}
-
-function scopeLinks(task: AdminTaskRow): ReactNode {
-  const parts: ReactNode[] = [];
-  if (task.drama_project_id) {
-    parts.push(
-      <span key="drama" onClick={stopRowClick}>
-        <AdminEntityLink kind="drama" id={task.drama_project_id} />
-      </span>,
-    );
-  }
-  if (task.project_id) {
-    parts.push(
-      <span key="project" onClick={stopRowClick}>
-        <AdminEntityLink kind="project" id={task.project_id} />
-      </span>,
-    );
-  }
-  if (task.asset_id) {
-    parts.push(
-      <span key="asset" onClick={stopRowClick}>
-        <AdminEntityLink kind="drama_asset" id={task.asset_id} />
-      </span>,
-    );
-  }
-  if (task.episode_id) parts.push(<span key="ep">{tr("tasks.episodeRef", { id: task.episode_id })}</span>);
-  if (task.fragment_id) parts.push(<span key="frag">{tr("tasks.fragmentRef", { id: task.fragment_id })}</span>);
-  if (parts.length === 0) return <span className="text-[#909399]">—</span>;
-  return <div className="flex flex-wrap gap-1">{parts}</div>;
-}
-
-function canCancel(task: AdminTaskRow): boolean {
-  return task.cancelable && !TERMINAL_STATUSES.has(task.status);
-}
-
-// 列表单元格：参数/结果单行摘要；title 也截断，避免巨 payload 塞进 DOM
-function jsonCell(value: Record<string, unknown> | null | undefined) {
-  if (!hasJsonContent(value)) {
-    return <span className="text-[#909399]">—</span>;
-  }
-  const preview = compactJsonPreview(value, 72);
-  const tip = compactJsonPreview(value, 280);
-  return (
-    <pre className="task-list-json" title={tip}>
-      {preview}
-    </pre>
-  );
+// 秒数 → 可读时长（按当前语言）
+function formatElapsed(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds)) return tr("tasks.runtime.noRecord");
+  const value = Math.max(0, Math.floor(seconds));
+  if (value < 60) return tr("tasks.runtime.secs", { s: value });
+  if (value < 3600) return tr("tasks.runtime.minsSecs", { m: Math.floor(value / 60), s: value % 60 });
+  return tr("tasks.runtime.hoursMins", { h: Math.floor(value / 3600), m: Math.floor((value % 3600) / 60) });
 }
 
 // 统一任务平台监控页
@@ -114,7 +71,10 @@ export function QueuesPage() {
   const [taskType, setTaskType] = useState("");
   const [viewTab, setViewTab] = useState<"all" | "active">("all");
   const [cancelLoading, setCancelLoading] = useState<number | null>(null);
+  const apiOnlyNode = stats?.scheduler === "disabled";
   const taskDetail = useAdminDetailQuery("task");
+  const taskViews = useMemo(() => (data?.items || []).map((task) => ({ task, upstream: taskUpstream(task), billing: taskBilling(task) })), [data]);
+  const now = useTaskClock(data?.items.some((task) => !TERMINAL_STATUSES.has(task.status)) ?? false);
 
   const loadStats = useCallback(async () => {
     const res = await api<AdminTaskStats>("/api/admin/tasks/stats");
@@ -179,7 +139,7 @@ export function QueuesPage() {
 
   const handleCancel = useCallback(
     async (task: AdminTaskRow) => {
-      if (!canCancel(task)) return;
+      if (!canCancelTask(task)) return;
       if (!window.confirm(tr("tasks.confirmCancel", { id: task.id, type: taskTypeLabel(task.task_type) }))) return;
       setCancelLoading(task.id);
       try {
@@ -203,7 +163,11 @@ export function QueuesPage() {
   return (
     <div className="admin-page">
       <PageHeader
-        description={t("tasks.desc", { sec: REFRESH_MS / 1000, running: stats?.scheduler_running_jobs ?? 0, max: stats?.max_concurrency ?? 0 })}
+        description={
+          apiOnlyNode
+            ? t("tasks.descApiOnly", { sec: REFRESH_MS / 1000 })
+            : t("tasks.desc", { sec: REFRESH_MS / 1000, running: stats?.scheduler_running_jobs ?? 0, max: stats?.max_concurrency ?? 0 })
+        }
         actions={
           <button
             type="button"
@@ -228,46 +192,69 @@ export function QueuesPage() {
             <StatCard
               label={t("tasks.stats.pending")}
               value={stats?.pending_count ?? 0}
-              hint={t("tasks.stats.pendingHint")}
+              hint={t("tasks.stats.pendingBreakdown", { ready: stats?.pending_ready_count ?? "—", deferred: stats?.pending_deferred_count ?? "—", delayed: stats?.pending_delayed_count ?? "—" })}
               icon={Layers}
               tone="warn"
             />
             <StatCard
               label={t("tasks.stats.active")}
               value={stats?.active_count ?? 0}
-              hint={t("tasks.stats.activeHint", { running: stats?.running_count ?? 0, poll: stats?.awaiting_poll_count ?? 0 })}
+              hint={t("tasks.stats.activeBreakdown", { running: stats?.running_count ?? 0, poll: stats?.awaiting_poll_count ?? 0, cancelling: stats?.cancel_requested_count ?? 0 })}
               icon={Activity}
               tone="info"
             />
             <StatCard
-              label={t("tasks.stats.slots")}
+              label={t("tasks.stats.nodeSlots")}
               value={
-                <>
+                apiOnlyNode ? <span className="text-lg">{t("tasks.stats.apiOnly")}</span> : <>
                   {stats?.scheduler_running_jobs ?? 0}
                   <span className="text-lg text-[var(--admin-muted)]"> / {stats?.max_concurrency ?? 0}</span>
                 </>
               }
-              hint={t("tasks.stats.leased", { n: stats?.leased_count ?? 0 })}
+              hint={apiOnlyNode ? t("tasks.stats.handledByWorkers") : t("tasks.stats.leased", { n: stats?.leased_count ?? 0 })}
               icon={RefreshCw}
             />
-            <div className="admin-panel admin-stat-card tone-success">
-              <div className="admin-stat-icon">
-                <Ban className="h-5 w-5" />
-              </div>
-              <div className="admin-stat-label">{t("tasks.stats.terminal")}</div>
-              <div className="admin-stat-value !text-base !leading-relaxed">
-                {t("tasks.stats.terminalValue", {
-                  ok: stats?.succeeded_count ?? 0,
-                  failed: stats?.failed_count ?? 0,
-                  cancelled: stats?.cancelled_count ?? 0,
-                })}
-              </div>
-              <div className="admin-stat-hint">
-                {t("tasks.stats.updatedAt", { time: formatClock(stats?.fetched_at) })}
-              </div>
-            </div>
+            <StatCard
+              label={t("tasks.stats.terminal")}
+              icon={Ban}
+              tone="success"
+              value={
+                <span className="admin-terminal-stats">
+                  <span><small>{taskStatusLabel("succeeded")}</small><strong>{stats?.succeeded_count ?? 0}</strong></span>
+                  <span><small>{taskStatusLabel("failed")}</small><strong>{stats?.failed_count ?? 0}</strong></span>
+                  <span><small>{taskStatusLabel("cancelled")}</small><strong>{stats?.cancelled_count ?? 0}</strong></span>
+                </span>
+              }
+              hint={t("tasks.stats.updatedAt", { time: stats?.fetched_at ? formatClock(stats.fetched_at) : "—" })}
+            />
           </div>
 
+          <div className="admin-panel mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-xs text-[var(--admin-muted)]">
+            <span className={cn("admin-status-pill", stats?.runtime_healthy === undefined ? "" : stats.runtime_healthy ? "is-done" : "is-fail")}>
+              {apiOnlyNode
+                ? t("tasks.runtime.apiOnlyNode")
+                : stats?.runtime_healthy === undefined
+                  ? t("tasks.runtime.unknown")
+                  : stats.runtime_healthy
+                    ? t("tasks.runtime.healthy")
+                    : t("tasks.runtime.unhealthy")}
+            </span>
+            {apiOnlyNode ? <span>{t("tasks.runtime.apiOnlyDesc")}</span> : <>
+              <span>{t("tasks.runtime.loops", { scheduler: stats?.scheduler ?? "—", poller: stats?.poller ?? "—", watchdog: stats?.watchdog ?? "—" })}</span>
+              <span>{t("tasks.runtime.lastSuccess", { ago: stats?.scheduler_success_age_sec == null ? t("tasks.runtime.noRecord") : t("tasks.runtime.ago", { time: formatElapsed(stats.scheduler_success_age_sec) }) })}</span>
+              <span>{t("tasks.runtime.consecutiveFailures", { n: stats?.scheduler_consecutive_failures ?? "—" })}</span>
+            </>}
+            <span>{t("tasks.runtime.oldestWait", { time: formatElapsed(stats?.oldest_ready_wait_sec) })}</span>
+            <span>{t("tasks.runtime.legend")}</span>
+          </div>
+
+          {stats?.queues?.length ? <PageSection title={t("tasks.queues.title")} bodyClassName="!pt-0">
+            <div className="grid gap-3 md:grid-cols-3">{stats.queues.map((queue) => <div key={queue.name} className="admin-panel px-4 py-3">
+              <div className="text-sm font-medium">{t("tasks.queues.name", { label: queueLaneText(queue.name, queue.label) })} <span className="font-mono text-xs text-[var(--admin-muted)]">{queue.name}</span></div>
+              <div className="mt-2 text-xs text-[var(--admin-muted)]">{t("tasks.queues.counts", { pending: queue.pending, active: queue.active, max: queue.max_concurrency })}</div>
+              {queue.awaiting_poll ? <div className="mt-1 text-xs text-[var(--admin-muted)]">{t("tasks.queues.awaitingPoll", { n: queue.awaiting_poll })}</div> : null}
+            </div>)}</div>
+          </PageSection> : null}
           {(stats?.domains.length ?? 0) > 0 ? (
             <PageSection title={t("tasks.byDomain")} bodyClassName="!pt-0">
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -324,7 +311,7 @@ export function QueuesPage() {
             bodyClassName="space-y-4 !pt-0"
           >
             <Toolbar>
-              <select
+              <Select
                 className="admin-select"
                 value={domain}
                 onChange={(e) => {
@@ -338,8 +325,8 @@ export function QueuesPage() {
                     {taskDomainLabel(d)}
                   </option>
                 ))}
-              </select>
-              <select
+              </Select>
+              <Select
                 className="admin-select"
                 value={status}
                 onChange={(e) => {
@@ -349,21 +336,12 @@ export function QueuesPage() {
                 }}
               >
                 <option value="">{t("labels.allStatuses")}</option>
-                {[
-                  "pending",
-                  "leased",
-                  "running",
-                  "awaiting_poll",
-                  "cancel_requested",
-                  "succeeded",
-                  "failed",
-                  "cancelled",
-                ].map((value) => [value, taskStatusLabel(value)] as const).map(([value, label]) => (
+                {STATUS_FILTERS.map((value) => (
                   <option key={value} value={value}>
-                    {label}
+                    {taskStatusLabel(value)}
                   </option>
                 ))}
-              </select>
+              </Select>
               <AdminUserSearchSelect
                 value={filterUserId}
                 onChange={(id) => {
@@ -405,26 +383,22 @@ export function QueuesPage() {
             </Toolbar>
 
             <div className="admin-table-wrap">
-              <table>
+              <table className="task-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>{t("tasks.cols.domainType")}</th>
-                    <th>{t("orders.cols.user")}</th>
-                    <th>{t("orders.cols.ref")}</th>
+                    <th>{t("tasks.cols.taskModel")}</th>
                     <th>{t("common.status")}</th>
-                    <th>{t("projects.cols.progress")}</th>
-                    <th>{t("projects.cols.cost")}</th>
-                    <th>{t("tasks.cols.payload")}</th>
-                    <th>{t("tasks.cols.result")}</th>
-                    <th>{t("common.time")}</th>
-                    <th>{t("common.actions")}</th>
+                    <th>{t("tasks.cols.upstream")}</th>
+                    <th>{t("tasks.cols.billing")}</th>
+                    <th>{t("tasks.cols.elapsed")}</th>
+                    <th>{t("tasks.cols.userRef")}</th>
+                    <th className="text-right">{t("common.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(data?.items.length ?? 0) === 0 ? (
                     <tr>
-                      <td colSpan={11}>
+                      <td colSpan={7}>
                         <div className="admin-empty !py-10">
                           <div className="admin-empty-title">{t("projects.noTasks")}</div>
                           <div className="admin-empty-desc">{t("tasks.emptyHint")}</div>
@@ -432,77 +406,17 @@ export function QueuesPage() {
                       </td>
                     </tr>
                   ) : (
-                    data?.items.map((task) => (
-                      <tr
+                    taskViews.map(({ task, upstream, billing }) => (
+                      <TaskListRow
                         key={task.id}
-                        className="cursor-pointer hover:bg-[#f8faf9]"
-                        onClick={() => openDetail(task.id)}
-                      >
-                        <td className="font-mono text-xs">#{task.id}</td>
-                        <td>
-                          <div className="text-sm">{taskDomainLabel(task.domain)}</div>
-                          <div className="font-mono text-[11px] text-[#909399]">
-                            {taskTypeLabel(task.task_type)}
-                          </div>
-                        </td>
-                        <td onClick={stopRowClick}>
-                          <AdminEntityLink
-                            kind="user"
-                            id={task.requested_by}
-                            label={task.user_email ?? undefined}
-                            className="text-xs"
-                          />
-                        </td>
-                        <td className="max-w-[200px] text-xs" onClick={stopRowClick}>
-                          {scopeLinks(task)}
-                        </td>
-                        <td>
-                          <span className={`admin-status-pill ${statusClass(task.status)}`}>
-                            {taskStatusLabel(task.status)}
-                          </span>
-                          {task.error_message ? (
-                            <div className="mt-1 max-w-[200px] truncate text-[11px] text-[#f56c6c]" title={task.error_message}>
-                              {task.error_message}
-                            </div>
-                          ) : null}
-                        </td>
-                        <td className="text-xs">{task.progress_percent}%</td>
-                        <td className="text-xs">
-                          {task.billing_charged_fen != null && task.billing_charged_fen > 0
-                            ? money(task.billing_charged_fen)
-                            : task.billing_status === "frozen"
-                              ? t("tasks.frozen", { amount: money(task.billing_estimate_fen ?? 0) })
-                              : "—"}
-                        </td>
-                        <td className="task-list-json-cell">{jsonCell(task.payload)}</td>
-                        <td className="task-list-json-cell">{jsonCell(task.result_payload)}</td>
-                        <td className="text-xs text-[#909399]">
-                          <div>{t("tasks.createdAt", { time: formatTime(task.created_at) })}</div>
-                          {task.started_at ? <div>{t("tasks.startedAt", { time: formatTime(task.started_at) })}</div> : null}
-                        </td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          <div className="flex flex-wrap gap-1">
-                            <button
-                              type="button"
-                              className="admin-btn admin-btn-secondary !min-h-[28px] !px-2 !text-xs"
-                              onClick={() => openDetail(task.id)}
-                            >
-                              <Eye className="mr-1 inline h-3 w-3" />
-                              {t("common.details")}
-                            </button>
-                            {canCancel(task) ? (
-                              <button
-                                type="button"
-                                className="admin-btn admin-btn-danger !min-h-[28px] !px-2 !text-xs"
-                                disabled={cancelLoading === task.id}
-                                onClick={() => void handleCancel(task)}
-                              >
-                                {cancelLoading === task.id ? t("tasks.cancelling") : t("common.cancel")}
-                              </button>
-                            ) : null}
-                          </div>
-                        </td>
-                      </tr>
+                        task={task}
+                        upstream={upstream}
+                        billing={billing}
+                        now={now}
+                        cancelling={cancelLoading === task.id}
+                        onOpen={openDetail}
+                        onCancel={(row) => void handleCancel(row)}
+                      />
                     ))
                   )}
                 </tbody>

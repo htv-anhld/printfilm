@@ -4,6 +4,8 @@ import App from './App'
 import { I18nProvider, installLocaleHeader } from './i18n'
 import { installErrorReporter } from './lib/errorReporter'
 import { captureReferral } from './lib/referral'
+import { formatMoney } from './lib/money'
+import { setPointFormatter } from './lib/points'
 import './index.css'
 
 // 所有后端请求带 X-Locale（后端按界面语言返回报错与内容）
@@ -12,6 +14,9 @@ installLocaleHeader()
 installErrorReporter()
 // 合作伙伴推广码（?ref=）
 captureReferral()
+
+// 上游「积分」显示统一换成本分支钱包币种金额
+setPointFormatter((value) => formatMoney(value))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

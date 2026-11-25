@@ -21,7 +21,7 @@ async def test_fresh_task_clears_previous_marker_in_executing_worker(monkeypatch
         assert not pipeline.is_cancelled(project_id)
 
     monkeypatch.setattr(pipeline, stage_name, stage)
-    monkeypatch.setattr(handlers, "_kepu_output_snapshot", AsyncMock(return_value={}), raising=False)
+    monkeypatch.setattr(handlers, "_kepu_output_snapshot", AsyncMock(return_value={}))
     result = await getattr(handlers, handler_name)(task)
     assert result["ok"]
 

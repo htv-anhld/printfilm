@@ -70,6 +70,17 @@
   display: none;
 }
 
+/* 空白处拖出的框选框 */
+.free-canvas-page .react-flow__selection {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.85);
+}
+
+.free-canvas-page .react-flow__nodesselection-rect {
+  background: rgba(37, 99, 235, 0.04);
+  border: 1px solid rgba(37, 99, 235, 0.55);
+}
+
 /* —— Overlays —— */
 .fc-overlay {
   pointer-events: none;
@@ -123,6 +134,41 @@
   height: 6px;
   border-radius: 50%;
   background: #22c55e;
+}
+
+.fc-save-pill.is-dirty {
+  color: #a16207;
+}
+
+.fc-save-pill.is-dirty .fc-save-dot {
+  background: #eab308;
+}
+
+.fc-save-pill.is-saving {
+  color: #64748b;
+}
+
+.fc-save-pill.is-saving .fc-save-dot {
+  background: #94a3b8;
+  animation: fc-save-pulse 1s ease-in-out infinite;
+}
+
+.fc-save-pill.is-error {
+  color: #b91c1c;
+}
+
+.fc-save-pill.is-error .fc-save-dot {
+  background: #ef4444;
+}
+
+@keyframes fc-save-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .fc-icon-btn {
@@ -249,6 +295,53 @@
   border-radius: 999px;
   background: var(--pf-surface-2);
   color: color-mix(in srgb, var(--pf-ink) 80%, transparent);
+}
+
+/* 空白双击新建菜单（高于顶栏） */
+.fc-pane-add-menu {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 148px;
+  padding: 8px;
+  border: 1px solid var(--fc-line);
+  border-radius: 16px;
+  background: var(--pf-card);
+  box-shadow: var(--fc-shadow);
+}
+
+.fc-pane-add-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fc-ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fc-pane-add-menu button:hover {
+  background: var(--pf-surface-2);
+}
+
+.fc-pane-add-menu-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: var(--pf-surface-2);
+  color: var(--pf-muted);
 }
 
 .fc-folder-panel {
@@ -479,18 +572,19 @@
   cursor: default;
 }
 
-.fc-asset-card.is-previewable {
-  cursor: default;
+.fc-asset-card:hover {
+  transform: none;
 }
 
 .fc-asset-node.is-selected .fc-asset-card {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-  border-radius: 22px;
+  border-color: color-mix(in srgb, var(--pf-lime) 75%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pf-lime) 38%, transparent);
 }
 
 .fc-generate-panel {
-  width: min(400px, calc(100vw - 48px));
-  padding: 12px 12px 10px;
+  width: min(440px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 16px;
   border: 1px solid var(--fc-line);
   border-radius: 18px;
   background: color-mix(in srgb, var(--pf-card) 98%, transparent);
@@ -505,11 +599,22 @@
 .fc-generate-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  color: var(--pf-muted);
-  font-size: 12px;
+  gap: 9px;
+  margin-bottom: 14px;
+  color: var(--pf-ink);
+  font-size: 13px;
   font-weight: 600;
+}
+
+.fc-generate-head-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--pf-lime) 22%, transparent);
+  color: var(--pf-accent-strong);
 }
 
 .fc-generate-help {
@@ -538,13 +643,14 @@
 
 .fc-generate-tag {
   margin-left: auto;
-  padding: 0.12rem 0.45rem;
+  padding: 3px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--pf-lime) 35%, transparent);
   color: var(--pf-accent-strong);
   font-style: normal;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .fc-generate-head .fc-generate-tag + .fc-generate-help {
@@ -556,25 +662,49 @@
   z-index: 2;
 }
 
+.fc-generate-prompt-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  color: var(--pf-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.fc-generate-mention-hint {
+  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+}
+
+.fc-generate-count {
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
 .fc-generate-input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 72px;
-  padding: 10px 12px;
-  border: 1px solid #e8eaef;
+  min-height: 112px;
+  padding: 12px 14px;
+  border: 1px solid var(--pf-line);
   border-radius: 12px;
-  resize: vertical;
   font: inherit;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.8;
   color: var(--fc-ink);
   background: var(--pf-surface-2);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .fc-generate-editor {
-  resize: none;
   overflow-y: auto;
-  max-height: 140px;
+  min-height: 112px;
+  max-height: 220px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pf-line) transparent;
+  overscroll-behavior: contain;
   white-space: pre-wrap;
   word-break: break-word;
   outline: none;
@@ -591,6 +721,70 @@
   border-color: color-mix(in srgb, var(--pf-lime) 75%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--pf-lime) 18%, transparent);
   background: var(--pf-card);
+}
+
+.fc-generate-editor[aria-disabled="true"] {
+  color: var(--pf-muted);
+  background: var(--pf-surface-2);
+  cursor: wait;
+}
+
+.fc-generate-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.fc-generate-settings .fc-gen-opts {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.fc-generate-settings .fc-gen-opts-triggers {
+  gap: 6px;
+}
+
+.fc-generate-settings .fc-gen-opt-btn {
+  gap: 6px;
+  height: 30px;
+  max-width: 190px;
+  padding: 0 9px;
+  border: 1px solid var(--pf-line);
+  border-radius: 8px;
+  background: var(--pf-surface-2);
+  color: var(--pf-muted);
+  font-size: 11px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.fc-generate-settings .fc-gen-opt-btn svg {
+  flex-shrink: 0;
+}
+
+.fc-generate-settings .fc-gen-opt-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--pf-lime) 60%, transparent);
+  background: color-mix(in srgb, var(--pf-lime) 14%, transparent);
+}
+
+.fc-generate-settings .fc-gen-opt-btn.active {
+  border-color: color-mix(in srgb, var(--pf-lime) 60%, transparent);
+  background: color-mix(in srgb, var(--pf-lime) 22%, transparent);
+  color: var(--pf-accent-strong);
+}
+
+.fc-generate-settings .fc-gen-skill-opts .fc-gen-opt-btn {
+  max-width: 100%;
+}
+
+.fc-generate-settings .fc-gen-skill-opts .fc-gen-opt-label {
+  max-width: 300px;
+}
+
+.fc-generate-reference-limits {
+  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 .fc-generate-editor .drama-ep-editor-chip {
@@ -765,8 +959,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pf-line);
 }
 
 .fc-generate-action-btns {
@@ -774,20 +970,21 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .fc-generate-optimize {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 30px;
+  gap: 5px;
+  height: 34px;
   padding: 0 10px;
   border: 1px solid var(--pf-line);
-  border-radius: 999px;
+  border-radius: 9px;
   background: var(--pf-card);
-  color: color-mix(in srgb, var(--pf-ink) 80%, transparent);
-  font-size: 12px;
-  font-weight: 600;
+  color: var(--pf-muted);
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -804,30 +1001,65 @@
 }
 
 .fc-generate-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.fc-generate-hint kbd {
+  display: inline-block;
+  padding: 1px 4px;
+  border: 1px solid var(--pf-line);
+  border-radius: 4px;
+  background: var(--pf-surface-2);
+  color: var(--pf-muted);
+  font: inherit;
 }
 
 .fc-generate-submit {
-  width: 34px;
+  display: inline-flex;
+  gap: 7px;
   height: 34px;
+  padding: 0 13px;
   border: none;
-  border-radius: 999px;
-  background: var(--pf-ink);
-  color: var(--pf-bg);
-  display: grid;
-  place-items: center;
+  border-radius: 9px;
+  background: var(--pf-lime);
+  color: var(--pf-lime-ink);
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .fc-generate-submit:disabled {
-  opacity: 0.4;
+  background: var(--pf-surface-2);
+  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
   cursor: not-allowed;
 }
 
 .fc-generate-submit:hover:not(:disabled) {
-  background: #1e2430;
+  background: color-mix(in srgb, var(--pf-lime) 88%, var(--pf-ink));
+  box-shadow: 0 2px 6px rgba(104, 143, 40, 0.16);
+}
+
+.fc-generate-panel button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--pf-lime) 80%, transparent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-generate-panel .fc-generate-input,
+  .fc-generate-panel button {
+    transition: none;
+  }
 }
 
 .fc-asset-body {
@@ -843,12 +1075,14 @@
 .fc-asset-body.is-scene {
   width: 200px;
   height: 240px;
+  transition: width 0.18s ease, height 0.18s ease;
 }
 
 .fc-asset-body.is-image,
 .fc-asset-body.is-video {
   width: 160px;
   height: 220px;
+  transition: width 0.18s ease, height 0.18s ease;
 }
 
 .fc-asset-body.is-audio {
@@ -867,13 +1101,6 @@
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.fc-asset-footer {
-  padding: 10px 12px;
-  border-top: 1px solid var(--pf-line);
-  font-size: 12px;
-  color: var(--pf-muted);
 }
 
 .fc-asset-media {
@@ -920,10 +1147,21 @@
   position: relative;
   width: 100%;
   height: 100%;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  box-sizing: border-box;
   color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
   background: var(--pf-surface-2);
+}
+
+.fc-asset-audio-player {
+  width: 100%;
+  height: 32px;
+  max-width: 100%;
 }
 
 .fc-asset-video-play {

@@ -1,22 +1,29 @@
 /** React Flow 无限画布核心 */
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import {
   Background,
   MiniMap,
   ReactFlow,
+  SelectionMode,
   useReactFlow,
   type Connection,
   type Edge,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { CanvasAssetNode } from './CanvasAssetNode'
+import { CanvasPaneAddMenu } from './CanvasPaneAddMenu'
 import { useCanvasStore } from './CanvasStore'
-import { CANVAS_SNAP_GRID } from './canvasTypes'
+import { CANVAS_NODE_SIZE, CANVAS_SNAP_GRID, type CanvasNodeKind } from './canvasTypes'
 
 type FreeCanvasFlowProps = {
   projectId: number
   /** 空白处右键：由工作区弹出添加节点菜单 */
-  onPaneContextMenu?: (event: MouseEvent | React.MouseEvent) => void
+  onPaneContextMenu?: (event: globalThis.MouseEvent | React.MouseEvent) => void
+}
+
+type PaneAddMenuState = {
+  screen: { x: number; y: number }
+  flow: { x: number; y: number }
 }
 
 /** 渲染 React Flow 无限画布 */
@@ -34,10 +41,13 @@ export function FreeCanvasFlow({ projectId, onPaneContextMenu }: FreeCanvasFlowP
     focusNodeId,
     clearFocusNode,
     loading,
+    addNodeOfKind,
   } = useCanvasStore()
-  const { fitView, setCenter, getNode } = useReactFlow()
+  const { fitView, setCenter, getNode, screenToFlowPosition } = useReactFlow()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const dragSnapshotPushed = useRef(false)
+  // paneAddMenu 空白双击后的新建菜单
+  const [paneAddMenu, setPaneAddMenu] = useState<PaneAddMenuState | null>(null)
 
   /* 聚焦文件夹选中的节点 */
   useEffect(() => {
@@ -62,7 +72,55 @@ export function FreeCanvasFlow({ projectId, onPaneContextMenu }: FreeCanvasFlowP
 
   const handlePaneClick = useCallback(() => {
     wrapperRef.current?.focus()
+    setPaneAddMenu(null)
   }, [])
+
+  /** 空白处双击：在落点弹出新建节点菜单（需关闭 zoomOnDoubleClick） */
+  const handlePaneDoubleClick = useCallback(
+    (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (
+        target.closest(
+          '.react-flow__node, .react-flow__edge, .react-flow__handle, .react-flow__controls, .react-flow__minimap, .fc-pane-add-menu, .fc-generate-panel, .fc-asset-node, button, input, textarea, a, [contenteditable="true"]',
+        )
+      ) {
+        return
+      }
+      // pane / background / viewport 空白都算
+      if (
+        !target.closest('.react-flow__pane') &&
+        !target.closest('.react-flow__viewport') &&
+        !target.closest('.react-flow__background') &&
+        !target.classList.contains('free-canvas-flow')
+      ) {
+        return
+      }
+      event.preventDefault()
+      event.stopPropagation()
+      const flow = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+      setPaneAddMenu({
+        screen: { x: event.clientX, y: event.clientY },
+        flow,
+      })
+    },
+    [screenToFlowPosition],
+  )
+
+  /** 从双击菜单创建节点，居中落在点击位置 */
+  const handlePaneAddSelect = useCallback(
+    (kind: CanvasNodeKind) => {
+      if (!paneAddMenu) return
+      const size = CANVAS_NODE_SIZE[kind]
+      const position = {
+        x: paneAddMenu.flow.x - size.width / 2,
+        y: paneAddMenu.flow.y - size.height / 2,
+      }
+      setPaneAddMenu(null)
+      void addNodeOfKind(kind, position)
+    },
+    [addNodeOfKind, paneAddMenu],
+  )
 
   /* 拖拽开始时压入历史快照（同一拖拽只压一次） */
   const handleNodeDragStart = useCallback(() => {
@@ -100,6 +158,7 @@ export function FreeCanvasFlow({ projectId, onPaneContextMenu }: FreeCanvasFlowP
       className="free-canvas-flow"
       style={{ width: '100%', height: '100%', outline: 'none' }}
       data-project-id={projectId}
+      onDoubleClick={handlePaneDoubleClick}
     >
       <ReactFlow
         nodes={nodes}
@@ -110,6 +169,8 @@ export function FreeCanvasFlow({ projectId, onPaneContextMenu }: FreeCanvasFlowP
         onConnect={onConnect}
         onNodeDragStart={handleNodeDragStart}
         onNodeDragStop={handleNodeDragStop}
+        onSelectionDragStart={handleNodeDragStart}
+        onSelectionDragStop={handleNodeDragStop}
         isValidConnection={isValidConnection}
         onPaneClick={handlePaneClick}
         onPaneContextMenu={(event) => {
@@ -121,6 +182,13 @@ export function FreeCanvasFlow({ projectId, onPaneContextMenu }: FreeCanvasFlowP
         snapGrid={CANVAS_SNAP_GRID}
         minZoom={0.2}
         maxZoom={2}
+        zoomOnDoubleClick={false}
+        selectionOnDrag
+        selectionMode={SelectionMode.Partial}
+        selectionKeyCode="Shift"
+        multiSelectionKeyCode={['Meta', 'Control']}
+        panOnDrag={[1, 2]}
+        panActivationKeyCode="Space"
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{ type: 'default' }}
       >
@@ -133,6 +201,13 @@ export function FreeCanvasFlow({ projectId, onPaneContextMenu }: FreeCanvasFlowP
           />
         ) : null}
       </ReactFlow>
+      {paneAddMenu ? (
+        <CanvasPaneAddMenu
+          screen={paneAddMenu.screen}
+          onSelect={handlePaneAddSelect}
+          onClose={() => setPaneAddMenu(null)}
+        />
+      ) : null}
     </div>
   )
 }

@@ -62,7 +62,7 @@ async def admin_subscriptions(
     }
 
 
-@router.get("/teams")
+@router.get("/seat-teams")
 async def admin_teams(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),

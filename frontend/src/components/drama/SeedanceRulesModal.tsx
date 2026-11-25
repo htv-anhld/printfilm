@@ -117,17 +117,21 @@ export function SeedanceRulesModal({ open, onClose }: Props) {
                 <strong>reference_image</strong>
                 {t('drama.seedanceRules.payload.refImageDesc')}
               </li>
-              {/* 音色难控：暂不提交 reference_audio，口播由 generate_audio 自发挥 */}
+              <li>
+                <strong>reference_audio</strong>
+                {t('drama.seedanceRules.payload.refAudioDesc')}
+              </li>
             </ol>
             <p className="seedance-rules-note">
-              {r('payload.audioNote', { code: <code>generate_audio</code> })}
+              {r('payload.audioNoteSubtitle', { code: <code>generate_audio</code> })}
             </p>
 
             <h4>{t('drama.seedanceRules.payload.orderTitle')}</h4>
             <ol className="seedance-rules-list">
               <li>{t('drama.seedanceRules.payload.order1')}</li>
               <li>{t('drama.seedanceRules.payload.order2')}</li>
-              {/* 角色音色 / 旁白音色约束块暂关 */}
+              <li>{t('drama.seedanceRules.payload.orderCharacterVoice')}</li>
+              <li>{t('drama.seedanceRules.payload.orderNarrationVoice')}</li>
               <li>{t('drama.seedanceRules.payload.order3')}</li>
               <li>{t('drama.seedanceRules.payload.order4')}</li>
               <li>{t('drama.seedanceRules.payload.order5')}</li>
@@ -168,7 +172,7 @@ export function SeedanceRulesModal({ open, onClose }: Props) {
                 {t('drama.seedanceRules.script.assetRef')}
               </li>
               <li>{t('drama.seedanceRules.script.assetPanel')}</li>
-              <li>{t('drama.seedanceRules.script.assetNeedImage')}</li>
+              <li>{t('drama.seedanceRules.script.assetNeedImageVoice')}</li>
             </ul>
 
             <h4>{t('drama.seedanceRules.script.cueTitle')}</h4>
@@ -233,7 +237,7 @@ export function SeedanceRulesModal({ open, onClose }: Props) {
             <h4>{t('drama.seedanceRules.usage.checkTitle')}</h4>
             <ul className="seedance-rules-list">
               <li>{t('drama.seedanceRules.usage.check1')}</li>
-              <li>{t('drama.seedanceRules.usage.check2')}</li>
+              <li>{t('drama.seedanceRules.usage.check2Voice')}</li>
               <li>{t('drama.seedanceRules.usage.check3')}</li>
             </ul>
 
@@ -262,10 +266,11 @@ export function SeedanceRulesModal({ open, onClose }: Props) {
               <li>{t('drama.seedanceRules.usage.link3')}</li>
             </ul>
 
-            <h4>{t('drama.seedanceRules.usage.audioTitle')}</h4>
+            <h4>{t('drama.seedanceRules.usage.voiceTitle')}</h4>
             <ul className="seedance-rules-list">
-              <li>{t('drama.seedanceRules.usage.audio1')}</li>
-              <li>{t('drama.seedanceRules.usage.audio2')}</li>
+              <li>{t('drama.seedanceRules.usage.voiceBind')}</li>
+              <li>{t('drama.seedanceRules.usage.voiceUnbound')}</li>
+              <li>{t('drama.seedanceRules.usage.voiceNeedImage')}</li>
             </ul>
 
             <h4>{t('drama.seedanceRules.usage.replanTitle')}</h4>

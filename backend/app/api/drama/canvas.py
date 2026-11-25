@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,9 +48,14 @@ def _canvas_nodes(nodes: list, assets: list[DramaAsset], *, asset_details: bool 
     return out
 
 
-@router.get("/canvas/{project_id}")
+@router.get(
+    "/canvas/{project_id}",
+    summary="获取项目画布",
+    description="按项目编号 project_id 读取画布节点与连线，尚未保存时返回空数组。节点中的媒体地址按当前资产记录刷新；团队项目的资产名称也以服务器为准。",
+    response_description="项目编号及画布 nodes、edges 数组",
+)
 async def get_canvas(
-    project_id: int,
+    project_id: Annotated[int, Path(description="项目编号，需有该项目的个人或团队访问权限")],
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
@@ -56,12 +63,18 @@ async def get_canvas(
     content = project.content if isinstance(project.content, dict) else {}
     return {
         "project_id": project_id,
-        "nodes": _canvas_nodes(content.get("canvas_nodes") or [], project.assets or []),
+        "nodes": _canvas_nodes(content.get("canvas_nodes") or [], project.assets or [],
+                               asset_details=project.team_id is not None),
         "edges": content.get("canvas_edges") or [],
     }
 
 
-@router.post("/canvas")
+@router.post(
+    "/canvas",
+    summary="保存项目画布布局",
+    description="整体替换指定项目的画布节点与连线，并保留其他项目内容。个人项目会按节点关联更新或创建资产，已有资产的媒体地址和封面以服务器为准；团队项目需持有画布编辑租约，只保存布局，资产修改应使用独立资产接口。",
+    response_description="保存成功标记及本次提交的节点、连线数量",
+)
 async def save_canvas(
     body: DramaCanvasSaveRequest,
     db: AsyncSession = Depends(get_db),
@@ -72,6 +85,13 @@ async def save_canvas(
     content["canvas_nodes"] = body.nodes
     content["canvas_edges"] = body.edges
     project.content = content
+
+    if project.team_id is not None:
+        # 团队资产通过独立资产接口和 asset 租约修改；画布租约仅控制布局。
+        content["canvas_nodes"] = _canvas_nodes(body.nodes, project.assets or [], asset_details=True)
+        project.content = content
+        await db.commit()
+        return {"ok": True, "nodes": len(body.nodes), "edges": len(body.edges)}
 
     # Generation may finish after the initial project read. Refresh under row
     # locks before merging params so a stale ORM snapshot cannot undo delivery.

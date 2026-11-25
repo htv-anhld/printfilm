@@ -1,40 +1,50 @@
-import { Eye, EyeOff } from 'lucide-react'
+import { ArrowUpRight, Eye, EyeOff, RefreshCw, WalletCards } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { UsageSummary, Wallet } from '../../api'
 import { formatDateTime, useI18n } from '../../i18n'
-import { formatMajor, formatMoney, useBillingConfig } from '../../lib/money'
+import { formatMoney, useBillingConfig } from '../../lib/money'
 
 type Props = {
   wallet: Wallet | null
   usage: UsageSummary | null
   loggedIn: boolean
   updatedAt: Date | null
+  /** 以下三项为上游新增的加载/失败态；旧调用方可不传 */
+  loading?: boolean
+  error?: boolean
+  onRetry?: () => void
   onHistory: () => void
 }
 
+// 账户更新时间使用浏览器本地时区。
 function formatUpdated(d: Date | null) {
   return formatDateTime(d)
 }
 
 /** 定价页深色余额卡片：余额、本月消耗、冻结、充值记录 */
-export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, onHistory }: Props) {
+export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, loading = false, error = false, onRetry, onHistory }: Props) {
+  /* 余额隐私开关与服务端返回的余额、冻结和本次消耗；尚未取得数据时不展示虚假的零余额。金额单位均为最小货币单位（分 / cent）。 */
   const { t } = useI18n()
   const [balanceVisible, setBalanceVisible] = useState(true)
   const { symbol } = useBillingConfig()
-
-  const balanceYuan = wallet?.balance_yuan ?? usage?.balance_yuan ?? 0
-  const frozenYuan = wallet?.frozen_yuan ?? usage?.frozen_yuan ?? 0
-  const monthCharge = usage?.charge_yuan ?? 0
+  const hasBalance = loggedIn && Boolean(wallet || usage)
+  const balanceFen = wallet?.balance_fen ?? usage?.balance_fen ?? 0
+  const frozenFen = wallet?.frozen_fen ?? usage?.frozen_fen ?? 0
+  const monthChargeFen = usage?.charge_fen ?? 0
+  const masked = `${symbol} ****`
 
   return (
-    <aside className="pf-pricing-wallet-dark">
+    <aside className="pf-pricing-wallet-dark" aria-label={t('pricing.walletBalance')} aria-busy={loading}>
       <div className="pf-pricing-wallet-dark-head">
-        <span className="pf-pricing-wallet-dark-label">{t('pricing.walletBalance')}</span>
+        <span className="pf-pricing-wallet-dark-label"><WalletCards size={17} aria-hidden />{t('pricing.walletBalance')}</span>
         <div className="pf-pricing-wallet-dark-actions">
           <button
             type="button"
             className="pf-pricing-wallet-eye"
             aria-label={balanceVisible ? t('pricing.hideBalance') : t('pricing.showBalance')}
+            aria-pressed={!balanceVisible}
+            disabled={!hasBalance}
             onClick={() => setBalanceVisible((v) => !v)}
           >
             {balanceVisible ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -46,33 +56,51 @@ export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, 
             title={loggedIn ? t('billing.wallet.viewHistory') : t('pricing.loginFirst')}
             onClick={onHistory}
           >
-            {t('pricing.history')}
+            {t('pricing.history')}<ArrowUpRight size={13} aria-hidden />
           </button>
         </div>
       </div>
 
-      <strong className="pf-pricing-wallet-dark-balance">
-        {balanceVisible ? formatMajor(balanceYuan) : `${symbol} ****`}
+      <strong className={`pf-pricing-wallet-dark-balance${loading && !hasBalance ? ' is-loading' : ''}`} aria-label={loading && !hasBalance ? t('pricing.loadingWallet') : undefined}>
+        {hasBalance ? (balanceVisible ? formatMoney(balanceFen) : masked) : '—'}
       </strong>
 
       <dl className="pf-pricing-wallet-dark-meta">
         <div>
           <dt>{t('pricing.monthCharge')}</dt>
-          <dd>{loggedIn ? formatMajor(monthCharge) : '—'}</dd>
+          <dd>{loggedIn && usage ? (balanceVisible ? formatMoney(monthChargeFen) : masked) : '—'}</dd>
         </div>
         <div>
           <dt>{t('billing.wallet.frozen')}</dt>
-          <dd>{loggedIn ? formatMajor(frozenYuan) : '—'}</dd>
+          <dd>{hasBalance ? (balanceVisible ? formatMoney(frozenFen) : masked) : '—'}</dd>
         </div>
         {(wallet?.sub_credit_fen ?? 0) > 0 ? (
           <div>
             <dt>{t('billing.wallet.monthly')}</dt>
-            <dd>{formatMoney(wallet?.sub_credit_fen)}</dd>
+            <dd>{balanceVisible ? formatMoney(wallet?.sub_credit_fen) : masked}</dd>
+          </div>
+        ) : null}
+        {wallet?.debt_fen ? (
+          <div>
+            <dt>{t('billing.wallet.debt')}</dt>
+            <dd>{balanceVisible ? formatMoney(wallet.debt_fen) : masked}</dd>
+          </div>
+        ) : null}
+        {wallet?.spendable_fen !== undefined ? (
+          <div>
+            <dt>{t('billing.wallet.spendable')}</dt>
+            <dd>{balanceVisible ? formatMoney(wallet.spendable_fen) : masked}</dd>
           </div>
         ) : null}
       </dl>
 
-      <p className="pf-pricing-wallet-dark-updated">{t('pricing.updatedAt', { time: formatUpdated(updatedAt) })}</p>
+      {!loggedIn ? (
+        <Link className="pf-pricing-wallet-login" to="/auth?next=%2Fpricing">{t('pricing.walletLogin')}<ArrowUpRight size={14} aria-hidden /></Link>
+      ) : error ? (
+        <p className="pf-pricing-wallet-error" role="status">{t('pricing.walletFailed')}<button type="button" onClick={onRetry} aria-label={t('pricing.retry')}><RefreshCw size={13} aria-hidden />{t('pricing.retry')}</button></p>
+      ) : (
+        <p className="pf-pricing-wallet-dark-updated"><span className={loading ? 'is-loading' : ''} aria-hidden />{loading && !hasBalance ? t('pricing.loadingWallet') : t('pricing.updatedAt', { time: formatUpdated(updatedAt) })}</p>
+      )}
     </aside>
   )
 }

@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.config import get_settings
 from app.models import WalletLedger
 from app.models_commerce import TeamMember
-from app.services import teams as svc
+from app.services import seat_teams as svc
 from tests.conftest import make_user
 
 

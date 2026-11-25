@@ -23,7 +23,8 @@ from app.services.tokenfree_gateway import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_USD_CNY = 7.0
+# 与 TokenFree 控制台一致；价目 billing_expr 里常见系数含 /7.3
+DEFAULT_USD_CNY = 7.3
 
 
 def usd_cny_rate(settings: Settings | None = None) -> float:
@@ -52,7 +53,15 @@ def quota_to_cost_fen(quota: Any, settings: Settings | None = None) -> int:
     from app.services.billing.currency import minor_per_usd
 
     usd = amount / float(TOKENFREE_QUOTA_PER_USD)
-    return max(1, int(math.ceil(usd * minor_per_usd(settings))))
+    return _ceil_fen(usd * minor_per_usd(settings))
+
+
+def _ceil_fen(fen: float) -> int:
+    """向上取整到最小单位，并消掉 28.0000004 这类二进制误差。"""
+    snapped = round(float(fen), 6)
+    if snapped <= 0:
+        return 0
+    return max(1, int(math.ceil(snapped - 1e-9)))
 
 
 def billing_usage_to_cost_fen(total_usage: Any, settings: Settings | None = None) -> int:
@@ -374,3 +383,43 @@ async def fetch_tokenfree_daily_usage(
         }
         cur += timedelta(days=1)
     return out
+
+
+async def fetch_tokenfree_consume_logs(
+    start_ts: int,
+    end_ts: int,
+    *,
+    model_name: str = "",
+) -> list[dict[str, Any]]:
+    """拉取 New API 消费日志（type=2）。失败返回空列表，不打断结算。"""
+    params: dict[str, Any] = {
+        "p": 1,
+        "page_size": 100,
+        "type": 2,
+        "start_timestamp": int(start_ts),
+        "end_timestamp": int(end_ts),
+    }
+    if (model_name or "").strip():
+        params["model_name"] = model_name.strip()
+    payload = await _try_tokenfree_get("/api/log/self", params=params)
+    items = _list_from_payload(payload) if payload is not None else []
+    if items:
+        return items
+    total = _payload_total(payload)
+    if total <= 0:
+        return []
+    params["p"] = 0
+    payload = await _try_tokenfree_get("/api/log/self", params=params)
+    return _list_from_payload(payload) if payload is not None else []
+
+
+def _payload_total(payload: Any) -> int:
+    """日志响应里的 total；没有则 0。"""
+    if not isinstance(payload, dict):
+        return 0
+    data = payload.get("data")
+    raw = data.get("total") if isinstance(data, dict) else payload.get("total")
+    try:
+        return int(raw or 0)
+    except (TypeError, ValueError):
+        return 0

@@ -5,7 +5,7 @@ import { Clapperboard, Film, Layers, Sparkles, Wand2 } from 'lucide-react'
 import { dramaApi, resolveDramaMediaUrl, type DramaEpisode } from '../../api/drama'
 import { dialog } from '../../lib/dialog'
 import { loadDramaEpisodes } from '../../lib/dramaStoryboardNav'
-import { readEpisodeSubtitleMode, subtitleModeUsesModelOutput } from '../../lib/dramaSubtitleBoard'
+import { readEpisodeSubtitleMode, subtitleModeUsesModelOutput } from '../../lib/dramaSubtitleSettings'
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
 import { readFragmentGenerationStatus } from './dramaEpisodeEditUtils'
 import { richText } from '../../components/drama/richText'
@@ -116,27 +116,44 @@ export function EpisodesStep({ projectId, onError }: EpisodesStepProps) {
   }
 
   useEffect(() => {
-    async function enter() {
-      setLoading(true)
+    let cancelled = false
+    let timer: number | undefined
+
+    async function enter(initial: boolean) {
+      if (initial) setLoading(true)
       try {
-        if (!seeded.current) {
+        let rows: DramaEpisode[]
+        if (initial && !seeded.current) {
           seeded.current = true
-          await loadEpisodes(false)
+          rows = await loadEpisodes(false)
         } else {
-          setEpisodes(await dramaApi.listEpisodes(projectId))
+          rows = await dramaApi.listEpisodes(projectId)
+          if (!cancelled) setEpisodes(rows)
+        }
+        if (cancelled) return
+        const anyPlanning = rows.some((ep) => readPlanStatus(ep) === 'generating')
+        if (anyPlanning) {
+          timer = window.setTimeout(() => {
+            void enter(false)
+          }, 2500)
         }
       } catch (err) {
-        onError(err instanceof Error ? err.message : tr('drama.episodesStep.loadFailed'))
+        if (initial) onError(err instanceof Error ? err.message : tr('drama.episodesStep.loadFailed'))
         try {
-          setEpisodes(await dramaApi.listEpisodes(projectId))
+          const rows = await dramaApi.listEpisodes(projectId)
+          if (!cancelled) setEpisodes(rows)
         } catch {
           /* ignore */
         }
       } finally {
-        setLoading(false)
+        if (initial && !cancelled) setLoading(false)
       }
     }
-    void enter()
+    void enter(true)
+    return () => {
+      cancelled = true
+      if (timer) window.clearTimeout(timer)
+    }
   }, [projectId, onError])
 
   async function handleReseed() {
@@ -274,8 +291,8 @@ export function EpisodesStep({ projectId, onError }: EpisodesStepProps) {
       ) : (
         <div className="drama-episode-grid">
           {episodes.map((ep) => {
-            const planning = planningId === ep.id
             const summary = summarizeEpisode(ep)
+            const planning = planningId === ep.id || summary.planStatus === 'generating'
             const progress =
               summary.fragmentCount > 0
                 ? Math.round((summary.videoDone / summary.fragmentCount) * 100)
@@ -286,13 +303,17 @@ export function EpisodesStep({ projectId, onError }: EpisodesStepProps) {
                 : t('drama.episodeDir.episodeFallback', { id: ep.id })
             const statusLabel = planning
               ? t('drama.episodesStep.planning')
-              : summary.videoRunning > 0
-                ? t('drama.episodesStep.running', { n: summary.videoRunning })
-                : summary.videoFailed > 0
-                  ? t('drama.episodesStep.failed', { n: summary.videoFailed })
-                  : summary.videoDone > 0
-                    ? t('drama.episodesStep.videosDone', { done: summary.videoDone, total: summary.fragmentCount })
-                    : t('drama.episodesStep.shotsCount', { n: summary.fragmentCount })
+              : summary.planStatus === 'failed'
+                ? t('drama.episodesStep.planFailedShort')
+                : summary.videoRunning > 0
+                  ? t('drama.episodesStep.running', { n: summary.videoRunning })
+                  : summary.videoFailed > 0
+                    ? t('drama.episodesStep.failed', { n: summary.videoFailed })
+                    : summary.videoDone > 0
+                      ? t('drama.episodesStep.videosDone', { done: summary.videoDone, total: summary.fragmentCount })
+                      : summary.fragmentCount > 0 || summary.planStatus === 'completed'
+                        ? t('drama.episodesStep.shotsCount', { n: summary.fragmentCount })
+                        : t('drama.episodesStep.awaitingPlan')
 
             return (
               <article

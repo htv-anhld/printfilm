@@ -16,7 +16,9 @@ from app.services.logical_model_router import (
     resolve_logical_model,
     resolve_logical_model_candidates,
     resolve_logical_model_id,
+    resolve_upstream_model,
 )
+from app.services.tasks.upstream import observed_request
 from app.services.upstream_channels import (
     is_failover_exception,
     is_failover_status,
@@ -81,18 +83,44 @@ class _ChannelFailover(RuntimeError):
     """当前渠道故障（网络 / 5xx / 429），可以换下一个渠道重试。"""
 
 
-# 调用 OpenAI 兼容 chat/completions（多渠道按优先级 failover）
-async def chat_completions(
+def _build_chat_payload(
+    model: str,
     system: str,
     user: str,
     *,
-    temperature: float = 0.6,
-    max_tokens: int = DEFAULT_MAX_TOKENS,
-    timeout: float = 300.0,
-    response_format: dict[str, Any] | None = None,
-) -> str:
+    temperature: float,
+    max_tokens: int,
+    response_format: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """组装 chat/completions 请求体（批量与流式共用）。"""
+    # kimi 系列仅允许 temperature=0.6，其它值会 400
+    effective_temperature = 0.6 if model.lower().startswith("kimi") else temperature
+    payload: dict[str, Any] = {
+        "model": model,
+        "temperature": effective_temperature,
+        "max_tokens": max_tokens,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+    }
+    extra = _llm_extra_body(model)
+    if extra:
+        payload.update(extra)
+    if response_format:
+        payload["response_format"] = response_format
+    return payload
+
+
+def _resolve_chat_attempts(model_id: str | None = None) -> list[tuple[str, str, str, str]]:
+    """解析文字模型的候选渠道 (api_key, model, base, channel_id)，按优先级排序（failover 顺序）。"""
     settings = get_settings()
-    logical_id = resolve_logical_model_id("text", None)
+    # 先应用管理端模型开关（停用的模型直接报不可用）
+    try:
+        resolve_upstream_model("text", model_id)
+    except ValueError as exc:
+        raise LlmUnavailableError(str(exc)) from exc
+    logical_id = resolve_logical_model_id("text", model_id)
     routes = resolve_logical_model_candidates("text", logical_id)
     if not routes:
         single = resolve_logical_model("text", logical_id)
@@ -102,18 +130,58 @@ async def chat_completions(
             route.api_key,
             (route.upstream_model or "").strip(),
             route.base_url.rstrip("/") or resolve_llm_base_url(),
-            route.channel_id,
+            getattr(route, "channel_id", "") or "",
         )
         for route in routes
     ]
     if not attempts:
-        model = (settings.model_llm or "").strip()
+        model = (resolve_upstream_model("text", model_id) if model_id else settings.model_llm or "").strip()
         if model:
             attempts = [(resolve_llm_api_key(), model, resolve_llm_base_url(), "")]
     if not attempts or not attempts[0][1]:
         raise LlmUnavailableError(
             _("未解析到可用文字模型。请在管理后台填写 TokenFree API Key，拉取并选择文本模型。")
         )
+    return attempts
+
+
+def prepare_chat_request(
+    system: str,
+    user: str,
+    *,
+    temperature: float = 0.6,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+    response_format: dict[str, Any] | None = None,
+    model_id: str | None = None,
+) -> tuple[str, dict[str, str], dict[str, Any]]:
+    """流式调用用：取首选渠道，返回 (url, headers, payload)；与批量调用同一套模型解析。"""
+    api_key, model, base, _channel_id = _resolve_chat_attempts(model_id)[0]
+    payload = _build_chat_payload(
+        model,
+        system,
+        user,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        response_format=response_format,
+    )
+    return f"{base}/chat/completions", {
+        "Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
+    }, payload
+
+
+# 调用 OpenAI 兼容 chat/completions（多渠道按优先级 failover）
+async def chat_completions(
+    system: str,
+    user: str,
+    *,
+    temperature: float = 0.6,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+    timeout: float = 300.0,
+    response_format: dict[str, Any] | None = None,
+    model_id: str | None = None,
+    strict_output: bool = False,
+) -> str:
+    attempts = _resolve_chat_attempts(model_id)
     last_exc: Exception | None = None
     for index, (api_key, model, base, channel_id) in enumerate(attempts):
         try:
@@ -127,6 +195,7 @@ async def chat_completions(
                 max_tokens=max_tokens,
                 timeout=timeout,
                 response_format=response_format,
+                strict_output=strict_output,
             )
         except _ChannelFailover as exc:
             record_channel_failure(channel_id)
@@ -193,25 +262,17 @@ async def _chat_once(
     max_tokens: int,
     timeout: float,
     response_format: dict[str, Any] | None,
+    strict_output: bool = False,
 ) -> str:
     """单渠道单次调用；渠道级故障抛 _ChannelFailover，业务错误抛 RuntimeError。"""
-    # kimi 系列仅允许 temperature=0.6，其它值会 400
-    effective_temperature = 0.6 if model.lower().startswith("kimi") else temperature
-
-    payload: dict[str, Any] = {
-        "model": model,
-        "temperature": effective_temperature,
-        "max_tokens": max_tokens,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-    }
-    extra = _llm_extra_body(model)
-    if extra:
-        payload.update(extra)
-    if response_format:
-        payload["response_format"] = response_format
+    payload = _build_chat_payload(
+        model,
+        system,
+        user,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        response_format=response_format,
+    )
 
     logger.info(
         "调用文字 LLM model=%s base=%s user_len=%s max_tokens=%s",
@@ -225,7 +286,9 @@ async def _chat_once(
         # OpenAI 推理模型要 max_completion_tokens）。遇到 400 参数错误就按提示调整重试，最多 3 次。
         for _attempt in range(4):
             try:
-                res = await client.post(
+                res = await observed_request(
+                    client,
+                    "POST",
                     f"{base}/chat/completions",
                     headers={
                         "Authorization": f"Bearer {api_key}",
@@ -265,6 +328,12 @@ async def _chat_once(
             data = res.json()
         except json.JSONDecodeError as exc:
             raise RuntimeError(_("LLM 响应不是合法 JSON: {detail}", detail=body[:200])) from exc
+    if strict_output:
+        choice = (data.get("choices") or [{}])[0]
+        if choice.get("finish_reason") in {"length", "content_filter", "tool_calls"}:
+            raise RuntimeError(_("模型未完成正文，请调整要求后重试"))
+        if not (choice.get("message") or {}).get("content"):
+            raise RuntimeError(_("模型没有返回正文，请重试"))
     content = _message_content(data)
     if response_format:
         # Claude 等不支持 json_object 的模型常把 JSON 包在 ```json 代码块里

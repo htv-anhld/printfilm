@@ -1,5 +1,6 @@
 /** 出境资产节点：缩略图卡片，可关联多个分镜 */
 import { memo } from 'react'
+import { useTeamReadOnly } from '../../../features/teams/readOnlyContext'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { X } from 'lucide-react'
 import type { EpisodeAssetNodeData } from './buildEpisodeFlow'
@@ -11,6 +12,7 @@ type Props = NodeProps<Node<EpisodeAssetNodeData>> & {
 
 // 渲染出境资产节点（同一资产全局只显示一张卡片）
 function EpisodeAssetNodeComponent({ data, selected, onUnlinkAsset }: Props) {
+  const readOnly = useTeamReadOnly()
   const links = data.linkedFragments || []
 
   return (
@@ -40,6 +42,7 @@ function EpisodeAssetNodeComponent({ data, selected, onUnlinkAsset }: Props) {
               className="ep-asset-node-unlink-chip"
               aria-label={tr('episode.storyboard.unlink', { label: link.label })}
               title={tr('episode.storyboard.unlink', { label: link.label })}
+              disabled={readOnly}
               onClick={() => onUnlinkAsset?.(link.fragmentId, data.assetId)}
             >
               {link.label}

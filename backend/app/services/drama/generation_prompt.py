@@ -7,6 +7,7 @@ ai_movie 扩展：prop/material 增加静物/空镜前缀（manju 无此前缀�
 
 from __future__ import annotations
 
+from app.services.drama.content_locale import is_zh
 from app.services.drama.image_styles import STYLE_BOARD_PROMPT_HINT, resolve_image_style_prompt
 
 # CHARACTER_PROMPT_PREFIX 角色设定板结构要求（无风格词）
@@ -62,6 +63,14 @@ MATERIAL_PROMPT_PREFIX = (
     "请严格依据以下用户描述生成素材画面："
 )
 
+# IMAGE_PROMPT_PREFIX 自由画布图片：短意图也必须钉住主体
+IMAGE_PROMPT_PREFIX = (
+    "【强制任务：按用户意图生成单张画面】"
+    "用户描述中的主体必须是画面绝对中心，禁止替换成无关物体，"
+    "禁止白底多视图设定板，禁止只出空镜氛围而丢掉主体。"
+    "请严格依据以下用户描述生成画面："
+)
+
 
 # 将内置风格提示词追加到正文后；设定板类资产强调构图优先于风格场景
 # has_style_board 为真时补一句：只借画风板气质，禁止抄主体
@@ -84,7 +93,105 @@ def append_style_prompt(
     return f"{prompt}。画面风格要求：{style_prompt}{board_hint}"
 
 
-# 按资产类型与风格 ID 组装完整 Seedream 提示词
+_STRUCTURE_PREFIX_BY_KIND: dict[str, str] = {
+    "character": CHARACTER_PROMPT_PREFIX,
+    "scene": SCENE_PROMPT_PREFIX,
+    "prop": PROP_PROMPT_PREFIX,
+    "material": MATERIAL_PROMPT_PREFIX,
+    "none": MATERIAL_PROMPT_PREFIX,
+    "image": IMAGE_PROMPT_PREFIX,
+}
+
+# 非中文项目（vi / en）：结构前缀用英文写进提示词框，避免越南语/英语项目的资产提示词夹带中文
+_STRUCTURE_MARKER_EN = "[MANDATORY TASK:"
+_CHARACTER_PROMPT_PREFIX_EN = (
+    "[MANDATORY TASK: character design sheet layout] "
+    "Pure white background, no complex background, no occlusion, no text or watermark. "
+    "The left side shows a full-body three-view of the same character, taking up most of the frame, fixed from left to right as: "
+    "1. front full-body standing; 2. left-side full-body standing; 3. back full-body standing. "
+    "All three must be the same character: identical face, hairstyle, outfit, body shape and height proportions. "
+    "Natural upright pose facing forward, arms relaxed at the sides, no other action, no exaggerated expression, whole body in frame (head to toe). "
+    "The same sheet must also include: (1) a face close-up (features, skin tone, makeup and hairline clearly visible, usable as a face reference); "
+    "(2) a half-body close-up (head and shoulders to waist, upper outfit and posture clearly visible). "
+    "Eye-level camera, neutral studio lighting, no exaggerated perspective. "
+    "Clean character edges, clear garment construction, ample white space, laid out like a character modeling reference sheet. "
+    "Forbidden: a single full-body image or missing three-view; missing face close-up or half-body; scenery or props as the subject; complex background. "
+    "Even if the description leans toward a scene, object or action, turn it into a recognizable white-background character sheet "
+    "and fill in appearance, build and outfit accordingly. Strictly follow the description below to create this character sheet: "
+)
+_SCENE_PROMPT_PREFIX_EN = (
+    "[MANDATORY TASK: scene design reference layout] "
+    "One image containing both an eye-level view and a top-down view. "
+    "Left side: multi-wall elevation design of the enclosed space (unfolded walls), showing doorways/doors and other architectural details. "
+    "Right side: 2-4 detail breakdowns of functional areas (materials, furniture or spatial details clearly legible). "
+    "Environment and architecture are the subject; no character close-ups, character portraits or people as the visual focus. "
+    "Even if the description mentions people, characters or actions, remove the people and keep only the environment and structure that stand on their own. "
+    "Strictly follow the description below to create this scene design: "
+)
+_PROP_PROMPT_PREFIX_EN = (
+    "[MANDATORY TASK: prop design sheet layout] "
+    "Pure white background, no complex background, no occlusion, no text or watermark. "
+    "The left side shows a complete three-view of the same prop, taking up most of the frame, fixed from left to right as: "
+    "1. full front view; 2. full left-side view; 3. full back view. "
+    "All three must be the same prop: identical silhouette, material zones, colors, proportions and details. "
+    "The whole object in frame, resting steadily, no hands or people, no usage action, no exaggerated perspective. "
+    "The same sheet must also include: (1) close-ups of key details (inscriptions, mechanisms, joints, patterns or damage); "
+    "(2) a material/structure close-up (surface texture, seams and thickness clearly visible). "
+    "Eye-level camera, neutral studio lighting; clean edges, clear form and proportions, ample white space, laid out like a prop modeling reference sheet. "
+    "Forbidden: a single angle or missing three-view; missing detail close-ups; character portraits; scenery as the subject; complex background. "
+    "Even if the description involves people using it or story action, remove the people and keep only the prop itself. "
+    "Strictly follow the description below to create this prop sheet: "
+)
+_MATERIAL_PROMPT_PREFIX_EN = (
+    "[MANDATORY TASK: atmosphere establishing shot] This must be an environment/atmosphere still, "
+    "emphasizing composition, lighting and mood, usable as an establishing-shot reference for a short drama. "
+    "No recognizable face close-ups or character portraits. "
+    "Strictly follow the description below to create the image: "
+)
+_IMAGE_PROMPT_PREFIX_EN = (
+    "[MANDATORY TASK: single image following the user's intent] "
+    "The subject in the description must be the absolute center of the image; do not replace it with unrelated objects, "
+    "no white-background multi-view sheets, and no empty atmosphere shots that drop the subject. "
+    "Strictly follow the description below to create the image: "
+)
+_STRUCTURE_PREFIX_BY_KIND_EN: dict[str, str] = {
+    "character": _CHARACTER_PROMPT_PREFIX_EN,
+    "scene": _SCENE_PROMPT_PREFIX_EN,
+    "prop": _PROP_PROMPT_PREFIX_EN,
+    "material": _MATERIAL_PROMPT_PREFIX_EN,
+    "none": _MATERIAL_PROMPT_PREFIX_EN,
+    "image": _IMAGE_PROMPT_PREFIX_EN,
+}
+
+
+# 提示词正文是否已含设定板/构图强制任务（避免重复拼接；中英文前缀都认）
+def prompt_has_structure_prefix(prompt: str) -> bool:
+    text = prompt or ""
+    return (
+        "【强制任务：" in text
+        or "全身三视图" in text
+        or "完整三视图" in text
+        or _STRUCTURE_MARKER_EN in text
+    )
+
+
+# 将三视图等结构前缀写入提示词正文（供提示词框展示；提交时不再静默携带）
+def ensure_structure_in_prompt(user_prompt: str, asset_type: str | None = None) -> str:
+    trimmed = (user_prompt or "").strip()
+    if not trimmed:
+        return trimmed
+    if prompt_has_structure_prefix(trimmed):
+        return trimmed
+    kind = (asset_type or "").strip().lower()
+    # 前缀语言跟随当前漫剧内容语言（中文项目保持上游原文）
+    table = _STRUCTURE_PREFIX_BY_KIND if is_zh() else _STRUCTURE_PREFIX_BY_KIND_EN
+    prefix = table.get(kind)
+    if not prefix:
+        return trimmed
+    return f"{prefix}{trimmed}"
+
+
+# 按资产类型与风格 ID 组装 Seedream 提交提示词（结构前缀须已在正文中，此处只追加风格）
 def build_generation_prompt(
     user_prompt: str,
     asset_type: str | None = None,
@@ -93,19 +200,8 @@ def build_generation_prompt(
     has_style_board: bool = False,
 ) -> str:
     trimmed = (user_prompt or "").strip()
-    prompt = trimmed
     kind = (asset_type or "").strip().lower()
-    structure_locked = False
-    if kind == "character":
-        prompt = f"{CHARACTER_PROMPT_PREFIX}{trimmed}"
-        structure_locked = True
-    elif kind == "scene":
-        prompt = f"{SCENE_PROMPT_PREFIX}{trimmed}"
-    elif kind == "prop":
-        prompt = f"{PROP_PROMPT_PREFIX}{trimmed}"
-        structure_locked = True
-    elif kind in {"material", "none"}:
-        prompt = f"{MATERIAL_PROMPT_PREFIX}{trimmed}"
+    structure_locked = kind in {"character", "prop"} and prompt_has_structure_prefix(trimmed)
     return append_style_prompt(
-        prompt, style_id, structure_locked=structure_locked, has_style_board=has_style_board
+        trimmed, style_id, structure_locked=structure_locked, has_style_board=has_style_board
     )

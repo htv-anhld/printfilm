@@ -22,7 +22,10 @@ export const LOCALE_DATE: Record<Locale, string> = {
 }
 
 // 当前生效语言（供非 React 工具函数读取）
-let activeLocale: Locale = DEFAULT_LOCALE
+// 单元测试可通过 globalThis.__PF_TEST_LOCALE__ 指定初始语言（Vite SSR 加载的模块副本也能读到）；线上不存在该变量
+let activeLocale: Locale = isLocale((globalThis as { __PF_TEST_LOCALE__?: unknown }).__PF_TEST_LOCALE__)
+  ? (globalThis as { __PF_TEST_LOCALE__?: Locale }).__PF_TEST_LOCALE__!
+  : DEFAULT_LOCALE
 
 // 是否为已支持的语言代码
 export function isLocale(value: unknown): value is Locale {

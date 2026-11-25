@@ -1,3 +1,4 @@
+import { MediaCostNotice } from '../../../../components/billing/MediaCostNotice'
 /** 漫剧生图：风格 / 模型 / 画幅选择条（内置风格，无手填） */
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { BarChart3, ChevronDown, RectangleVertical, Smile } from 'lucide-react'
@@ -7,10 +8,14 @@ import {
   type ImageStyleId,
 } from '../../../../lib/dramaImageStyles'
 import { DramaImageStylePreviewImg } from '../../../../components/drama/DramaImageStylePreviewImg'
+import { DramaMediaModelPicker } from '../../../../components/drama/DramaMediaModelPicker'
 import {
+  aspectRatiosForImageModel,
+  clampImageAspectRatioForModel,
+  clampImageResolutionForModel,
   formatOutputSettingsLabel,
   GENERATION_ASPECT_RATIO_OPTIONS,
-  GENERATION_RESOLUTION_OPTIONS,
+  resolutionsForImageModel,
   type GenerationAspectRatioId,
   type GenerationResolution,
   type ImageGenerationOptions,
@@ -18,6 +23,7 @@ import {
 import {
   catalogImageModels,
   catalogModelLabel,
+  resolveCatalogModelSelection,
   useMediaModelsCatalog,
 } from '../../../../hooks/useMediaModelsCatalog'
 import './dramaImageGenOptions.css'
@@ -42,18 +48,58 @@ export function DramaImageGenOptionsBar({
 }: DramaImageGenOptionsBarProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState<OpenPanel>(null)
+  const [adjustment, setAdjustment] = useState('')
   const catalog = useMediaModelsCatalog()
   const imageModels = catalogImageModels(catalog)
 
   useEffect(() => {
-    // 目录到达后，把旧 Kie/方舟 id 换成后台默认图片模型
-    if (!catalog || disabled) return
-    const ids = imageModels.map((m) => m.id)
-    if (!ids.length) return
-    if (value.model_id && ids.includes(value.model_id)) return
-    const next = catalog.defaults.image_model || ids[0]
-    if (next && next !== value.model_id) onChange({ ...value, model_id: next })
-  }, [catalog, disabled])
+    // 仅在模型为空/不在目录时补默认；用户已选合法模型时绝不覆盖。
+    // 注意：不要依赖 disabled——发送后 busy 翻转会误触发，把选项打回 Seedream/3:4。
+    if (!catalog) return
+    const nextModel = resolveCatalogModelSelection(catalog, 'image', value.model_id)
+    if (nextModel === value.model_id) return
+    if (!nextModel) {
+      onChange({ ...value, model_id: '' })
+      return
+    }
+    const nextRatio = clampImageAspectRatioForModel(
+      nextModel,
+      value.aspect_ratio,
+      catalog,
+      imageModels,
+    )
+    const nextRes = clampImageResolutionForModel(
+      nextModel,
+      value.resolution,
+      catalog,
+      imageModels,
+    )
+    onChange({ ...value, model_id: nextModel, aspect_ratio: nextRatio, resolution: nextRes })
+  }, [catalog, value.model_id])
+
+  useEffect(() => {
+    // 换模型后钳制比例/清晰度（不因 disabled 翻转重跑）
+    if (!value.model_id || !catalog) return
+    const nextRatio = clampImageAspectRatioForModel(
+      value.model_id,
+      value.aspect_ratio,
+      catalog,
+      imageModels,
+    )
+    const nextRes = clampImageResolutionForModel(
+      value.model_id,
+      value.resolution,
+      catalog,
+      imageModels,
+    )
+    if (nextRatio !== value.aspect_ratio || nextRes !== value.resolution) {
+      setAdjustment(tr('episode.genOpts.imageParamsAdjusted'))
+      onChange({ ...value, aspect_ratio: nextRatio, resolution: nextRes })
+    }
+  }, [value.model_id, catalog])
+
+  const aspectOptions = aspectRatiosForImageModel(value.model_id, catalog, imageModels)
+  const resolutionOptions = resolutionsForImageModel(value.model_id, catalog, imageModels)
 
   useEffect(() => {
     if (!open) return
@@ -78,6 +124,8 @@ export function DramaImageGenOptionsBar({
 
   return (
     <div ref={rootRef} className="fc-gen-opts" onMouseDown={stop} onPointerDown={stop}>
+      {adjustment && <span className="media-cost-notice" role="status">{adjustment}</span>}
+      <MediaCostNotice modelId={value.model_id} resolution={value.resolution} />
       <div className="fc-gen-opts-triggers">
         <button
           type="button"
@@ -140,25 +188,21 @@ export function DramaImageGenOptionsBar({
       {open === 'model' ? (
         <div className="fc-gen-opt-panel" role="dialog" aria-label={tr('episode.genOpts.imageGenModel')}>
           <div className="fc-gen-opt-panel-title">{tr('episode.genOpts.model')}</div>
-          <div className="fc-gen-model-list">
-            {imageModels.length === 0 ? (
-              <p className="fc-gen-model-empty">{tr('episode.genOpts.noImageModels')}</p>
-            ) : null}
-            {imageModels.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className={`fc-gen-model-item${value.model_id === m.id ? ' selected' : ''}`}
-                onClick={() => {
-                  onChange({ ...value, model_id: m.id })
-                  setOpen(null)
-                }}
-              >
-                <strong>{m.label}</strong>
-                <span>{m.description || 'TokenFree'}</span>
-              </button>
-            ))}
-          </div>
+          <DramaMediaModelPicker
+            models={imageModels}
+            selectedId={value.model_id}
+            onSelect={(m) => {
+              const nextRatio = clampImageAspectRatioForModel(m.id, value.aspect_ratio, catalog, imageModels)
+              const nextRes = clampImageResolutionForModel(m.id, value.resolution, catalog, imageModels)
+              onChange({
+                ...value,
+                model_id: m.id,
+                aspect_ratio: nextRatio,
+                resolution: nextRes,
+              })
+              setOpen(null)
+            }}
+          />
         </div>
       ) : null}
 
@@ -166,7 +210,7 @@ export function DramaImageGenOptionsBar({
         <div className="fc-gen-opt-panel" role="dialog" aria-label={tr('episode.genOpts.outputSettings')}>
           <div className="fc-gen-opt-panel-title">{tr('episode.genOpts.ratio')}</div>
           <div className="fc-gen-chip-row">
-            {GENERATION_ASPECT_RATIO_OPTIONS.map((opt) => (
+            {GENERATION_ASPECT_RATIO_OPTIONS.filter((opt) => aspectOptions.includes(opt.id)).map((opt) => (
               <button
                 key={opt.id}
                 type="button"
@@ -183,7 +227,7 @@ export function DramaImageGenOptionsBar({
             {tr('episode.genOpts.resolution')}
           </div>
           <div className="fc-gen-chip-row">
-            {GENERATION_RESOLUTION_OPTIONS.map((res) => (
+            {resolutionOptions.map((res) => (
               <button
                 key={res}
                 type="button"

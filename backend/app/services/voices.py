@@ -1,4 +1,4 @@
-"""Selectable TTS voice presets (豆包 openspeech + template aliases)."""
+"""可选配音预设：界面音色 id 映射到 TokenFree / edge-tts 声线。"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 from app.i18n import _, get_locale, normalize_locale
 from app.services.kepu_locale import edge_voice_locale, is_edge_voice
 
-# id used in API / project.voice_id; speaker is openspeech speaker id
+# 接口与项目 voice_id；speaker 是历史音色 id，用来区分男女声线
 VOICE_PRESETS: list[dict[str, Any]] = [
     {
         "id": "zh_female_cancan_uranus_bigtts",
@@ -239,7 +239,7 @@ async def vietnamese_voices() -> list[dict[str, Any]]:
 
 
 def infer_speaker_gender(speaker: str) -> str | None:
-    """openspeech speaker id → female | male（勿用子串 male，zh_female_* 会误判）。"""
+    """speaker id → female | male（勿用子串 male，zh_female_* 会误判）。"""
     s = (speaker or "").strip().lower()
     if not s:
         return None
@@ -272,7 +272,7 @@ def edge_tts_voice_for_speaker(speaker: str) -> str:
 
 
 def resolve_speaker(voice_id: str | None, *, template_preset: str | None = None) -> str:
-    """Map UI voice id / template alias to openspeech speaker."""
+    """把界面音色 id / 模板别名收成预设 speaker。"""
     raw = (voice_id or "").strip() or (template_preset or "").strip()
     if not raw:
         return "zh_female_cancan_uranus_bigtts"

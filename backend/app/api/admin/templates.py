@@ -31,7 +31,11 @@ def _admin_template_out(tpl: Template) -> AdminTemplateOut:
     )
 
 
-@router.get("/templates/meta")
+@router.get("/templates/meta",
+    summary="获取模板分类选项",
+    description="管理员读取全库模板的分类标签，返回去重并排序后的 categories，用于管理端筛选。",
+    response_description="操作成功，返回结果详见响应结构",
+)
 async def templates_meta(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
@@ -49,7 +53,11 @@ async def templates_meta(
     return {"categories": ordered, "category_labels": {c: _(c) for c in ordered}}
 
 
-@router.get("/templates", response_model=AdminTemplateListOut)
+@router.get("/templates", response_model=AdminTemplateListOut,
+    summary="分页查询全部模板",
+    description="管理员查询模板，包含未启用模板；支持编号、名称、描述关键词、启用状态及分类筛选，按排序值和模板编号排列。",
+    response_description="操作成功，返回结果详见响应结构",
+)
 async def list_templates(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
@@ -88,7 +96,11 @@ async def list_templates(
     )
 
 
-@router.get("/templates/{template_id}", response_model=AdminTemplateOut)
+@router.get("/templates/{template_id}", response_model=AdminTemplateOut,
+    summary="查看模板管理详情",
+    description="管理员按模板编号读取完整模板配置。模板不存在时返回 404。",
+    response_description="操作成功，返回结果详见响应结构",
+)
 async def get_template(
     template_id: str,
     _admin: User = Depends(get_current_admin),
@@ -100,7 +112,11 @@ async def get_template(
     return _admin_template_out(tpl)
 
 
-@router.post("/templates", response_model=AdminTemplateOut)
+@router.post("/templates", response_model=AdminTemplateOut,
+    summary="创建创作模板",
+    description="管理员创建模板并返回保存后的配置。模板编号已存在时返回 400。",
+    response_description="操作成功，返回结果详见响应结构",
+)
 async def create_template(
     body: AdminTemplateCreate,
     _admin: User = Depends(get_current_admin),
@@ -117,7 +133,11 @@ async def create_template(
     return _admin_template_out(tpl)
 
 
-@router.patch("/templates/{template_id}", response_model=AdminTemplateOut)
+@router.patch("/templates/{template_id}", response_model=AdminTemplateOut,
+    summary="局部更新创作模板",
+    description="管理员仅更新请求中显式提供的模板字段，包括启用状态和付费标记。模板不存在时返回 404。",
+    response_description="操作成功，返回结果详见响应结构",
+)
 async def patch_template(
     template_id: str,
     body: AdminTemplatePatch,
@@ -136,7 +156,11 @@ async def patch_template(
     return _admin_template_out(tpl)
 
 
-@router.delete("/templates/{template_id}")
+@router.delete("/templates/{template_id}",
+    summary="删除未被引用的模板",
+    description="管理员删除指定模板，成功返回 {\"ok\": true}。模板不存在时返回 404；仍被科普项目引用时返回 400。",
+    response_description="操作成功，返回结果详见响应结构",
+)
 async def delete_template(
     template_id: str,
     _admin: User = Depends(get_current_admin),
