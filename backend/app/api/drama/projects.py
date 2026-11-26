@@ -37,7 +37,7 @@ from app.services.drama.usage_stats import (
     empty_usage_stats,
     get_drama_project_usage,
 )
-from app.services.drama.output_settings import clean_project_generation_params
+from app.services.drama.output_settings import clean_project_generation_params, without_unroutable_video_model
 from app.services.drama.workflow import (
     CANVAS_SOURCE_MARKER,
     CANVAS_TITLE_MARKER,
@@ -71,7 +71,7 @@ def _project_out(project: DramaProject, usage: DramaProjectUsageStats | None = N
         title=project.title,
         description=project.description,
         content=project.content,
-        params=project.params,
+        params=without_unroutable_video_model(project.params, where=f"漫剧项目 {project.id}"),
         created_at=project.created_at,
         updated_at=project.updated_at,
         script=script,
@@ -220,10 +220,10 @@ async def list_projects(
     return DramaProjectListOut(items=items, meta=PageMeta(page=page, page_size=page_size, total=total))
 
 
-def _clean_generation_params(params: dict | None) -> dict | None:
-    """校验项目生成设置（视频模型 / 画幅 / 清晰度）；模型不在后台目录时返回 400。"""
+def _clean_generation_params(params: dict | None, previous: dict | None = None) -> dict | None:
+    """校验项目生成设置（视频模型 / 画幅 / 清晰度）；模型不在后台目录或无可用渠道时返回 400。"""
     try:
-        return clean_project_generation_params(params)
+        return clean_project_generation_params(params, previous)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=_("视频模型不可用：{model}", model=str(exc))) from exc
 
@@ -356,7 +356,7 @@ async def update_project(
     if body.content is not None:
         project.content = body.content
     if body.params is not None:
-        project.params = _clean_generation_params(body.params)
+        project.params = _clean_generation_params(body.params, project.params)
     if body.content_locale is not None and body.content_locale.strip():
         project.content_locale = normalize_locale(body.content_locale, project_content_locale(project))
         set_content_locale(project.content_locale)

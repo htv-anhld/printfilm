@@ -688,6 +688,11 @@ def _bottom_caption_drawtext(
     return ",".join(parts)
 
 
+def _latin_fit_chars(w: int, font_size: int) -> int:
+    """拉丁文字（越南语/英语）在画面宽度内单行可容纳的大致字符数（留 8% 边距，平均字宽≈0.6 字号）。"""
+    return max(8, int((w * 0.92) / max(font_size * 0.6, 1)))
+
+
 def _overlay_drawtext(
     w: int,
     h: int,
@@ -704,19 +709,24 @@ def _overlay_drawtext(
     subtitle = _strip_caption_punct(subtitle)
     title_cap = 14 if layout == "split" else 12
     sub_cap = 24 if layout == "split" else 18
+    # Portrait 720 base ~ larger than before so 叠字更醒目
+    title_size = max(34, min(52, int(w * 0.058 * max(0.8, title_scale))))
+    sub_size = max(24, min(36, int(w * 0.042 * max(0.8, sub_scale))))
     if latin_text(title):
-        title = truncate_words(title, int(title_cap * _LATIN_CHARS_PER_CJK))
+        title = truncate_words(
+            title, min(int(title_cap * _LATIN_CHARS_PER_CJK), _latin_fit_chars(w, title_size))
+        )
     elif len(title) > title_cap:
         title = title[:title_cap]
     if latin_text(subtitle):
-        subtitle = truncate_words(subtitle, int(sub_cap * _LATIN_CHARS_PER_CJK))
+        # 竖屏 720 宽时按字号限宽，避免越南语副标题超出画面左右被裁
+        subtitle = truncate_words(
+            subtitle, min(int(sub_cap * _LATIN_CHARS_PER_CJK), _latin_fit_chars(w, sub_size))
+        )
     elif len(subtitle) > sub_cap:
         subtitle = subtitle[:sub_cap]
     title_e = _escape_drawtext(title)
     sub_e = _escape_drawtext(subtitle)
-    # Portrait 720 base ~ larger than before so 叠字更醒目
-    title_size = max(34, min(52, int(w * 0.058 * max(0.8, title_scale))))
-    sub_size = max(24, min(36, int(w * 0.042 * max(0.8, sub_scale))))
     title_y = int(h * 0.055)
     sub_y = title_y + title_size + int(h * 0.014)
 

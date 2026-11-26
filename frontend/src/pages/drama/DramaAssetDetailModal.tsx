@@ -215,7 +215,7 @@ export function DramaAssetDetailModal({
             {mediaSrc ? (
               <img key={mediaSrc} src={mediaSrc} alt={asset.name || ''} />
             ) : (
-              <div className="drama-asset-placeholder">{asset.type || 'asset'}</div>
+              <div className="drama-asset-placeholder">{typeLabel}</div>
             )}
           </button>
 

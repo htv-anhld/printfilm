@@ -34,7 +34,7 @@ from app.services.drama.build_fragments import (
     split_episode_content_into_scenes,
 )
 from app.services.drama.access import detach_task_fragment_refs
-from app.services.drama.agents import MIN_EPISODE_CONTENT_CHARS
+from app.services.drama.agents import IMPORT_EPISODE_ORIGIN, MIN_EPISODE_CONTENT_CHARS
 from app.services.drama.extract_props_materials import extract_props_materials
 from app.services.drama.seed_asset_params import (
     build_character_params,
@@ -1029,11 +1029,26 @@ async def seed_episodes_from_script(
     return await _reload_episodes(db, project.id)
 
 
+class EpisodeBodyTooShortError(ValueError):
+    """分集正文不足以自动分镜；带上实际篇幅与阈值（汉字当量），供任务记录跳过原因。"""
+
+    def __init__(self, message: str, *, episode_number: int, units: int, min_units: int) -> None:
+        super().__init__(message)
+        self.episode_number = int(episode_number)
+        self.units = int(units)
+        self.min_units = int(min_units)
+
+
 def require_confirmable_episode_body(
     episode_content: Any,
     episode_number: int,
 ) -> dict[str, Any]:
-    """取出指定集正文；缺失或过短则报错。"""
+    """
+    取出指定集正文；缺失或过短则报错。
+    上传导入的集（origin=import）原文即完整剧本：有正文即可分镜，不受篇幅阈值限制，
+    与前端「进入分镜」按钮（isImportedEpisode）一致。
+    @raises EpisodeBodyTooShortError 正文过短（ValueError 子类）
+    """
     number = int(episode_number)
     if number < 1:
         raise ValueError(_("集号无效"))
@@ -1049,9 +1064,15 @@ def require_confirmable_episode_body(
     if item is None:
         raise ValueError(_("找不到第 {number} 集剧本", number=number))
     body = str(item.get("body") or item.get("content") or "")
-    if _body_char_len(body) < MIN_EPISODE_CONTENT_CHARS:
-        raise ValueError(
-            _("第 {number} 集正文过短，请先写完或让 AI 优化后再确认进入分镜", number=number)
+    if str(item.get("origin") or "") == IMPORT_EPISODE_ORIGIN and body.strip():
+        return item
+    units = _body_char_len(body)
+    if units < MIN_EPISODE_CONTENT_CHARS:
+        raise EpisodeBodyTooShortError(
+            _("第 {number} 集正文过短，请先写完或让 AI 优化后再确认进入分镜", number=number),
+            episode_number=number,
+            units=units,
+            min_units=MIN_EPISODE_CONTENT_CHARS,
         )
     return item
 
@@ -1167,6 +1188,10 @@ async def seed_single_episode_from_script(
     if not script:
         raise ValueError(_("缺少剧本"))
     item = require_confirmable_episode_body(script.episode_content, episode_number)
+    # 正文已可分镜：清掉之前「自动分镜跳过」的提示记录
+    from app.services.drama.episode_plan_skip import clear_episode_plan_skip
+
+    clear_episode_plan_skip(script, episode_number)
     title = str(item.get("title") or content_text("第{n}集", n=episode_number))
     body = str(item.get("body") or item.get("content") or "")
 

@@ -1,6 +1,19 @@
 /** vi: lib 命名空间（t('lib.xxx')） */
 
 export const viLib = {
+  toolRunDetail: {
+    video: 'Tạo video',
+    image: 'Tạo ảnh',
+    audio: 'Tạo âm thanh',
+    text: 'Tạo văn bản',
+    record: 'Bản ghi tạo',
+    queued: 'Tác vụ đang xếp hàng, kết quả sẽ tự cập nhật.',
+    running: 'Tác vụ đang tạo, kết quả sẽ tự cập nhật.',
+    succeeded: 'Tác vụ đã hoàn tất nhưng chưa có kết quả media để xem trước.',
+    failed: 'Tạo thất bại.',
+    cancelled: 'Tác vụ đã bị huỷ.',
+    status: 'Trạng thái tác vụ: {status}',
+  },
   listSep: ', ',
   agentSkill: {
     none: 'Không dùng Skill',
@@ -183,6 +196,11 @@ export const viLib = {
     'pixel-art': 'Pixel art',
     'shadow-puppet-illustration': 'Minh họa múa rối bóng',
   },
+  imageStyleRealism: {
+    badge: 'Tả thực',
+    seedanceWarning:
+      'Phong cách tả thực: Seedance có thể từ chối ảnh nhân vật giống người thật khi tạo video (PrivacyInformation). Nên chọn phong cách minh họa/hoạt hình nếu định tạo video bằng Seedance.',
+  },
   genError: {
     failedTitle: 'Tạo thất bại',
     shortSuggestion: 'Hãy xử lý theo gợi ý rồi tạo lại phân cảnh này.',
@@ -238,6 +256,8 @@ export const viLib = {
       message: 'Dịch vụ video từ chối khi kiểm duyệt: ảnh đầu vào{where} có thể chứa chân dung người thật nên đã bị từ chối tạo.',
       suggestion:
         'Mở mục tài nguyên bên trái, dùng AI tạo lại hình tượng anime/minh họa cho nhân vật/bối cảnh liên quan (tránh ảnh chụp người thật), hoặc tải lên ảnh hợp lệ rồi tạo lại phân cảnh này.',
+      styleSuggestion:
+        'Dự án đang dùng phong cách tả thực nên ảnh nhân vật dễ bị coi là người thật. Hãy vào cài đặt dự án đổi sang phong cách minh họa/hoạt hình (vd. Hoạt hình 3D, Vẽ tay phong cách Ghibli), tạo lại ảnh nhân vật rồi tạo lại phân cảnh.',
     },
     retryLimit: {
       title: 'Vẫn thất bại sau nhiều lần tạo',

@@ -118,7 +118,7 @@ async def preview_voice(
 ) -> VoicePreviewOut:
     """需要登录，同步生成或复用缓存的简短音色试听，返回可播放的音频地址。本次试听记录为非计费任务。"""
     try:
-        _, url = await run_billed_ephemeral(
+        _task, url = await run_billed_ephemeral(
             db, user, domain="kepu", task_type="voice_preview",
             executor=lambda: ensure_voice_preview(body.voice_id),
             payload={"voice_id": body.voice_id}, billable=False,

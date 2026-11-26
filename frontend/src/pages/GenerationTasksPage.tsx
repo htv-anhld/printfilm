@@ -9,12 +9,12 @@ import GenerationDateRange from '../components/tools/GenerationDateRange'
 import GenerationSelect from '../components/tools/GenerationSelect'
 import { AssetDetailDialog } from '../components/assets/AssetDetailDialog'
 import { useToolRunDetail } from '../hooks/useToolRunDetail'
-import { mediaIcons, useGenerationText } from '../lib/generationMedia'
+import { generationPollDelay, mediaIcons, useGenerationText, useGenerationDateLocale } from '../lib/generationMedia'
 import { formatGenerationErrorMessage } from '../lib/generationError'
 import { generationBillingState, generationRecordKey, generationTaskKind, generationTaskKinds as taskKinds, type GenerationTaskKind as TaskKind } from '../lib/generationTaskHistory'
 import { subscribeWorkspace, workspaceScope } from '../features/teams/workspaceScope'
 import Pagination from '../components/ui/Pagination'
-import { fetchMediaBlob, triggerBlobDownload } from '../lib/clientDownload'
+import { downloadMediaUrl, triggerBlobDownload } from '../lib/clientDownload'
 
 const taskIcons = { ...mediaIcons, all: ListChecks, text: FileText }
 const workspaceSnapshot = () => workspaceScope.epoch
@@ -31,6 +31,7 @@ function TaskHistory() {
 
 function TaskHistoryContent() {
   const text = useGenerationText()
+  const dateLocale = useGenerationDateLocale()
   const [params, setParams] = useSearchParams()
   const kind = generationTaskKind(params.get('kind'))
   const status = ['processing', 'succeeded', 'failed', 'cancelled'].includes(params.get('status') || '') ? params.get('status')! : ''
@@ -88,7 +89,7 @@ function TaskHistoryContent() {
         if (disposed) return
         setItems(data.items); setTotal(data.total); setCounts(data.counts || {}); setError('')
         if (page > Math.max(1, Math.ceil(data.total / pageSize))) setPage(Math.max(1, Math.ceil(data.total / pageSize)))
-        timer = setTimeout(refresh, 5000)
+        timer = setTimeout(refresh, generationPollDelay(data.counts?.processing ? [{ status: 'running' }] : data.items))
       } catch (err) {
         if (!disposed) { setError(err instanceof Error ? err.message : text('加载失败', 'Loading failed')); timer = setTimeout(refresh, 10000) }
       } finally { if (!disposed) setLoading(false) }
@@ -100,13 +101,14 @@ function TaskHistoryContent() {
   async function download(item: ToolRunRecord, url = item.urls[0]) {
     setDownloading(generationRecordKey(item))
     try {
-      const blob = item.kind === 'text' ? new Blob([item.text_content || ''], { type: 'text/plain;charset=utf-8' }) : await fetchMediaBlob(resolveToolMediaUrl(url))
-      triggerBlobDownload(blob, `printfilm_${item.kind}_${item.id}.${item.kind === 'video' ? 'mp4' : item.kind === 'audio' ? 'mp3' : item.kind === 'text' ? 'txt' : 'png'}`)
+      const filename = `printfilm_${item.kind}_${item.id}.${item.kind === 'video' ? 'mp4' : item.kind === 'audio' ? 'mp3' : item.kind === 'text' ? 'txt' : 'png'}`
+      if (item.kind === 'text') triggerBlobDownload(new Blob([item.text_content || ''], { type: 'text/plain;charset=utf-8' }), filename)
+      else await downloadMediaUrl(resolveToolMediaUrl(url), filename)
     } catch (err) { setError(err instanceof Error ? err.message : text('下载失败', 'Download failed')) }
     finally { setDownloading(null) }
   }
   function when(value?: string | null) {
-    return value ? new Date(value).toLocaleString(text('zh-CN', 'en-US'), { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
+    return value ? new Date(value).toLocaleString(dateLocale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
   }
   function elapsed(item: ToolRunRecord) {
     if (!item.started_at || !item.finished_at) return '—'

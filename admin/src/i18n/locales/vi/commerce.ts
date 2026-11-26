@@ -26,6 +26,13 @@ export const viCommerce = {
     credits: "Credit/tháng",
     periodEnd: "Hết kỳ",
     seats: "{n} ghế",
+    statuses: {
+      active: "Đang hoạt động",
+      scheduled_cancel: "Hủy cuối kỳ",
+      past_due: "Quá hạn thanh toán",
+      canceled: "Đã hủy",
+      expired: "Đã hết hạn",
+    },
   },
   teams: {
     nav: "Nhóm",
@@ -54,6 +61,17 @@ export const viCommerce = {
     markPaid: "Đã chuyển khoản",
     ratePrompt: "Tỷ lệ hoa hồng (%)",
     markPaidConfirm: "Đánh dấu đã chuyển {amount} cho {email}? Hãy chuyển khoản thật trước.",
+    statuses: {
+      pending: "Chờ duyệt",
+      approved: "Đã duyệt",
+      rejected: "Đã từ chối",
+      suspended: "Tạm ngưng",
+    },
+    rejectConfirm: "Từ chối hồ sơ đối tác của {email}?",
+    suspendConfirm: "Tạm ngưng đối tác {email}? Mã giới thiệu sẽ ngừng ghi nhận hoa hồng.",
+    rateInvalid: "Tỷ lệ hoa hồng phải là số từ 0 đến 100",
+    rewardInvalid: "Số tiền thưởng phải là số không âm",
+    submissionRejectConfirm: "Từ chối nội dung của {email}?",
   },
   submissions: {
     nav: "Nội dung đối tác",

@@ -80,6 +80,10 @@ export const zhExtra = {
       "noticePlanTitle": "正在生成本集 AI 分镜",
       "noticePlanBody": "分镜完成后，可进入查看与编辑。",
       "noticePlanPreparing": "本集剧本已就绪，正在准备 AI 分镜",
+      "noticePlanSkippedTitle": "本集未能自动 AI 分镜",
+      "noticePlanTooShortChars": "本集剧本过短，无法自动 AI 分镜（约 {have} 字，至少需要 {need} 字）。请补充剧本或用 AI 优化正文，保存后再点击「进入分镜」。",
+      "noticePlanTooShortWords": "本集剧本过短，无法自动 AI 分镜（约 {have} 词，至少需要 {need} 词）。请补充剧本或用 AI 优化正文，保存后再点击「进入分镜」。",
+      "noticePlanFailedBody": "自动分镜未能开始：{reason}。可点击「进入分镜」手动重试。",
       "summarySubV2": "本集人物、冲突、转折与结局；生成拍摄剧本的主要依据",
       "summaryPlaceholderV2": "填写本集梗概（至少 40 字），再生成拍摄剧本",
       "extractFromScript": "从剧本提取",
@@ -453,5 +457,13 @@ export const zhExtra = {
     "manage": "管理成员与邀请",
     "viewMembers": "查看项目成员",
     "empty": "暂无此类项目。创建画布项目或接受项目邀请后，将显示在这里。"
+  },
+  "teamBoundary": {
+    "readOnlyNotice": "当前只读",
+    "retryEdit": "重新尝试编辑",
+    "episodeMismatch": "分集不属于当前项目",
+    "episodeLoadFailed": "分集加载失败",
+    "retry": "重试",
+    "loadingEpisode": "正在读取分集与编辑权限"
   }
 }

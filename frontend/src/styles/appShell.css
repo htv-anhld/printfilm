@@ -535,3 +535,13 @@ html.dark .pf-side {
   gap: 6px;
   text-decoration: none;
 }
+
+/* 路由按需加载占位：留出视口高度，避免页脚跳动 */
+.pf-route-fallback {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pf-muted);
+  font-size: 14px;
+}

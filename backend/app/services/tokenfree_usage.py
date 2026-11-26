@@ -18,6 +18,7 @@ from app.services.tokenfree_gateway import (
     TOKENFREE_CONSOLE_URL,
     TOKENFREE_QUOTA_PER_USD,
     resolve_tokenfree_api_key,
+    tokenfree_channel_active,
     tokenfree_site_origin,
 )
 
@@ -391,7 +392,12 @@ async def fetch_tokenfree_consume_logs(
     *,
     model_name: str = "",
 ) -> list[dict[str, Any]]:
-    """拉取 New API 消费日志（type=2）。失败返回空列表，不打断结算。"""
+    """拉取 New API 消费日志（type=2）。失败返回空列表，不打断结算。
+
+    TokenFree 渠道停用时直接返回空列表：请求不是它服务的，查日志只会 401 并拖慢结算。
+    """
+    if not tokenfree_channel_active():
+        return []
     params: dict[str, Any] = {
         "p": 1,
         "page_size": 100,

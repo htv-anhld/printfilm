@@ -6,52 +6,64 @@ import BillingAlertHost from './components/billing/BillingAlertHost'
 import { DramaGenQueuePanel } from './components/drama/DramaGenQueuePanel'
 import WeChatGroupFab from './components/layout/WeChatGroupFab'
 import AuthPage from './pages/AuthPage'
-import GoogleCallbackPage from './pages/GoogleCallbackPage'
-import TeamInvitePage from './pages/TeamInvitePage'
-import PartnersPage from './pages/PartnersPage'
-import OAuthAuthorizePage from './pages/OAuthAuthorizePage'
-import TextToolPage from './pages/TextToolPage'
-import UpscalePage from './pages/UpscalePage'
-// three.js 较大，3D 工作室按需加载
-const Studio3DPage = lazy(() => import('./pages/Studio3DPage'))
-import LibraryPage from './pages/LibraryPage'
-import CreativeBoardsPage from './pages/CreativeBoardsPage'
-import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
-import MethodPage from './pages/MethodPage'
-import GenerationPage from './pages/GenerationPage'
-import GenerationTasksPage from './pages/GenerationTasksPage'
-import ToolsPage from './pages/ToolsPage'
-import ToolDetailPage from './pages/ToolDetailPage'
-import HelpPage from './pages/HelpPage'
-import ContactPage from './pages/ContactPage'
-import { AcceptableUsePage, PrivacyPage, RefundPage, TermsPage } from './pages/LegalDocPage'
-import SettingsPage from './pages/SettingsPage'
-import PricingPage from './pages/PricingPage'
-import PaymentReturnPage from './pages/PaymentReturnPage'
-import StudioPage from './pages/StudioPage'
-import TemplatesPage from './pages/TemplatesPage'
-import CreateProjectPage from './pages/studio/CreateProjectPage'
-import CreationSessionEditorBridge from './pages/studio/CreationSessionEditorBridge'
-import StyleConfigPage from './pages/studio/StyleConfigPage'
-import StoryboardPage from './pages/studio/StoryboardPage'
-import EditorPage from './pages/studio/EditorPage'
-import DramaListPage from './pages/drama/DramaListPage'
-import CanvasListPage from './pages/drama/CanvasListPage'
-import AssetLibraryPage from './pages/drama/AssetLibraryPage'
-import ProjectWorkspacePage from './pages/drama/ProjectWorkspacePage'
-import EpisodeEditPage from './pages/drama/EpisodeEditPage'
-import EpisodesPage from './pages/drama/EpisodesPage'
-import CanvasRoute from './pages/drama/canvas/CanvasRoute'
-import EpisodeStoryboardPage from './pages/drama/episodeCanvas/EpisodeStoryboardPage'
-import ProjectInvitationPage from './features/printfilm-studio/ProjectInvitationPage'
 import RequireAuth from './pages/drama/RequireAuth'
 import './styles/printfilm.css'
 import './styles/appShell.css'
 import './styles/picker.css'
 import './App.css'
 
+// 路由页面全部按需加载（首页 / 登录页除外），避免首屏下载整站 JS
+const GoogleCallbackPage = lazy(() => import('./pages/GoogleCallbackPage'))
+const TeamInvitePage = lazy(() => import('./pages/TeamInvitePage'))
+const PartnersPage = lazy(() => import('./pages/PartnersPage'))
+const OAuthAuthorizePage = lazy(() => import('./pages/OAuthAuthorizePage'))
+const TextToolPage = lazy(() => import('./pages/TextToolPage'))
+const UpscalePage = lazy(() => import('./pages/UpscalePage'))
+const Studio3DPage = lazy(() => import('./pages/Studio3DPage'))
+const LibraryPage = lazy(() => import('./pages/LibraryPage'))
+const CreativeBoardsPage = lazy(() => import('./pages/CreativeBoardsPage'))
+const HistoryPage = lazy(() => import('./pages/HistoryPage'))
+const MethodPage = lazy(() => import('./pages/MethodPage'))
+const GenerationPage = lazy(() => import('./pages/GenerationPage'))
+const GenerationTasksPage = lazy(() => import('./pages/GenerationTasksPage'))
+const ToolsPage = lazy(() => import('./pages/ToolsPage'))
+const ToolDetailPage = lazy(() => import('./pages/ToolDetailPage'))
+const HelpPage = lazy(() => import('./pages/HelpPage'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
+// 法务页同一模块的具名导出：共用一次动态加载
+const loadLegal = () => import('./pages/LegalDocPage')
+const AcceptableUsePage = lazy(() => loadLegal().then((m) => ({ default: m.AcceptableUsePage })))
+const PrivacyPage = lazy(() => loadLegal().then((m) => ({ default: m.PrivacyPage })))
+const RefundPage = lazy(() => loadLegal().then((m) => ({ default: m.RefundPage })))
+const TermsPage = lazy(() => loadLegal().then((m) => ({ default: m.TermsPage })))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const PricingPage = lazy(() => import('./pages/PricingPage'))
+const PaymentReturnPage = lazy(() => import('./pages/PaymentReturnPage'))
+const StudioPage = lazy(() => import('./pages/StudioPage'))
+const TemplatesPage = lazy(() => import('./pages/TemplatesPage'))
+const CreateProjectPage = lazy(() => import('./pages/studio/CreateProjectPage'))
+const CreationSessionEditorBridge = lazy(() => import('./pages/studio/CreationSessionEditorBridge'))
+const StyleConfigPage = lazy(() => import('./pages/studio/StyleConfigPage'))
+const StoryboardPage = lazy(() => import('./pages/studio/StoryboardPage'))
+const EditorPage = lazy(() => import('./pages/studio/EditorPage'))
+const DramaListPage = lazy(() => import('./pages/drama/DramaListPage'))
+const CanvasListPage = lazy(() => import('./pages/drama/CanvasListPage'))
+const AssetLibraryPage = lazy(() => import('./pages/drama/AssetLibraryPage'))
+const ProjectWorkspacePage = lazy(() => import('./pages/drama/ProjectWorkspacePage'))
+const EpisodeEditPage = lazy(() => import('./pages/drama/EpisodeEditPage'))
+const EpisodesPage = lazy(() => import('./pages/drama/EpisodesPage'))
+const CanvasRoute = lazy(() => import('./pages/drama/canvas/CanvasRoute'))
+const EpisodeStoryboardPage = lazy(() => import('./pages/drama/episodeCanvas/EpisodeStoryboardPage'))
+const ProjectInvitationPage = lazy(() => import('./features/printfilm-studio/ProjectInvitationPage'))
+
 const Marketplace = lazy(() => import('./features/marketplace/Marketplace'))
+
+/** 按需加载页面时的占位（与页面背景一致，避免白屏闪烁） */
+function RouteFallback() {
+  const { t } = useI18n()
+  return <div className="pf-route-fallback" role="status" aria-live="polite">{t('common.loading')}</div>
+}
 
 /** 生成和余额均属于当前登录用户。 */
 function PersonalBusinessOverlays() {
@@ -63,6 +75,8 @@ export default function App() {
   const { t } = useI18n()
   return (
     <BrowserRouter>
+      {/* 路由级代码分割：除首页 / 登录外全部按需加载，首屏只下载当前页的 JS */}
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/marketplace/*" element={<Suspense fallback={<p>{t('common.loadingMarketplace')}</p>}><Marketplace /></Suspense>} />
         <Route path="/" element={<HomePage />} />
@@ -130,6 +144,7 @@ export default function App() {
         <Route path="/payments/return" element={<PaymentReturnPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       <WeChatGroupFab />
       <PersonalBusinessOverlays />
       <DialogHost />

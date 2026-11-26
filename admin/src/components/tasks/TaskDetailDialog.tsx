@@ -294,8 +294,8 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
 
                 <DetailSection title={t("tasks.detail.schedule")}>
                   <DlRow label={t("tasks.detail.priority")}>{task.priority}</DlRow>
-                  <DlRow label="scheduled_at">{task.scheduled_at ? fmtTime(task.scheduled_at) : null}</DlRow>
-                  <DlRow label="next_action_at">{task.next_action_at ? fmtTime(task.next_action_at) : null}</DlRow>
+                  <DlRow label={t("tasks.detail.scheduledAt")}>{task.scheduled_at ? fmtTime(task.scheduled_at) : null}</DlRow>
+                  <DlRow label={t("tasks.detail.nextActionAt")}>{task.next_action_at ? fmtTime(task.next_action_at) : null}</DlRow>
                   <DlRow label={t("tasks.detail.leaseUntil")}>{task.lease_until ? fmtTime(task.lease_until) : null}</DlRow>
                   <DlRow label="provider_task_id">
                     {task.provider_task_id ? (

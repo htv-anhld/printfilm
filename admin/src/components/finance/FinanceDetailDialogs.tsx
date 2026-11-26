@@ -1,3 +1,4 @@
+import { tz } from "@/i18n/zhText";
 import { points } from "@/lib/points";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,7 +16,7 @@ export function LedgerRefLink({ row }: { row: AdminLedger }) {
   if (row.ref_type === "order" && row.ref_id) {
     const id = Number(row.ref_id);
     if (Number.isFinite(id) && id > 0) {
-      return <AdminEntityLink kind="order" id={id} label={`订单#${id}`} />;
+      return <AdminEntityLink kind="order" id={id} label={tz("订单#{0}", [id])} />;
     }
     return (
       <Link
@@ -44,9 +45,9 @@ export function OrderDetailDialog({
   async function copyText(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("已复制");
+      toast.success(tz("已复制"));
     } catch {
-      toast.error("复制失败");
+      toast.error(tz("复制失败"));
     }
   }
 
@@ -55,12 +56,12 @@ export function OrderDetailDialog({
       open={open && !!orderDetail}
       onOpenChange={(nextOpen) => !nextOpen && onClose()}
       size="md"
-      title={orderDetail ? `订单明细 #${orderDetail.id}` : "订单明细"}
+      title={orderDetail ? tz("订单明细 #{0}", [orderDetail.id]) : tz("订单明细")}
       subtitle={orderDetail?.out_trade_no}
       footer={
         orderDetail ? (
           <Button size="sm" variant="outline" onClick={() => void copyText(orderDetail.out_trade_no)}>
-            复制商户单号
+            {tz("复制商户单号")}
           </Button>
         ) : undefined
       }
@@ -70,7 +71,7 @@ export function OrderDetailDialog({
           <AdminDetailMeta
             items={[
               {
-                label: "用户",
+                label: tz("用户"),
                 value: (
                   <AdminEntityLink
                     kind="user"
@@ -80,18 +81,18 @@ export function OrderDetailDialog({
                 ),
               },
               { label: "SKU", value: orderDetail.sku_id },
-              { label: "支付金额", value: orderPaymentLabel(orderDetail) },
-              { label: "到账积分", value: points(orderDetail.credit_fen) },
-              ...(orderDetail.payment_currency && orderDetail.payment_currency !== "cny" ? [{ label: "订单汇率", value: `1 ${orderDetail.payment_currency.toUpperCase()} = ${orderDetail.payment_exchange_rate || "—"} CNY` }] : []),
-              { label: "支付方式", value: payTypeLabel(orderDetail.pay_type) },
-              { label: "状态", value: orderStatusLabel(orderDetail.status) },
-              { label: "渠道单号", value: orderDetail.trade_no || "—" },
+              { label: tz("支付金额"), value: orderPaymentLabel(orderDetail) },
+              { label: tz("到账积分"), value: points(orderDetail.credit_fen) },
+              ...(orderDetail.payment_currency && orderDetail.payment_currency !== "cny" ? [{ label: tz("订单汇率"), value: `1 ${orderDetail.payment_currency.toUpperCase()} = ${orderDetail.payment_exchange_rate || "—"} CNY` }] : []),
+              { label: tz("支付方式"), value: payTypeLabel(orderDetail.pay_type) },
+              { label: tz("状态"), value: orderStatusLabel(orderDetail.status) },
+              { label: tz("渠道单号"), value: orderDetail.trade_no || "—" },
               {
-                label: "支付时间",
+                label: tz("支付时间"),
                 value: orderDetail.paid_at ? new Date(orderDetail.paid_at).toLocaleString() : "—",
               },
               {
-                label: "创建时间",
+                label: tz("创建时间"),
                 value: new Date(orderDetail.created_at).toLocaleString(),
                 full: true,
               },
@@ -113,14 +114,14 @@ export function LedgerDetailDialog({
       open={!!ledgerDetail}
       onOpenChange={(nextOpen) => !nextOpen && onClose()}
       size="md"
-      title={ledgerDetail ? `流水明细 #${ledgerDetail.id}` : "流水明细"}
+      title={ledgerDetail ? tz("流水明细 #{0}", [ledgerDetail.id]) : tz("流水明细")}
     >
       {ledgerDetail ? (
         <AdminDetailSection>
           <AdminDetailMeta
             items={[
               {
-                label: "用户",
+                label: tz("用户"),
                 value: (
                   <AdminEntityLink
                     kind="user"
@@ -129,13 +130,13 @@ export function LedgerDetailDialog({
                   />
                 ),
               },
-              { label: "类型", value: ledgerKindLabel(ledgerDetail.kind) },
-              { label: "变动", value: points(ledgerDetail.delta_fen) },
-              { label: "剩余积分", value: points(ledgerDetail.balance_after) },
-              { label: "关联", value: <LedgerRefLink row={ledgerDetail} /> },
-              { label: "备注", value: ledgerDetail.note || "—" },
+              { label: tz("类型"), value: ledgerKindLabel(ledgerDetail.kind) },
+              { label: tz("变动"), value: points(ledgerDetail.delta_fen) },
+              { label: tz("剩余积分"), value: points(ledgerDetail.balance_after) },
+              { label: tz("关联"), value: <LedgerRefLink row={ledgerDetail} /> },
+              { label: tz("备注"), value: ledgerDetail.note || "—" },
               {
-                label: "时间",
+                label: tz("时间"),
                 value: new Date(ledgerDetail.created_at).toLocaleString(),
                 full: true,
               },

@@ -34,6 +34,13 @@ type SubmissionRow = {
 
 const PARTNER_STATUSES = ["", "pending", "approved", "rejected", "suspended"];
 
+/** 合作伙伴 / 推广内容状态显示文案；未知状态原样返回 */
+function partnerStatusLabel(t: (path: string) => string, status: string): string {
+  const key = `commerce.partners.statuses.${status}`;
+  const text = t(key);
+  return text === key ? status : text;
+}
+
 /** 管理端：合作伙伴审核 / 佣金结算 */
 export function PartnersAdminPage() {
   const { t } = useI18n();
@@ -45,8 +52,16 @@ export function PartnersAdminPage() {
     if (next === "approved") {
       const raw = window.prompt(t("commerce.partners.ratePrompt"), String(Math.round((row.commission_rate || 0.2) * 100)));
       if (raw === null) return;
-      const pct = Number(raw);
-      rate = Number.isFinite(pct) && pct >= 0 && pct <= 100 ? pct / 100 : null;
+      const pct = Number(raw.trim());
+      if (!raw.trim() || !Number.isFinite(pct) || pct < 0 || pct > 100) {
+        toast.error(t("commerce.partners.rateInvalid"));
+        return;
+      }
+      rate = pct / 100;
+    } else if (next === "rejected" || next === "suspended") {
+      // 拒绝 / 暂停属于危险操作，需二次确认
+      const msg = next === "rejected" ? "commerce.partners.rejectConfirm" : "commerce.partners.suspendConfirm";
+      if (!window.confirm(t(msg, { email: row.email }))) return;
     }
     try {
       await api(`/api/admin/partners/${row.id}/review`, {
@@ -81,7 +96,7 @@ export function PartnersAdminPage() {
         <select className="settings-select max-w-[200px]" value={status} onChange={(e) => setStatus(e.target.value)}>
           {PARTNER_STATUSES.map((s) => (
             <option key={s || "all"} value={s}>
-              {s || t("common.all")}
+              {s ? partnerStatusLabel(t, s) : t("common.all")}
             </option>
           ))}
         </select>
@@ -97,7 +112,7 @@ export function PartnersAdminPage() {
             </span>
           ),
         },
-        { key: "status", title: t("commerce.partners.status"), render: (r) => `${r.status} · ${Math.round(r.commission_rate * 100)}%` },
+        { key: "status", title: t("commerce.partners.status"), render: (r) => `${partnerStatusLabel(t, r.status)} · ${Math.round(r.commission_rate * 100)}%` },
         { key: "code", title: t("commerce.partners.code"), render: (r) => <span className="font-mono text-xs">{r.ref_code}</span> },
         { key: "signups", title: t("commerce.partners.signups"), render: (r) => r.signups, className: "tabular-nums" },
         {
@@ -149,7 +164,14 @@ export function PartnerSubmissionsPage() {
     if (next === "approved") {
       const raw = window.prompt(t("commerce.submissions.rewardPrompt"), "5");
       if (raw === null) return;
-      reward = Math.max(0, Math.round(Number(raw) * 100) || 0);
+      const amount = Number(raw.trim());
+      if (!raw.trim() || !Number.isFinite(amount) || amount < 0) {
+        toast.error(t("commerce.partners.rewardInvalid"));
+        return;
+      }
+      reward = Math.round(amount * 100);
+    } else if (!window.confirm(t("commerce.partners.submissionRejectConfirm", { email: row.email }))) {
+      return;
     }
     try {
       await api(`/api/admin/partner-submissions/${row.id}/review`, {
@@ -174,7 +196,7 @@ export function PartnerSubmissionsPage() {
         <select className="settings-select max-w-[200px]" value={status} onChange={(e) => setStatus(e.target.value)}>
           {["pending", "approved", "rejected", ""].map((s) => (
             <option key={s || "all"} value={s}>
-              {s || t("common.all")}
+              {s ? partnerStatusLabel(t, s) : t("common.all")}
             </option>
           ))}
         </select>
@@ -190,7 +212,7 @@ export function PartnerSubmissionsPage() {
             </a>
           ),
         },
-        { key: "status", title: t("commerce.partners.status"), render: (r) => `${r.status}${r.reward_fen ? ` · +${money(r.reward_fen)}` : ""}` },
+        { key: "status", title: t("commerce.partners.status"), render: (r) => `${partnerStatusLabel(t, r.status)}${r.reward_fen ? ` · +${money(r.reward_fen)}` : ""}` },
         { key: "created", title: t("commerce.teams.created"), render: (r) => (r.created_at ? formatDateTime(r.created_at) : "—") },
         {
           key: "actions",

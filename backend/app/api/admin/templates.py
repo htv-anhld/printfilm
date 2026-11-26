@@ -33,7 +33,7 @@ def _admin_template_out(tpl: Template) -> AdminTemplateOut:
 
 @router.get("/templates/meta",
     summary="获取模板分类选项",
-    description="管理员读取全库模板的分类标签，返回去重并排序后的 categories，用于管理端筛选。",
+    description="管理员读取全库模板的分类标签，返回去重并排序后的 categories、各分类模板数 category_counts 与模板总数 total，用于管理端筛选。",
     response_description="操作成功，返回结果详见响应结构",
 )
 async def templates_meta(
@@ -42,20 +42,26 @@ async def templates_meta(
 ) -> dict:
     # 汇总全库分类标签（用于管理端筛选）
     result = await db.execute(select(Template.category))
-    categories: set[str] = set()
+    counts: dict[str, int] = {}
+    total = 0
     for (cat_list,) in result.all():
+        total += 1
         if not isinstance(cat_list, list):
             continue
-        for item in cat_list:
-            if isinstance(item, str) and item.strip():
-                categories.add(item.strip())
-    ordered = sorted(categories)
-    return {"categories": ordered, "category_labels": {c: _(c) for c in ordered}}
+        for item in {i.strip() for i in cat_list if isinstance(i, str) and i.strip()}:
+            counts[item] = counts.get(item, 0) + 1
+    ordered = sorted(counts)
+    return {
+        "categories": ordered,
+        "category_labels": {c: _(c) for c in ordered},
+        "category_counts": {c: counts[c] for c in ordered},
+        "total": total,
+    }
 
 
 @router.get("/templates", response_model=AdminTemplateListOut,
     summary="分页查询全部模板",
-    description="管理员查询模板，包含未启用模板；支持编号、名称、描述关键词、启用状态及分类筛选，按排序值和模板编号排列。",
+    description="管理员查询模板，包含未启用模板；支持编号、名称、描述关键词、启用状态、Premium 及分类筛选，按排序值和模板编号排列。",
     response_description="操作成功，返回结果详见响应结构",
 )
 async def list_templates(
@@ -63,6 +69,7 @@ async def list_templates(
     page_size: int = Query(50, ge=1, le=100),
     q: str | None = None,
     is_active: bool | None = None,
+    is_premium: bool | None = None,
     category: str | None = None,
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
@@ -78,6 +85,9 @@ async def list_templates(
     if is_active is not None:
         stmt = stmt.where(Template.is_active == is_active)
         count_stmt = count_stmt.where(Template.is_active == is_active)
+    if is_premium is not None:
+        stmt = stmt.where(Template.is_premium == is_premium)
+        count_stmt = count_stmt.where(Template.is_premium == is_premium)
     if category and category.strip():
         cat = category.strip()
         cat_filter = cast(Template.category, JSONB).contains([cat])

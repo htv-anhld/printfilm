@@ -203,14 +203,23 @@ export function mergeAssetsWithCanvasLayout(
       })
     }
 
-    /* 首次进入（无任何已保存位置）时整行横向排布 */
+    /* 首次进入（无任何已保存位置）时按类型分行网格排布：角色 / 场景 / 道具…各起一行，每行最多 8 个。
+     * 旧实现按「序号 × 当前节点宽」算 x，宽度不同的节点（200 vs 160）会互相重叠，且 30+ 资产排成一长条。 */
     if (saved.byAssetId.size === 0 && assets.length > 0) {
-      let i = 0
-      for (const node of nodes) {
-        if (typeof node.data.assetId !== 'number') continue
-        const size = CANVAS_NODE_SIZE[node.data.kind]
-        node.position = { x: i * (size.width + 40), y: 80 }
-        i += 1
+      const KIND_ORDER: CanvasNodeKind[] = ['character', 'scene', 'image', 'video', 'audio', 'text']
+      const PER_ROW = 8
+      const GAP = 40
+      let y = 80
+      for (const kind of KIND_ORDER) {
+        const group = nodes.filter((n) => typeof n.data.assetId === 'number' && n.data.kind === kind)
+        if (group.length === 0) continue
+        const size = CANVAS_NODE_SIZE[kind]
+        group.forEach((node, idx) => {
+          const col = idx % PER_ROW
+          const row = Math.floor(idx / PER_ROW)
+          node.position = { x: col * (size.width + GAP), y: y + row * (size.height + GAP + 40) }
+        })
+        y += Math.ceil(group.length / PER_ROW) * (size.height + GAP + 40) + GAP
       }
     }
   }

@@ -859,6 +859,11 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
           const voice = readAssetVoiceBinding(asset)
           const isCharacter = (asset.type || '').toLowerCase() === 'character'
           const busy = busyAssetIds.has(asset.id)
+          /* typeLabel 资产类型的本地化名称（占位图与副标题共用，避免露出英文 type 值） */
+          const kind = (asset.type || '').toLowerCase()
+          const typeLabel = ['character', 'scene', 'prop'].includes(kind)
+            ? t(`drama.common.${kind}`)
+            : asset.type || ''
           return (
             <article
               key={asset.id}
@@ -886,13 +891,11 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                   <img key={mediaSrc} src={mediaSrc} alt={asset.name || ''} />
                 </button>
               ) : (
-                <div className="drama-asset-placeholder">{asset.type || 'asset'}</div>
+                <div className="drama-asset-placeholder">{typeLabel}</div>
               )}
               <h3>{asset.name || t('drama.assetLibrary.unnamed')}</h3>
               <p>
-                {['character', 'scene', 'prop'].includes((asset.type || '').toLowerCase())
-                  ? t(`drama.common.${(asset.type || '').toLowerCase()}`)
-                  : asset.type}
+                {typeLabel}
                 {isCharacter && voice ? ` · ${voice.label}` : ''}
               </p>
               <div

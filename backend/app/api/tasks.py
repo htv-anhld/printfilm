@@ -79,6 +79,23 @@ def public_task(task, *, viewer: User | None = None, owner_user_id: int | None =
     return output
 
 
+# 列表里每个任务最多保留的最近事件数（完整事件见 GET /api/tasks/{id}）
+LIST_EVENTS_LIMIT = 5
+
+
+def list_task_summary(output: TaskRunOut) -> TaskRunOut:
+    """列表视图瘦身：只留最近几条事件且去掉事件 payload。
+
+    上游请求事件的 payload 动辄十几 KB，20 条任务的列表曾达 ~790KB；
+    列表调用方只看状态/进度，事件详情走单任务接口。
+    """
+    events = sorted(output.events, key=lambda event: event.id)[-LIST_EVENTS_LIMIT:]
+    for event in events:
+        event.payload = None
+    output.events = events
+    return output
+
+
 # 创建一个延时完成的模拟任务，便于联调任务平台。
 @router.post(
     "/mock-delay",
@@ -221,6 +238,7 @@ async def get_task_run(
         "需要登录，支持业务域、任务状态、任务类型、队列、目标及项目筛选。"
         "可通过 team_id 或 X-Team-Id 选择团队空间，两者同时传入必须一致；"
         "团队任务按权限隐藏内部和财务信息。"
+        "列表中每个任务只返回最近 5 条事件且不含事件 payload，完整事件请查询任务详情。"
     ),
     response_description="任务列表与分页信息",
 )
@@ -259,7 +277,10 @@ async def list_task_runs(
         access_context=access,
     )
     return TaskListOut(
-        items=[public_task(item, viewer=user, owner_user_id=_owner_id(item, user, access)) for item in rows],
+        items=[
+            list_task_summary(public_task(item, viewer=user, owner_user_id=_owner_id(item, user, access)))
+            for item in rows
+        ],
         total=total,
         page=page,
         page_size=page_size,

@@ -35,6 +35,7 @@ export const viShell = {
     loginRequired: 'Chưa đăng nhập',
     generateFailed: 'Tạo thất bại',
     queryFailed: 'Truy vấn thất bại',
+    invalidEmail: 'Địa chỉ email không hợp lệ',
     requestFailed: 'Yêu cầu thất bại',
     uploadFailed: 'Tải lên thất bại',
     pleaseSelect: 'Chọn',
@@ -202,6 +203,7 @@ export const viShell = {
     wechat: 'WeChat',
   },
   wechatGroup: {
+    openDraggable: 'Tham gia nhóm người dùng WeChat (có thể kéo)',
     short: 'Nhóm',
     open: 'Tham gia nhóm người dùng WeChat',
     title: 'Nhóm người dùng printfilm',

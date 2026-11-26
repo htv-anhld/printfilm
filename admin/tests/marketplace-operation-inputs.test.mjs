@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { operationInteger, displayMetricsInput } from '../src/features/marketplace/operationInputs.ts'
+import { applyLocale } from '../src/i18n/detect.ts'
+
+// 上游用例按中文原文比对
+applyLocale('zh', false)
 
 test('运营数量与置顶权重只接受范围内整数，不静默舍入', () => {
   assert.equal(operationInteger('100'), 100)

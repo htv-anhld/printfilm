@@ -19,7 +19,7 @@ import { PageHeader } from "@/components/ui/page";
 import { tr, useI18n } from "@/i18n";
 
 type ListRes = { items: AdminTemplate[]; meta: PageMeta };
-type MetaRes = { categories: string[]; category_labels?: Record<string, string> };
+type MetaRes = { categories: string[]; category_labels?: Record<string, string>; category_counts?: Record<string, number>; total?: number };
 
 function statusOptions() {
   return [
@@ -63,6 +63,9 @@ export function TemplatesPage() {
   const [categories, setCategories] = useState<string[]>([]);
   // categoryLabels 分类原值 → 界面语言名称
   const [categoryLabels, setCategoryLabels] = useState<Record<string, string>>({});
+  // categoryCounts 全库各分类模板数；metaTotal 全库模板数（不随分页变化）
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [metaTotal, setMetaTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AdminTemplate | null>(null);
@@ -86,6 +89,7 @@ export function TemplatesPage() {
       if (categoryFilter) params.set("category", categoryFilter);
       if (statusFilter === "active") params.set("is_active", "true");
       if (statusFilter === "inactive") params.set("is_active", "false");
+      if (statusFilter === "premium") params.set("is_premium", "true");
       setData(await api<ListRes>(`/api/admin/templates?${params}`));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("common.loadFailed"));
@@ -100,6 +104,8 @@ export function TemplatesPage() {
       const meta = await api<MetaRes>("/api/admin/templates/meta");
       setCategories(meta.categories ?? []);
       setCategoryLabels(meta.category_labels ?? {});
+      setCategoryCounts(meta.category_counts ?? {});
+      setMetaTotal(typeof meta.total === "number" ? meta.total : null);
     } catch {
       /* 分类元数据失败不阻塞列表 */
     }
@@ -109,30 +115,25 @@ export function TemplatesPage() {
     void loadMeta();
   }, []);
 
+  // 页码或筛选（状态 / 分类）变化即按服务端重新查询
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, statusFilter, categoryFilter]);
 
+  // 分类计数取全库统计，避免只按当前页计算
   const categoryOptions = useMemo(() => {
-    const items = data?.items ?? [];
-    const countFor = (cat: string) =>
-      items.filter((t) => (t.category || []).includes(cat)).length;
     return [
-      { value: "", label: t("templates.allCategories"), count: items.length },
+      { value: "", label: t("templates.allCategories"), count: metaTotal ?? data?.meta.total ?? 0 },
       ...categories.map((cat) => ({
         value: cat,
         label: categoryLabels[cat] || cat,
-        count: countFor(cat),
+        count: categoryCounts[cat] ?? 0,
       })),
     ];
-  }, [categories, categoryLabels, data?.items, t]);
+  }, [categories, categoryLabels, categoryCounts, metaTotal, data?.meta.total, t]);
 
-  const filteredItems = useMemo(() => {
-    const items = data?.items ?? [];
-    if (statusFilter !== "premium") return items;
-    return items.filter((t) => t.is_premium);
-  }, [data?.items, statusFilter]);
+  const filteredItems = data?.items ?? [];
 
   // 打开新建弹窗
   function openCreate() {
@@ -371,6 +372,7 @@ export function TemplatesPage() {
         editing={editing}
         form={form}
         categorySuggestions={categories}
+        categoryLabels={categoryLabels}
         onOpenChange={setOpen}
         onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
         onSave={() => void save()}

@@ -74,6 +74,8 @@ export const viTasks = {
     schedule: "Điều phối",
     priority: "Độ ưu tiên",
     leaseUntil: "Hết hạn nhận",
+    scheduledAt: "Thời gian dự kiến chạy",
+    nextActionAt: "Lần xử lý tiếp theo",
     related: "Thực thể liên quan",
     asset: "Tài nguyên",
     script: "Kịch bản",

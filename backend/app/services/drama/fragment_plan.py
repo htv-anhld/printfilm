@@ -36,7 +36,11 @@ from app.services.drama.fragment_asset_limit import (
     cap_fragment_asset_ids,
     strip_unlisted_asset_mentions,
 )
-from app.services.drama.fragment_budget import cap_llm_fragment_items, trim_episode_fragment_drafts
+from app.services.drama.fragment_budget import (
+    cap_llm_fragment_items,
+    llm_episode_budget_caps,
+    trim_episode_fragment_drafts,
+)
 from app.services.drama.fragment_content_duration import sum_fragment_content_duration_seconds
 from app.services.drama.fragment_dialogue import (
     asset_names_by_id,
@@ -741,6 +745,13 @@ async def plan_fragments_with_llm(
     )
 
     items = cap_llm_fragment_items(items)
+    # 整集镜数/总时长上限（见 llm_episode_budget_caps）：规范化后按相邻镜打分合并并压缩时长
+    max_count, max_total_sec = llm_episode_budget_caps()
+    if locked and max_count > 0:
+        # 续拆：已锁定镜占用的名额从整集上限里扣除，总时长按剩余名额等比缩减
+        remaining = max(1, max_count - len(locked))
+        max_total_sec = max(FRAGMENT_TOTAL_MAX, max_total_sec * remaining // max_count) if max_total_sec > 0 else 0
+        max_count = remaining
 
     drafts = normalize_llm_fragment_items(
         items,
@@ -762,7 +773,7 @@ async def plan_fragments_with_llm(
     )
     if not drafts:
         raise RuntimeError(_("LLM 分镜规范化后为空"))
-    drafts = trim_episode_fragment_drafts(drafts)
+    drafts = trim_episode_fragment_drafts(drafts, max_count=max_count, max_total_sec=max_total_sec)
     if llm_fragment_coverage_insufficient(
         episode_body, drafts, assets=assets, check_dialogue=not bool(locked)
     ):
@@ -770,10 +781,13 @@ async def plan_fragments_with_llm(
             f"LLM 分镜覆盖不足（{len(drafts)} 条）：场次或主要对白缺失，将回退规则切分"
         )
     logger.info(
-        "LLM 分镜完成 episode=%s ep_no=%s fragments=%s introduced_before=%s locked=%s",
+        "LLM 分镜完成 episode=%s ep_no=%s fragments=%s total_sec=%s cap=%s/%ss introduced_before=%s locked=%s",
         episode_name,
         episode_number,
         len(drafts),
+        sum(int(d.get("duration_sec") or 0) for d in drafts),
+        max_count,
+        max_total_sec,
         len(already_introduced or ()),
         len(locked),
     )

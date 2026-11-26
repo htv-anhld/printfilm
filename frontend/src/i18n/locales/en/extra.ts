@@ -80,6 +80,10 @@ export const enExtra = {
       "noticePlanTitle": "AI storyboarding this episode",
       "noticePlanBody": "Open it to view and edit once done.",
       "noticePlanPreparing": "Script ready, preparing AI storyboard",
+      "noticePlanSkippedTitle": "This episode was not storyboarded automatically",
+      "noticePlanTooShortChars": "This episode script is too short for automatic AI storyboarding (about {have} characters, at least {need} needed). Extend the script (or let AI refine it), save, then click “Storyboard”.",
+      "noticePlanTooShortWords": "This episode script is too short for automatic AI storyboarding (about {have} words, at least {need} needed). Extend the script (or let AI refine it), save, then click “Storyboard”.",
+      "noticePlanFailedBody": "Automatic storyboarding could not start: {reason}. Click “Storyboard” to retry manually.",
       "summarySubV2": "Characters, conflict, twists and ending; the main basis for the shooting script",
       "summaryPlaceholderV2": "Write the episode summary (at least 40 characters), then generate the script",
       "extractFromScript": "Extract from script",
@@ -453,5 +457,13 @@ export const enExtra = {
     "manage": "Manage members & invites",
     "viewMembers": "View project members",
     "empty": "No projects here yet. Create a canvas project or accept a project invite and it will show up here."
+  },
+  "teamBoundary": {
+    "readOnlyNotice": "Read-only",
+    "retryEdit": "Try editing again",
+    "episodeMismatch": "This episode does not belong to the current project",
+    "episodeLoadFailed": "Failed to load episode",
+    "retry": "Retry",
+    "loadingEpisode": "Loading episode and edit permission"
   }
 }

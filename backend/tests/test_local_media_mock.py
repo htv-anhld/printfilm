@@ -121,3 +121,13 @@ async def test_mock_captures_same_final_http_arguments_as_real_gateway(monkeypat
         assert endpoint.endswith("/videos")
         assert "seconds" in record["request"]["body"]
         assert "metadata" in record["request"]["body"]
+
+
+@pytest.mark.asyncio
+async def test_ark_mock_video_points_to_existing_fixture():
+    """ARK_MOCK 视频任务结果须指向真实存在的夹具，不能返回 404 的 /static/mock/video_*.mp4。"""
+    gateway = ArkGateway(Settings(ark_mock=True, local_media_mock=False))
+    for result in (await gateway.fetch_task_once("mock-task-abcdef12"), await gateway.poll_task("mock-task-abcdef12")):
+        assert result.status == "succeeded"
+        assert result.url == "/static/mock/local/default.mp4"
+        assert (local_media_mock.ASSET_ROOT / "default.mp4").is_file()

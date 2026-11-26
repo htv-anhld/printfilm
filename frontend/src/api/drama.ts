@@ -580,7 +580,7 @@ export const dramaApi = {
 
   /** 服务端统一重编码拼接本集（浏览器无损失败时回退） */
   composeEpisode: (episodeId: number, fragmentIds?: number[]) =>
-    request<{ ok: boolean; video_url: string; episode_id: number }>(
+    request<{ ok: boolean; video_url: string; episode_id: number; subtitles_burned?: boolean }>(
       `/api/drama/episodes/${episodeId}/compose`,
       {
         method: 'POST',

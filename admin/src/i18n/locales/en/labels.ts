@@ -71,6 +71,12 @@ export const enLabels = {
     v1_seedance: "API Seedance",
     tool_image: "Tool image",
     tool_video: "Tool video",
+    tool_audio: "Tool audio",
+    tool_text: "Tool text",
+    image_generate: "Image generation",
+    voice_preview: "Voice preview",
+    creation_turn: "Creation chat",
+    mock_delay: "Mock delay task",
   },
   dramaGeneration: {
     queued: "Queued",

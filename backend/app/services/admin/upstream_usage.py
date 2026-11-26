@@ -119,7 +119,10 @@ async def sync_upstream_usage(
     force: bool = False,
 ) -> dict[str, Any]:
     """拉取 TokenFree 官方日用量并写入 upstream_usage_daily。"""
-    if not tokenfree_usage_configured():
+    # 渠道停用时不请求 TokenFree（只会 401 并拖慢后台页面）
+    from app.services.tokenfree_gateway import tokenfree_channel_active
+
+    if not tokenfree_usage_configured() or not tokenfree_channel_active():
         return {"configured": False, "synced": 0, "skipped": 0}
 
     s = get_settings()

@@ -74,6 +74,8 @@ export const enTasks = {
     schedule: "Scheduling",
     priority: "Priority",
     leaseUntil: "Lease expires",
+    scheduledAt: "Scheduled at",
+    nextActionAt: "Next action at",
     related: "Related entities",
     asset: "Asset",
     script: "Script",

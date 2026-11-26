@@ -102,6 +102,7 @@ export function useCanvasAutoSave({
 
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
+      timerRef.current = null
       void flush()
     }, CANVAS_AUTO_SAVE_MS)
 
@@ -109,6 +110,22 @@ export function useCanvasAutoSave({
       if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [dirty, enabled, nodes, edges, flush, onStatus])
+
+  /* 卸载（站内返回/切页）时若仍有防抖中的改动，立即落盘；否则 2 秒内离开会丢失刚连的线/新节点 */
+  const pendingRef = useRef(false)
+  const flushRefForUnmount = useRef(flush)
+  useEffect(() => {
+    pendingRef.current = enabled && dirty
+    flushRefForUnmount.current = flush
+  }, [enabled, dirty, flush])
+  useEffect(
+    () => () => {
+      if (!pendingRef.current) return
+      if (timerRef.current) clearTimeout(timerRef.current)
+      void flushRefForUnmount.current().catch(() => {})
+    },
+    [],
+  )
 
   return { flush }
 }

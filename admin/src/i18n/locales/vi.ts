@@ -13,6 +13,7 @@ import { viDrama } from "./vi/drama";
 import { viDashboard } from "./vi/dashboard";
 import { viSettings } from "./vi/settings";
 import { viCommerce } from "./vi/commerce";
+import { viUi } from "./vi/ui";
 
 export const vi = deepMergeMessages({
   ...viCommon,
@@ -28,4 +29,5 @@ export const vi = deepMergeMessages({
   dashboard: viDashboard,
   settings: viSettings,
   commerce: viCommerce,
+  ui: viUi,
 }, viExtra);

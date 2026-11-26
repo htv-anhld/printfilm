@@ -25,7 +25,7 @@ async def load_admin_event_summaries(
     include_recent: bool = False,
 ) -> dict[int, AdminEventSummary]:
     """批量加载上游事件摘要；单条详情另附最近 100 条普通事件。"""
-    # 列表每任务至多 20 条上游事件，详情至多 200 条，噪声生命周期日志不占此额度。
+    # 列表每任务至多 5 条上游事件（列表行只展示最新一条；完整历史走详情分页），详情至多 200 条，噪声生命周期日志不占此额度。
     task_ids = list(dict.fromkeys(task_ids))
     summaries = {task_id: AdminEventSummary() for task_id in task_ids}
     if not task_ids:
@@ -57,7 +57,7 @@ async def load_admin_event_summaries(
         await db.execute(
             select(TaskEvent)
             .join(ranked, ranked.c.event_id == TaskEvent.id)
-            .where(ranked.c.event_rank <= (200 if include_recent else 20))
+            .where(ranked.c.event_rank <= (200 if include_recent else 5))
             .order_by(TaskEvent.id.desc())
         )
     ).scalars().all()

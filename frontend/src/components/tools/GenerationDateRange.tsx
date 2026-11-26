@@ -2,7 +2,7 @@ import { useEffect, useId, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowRight, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useAnchoredPopover } from '../../hooks/useAnchoredPopover'
-import { useGenerationText } from '../../lib/generationMedia'
+import { useGenerationText, useGenerationDateLocale } from '../../lib/generationMedia'
 
 function dayKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -14,6 +14,7 @@ type Props = { from: string; to: string; onChange: (from: string, to: string) =>
 
 export default function GenerationDateRange({ from, to, onChange }: Props) {
   const text = useGenerationText()
+  const dateLocale = useGenerationDateLocale()
   const { open, setOpen, triggerRef, panelRef, position } = useAnchoredPopover(610, 510)
   const [draftFrom, setDraftFrom] = useState(from)
   const [draftTo, setDraftTo] = useState(to)
@@ -66,7 +67,7 @@ export default function GenerationDateRange({ from, to, onChange }: Props) {
     const rangeStart = draftFrom < end ? draftFrom : end
     const rangeEnd = draftFrom < end ? end : draftFrom
     return <div className={`gen-calendar-month ${offset ? 'is-second' : ''}`}>
-      <div className="gen-calendar-month-label">{current.toLocaleDateString(text('zh-CN', 'en-US'), { year: 'numeric', month: 'long' })}</div>
+      <div className="gen-calendar-month-label">{current.toLocaleDateString(dateLocale, { year: 'numeric', month: 'long' })}</div>
       <div className="gen-calendar-weekdays">{text('一 二 三 四 五 六 日', 'M T W T F S S').split(' ').map((day, index) => <span key={index}>{day}</span>)}</div>
       <div className="gen-calendar-grid" onPointerLeave={() => setHovered('')}>
         {Array.from({ length: start }, (_, index) => <span key={`blank-${index}`} />)}

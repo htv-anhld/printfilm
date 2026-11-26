@@ -96,3 +96,76 @@ def test_seedream_ref_urls_default_two_drama_split_reserves_style():
     assert merged[-1] == styles[0]
     assert len(merged) == 9
 
+
+
+def test_every_builtin_style_is_tagged_realistic_or_illustrated():
+    from app.services.drama.image_styles import IMAGE_STYLE_REALISTIC, list_image_styles
+
+    assert set(IMAGE_STYLE_REALISTIC) == set(IMAGE_STYLE_IDS)
+    assert all(isinstance(v, bool) for v in IMAGE_STYLE_REALISTIC.values())
+    for sid in ("ancient-romance-soft", "chinese-urban-realistic", "wuxia-realistic-photo", "90s-realistic-film"):
+        assert IMAGE_STYLE_REALISTIC[sid] is True
+    for sid in ("cgi-3d-animation", "ghibli-handdrawn-anime", "pixel-art", "shadow-puppet-illustration"):
+        assert IMAGE_STYLE_REALISTIC[sid] is False
+    rows = {row["id"]: row for row in list_image_styles("vi")}
+    assert rows["90s-realistic-film"]["realistic"] is True
+    assert rows["90s-realistic-film"]["label"] == "Phim tả thực thập niên 90"
+    assert rows["pixel-art"]["realistic"] is False
+
+
+def test_frontend_realism_table_matches_backend():
+    """前端 lib/dramaImageStyles.ts 的 IMAGE_STYLE_REALISTIC 与后端一致。"""
+    import re
+    from pathlib import Path
+
+    from app.services.drama.image_styles import IMAGE_STYLE_REALISTIC
+
+    ts = Path(__file__).resolve().parents[2] / "frontend" / "src" / "lib" / "dramaImageStyles.ts"
+    if not ts.is_file():
+        import pytest
+
+        pytest.skip("frontend 源码不在仓库内")
+    block = ts.read_text(encoding="utf-8").split("IMAGE_STYLE_REALISTIC", 1)[1].split("}", 1)[0]
+    pairs = dict(re.findall(r"'([a-z0-9-]+)':\s*(true|false)", block))
+    assert {k: v == "true" for k, v in pairs.items()} == IMAGE_STYLE_REALISTIC
+
+
+def test_privacy_error_gets_style_hint_only_for_realistic_project():
+    from app.i18n import use_locale
+    from app.services.drama.image_styles import append_realistic_style_hint, realistic_style_privacy_hint
+
+    raw = "Ảnh tham chiếu có thể chứa người thật: Nhân vật「A」 (content[1], PrivacyInformation), vui lòng đổi hình tượng này sang anime hoặc minh họa rồi thử lại"
+    with use_locale("vi"):
+        hinted = append_realistic_style_hint(raw, "chinese-urban-realistic")
+        assert hinted.startswith(raw)
+        assert "«Đô thị Trung Quốc tả thực» là tả thực" in hinted
+        # 幂等：再拼一次不重复
+        assert append_realistic_style_hint(hinted, "chinese-urban-realistic") == hinted
+        assert append_realistic_style_hint(raw, "ghibli-handdrawn-anime") == raw
+        assert append_realistic_style_hint(raw, None) == raw
+        assert append_realistic_style_hint("上游超时", "chinese-urban-realistic") == "上游超时"
+    assert realistic_style_privacy_hint("pixel-art") == ""
+    assert "是真人写实风格" in realistic_style_privacy_hint("90s-realistic-film", "zh")
+    assert 'is photorealistic' in realistic_style_privacy_hint("90s-realistic-film", "en")
+
+
+async def test_submit_fragment_video_appends_style_hint(monkeypatch):
+    from types import SimpleNamespace
+
+    import pytest
+
+    from app.services.drama import generation
+
+    async def boom(*_args, **_kwargs):
+        raise RuntimeError("参考图疑似真人（PrivacyInformation），请更换角色/场景形象为动漫或插画后重试")
+
+    async def style(_msg, _pid):
+        from app.services.drama.image_styles import append_realistic_style_hint
+
+        return append_realistic_style_hint(_msg, "wuxia-realistic-photo", "zh")
+
+    monkeypatch.setattr(generation, "_submit_prepared_fragment_video", boom)
+    monkeypatch.setattr(generation, "_privacy_error_with_style_hint", style)
+    with pytest.raises(RuntimeError) as exc:
+        await generation.submit_prepared_fragment_video(SimpleNamespace(), project_id=1)
+    assert "武侠江湖写实摄影" in str(exc.value)

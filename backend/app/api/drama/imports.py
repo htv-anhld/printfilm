@@ -20,7 +20,12 @@ from app.models_drama import DramaProject, DramaScript
 from app.schemas_drama import DramaProjectOut
 from app.services.drama.access import get_owned_drama_project
 from app.services.drama.content_locale import content_text, default_episode_title, set_content_locale
-from app.services.drama.script_import import MAX_FILE_BYTES, extract_script_text, split_script_episodes
+from app.services.drama.script_import import (
+    MAX_FILE_BYTES,
+    derive_script_title,
+    extract_script_text,
+    split_script_episodes,
+)
 from app.services.drama.workflow import build_project_params
 
 logger = logging.getLogger(__name__)
@@ -70,8 +75,12 @@ async def import_script_project(
         image_style_id=image_style_id,
         extra=extra,
     )
-    stem = (file.filename or "").rsplit(".", 1)[0].strip()
-    project_title = (title or "").strip() or stem[:80] or content_text("未命名漫剧", locale)
+    # 片名：表单显式填写 > 剧本首行/「Tên phim:」 > 人性化文件名（下划线转空格）
+    project_title = (
+        (title or "").strip()
+        or derive_script_title(header, text, file.filename)
+        or content_text("未命名漫剧", locale)
+    )
     project = DramaProject(
         user_id=user.id,
         title=project_title[:200],

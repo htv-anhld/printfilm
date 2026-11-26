@@ -101,6 +101,22 @@ export type VoicePreset = {
   label: string
   gender: string
   speaker: string
+  /** 音色适用的内容语言（zh / vi / en）；旧后端无此字段 */
+  locale?: string
+}
+
+/**
+ * 模板默认音色多为中文豆包音色；项目内容语言不同时换成同性别的该语言音色
+ * （后端合成时也会这样回退，界面需与实际一致）。
+ * @returns 匹配内容语言的 speaker id；找不到候选时原样返回
+ */
+export function voiceForContentLocale(id: string, voices: VoicePreset[], locale: string | null | undefined): string {
+  if (!locale || !voices.length) return id
+  const cur = voices.find((v) => v.id === id || v.speaker === id)
+  if (!cur || !cur.locale || cur.locale === locale) return id
+  const sameLocale = voices.filter((v) => v.locale === locale)
+  const pick = sameLocale.find((v) => v.gender === cur.gender) || sameLocale[0]
+  return pick ? pick.speaker || pick.id : id
 }
 
 /** 项目 voice_id / 模板别名 → 与音色列表一致的 speaker id */
@@ -497,6 +513,10 @@ export type Work = {
   published_at: string
 }
 
+/* api.me() 短时去重缓存：token 变化即失效 */
+const ME_CACHE_MS = 1500
+let meCache: { token: string; at: number; promise: Promise<User> } | null = null
+
 export const api = {
   assetUrl(path: string | null | undefined, cacheBust?: string | number) {
     if (!path) return ''
@@ -529,8 +549,18 @@ export const api = {
       body: JSON.stringify({ token, new_password }),
     })
   },
+  /** 当前用户；同一 token 的并发 / 1.5s 内重复调用复用同一请求（侧栏、横幅、页面会同时取） */
   me() {
-    return request<User>('/api/auth/me')
+    const tok = localStorage.getItem('token') || ''
+    const now = Date.now()
+    if (meCache && meCache.token === tok && now - meCache.at < ME_CACHE_MS) return meCache.promise
+    const promise = request<User>('/api/auth/me')
+    const entry = { token: tok, at: now, promise }
+    meCache = entry
+    promise.catch(() => {
+      if (meCache === entry) meCache = null
+    })
+    return promise
   },
   authProviders() {
     return request<{ google: boolean; email_verification: boolean }>('/api/auth/providers')
@@ -734,6 +764,7 @@ export const api = {
     return request<PartnerSubmission>('/api/partner-program/submissions', { method: 'POST', body: JSON.stringify(body) })
   },
   updateProfile(body: { nickname: string; email: string; phone: string }) {
+    meCache = null
     return request<User>('/api/auth/me', {
       method: 'PATCH',
       body: JSON.stringify(body),

@@ -78,7 +78,7 @@ async def test_list_summaries_query_only_bounded_upstream_events():
     assert db.execute.await_count == 2
     sql = _sql(db.execute.call_args_list[1].args[0])
     assert "row_number() OVER (PARTITION BY task_events.task_id ORDER BY task_events.id DESC)" in sql
-    assert "upstream.request." in sql and "<= 20" in sql
+    assert "upstream.request." in sql and "<= 5" in sql
 
 
 @pytest.mark.asyncio

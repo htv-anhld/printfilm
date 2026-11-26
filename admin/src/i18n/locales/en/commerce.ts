@@ -26,6 +26,13 @@ export const enCommerce = {
     credits: "Credits/month",
     periodEnd: "Period end",
     seats: "{n} seats",
+    statuses: {
+      active: "Active",
+      scheduled_cancel: "Cancels at period end",
+      past_due: "Past due",
+      canceled: "Canceled",
+      expired: "Expired",
+    },
   },
   teams: {
     nav: "Teams",
@@ -54,6 +61,17 @@ export const enCommerce = {
     markPaid: "Mark paid",
     ratePrompt: "Commission rate (%)",
     markPaidConfirm: "Mark {amount} as paid to {email}? Make the actual transfer first.",
+    statuses: {
+      pending: "Pending",
+      approved: "Approved",
+      rejected: "Rejected",
+      suspended: "Suspended",
+    },
+    rejectConfirm: "Reject the partner application from {email}?",
+    suspendConfirm: "Suspend partner {email}? Their referral code will stop earning commission.",
+    rateInvalid: "Commission rate must be a number from 0 to 100",
+    rewardInvalid: "Reward must be a non-negative number",
+    submissionRejectConfirm: "Reject the submission from {email}?",
   },
   submissions: {
     nav: "Partner content",

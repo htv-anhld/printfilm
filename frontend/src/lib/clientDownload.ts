@@ -38,8 +38,37 @@ export async function downloadSingleVideo(opts: {
   title: string
   projectId: number
 }): Promise<void> {
-  const blob = await fetchMediaBlob(opts.url)
-  triggerBlobDownload(blob, `${safeDownloadBasename(opts.title, opts.projectId)}.mp4`)
+  await downloadMediaUrl(opts.url, `${safeDownloadBasename(opts.title, opts.projectId)}.mp4`)
+}
+
+/**
+ * 下载单个媒体：优先 fetch→blob（可自定义文件名）；
+ * OSS/CDN 未配 CORS 时 fetch 抛 TypeError，退回直链（新标签打开，浏览器可另存）。
+ */
+export async function downloadMediaUrl(url: string, filename: string): Promise<void> {
+  let blob: Blob
+  try {
+    blob = await fetchMediaBlob(url)
+  } catch (err) {
+    if (err instanceof TypeError) {
+      triggerUrlDownload(url, filename)
+      return
+    }
+    throw err
+  }
+  triggerBlobDownload(blob, filename)
+}
+
+/** 直链下载：同源时 download 属性生效；跨域时浏览器在新标签打开媒体 */
+export function triggerUrlDownload(url: string, filename: string) {
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.target = '_blank'
+  a.rel = 'noopener'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
 }
 
 export type ZipVideoItem = {

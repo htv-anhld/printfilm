@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from app.services.drama.content_locale import is_zh
 from app.services.drama.episode_length import current_episode_length
 from app.services.drama.build_fragments import (
     EPISODE_DURATION_BUDGET_SEC,
@@ -299,6 +300,18 @@ def trim_episode_fragment_drafts(
         item["asset_ids"] = cap_asset_id_list(list(item.get("asset_ids") or []))
         item["character_names"] = list(item.get("character_names") or [])[:FRAGMENT_MAX_CHARACTERS]
     return expanded
+
+
+def llm_episode_budget_caps() -> tuple[int, int]:
+    """
+    LLM 分镜整集上限 (条数, 总秒数)，0 表示不设上限。
+    长集：按单集时长规格；默认短剧规格：zh 保持上游「不设上限、完整呈现剧本」，
+    vi/en 按 DEFAULT_SPEC（≤10 镜 / 90 秒）——拉丁文剧本模型常一句一镜，拆出近 20 镜、超预算一倍以上。
+    """
+    spec = current_episode_length()
+    if not spec.is_default or not is_zh():
+        return spec.fragment_max, spec.duration_budget_sec
+    return EPISODE_FRAGMENT_MAX, EPISODE_DURATION_BUDGET_SEC
 
 
 def cap_llm_fragment_items(items: list[Any], max_items: int | None = None) -> list[Any]:

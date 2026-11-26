@@ -113,6 +113,7 @@ async def test_consume_logs_keep_billing_requests_and_pagination(monkeypatch, ze
     client_type = httpx.AsyncClient
     transport = httpx.MockTransport(handle)
     monkeypatch.setattr("app.services.tokenfree_usage.resolve_tokenfree_api_key", lambda: "test-key")
+    monkeypatch.setattr("app.services.tokenfree_usage.tokenfree_channel_active", lambda: True)
     monkeypatch.setattr("app.services.tokenfree_usage.tokenfree_site_origin", lambda: "https://example.test")
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: client_type(transport=transport, **kwargs))
 

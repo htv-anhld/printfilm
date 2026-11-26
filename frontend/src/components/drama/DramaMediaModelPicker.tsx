@@ -9,6 +9,7 @@ import {
   mediaModelIconKind,
   type MediaModelIconKind,
 } from '../../lib/dramaMediaModelMeta'
+import { useI18n } from '../../i18n'
 
 type Props = {
   models: MediaModelOption[]
@@ -38,15 +39,16 @@ function ModelIcon({ kind }: { kind: MediaModelIconKind }) {
   }
 }
 
-/** 渲染可选模型卡片列表 */
+/** 渲染可选模型卡片列表（文案走 i18n；不可用模型禁用并给出提示） */
 export function DramaMediaModelPicker({
   models,
   selectedId,
-  emptyHint = '请先在管理后台「模型」保存预设默认模型',
+  emptyHint,
   onSelect,
 }: Props) {
+  const { t } = useI18n()
   if (models.length === 0) {
-    return <p className="fc-gen-model-empty">{emptyHint}</p>
+    return <p className="fc-gen-model-empty">{emptyHint || t('episode.genOpts.noModels')}</p>
   }
 
   return (
@@ -56,18 +58,19 @@ export function DramaMediaModelPicker({
         const kind = mediaModelIconKind(m.id)
         const badge = mediaModelCapabilityBadge(m)
         const desc = (m.description || '').trim()
-        const price = m.prices && Object.keys(m.prices).length ? Object.entries(m.prices).map(([resolution, amount]) => `${resolution} ¥${amount}/${m.billing_unit === 'second' ? '秒' : '张'}`).join(' · ') : (m.pricing_hint || '').trim()
+        const price = m.prices && Object.keys(m.prices).length ? Object.entries(m.prices).map(([resolution, amount]) => t(m.billing_unit === 'second' ? 'episode.genOpts.modelPricePerSecond' : 'episode.genOpts.modelPricePerImage', { resolution, amount })).join(' · ') : (m.pricing_hint || '').trim()
         const eta = (m.eta_hint || '').trim()
         const clip = mediaModelClipDurationLabel(m)
         const metaBits = [clip, eta].filter(Boolean)
+        const unavailable = m.available === false
         return (
           <button
             key={m.id}
             type="button"
-            disabled={m.available === false}
+            disabled={unavailable}
             className={`fc-gen-model-card${selected ? ' selected' : ''}`}
-            title={mediaModelHoverText(m)}
-            aria-label={`${m.label}${desc ? `，${desc}` : ''}${metaBits.length ? `，${metaBits.join('，')}` : ''}${price ? `，${price}` : ''}`}
+            title={unavailable ? `${mediaModelHoverText(m)}\n${t('episode.genOpts.modelUnavailable')}` : mediaModelHoverText(m)}
+            aria-label={[m.label, desc, ...metaBits, price, unavailable ? t('episode.genOpts.modelUnavailable') : ''].filter(Boolean).join(', ')}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onSelect(m)}
           >
@@ -77,7 +80,7 @@ export function DramaMediaModelPicker({
             <span className="fc-gen-model-card-body">
               <span className="fc-gen-model-card-head">
                 <strong>{m.label}</strong>
-                {m.recommended ? <em className="fc-gen-model-card-rec">默认</em> : null}
+                {m.recommended ? <em className="fc-gen-model-card-rec">{t('episode.genOpts.modelDefault')}</em> : null}
                 <em className="fc-gen-model-card-badge">{badge}</em>
                 {selected ? (
                   <Check className="fc-gen-model-card-check" size={15} strokeWidth={2.4} aria-hidden />
@@ -90,7 +93,11 @@ export function DramaMediaModelPicker({
               {price ? <span className="fc-gen-model-card-price">{price}</span> : null}
               {m.reference_limits ? (
                 <span className="fc-gen-model-card-meta">
-                  参考上限：图片 {m.reference_limits.images} · 视频 {m.reference_limits.videos} · 音频 {m.reference_limits.audios}
+                  {t('episode.genOpts.modelRefLimits', {
+                    images: m.reference_limits.images,
+                    videos: m.reference_limits.videos,
+                    audios: m.reference_limits.audios,
+                  })}
                 </span>
               ) : null}
             </span>

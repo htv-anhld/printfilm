@@ -1250,7 +1250,7 @@
   flex-direction: column;
   gap: 10px;
   padding-top: 4px;
-  border-top: 1px solid #eef0f3;
+  border-top: 1px solid var(--pf-line);
 }
 
 .drama-project-settings-section:first-of-type {
@@ -1377,6 +1377,14 @@
   border-color: var(--drama-lime);
   color: var(--pf-lime-ink);
   font-weight: 600;
+}
+
+/* 资产网格：自适应列宽，避免宽屏下单卡铺满整行（d8c4ea2 误删后补回） */
+.drama-asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
 }
 
 .drama-assets-page-meta {
@@ -2324,6 +2332,7 @@
   align-self: flex-start;
 }
 
+.drama-assets-tips,
 .drama-episodes-tips {
   display: flex;
   align-items: center;
@@ -2338,6 +2347,7 @@
   line-height: 1.45;
 }
 
+.drama-assets-tips strong,
 .drama-episodes-tips strong {
   color: var(--drama-ink);
   font-weight: 600;
@@ -2729,7 +2739,8 @@
   align-items: center;
   gap: 8px 10px;
   min-width: 0;
-  flex: 1;
+  /* 基准 280px：空间不足时让右侧操作按钮整体换行，而不是把标题压成一字一行 */
+  flex: 1 1 280px;
 }
 
 .drama-outline-detail-title h2 {
@@ -2765,8 +2776,10 @@
 .drama-outline-tag {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 8px;
+  min-height: 22px;
+  max-width: 100%;
+  padding: 3px 8px;
+  line-height: 1.35;
   border-radius: 6px;
   background: var(--pf-surface-2);
   color: var(--pf-muted);
@@ -2963,6 +2976,11 @@
   padding: 2px 8px;
 }
 
+html.dark .drama-outline-scene-duration {
+  color: #5eead4;
+  background: color-mix(in srgb, #14b8a6 18%, transparent);
+}
+
 .drama-outline-script-summary {
   display: flex;
   flex-wrap: wrap;
@@ -2972,7 +2990,7 @@
   padding: 8px 10px;
   border-radius: 10px;
   background: var(--pf-surface-2);
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--pf-line);
   font-size: 12px;
   font-weight: 600;
   color: color-mix(in srgb, var(--pf-ink) 80%, transparent);
@@ -3077,6 +3095,11 @@
 
 .drama-outline-script-speaker {
   font-weight: 700;
+}
+
+/* 深色下提亮行内说话人色（调色板为浅底设计，见 outlineScriptPreview SPEAKER_COLORS） */
+html.dark .drama-outline-script-speaker {
+  filter: brightness(1.6) saturate(0.85);
 }
 
 .drama-outline-script-colon {
@@ -3647,6 +3670,15 @@
   padding: 28px 20px 72px;
 }
 
+.drama-assets-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
 .drama-episodes-hero-actions {
   display: flex;
   align-items: center;
@@ -4086,7 +4118,8 @@
   overflow: hidden;
   background: var(--ep-bg);
   color: var(--ep-ink);
-  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* 继承全站字体（Inter）：PingFang SC 在 macOS 上渲染越南语叠加声调会错位 */
+  font-family: inherit;
 }
 
 .drama-ep-center {
@@ -4099,13 +4132,15 @@
 .drama-ep-header {
   position: relative;
   z-index: 200;
-  height: 56px;
+  /* min-height：控件在窄屏/长文案（越南语）换行时撑高，而不是溢出到视口外 */
+  min-height: 56px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 0 16px;
+  padding: 8px 16px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--ep-line);
   background: color-mix(in srgb, var(--pf-surface-2) 95%, transparent);
   backdrop-filter: blur(8px);
@@ -4203,6 +4238,19 @@
 .drama-ep-header-gen-opts .drama-seedance-help-btn:hover {
   color: #6d28d9;
   background: color-mix(in srgb, #7c3aed 12%, transparent);
+}
+
+/* 深色主题：紫色强调文字提亮，避免深紫字落在深底上 */
+html.dark .drama-style-modal-none.is-selected,
+html.dark .drama-ep-count-presets button.is-active,
+html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn.active,
+html.dark .drama-ep-header-gen-opts .drama-seedance-help-btn:hover {
+  color: #c4b5fd;
+  background: color-mix(in srgb, #8b5cf6 20%, transparent);
+}
+
+html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
+  box-shadow: 0 0 0 1px var(--pf-line-strong);
 }
 
 .seedance-rules-modal .seedance-rules-section {
@@ -4756,6 +4804,12 @@
   border-radius: 999px;
   background: rgba(185, 28, 28, 0.88);
   color: #fff;
+  /* 越南语文案较长：单行省略，不压住头像 */
+  max-width: calc(100% - 8px);
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .drama-ep-ref-voice-badge.bound {
@@ -4814,7 +4868,7 @@
 }
 
 .drama-ep-voice-card.is-unbound {
-  border-color: #fcd34d;
+  border-color: color-mix(in srgb, #f59e0b 55%, transparent);
   background: color-mix(in srgb, #f59e0b 12%, transparent);
 }
 
@@ -5850,7 +5904,7 @@
   margin: 0;
   padding: 6px 12px;
   text-align: left;
-  border-bottom: 1px solid #fecaca;
+  border-bottom: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
   background: color-mix(in srgb, #ef4444 12%, transparent);
 }
 
@@ -6129,7 +6183,7 @@
   padding: 8px 10px;
   border-radius: 8px;
   background: color-mix(in srgb, #f59e0b 12%, color-mix(in srgb, #f59e0b 12%, transparent));
-  border: 1px solid color-mix(in srgb, #f59e0b 35%, #fde68a);
+  border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
   font-size: 12px;
   color: #92400e;
 }
@@ -6143,7 +6197,7 @@
 .drama-ep-preview-banner-btn {
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid color-mix(in srgb, #f59e0b 40%, #fcd34d);
+  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
   background: var(--pf-card);
   color: #b45309;
   font-size: 12px;
@@ -6170,7 +6224,7 @@
 }
 
 .drama-subtitle-board.is-collapsed {
-  border-color: #e8ebf0;
+  border-color: var(--pf-line-strong);
 }
 
 .drama-subtitle-board__header {
@@ -6179,7 +6233,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 8px 10px;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid var(--pf-line);
 }
 
 .drama-subtitle-board.is-collapsed .drama-subtitle-board__header {
@@ -6698,7 +6752,7 @@
 }
 
 .drama-gen-fab-item.is-clickable:hover {
-  border-color: #d4d4d0;
+  border-color: var(--pf-line-strong);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
@@ -6709,7 +6763,7 @@
 
 .drama-gen-fab-item.is-failed {
   background: color-mix(in srgb, #ef4444 8%, var(--pf-card));
-  border-color: #fecaca;
+  border-color: color-mix(in srgb, #ef4444 35%, transparent);
 }
 
 .drama-gen-fab-item-head {
@@ -6827,12 +6881,12 @@
   padding: 12px;
   border-radius: 12px;
   background: var(--pf-surface-2);
-  border: 1px solid #ecece8;
+  border: 1px solid var(--pf-line);
 }
 
 .drama-gen-detail-card.is-error {
   background: color-mix(in srgb, #ef4444 8%, var(--pf-card));
-  border-color: #fecaca;
+  border-color: color-mix(in srgb, #ef4444 35%, transparent);
 }
 
 .drama-gen-detail-card h4 {
@@ -6897,7 +6951,7 @@
   padding: 8px;
   border-radius: 8px;
   background: var(--pf-card);
-  border: 1px solid #fecaca;
+  border: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
   font-size: 10px;
   line-height: 1.4;
   white-space: pre-wrap;

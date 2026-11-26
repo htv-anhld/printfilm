@@ -71,6 +71,12 @@ export const zhLabels = {
     v1_seedance: "API Seedance",
     tool_image: "工具生图",
     tool_video: "工具生视频",
+    tool_audio: "工具生音频",
+    tool_text: "工具生文本",
+    image_generate: "图片生成",
+    voice_preview: "音色试听",
+    creation_turn: "创作对话",
+    mock_delay: "模拟延时任务",
   },
   dramaGeneration: {
     queued: "排队中",

@@ -6,6 +6,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from app.config import get_settings
+from app.i18n import _
 from app.schemas_routing import ResolvedModelRoute
 from app.services.logical_model_router import resolve_logical_model, resolve_logical_model_id, resolve_upstream_model
 from app.services.model_settings import get_routing_snapshot
@@ -25,11 +26,12 @@ def _public_route(route: dict) -> dict:
 
 
 def pin_route(capability: str, model_id: str) -> dict:
+    """为新任务固定一条可用路由；模型停用或没有渠道时抛 ValueError（不自动换模型）。"""
     settings = get_settings()
     snapshot = get_routing_snapshot()
     models = getattr(snapshot, "logical_models", [])
     if not is_model_enabled(capability, model_id, models):
-        raise ValueError(f"model: {model_id} 已停用")
+        raise ValueError("model: " + _("{model} 已停用", model=model_id))
     strategy = resolve_strategy(model_id)
     logical = next((model for model in getattr(snapshot, "logical_models", []) if model.id.lower() == model_id.lower()), None)
     route = resolve_logical_model(capability, model_id)
@@ -40,9 +42,9 @@ def pin_route(capability: str, model_id: str) -> dict:
             raise ValueError("route: 上游绑定与所选模型策略不匹配")
         return _public_route(route.model_dump(exclude={"api_key"}))
     if is_managed_model(capability, model_id, models):
-        raise ValueError(f"route: {model_id} 没有启用的可用渠道绑定")
+        raise ValueError("route: " + _("{model} 没有启用的可用渠道绑定", model=model_id))
     if snapshot.channels and not (settings.ark_mock or settings.local_media_mock):
-        raise ValueError(f"route: {model_id} 没有可用渠道，不会自动切换模型")
+        raise ValueError("route: " + _("{model} 当前没有可用渠道，请换一个模型后重试", model=model_id))
     return _public_route({"capability": capability, "logical_model_id": model_id,
             "upstream_model": resolve_strategy(model_id).model_id,
             "channel_id": "__runtime__", "channel_name": "Runtime",

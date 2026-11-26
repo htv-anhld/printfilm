@@ -1,3 +1,4 @@
+import { tz } from '../../i18n/zhText.ts'
 import { useEffect, useState } from 'react'
 import { getToken } from '@/lib/auth'
 import { MarketplaceRequestError } from './errors'
@@ -11,7 +12,7 @@ export async function request<T>(path: string, method = 'GET', body?: unknown): 
   try {
     response = await fetch(path, { method, headers: { Authorization: `Bearer ${getToken() ?? ''}`, ...(body !== undefined ? { 'Content-Type': body instanceof Blob ? 'application/octet-stream' : 'application/json' } : {}) }, body: body === undefined ? undefined : body instanceof Blob ? body : JSON.stringify(body) })
   } catch (cause) {
-    throw new MarketplaceRequestError(undefined, 0, '暂时无法连接服务，请检查网络后重试。', cause)
+    throw new MarketplaceRequestError(undefined, 0, tz("暂时无法连接服务，请检查网络后重试。"), cause)
   }
   const value = await response.json().catch(() => ({}))
   if (!response.ok) throw new MarketplaceRequestError(value?.detail, response.status)
@@ -24,11 +25,11 @@ export async function letterFile(id: number): Promise<Blob> {
   try {
     response = await fetch(`/api/marketplace/authorizations/${id}/file`, { headers: { Authorization: `Bearer ${getToken() ?? ''}` } })
   } catch (cause) {
-    throw new MarketplaceRequestError(undefined, 0, '授权函暂时无法打开，请检查网络后重试。', cause)
+    throw new MarketplaceRequestError(undefined, 0, tz("授权函暂时无法打开，请检查网络后重试。"), cause)
   }
   if (!response.ok) {
     const value = await response.json().catch(() => ({}))
-    throw new MarketplaceRequestError(value?.detail, response.status, '授权函暂时无法打开，请稍后重试。')
+    throw new MarketplaceRequestError(value?.detail, response.status, tz("授权函暂时无法打开，请稍后重试。"))
   }
   return response.blob()
 }
@@ -42,7 +43,7 @@ export function useMarketplaceStatus() {
     setState({ enabled: false, loading: true, error: '' })
     request<{ enabled: boolean }>('/api/marketplace/capabilities')
       .then(value => { if (active) setState({ enabled: value.enabled, loading: false, error: '' }) })
-      .catch(error => { if (active) setState({ enabled: false, loading: false, error: error instanceof Error ? error.message : '服务状态读取失败。' }) })
+      .catch(error => { if (active) setState({ enabled: false, loading: false, error: error instanceof Error ? error.message : tz("服务状态读取失败。") }) })
     return () => { active = false }
   }, [revision])
   return { ...state, retry: () => setRevision(value => value + 1) }
@@ -62,7 +63,7 @@ export async function assetFile(id: number, purpose = 'original'): Promise<Blob>
   const response = await fetch(`/api/marketplace/media/asset/${id}/inline?purpose=${encodeURIComponent(purpose)}`, { headers: { Authorization: `Bearer ${getToken() ?? ''}` } })
   if (!response.ok) {
     const value = await response.json().catch(() => ({}))
-    throw new Error(typeof value.detail === 'string' ? value.detail : '文件暂时无法预览')
+    throw new Error(typeof value.detail === 'string' ? value.detail : tz("文件暂时无法预览"))
   }
   const type = response.headers.get('content-type') || 'application/octet-stream'
   const blob = await response.blob()

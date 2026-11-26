@@ -33,7 +33,7 @@ export default function CreativeBoardsPage() {
     if (!loggedIn) return
     loadBoards().catch((e) => setError(e instanceof Error ? e.message : t('common.fail')))
     listToolRuns(1, 12)
-      .then((r) => setRecent(r.items.filter((x) => x.status === 'succeeded' && x.urls.length)))
+      .then((r) => setRecent(r.items.filter((x) => x.status === 'succeeded' && x.urls.length && (x.kind === 'image' || x.kind === 'video'))))
       .catch(() => undefined)
   }, [loadBoards, loggedIn, t])
 
@@ -198,7 +198,12 @@ export default function CreativeBoardsPage() {
                       <button
                         type="button"
                         className="pf-btn pf-btn-ghost pf-btn-sm pf-creative-danger"
-                        onClick={() => void run(async () => setBoard(await api.removeCreativeItem(board.id, item.id)))}
+                        onClick={() =>
+                          void run(async () => {
+                            setBoard(await api.removeCreativeItem(board.id, item.id))
+                            await loadBoards()
+                          })
+                        }
                       >
                         {t('library.delete')}
                       </button>

@@ -95,7 +95,7 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
                 items={[
                   { label: t("users.fields.nickname"), value: user.nickname || "—" },
                   { label: t("users.fields.phone"), value: user.phone || "—" },
-                  { label: t("users.fields.role"), value: user.role },
+                  { label: t("users.fields.role"), value: user.role === "admin" ? t("users.role.admin") : t("users.role.user") },
                   { label: t("users.fields.balance"), value: money(user.balance_fen) },
                   { label: t("users.fields.frozen"), value: money(user.frozen_fen) },
                   {

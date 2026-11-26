@@ -38,6 +38,36 @@
   --notice-icon-bg: #fbe8e8;
 }
 
+/* 深色主题：低饱和深底 + 提亮文字，保持各 tone 的色相区分 */
+html.dark .drama-status-notice {
+  --notice-ink: #9cc3e4;
+  --notice-bg: #111a22;
+  --notice-line: #1f3040;
+  --notice-icon-bg: #18283a;
+}
+
+html.dark .drama-status-notice.is-busy,
+html.dark .drama-status-notice.is-success {
+  --notice-ink: #7fdcc2;
+  --notice-bg: #0e1d19;
+  --notice-line: #1a3a31;
+  --notice-icon-bg: #143029;
+}
+
+html.dark .drama-status-notice.is-warning {
+  --notice-ink: #f0c47a;
+  --notice-bg: #1e1709;
+  --notice-line: #3d2f14;
+  --notice-icon-bg: #2d2410;
+}
+
+html.dark .drama-status-notice.is-error {
+  --notice-ink: #f29a9a;
+  --notice-bg: #221010;
+  --notice-line: #4a2020;
+  --notice-icon-bg: #351818;
+}
+
 .drama-status-notice-icon {
   display: grid;
   place-items: center;

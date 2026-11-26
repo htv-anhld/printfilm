@@ -1,4 +1,4 @@
-/** 漫剧画面风格预览图 URL（public jpg/png → 后端 static → svg 占位） */
+/** 漫剧画面风格预览图 URL（public webp 缩略图 → jpg/png 原图 → 后端 static → svg 占位） */
 import type { ImageStyleId } from './dramaImageStyles'
 
 // 返回前端 public 根路径
@@ -21,6 +21,8 @@ function apiBase(): string {
 export function getDramaImageStylePreviewCandidates(styleId: ImageStyleId): string[] {
   const pub = publicBase()
   const urls = [
+    // 缩略图（scripts/gen-style-previews.py 生成，最长边 960）：原图 0.3–2.7MB，首页一次要加载 20 张
+    `${pub}image-styles/preview/${styleId}.webp`,
     `${pub}image-styles/${styleId}.jpg`,
     `${pub}image-styles/${styleId}.png`,
   ]

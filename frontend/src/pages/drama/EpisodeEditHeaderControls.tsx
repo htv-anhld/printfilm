@@ -9,11 +9,13 @@ import { BarChart3, ChevronDown, CircleHelp, Link2, Smile, Type, Users } from 'l
 import { DramaImageStylePreviewImg } from '../../components/drama/DramaImageStylePreviewImg'
 
 import { DramaMediaModelPicker } from '../../components/drama/DramaMediaModelPicker'
+import { DramaRealisticStyleBadge, DramaRealisticStyleNotice } from '../../components/drama/DramaRealisticStyleBadge'
 import { SeedanceRulesModal } from '../../components/drama/SeedanceRulesModal'
 
 import {
   getImageStyleLabel,
   IMAGE_STYLE_OPTIONS,
+  shouldWarnRealisticStyle,
   type ImageStyleId,
 } from '../../lib/dramaImageStyles'
 
@@ -172,6 +174,7 @@ export function EpisodeEditHeaderControls({
         >
           <Smile size={14} strokeWidth={1.8} />
           <span className="fc-gen-opt-label">{styleLabel}</span>
+          {shouldWarnRealisticStyle(styleId, modelId) ? <DramaRealisticStyleBadge variant="inline" /> : null}
           {!globalSettingsReadOnly ? <ChevronDown size={12} strokeWidth={2} /> : null}
         </button>
         <button
@@ -263,6 +266,7 @@ export function EpisodeEditHeaderControls({
                   aria-label={t('episode.genOpts.videoStyle')}
                 >
                   <div className="fc-gen-opt-panel-title">{t('episode.genOpts.videoStyle')}</div>
+                  {shouldWarnRealisticStyle(styleId, modelId) ? <DramaRealisticStyleNotice /> : null}
                   <div className="fc-gen-style-grid">
                     {IMAGE_STYLE_OPTIONS.map((opt) => {
                       const selected = styleId === opt.id
@@ -278,6 +282,7 @@ export function EpisodeEditHeaderControls({
                           }}
                         >
                           <DramaImageStylePreviewImg styleId={opt.id} alt={opt.label} />
+                          {shouldWarnRealisticStyle(opt.id, modelId) ? <DramaRealisticStyleBadge /> : null}
                           <span>{opt.label}</span>
                         </button>
                       )

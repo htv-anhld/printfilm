@@ -718,6 +718,7 @@ export const viPages = {
     },
   },
   studio3d: {
+    webglUnavailable: "Trình duyệt không hỗ trợ hoặc đang tắt WebGL nên không thể hiển thị cảnh 3D. Hãy bật tăng tốc phần cứng hoặc dùng trình duyệt khác.",
     title: "Dàn cảnh 3D",
     card: "Đặt nhân vật, đạo cụ và góc máy, chụp làm ảnh tham chiếu bố cục",
     lead: "Kéo thả nhân vật và đạo cụ, chọn ống kính, rồi chụp ảnh từ góc máy để dùng làm ảnh tham chiếu bố cục khi tạo ảnh hoặc video.",

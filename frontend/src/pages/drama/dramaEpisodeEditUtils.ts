@@ -118,6 +118,40 @@ export function sumFragmentContentDuration(content: string): number {
   return total
 }
 
+/**
+ * 把正文里的 @duration:N 标签按比例缩放到新的整镜总时长（最大余数法取整，每段至少 1 秒）。
+ * 用户在「时长」输入框改总时长时调用，否则保存时会按标签合计回写，输入值被静默丢弃。
+ * @param content 分镜正文
+ * @param totalSec 目标总秒数
+ * @returns 缩放后的正文；无标签或合计已等于目标时原样返回
+ */
+export function rescaleFragmentDurationTags(content: string, totalSec: number): string {
+  const text = content || ''
+  const secs = [...text.matchAll(/@duration:(\d+)/g)].map((m) => Number(m[1]) || 0)
+  const sum = secs.reduce((a, b) => a + b, 0)
+  const target = Math.round(totalSec)
+  if (secs.length === 0 || sum <= 0 || target <= 0 || sum === target) return text
+  const raw = secs.map((s) => (s / sum) * target)
+  const out = raw.map((v) => Math.max(1, Math.floor(v)))
+  let diff = target - out.reduce((a, b) => a + b, 0)
+  const order = raw.map((v, i) => ({ i, frac: v - Math.floor(v) })).sort((a, b) => b.frac - a.frac)
+  for (let k = 0; diff > 0 && order.length > 0; k = (k + 1) % order.length) {
+    out[order[k].i] += 1
+    diff -= 1
+  }
+  for (let k = 0; diff < 0 && order.length > 0; k = (k + 1) % order.length) {
+    const idx = order[order.length - 1 - k].i
+    if (out[idx] > 1) {
+      out[idx] -= 1
+      diff += 1
+    } else if (out.every((v) => v <= 1)) {
+      break
+    }
+  }
+  let n = 0
+  return text.replace(/@duration:\d+/g, () => `@duration:${out[n++]}`)
+}
+
 // 解析分镜生成状态（params.generation 优先于已有 video，支持重新生成）
 export function readFragmentGenerationStatus(
   frag: DramaFragment,

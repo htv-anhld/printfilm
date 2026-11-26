@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { applyLocale } from '../src/i18n/detect.ts'
-import { marketText, marketFeedback } from '../src/features/marketplace/translate.ts'
+import { marketText, marketFeedback, marketplaceEnglish, marketplaceVietnamese } from '../src/features/marketplace/translate.ts'
 import { explainMarketplaceError } from '../src/features/marketplace/messages.ts'
 import { readFileSync } from 'node:fs'
 
@@ -22,6 +22,29 @@ test('English business errors are readable but internal exceptions are not', () 
   applyLocale('zh', false)
 })
 
-test('server feedback catalog stays synchronized', { skip: '上游自身两份文案未同步（与 MERGE_HEAD 完全一致），待上游修正' }, () => {
+test('server feedback catalog stays synchronized', () => {
   assert.deepEqual(JSON.parse(readFileSync(new URL('../src/features/marketplace/locale-server.json', import.meta.url))), JSON.parse(readFileSync(new URL('../../backend/app/marketplace/locale_messages.json', import.meta.url))))
+})
+
+test('Vietnamese catalog covers every system string with matching placeholders', () => {
+  const placeholders = value => (value.match(/\{\d+\}/g) || []).sort().join()
+  for (const zh of Object.keys(marketplaceEnglish)) {
+    const vi = marketplaceVietnamese[zh]
+    assert.ok(vi, `missing vi: ${zh}`)
+    assert.doesNotMatch(vi, /[\u3400-\u9fff]/, `CJK in vi: ${zh}`)
+    assert.equal(placeholders(vi), placeholders(zh), `placeholders: ${zh}`)
+  }
+  const backend = JSON.parse(readFileSync(new URL('../../backend/app/marketplace/locale_messages_vi.json', import.meta.url)))
+  for (const [zh, vi] of Object.entries(backend)) assert.equal(marketplaceVietnamese[zh], vi, `backend vi out of sync: ${zh}`)
+})
+
+test('Vietnamese UI retranslates stored feedback in every direction', () => {
+  applyLocale('vi', false)
+  assert.equal(marketText('关闭'), 'Đóng')
+  assert.equal(marketFeedback('第12集版权授权已过期'), marketText('第{0}集版权授权已过期', ['12']))
+  assert.doesNotMatch(explainMarketplaceError('Internal Server Error', 500), /Internal Server Error|[\u3400-\u9fff]/)
+  assert.doesNotMatch(explainMarketplaceError([{type:'missing', loc:['body','title'], msg:'Field required'}], 422), /[\u3400-\u9fff]/)
+  const vi = marketText('第{0}集版权授权已过期', ['7'])
+  applyLocale('zh', false)
+  assert.equal(marketFeedback(vi), '第7集版权授权已过期')
 })

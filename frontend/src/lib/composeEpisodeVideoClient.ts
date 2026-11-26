@@ -1,4 +1,4 @@
-/** 浏览器内无损拼接本集 MP4；编码不一致时回退服务端统一重编码 */
+/** 浏览器内无损拼接本集 MP4；编码不一致或需烧录后期字幕时走服务端统一重编码 */
 
 import { tr } from '../i18n'
 import type { DramaFragment } from '../api/drama'
@@ -56,14 +56,22 @@ async function composeEpisodeVideoServer(
   return blob
 }
 
-/** 拉取各镜并在本地拼成一条 MP4；无损失败则自动走服务端 */
+/**
+ * 拉取各镜并在本地拼成一条 MP4；无损失败则自动走服务端。
+ * options.burnSubtitles 为 true（后期字幕模式且字幕板有内容）时直接走服务端，由服务端烧录字幕。
+ */
 export async function composeEpisodeVideoClient(
   clips: EpisodeComposeClip[],
   onProgress?: (progress: EpisodeComposeProgress) => void,
-  options?: { episodeId?: number },
+  options?: { episodeId?: number; burnSubtitles?: boolean },
 ): Promise<Blob> {
   if (clips.length === 0) {
     throw new Error(tr('lib.compose.noClips'))
+  }
+  if (options?.burnSubtitles) {
+    const episodeId = options.episodeId
+    if (episodeId == null || episodeId <= 0) throw new Error(tr('lib.compose.serverNoUrl'))
+    return composeEpisodeVideoServer(episodeId, clips, onProgress)
   }
 
   const buffers: Uint8Array[] = new Array(clips.length)

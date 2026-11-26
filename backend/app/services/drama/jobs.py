@@ -2307,7 +2307,8 @@ async def kickoff_fragment_plans(
     流水线顺序应为：整剧摘要 → 抽资产 → 分集剧本 → 本函数。
     已完成但镜数过少（如仅 1 镜）的集会强制重跑；进行中的不 seed 覆盖。
     """
-    from app.services.drama.seed import seed_single_episode_from_script
+    from app.services.drama.episode_plan_skip import record_episode_plan_skip
+    from app.services.drama.seed import EpisodeBodyTooShortError, seed_single_episode_from_script
 
     logger.info(
         "分集后自动分镜 project_id=%s episode_numbers=%s reseed=%s",
@@ -2328,6 +2329,8 @@ async def kickoff_fragment_plans(
         )
         if not project or not project.script:
             return {"ok": False, "error": "missing_project_or_script"}
+        # 正文篇幅按内容语言计（vi/en 按词），不依赖调用方是否已设置上下文
+        set_project_content_locale(project)
 
         user = await db.get(User, project.user_id)
         if not user:
@@ -2370,6 +2373,16 @@ async def kickoff_fragment_plans(
                         project_id,
                         ep_no,
                         exc,
+                    )
+                    # 记下跳过原因：大纲页据此提示「正文过短，请补充或手动进入分镜」，而不是一直转圈
+                    too_short = isinstance(exc, EpisodeBodyTooShortError)
+                    record_episode_plan_skip(
+                        project.script,
+                        ep_no,
+                        reason=str(exc),
+                        units=exc.units if too_short else None,
+                        min_units=exc.min_units if too_short else None,
+                        status="skipped" if too_short else "failed",
                     )
                     continue
             if _episode_has_protected_fragments(episode):

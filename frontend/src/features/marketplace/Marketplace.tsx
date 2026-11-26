@@ -18,7 +18,7 @@ import './marketplace.css'
 // 独立下游路由壳；不替换原 studio、作品或个人设置页面。
 export default function Marketplace() {
   const locale = useMarketplaceLocale()
-  return <div className="pf-market-shell" lang={locale === 'zh' ? 'zh-CN' : 'en'}><AppShell wide><div className="pf-market"><Gate><Routes>
+  return <div className="pf-market-shell" lang={locale === 'zh' ? 'zh-CN' : locale}><AppShell wide><div className="pf-market"><Gate><Routes>
     <Route index element={<Gallery key="works" />} /><Route path="recruits" element={<Gallery key="recruits" recruits />} />
     <Route path="series" element={<Navigate to="/marketplace" replace />} />
     <Route path="series/new" element={<Navigate to="/marketplace/works/new?type=series" replace />} />

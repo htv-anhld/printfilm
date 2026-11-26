@@ -1,4 +1,7 @@
-/** 分镜字幕板：从分镜正文提取口播字幕，供预览与导出。 */
+/**
+ * 分镜字幕板：从分镜正文提取口播字幕，供预览与导出。
+ * 服务端成片烧录字幕用的是同规则的 backend/app/services/drama/subtitle_cues.py，改解析规则需两边同步。
+ */
 
 import type { DramaFragment } from '../api/drama'
 import { tr } from '../i18n'
@@ -151,6 +154,8 @@ function sanitizeSrtCaptionText(raw: string): string {
     .replace(/\([^)]*\)/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+    // 去掉 @asset 称呼后残留的行首标点（如 "@asset:113, hay…" → "hay…"）
+    .replace(/^[,，、;；:：.。\s]+/, '')
 }
 
 const LATIN_VOICE_PREFIX_RE =
@@ -165,7 +170,8 @@ function parseSubtitleLine(
   const normalized = String(line || '')
     .replace(/@asset:\d+\s*/g, '')
     .trim()
-  const stripped = normalized.replace(/^【[^】]+】/, '').trim()
+  // 行首可能连续多个【…】标签（如「【空镜·…】【空镜：…】」），全部去掉
+  const stripped = normalized.replace(/^(?:【[^】]+】\s*)+/, '').trim()
   if (!stripped) return null
   if (stripped.startsWith('旁白（VO）：')) {
     return { speaker: tr('lib.subtitle.narration'), text: stripped.slice('旁白（VO）：'.length).trim() }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { isAssetsReadyComposeError } from '../../lib/apiError'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, defaultsFromTemplate, resolveVoiceId } from '../../api'
+import { api, defaultsFromTemplate, resolveVoiceId, voiceForContentLocale } from '../../api'
 import type { MediaModelOption, PipelineMode, Project, Template, VoicePreset } from '../../api'
 import { resolveCatalogModelSelection, useMediaModelsCatalog } from '../../hooks/useMediaModelsCatalog'
 import { MediaCostNotice } from '../../components/billing/MediaCostNotice'
@@ -152,6 +152,14 @@ export default function StyleConfigPage() {
     [templates, project?.template_id],
   )
 
+  // 未手选音色前，把与内容语言不符的（模板默认 / 旧项目）音色换成该语言音色；用户手选后不再干预
+  const voicePickedRef = useRef(false)
+  useEffect(() => {
+    if (!project || !voices.length || !voiceId || voicePickedRef.current) return
+    const next = voiceForContentLocale(voiceId, voices, project.content_locale)
+    if (next !== voiceId) setVoiceId(next)
+  }, [project, voices, voiceId])
+
   const selectedVoice = voices.find((v) => voiceKey(v) === voiceId || v.id === voiceId)
 
   useEffect(() => {
@@ -181,6 +189,7 @@ export default function StyleConfigPage() {
 
   function selectVoice(v: VoicePreset) {
     const vid = voiceKey(v)
+    voicePickedRef.current = true
     if (vid !== voiceId) stopPreview()
     setVoiceId(vid)
   }

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { dramaApi, resolveDramaMediaUrl, type DramaEpisode, type DramaEpisodeBody, type DramaProject, type DramaScript } from '../../api/drama'
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
+import { readEpisodePlanSkip } from '../../lib/dramaEpisodePlanSkip'
 import { dialog } from '../../lib/dialog'
 import {
   buildOutlineDirectory,
@@ -398,6 +399,24 @@ export function OutlineEpisodePanel({
   // 上传导入的分集正文可能较短，同样允许进入分镜
   const selectedEnterReady = selectedBodyReady || isImportedEpisode(selected ?? undefined)
   const enterBusy = busy || !selectedEnterReady
+  // 自动分镜被后端跳过（正文过短等）：显示可操作提示，替代一直转圈的「正在准备 AI 分镜」
+  const selectedPlanSkip =
+    selected && !episodeShotStats[selected.episodeNumber || 0]?.planStatus
+      ? readEpisodePlanSkip(script, selected.episodeNumber)
+      : null
+  const planSkipMessage = (() => {
+    if (!selectedPlanSkip) return ''
+    if (selectedPlanSkip.status === 'failed' || selectedPlanSkip.minUnits <= 0) {
+      return t('drama.outlineEp.noticePlanFailedBody', { reason: selectedPlanSkip.reason })
+    }
+    // 后端篇幅为「汉字当量」：中文按字，vi/en 为词数 × 1.6，展示时换回词数
+    const cjk = /[\u3400-\u9fff]/.test(selected?.body || '')
+    const toShown = (units: number) => (cjk ? units : Math.round(units / 1.6))
+    return t(cjk ? 'drama.outlineEp.noticePlanTooShortChars' : 'drama.outlineEp.noticePlanTooShortWords', {
+      have: toShown(selectedPlanSkip.units),
+      need: toShown(selectedPlanSkip.minUnits),
+    })
+  })()
 
   async function pollOptimize(tokenEpisode: number) {
     const started = Date.now()
@@ -670,7 +689,7 @@ export function OutlineEpisodePanel({
 
   const metaTags = useMemo(() => {
     const tags: string[] = []
-    if (storyType) tags.push(storyType)
+    if (storyType) tags.push(storyType.split(/\s*[+＋]\s*/).filter(Boolean).join(' · '))
     if (selected?.origin === 'manual') tags.push(t('drama.outlineEp.tagManual'))
     else if (selected?.origin === 'import') tags.push(t('drama.outlineEp.tagImport'))
     else if (selected?.body) tags.push(t('drama.outlineEp.tagAuto'))
@@ -926,7 +945,13 @@ export function OutlineEpisodePanel({
             {t('drama.outlineEp.noticePlanBody')}
           </DramaStatusNotice>
         ) : null}
+        {selectedPlanSkip ? (
+          <DramaStatusNotice tone="warning" title={t('drama.outlineEp.noticePlanSkippedTitle')}>
+            {planSkipMessage}
+          </DramaStatusNotice>
+        ) : null}
         {selected &&
+        !selectedPlanSkip &&
         isSubstantialEpisodeBody(selected.body) &&
         !episodeShotStats[selected.episodeNumber || 0]?.planStatus &&
         !selectedGenerating &&

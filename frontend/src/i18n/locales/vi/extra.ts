@@ -80,6 +80,10 @@ export const viExtra = {
       "noticePlanTitle": "Đang phân cảnh AI cho tập này",
       "noticePlanBody": "Phân cảnh xong có thể vào xem và chỉnh sửa.",
       "noticePlanPreparing": "Kịch bản tập đã sẵn sàng, đang chuẩn bị phân cảnh AI",
+      "noticePlanSkippedTitle": "Tập này chưa được phân cảnh AI tự động",
+      "noticePlanTooShortChars": "Kịch bản tập này quá ngắn để AI phân cảnh tự động (khoảng {have} ký tự, cần ít nhất {need}). Hãy bổ sung kịch bản hoặc dùng AI tối ưu, lưu lại rồi bấm «Vào phân cảnh».",
+      "noticePlanTooShortWords": "Kịch bản tập này quá ngắn để AI phân cảnh tự động (khoảng {have} từ, cần ít nhất {need} từ). Hãy bổ sung kịch bản hoặc dùng AI tối ưu, lưu lại rồi bấm «Vào phân cảnh».",
+      "noticePlanFailedBody": "Không thể bắt đầu phân cảnh tự động: {reason}. Bạn có thể bấm «Vào phân cảnh» để thử lại thủ công.",
       "summarySubV2": "Nhân vật, xung đột, bước ngoặt và kết cục của tập; căn cứ chính để tạo kịch bản quay",
       "summaryPlaceholderV2": "Nhập tóm tắt tập (ít nhất 40 ký tự), rồi tạo kịch bản quay",
       "extractFromScript": "Trích từ kịch bản",
@@ -453,5 +457,13 @@ export const viExtra = {
     "manage": "Quản lý thành viên và lời mời",
     "viewMembers": "Xem thành viên dự án",
     "empty": "Chưa có dự án nào. Tạo dự án canvas hoặc nhận lời mời tham gia dự án, dự án sẽ hiện ở đây."
+  },
+  "teamBoundary": {
+    "readOnlyNotice": "Đang ở chế độ chỉ xem",
+    "retryEdit": "Thử chỉnh sửa lại",
+    "episodeMismatch": "Tập không thuộc dự án hiện tại",
+    "episodeLoadFailed": "Không tải được tập",
+    "retry": "Thử lại",
+    "loadingEpisode": "Đang tải tập và quyền chỉnh sửa"
   }
 }

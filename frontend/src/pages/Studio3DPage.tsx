@@ -64,7 +64,14 @@ export default function Studio3DPage() {
   useEffect(() => {
     const mount = mountRef.current
     if (!mount || !loggedIn) return
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
+    // 浏览器禁用 / 不支持 WebGL 时 three 会抛错；捕获后给出提示，避免整页白屏
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
+    } catch {
+      setError(t('studio3d.webglUnavailable'))
+      return
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
     mount.appendChild(renderer.domElement)

@@ -10,9 +10,9 @@ import GenerationReferences from '../components/tools/GenerationReferences'
 import PromptMentionPopover from '../components/tools/PromptMentionPopover'
 import { AssetDetailDialog } from '../components/assets/AssetDetailDialog'
 import { useToolRunDetail } from '../hooks/useToolRunDetail'
-import { mediaIcons, type MediaKind, useGenerationText } from '../lib/generationMedia'
+import { generationPollDelay, mediaIcons, type MediaKind, useGenerationText } from '../lib/generationMedia'
 import { formatGenerationErrorMessage } from '../lib/generationError'
-import { fetchMediaBlob, triggerBlobDownload } from '../lib/clientDownload'
+import { downloadMediaUrl } from '../lib/clientDownload'
 import { useMediaModelsCatalog } from '../hooks/useMediaModelsCatalog'
 import { MediaCostNotice } from '../components/billing/MediaCostNotice'
 import { useGenerationEstimate } from '../hooks/useGenerationEstimate'
@@ -102,13 +102,15 @@ function GenerationWorkspace({ kind }: { kind: MediaKind }) {
   useEffect(() => {
     let disposed = false
     let timer: ReturnType<typeof setTimeout>
+    let delay = 5000
     async function refresh() {
       try {
         const data = await listToolRuns(1, 6, { kind })
         if (disposed) return
         setRecent(data.items); setRecentTotal(data.total); setHistoryError('')
+        delay = generationPollDelay(data.items)
       } catch (err) { if (!disposed) setHistoryError(err instanceof Error ? err.message : text('加载失败', 'Loading failed')) }
-      finally { if (!disposed) timer = setTimeout(refresh, 5000) }
+      finally { if (!disposed) timer = setTimeout(refresh, delay) }
     }
     void refresh()
     return () => { disposed = true; clearTimeout(timer) }
@@ -187,7 +189,7 @@ function GenerationWorkspace({ kind }: { kind: MediaKind }) {
     setDownloading(item.id); setError('')
     try {
       const url = resolveToolMediaUrl(item.urls[0])
-      triggerBlobDownload(await fetchMediaBlob(url), `printfilm_${kind}_${item.id}.${kind === 'video' ? 'mp4' : kind === 'audio' ? 'mp3' : 'png'}`)
+      await downloadMediaUrl(url, `printfilm_${kind}_${item.id}.${kind === 'video' ? 'mp4' : kind === 'audio' ? 'mp3' : 'png'}`)
     } catch (err) { setError(err instanceof Error ? err.message : text('下载失败', 'Download failed')) }
     finally { setDownloading(null) }
   }

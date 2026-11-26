@@ -13,6 +13,7 @@ import { zhDrama } from "./zh/drama";
 import { zhDashboard } from "./zh/dashboard";
 import { zhSettings } from "./zh/settings";
 import { zhCommerce } from "./zh/commerce";
+import { zhUi } from "./zh/ui";
 
 export const zh = deepMergeMessages({
   ...zhCommon,
@@ -28,4 +29,5 @@ export const zh = deepMergeMessages({
   dashboard: zhDashboard,
   settings: zhSettings,
   commerce: zhCommerce,
+  ui: zhUi,
 }, zhExtra);

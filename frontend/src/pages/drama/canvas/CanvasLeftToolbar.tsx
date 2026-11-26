@@ -19,6 +19,8 @@ export function CanvasLeftToolbar({ onSelectNode }: CanvasLeftToolbarProps) {
   const [panelOpen, setPanelOpen] = useState(false)
   const [folderOpen, setFolderOpen] = useState(false)
   const addAnchorRef = useRef<HTMLDivElement>(null)
+  /* hoverOpenedRef 面板由悬停打开：随后的点击应保持打开，而不是把刚悬停打开的面板又切换关掉 */
+  const hoverOpenedRef = useRef(false)
 
   // 点击外侧关闭添加面板
   useEffect(() => {
@@ -39,8 +41,14 @@ export function CanvasLeftToolbar({ onSelectNode }: CanvasLeftToolbarProps) {
         <div
           ref={addAnchorRef}
           className={`fc-add-anchor${panelOpen ? ' is-open' : ''}`}
-          onMouseEnter={() => setPanelOpen(true)}
-          onMouseLeave={() => setPanelOpen(false)}
+          onMouseEnter={() => {
+            if (!panelOpen) hoverOpenedRef.current = true
+            setPanelOpen(true)
+          }}
+          onMouseLeave={() => {
+            hoverOpenedRef.current = false
+            setPanelOpen(false)
+          }}
         >
           <button
             type="button"
@@ -50,7 +58,12 @@ export function CanvasLeftToolbar({ onSelectNode }: CanvasLeftToolbarProps) {
             title={tr('episode.canvas.addNode')}
             onClick={(event) => {
               event.stopPropagation()
-              setPanelOpen((v) => !v)
+              if (hoverOpenedRef.current) {
+                hoverOpenedRef.current = false
+                setPanelOpen(true)
+              } else {
+                setPanelOpen((v) => !v)
+              }
               setFolderOpen(false)
             }}
           >

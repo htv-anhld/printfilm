@@ -14,7 +14,7 @@ import {
   type EpisodeComposeProgress,
 } from '../../lib/composeEpisodeVideoClient'
 import { dialog } from '../../lib/dialog'
-import type { DramaSubtitleMode } from '../../lib/dramaSubtitleBoard'
+import { buildDramaSubtitleBoard, type DramaSubtitleMode } from '../../lib/dramaSubtitleBoard'
 import { tr, useI18n } from '../../i18n'
 
 type Props = {
@@ -35,13 +35,18 @@ type Props = {
   onActivatePreview?: () => void
 }
 
-/** 把合成进度转成按钮文案 */
-function composeProgressLabel(progress: EpisodeComposeProgress | null, busy: boolean) {
+/** 把合成进度转成按钮文案（burnSubtitles：服务端同时烧录后期字幕） */
+function composeProgressLabel(
+  progress: EpisodeComposeProgress | null,
+  busy: boolean,
+  burnSubtitles = false,
+) {
   if (!busy) return tr('episode.sidePane.composeDownload')
   if (!progress) return tr('episode.sidePane.composing')
   if (progress.phase === 'download')
     return tr('episode.sidePane.composeFetching', { done: progress.done, total: progress.total })
-  if (progress.phase === 'server') return tr('episode.sidePane.composeServer')
+  if (progress.phase === 'server')
+    return tr(burnSubtitles ? 'episode.sidePane.composeServerSubtitles' : 'episode.sidePane.composeServer')
   return tr('episode.sidePane.composeStitching')
 }
 
@@ -77,8 +82,12 @@ export function EpisodeEditSidePane({
   const [composeError, setComposeError] = useState('')
   const composeClips = listEpisodeComposeClips(fragments)
   const missingCount = fragments.length - composeClips.length
+  // 后期字幕模式且字幕板有内容：成片需在服务端烧录字幕
+  const burnSubtitles =
+    subtitleMode === 'post' &&
+    buildDramaSubtitleBoard(fragments.filter((f) => Boolean(f.video))).length > 0
 
-  // 浏览器内拼接已生成镜头并下载成片
+  // 拼接已生成镜头并下载成片（后期字幕模式由服务端烧录字幕）
   async function handleComposeDownload() {
     if (composeBusy || composeClips.length === 0) return
     if (missingCount > 0) {
@@ -91,10 +100,15 @@ export function EpisodeEditSidePane({
     }
     setComposeError('')
     setComposeBusy(true)
-    setComposeProgress({ phase: 'download', done: 0, total: composeClips.length })
+    setComposeProgress({
+      phase: burnSubtitles ? 'server' : 'download',
+      done: 0,
+      total: composeClips.length,
+    })
     try {
       const blob = await composeEpisodeVideoClient(composeClips, setComposeProgress, {
         episodeId,
+        burnSubtitles,
       })
       triggerBlobDownload(blob, episodeComposeFilename(episodeName))
     } catch (err) {
@@ -123,7 +137,9 @@ export function EpisodeEditSidePane({
           title={
             composeClips.length === 0
               ? t('episode.sidePane.composeNeedVideo')
-              : t('episode.sidePane.composeHint')
+              : burnSubtitles
+                ? t('episode.sidePane.composeHintSubtitles')
+                : t('episode.sidePane.composeHint')
           }
           onClick={() => void handleComposeDownload()}
         >
@@ -132,7 +148,7 @@ export function EpisodeEditSidePane({
           ) : (
             <Download size={14} strokeWidth={1.8} />
           )}
-          {composeProgressLabel(composeProgress, composeBusy)}
+          {composeProgressLabel(composeProgress, composeBusy, burnSubtitles)}
         </button>
         {capabilities?.enabled && projectId && episodeId ? (
           <button

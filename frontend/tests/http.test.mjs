@@ -149,3 +149,8 @@ test('画布和工作流冲突保留错误，但不触发价格刷新或重复�
   assert.equal(refreshes, 0)
   assert.equal(requests, 1)
 })
+
+test('Pydantic 邮箱格式错误换成界面语言提示，不透出英文原文', () => {
+  const detail = [{ type: 'value_error', loc: ['body', 'email'], msg: 'value is not a valid email address: reserved name' }]
+  assert.equal(apiErrorMessage(detail, '请求失败'), '邮箱地址格式不正确')
+})

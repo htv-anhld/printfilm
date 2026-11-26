@@ -35,6 +35,7 @@ export const enShell = {
     loginRequired: 'Please sign in',
     generateFailed: 'Generation failed',
     queryFailed: 'Query failed',
+    invalidEmail: 'Invalid email address',
     requestFailed: 'Request failed',
     uploadFailed: 'Upload failed',
     pleaseSelect: 'Select',
@@ -202,6 +203,7 @@ export const enShell = {
     wechat: 'WeChat',
   },
   wechatGroup: {
+    openDraggable: 'Join WeChat user group (draggable)',
     short: 'WeChat',
     open: 'Join WeChat user group',
     title: 'printfilm user group',
