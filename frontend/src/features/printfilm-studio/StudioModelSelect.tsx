@@ -15,6 +15,9 @@ const descriptions: Record<string, string> = {
   'seedance-2.5': 'studioCanvas.studioModelSelect.desc6',
   'seedance-2.0-fast': 'studioCanvas.studioModelSelect.desc7',
   'minimax-h3': 'studioCanvas.studioModelSelect.desc8',
+  'seedance-2.0-mini': 'studioCanvas.studioModelSelect.desc9',
+  'seedream-4.5': 'studioCanvas.studioModelSelect.desc10',
+  'seedream-5.5': 'studioCanvas.studioModelSelect.desc11',
 }
 
 /** Small vector family marks stay crisp at both menu and toolbar sizes. */

@@ -19,7 +19,9 @@ def test_model_contract(model, resolutions, maximum):
 
 
 def test_alias_and_registry():
-    assert len(strategies()) == 9
+    # 9 个 TokenFree 策略 + kie 新增 seedance-2.0-mini / seedream-4.5 / seedream-5.5
+    assert len(strategies()) == 12
+    assert get_strategy("bytedance/seedance-2-mini").model_id == "seedance-2.0-mini"
     assert get_strategy("seedance-2-5").model_id == "seedance-2.5"
     assert get_strategy("doubao-seedance-2-0-260128").model_id == "seedance-2.0"
     with pytest.raises(ValueError, match="model"):

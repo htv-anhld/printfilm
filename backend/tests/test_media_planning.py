@@ -47,5 +47,5 @@ async def test_catalog_removes_unknown_strategies_and_hides_unpriced_tiers(db_se
 
 def test_draft_is_valid_and_does_not_publish():
     draft = initial_draft()
-    assert len(draft) == 9
+    assert len(draft) == 12  # 含 kie 新增的 3 个策略
     assert validate_prices(draft) == draft

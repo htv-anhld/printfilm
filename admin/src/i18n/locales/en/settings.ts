@@ -57,6 +57,14 @@ export const enSettings = {
     selected: "Selected {n}",
     upstreamCount: " / upstream {n}",
     currentList: " · showing {n}",
+    kie: {
+      add: "Add Kie.ai channel",
+      hint: "Kie.ai always uses https://api.kie.ai with protocol kie. Create an API key in the console:",
+      credit: "Kie.ai balance",
+      queryCredit: "Check credit balance",
+      creditInfo: "{credits} credits left (about ${usd} at $0.005/credit)",
+      creditFailed: "Failed to check the Kie.ai balance",
+    },
     channel: {
       title: "Upstream channels",
       editDesc: "Connection details and the models this channel serves",

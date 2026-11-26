@@ -3,7 +3,7 @@ import { Loader2, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { api, type AdminRoutingChannel, type AdminRoutingSettings } from "@/api/client";
 import { RoutingChannelFields, RoutingChannelTabs } from "@/components/settings/RoutingChannelList";
-import { TOKENFREE_BASE_URL, TOKENFREE_CHANNEL_ID } from "@/lib/routingChannels";
+import { isKieModelId, KIE_PRESET_MODELS, TOKENFREE_BASE_URL, TOKENFREE_CHANNEL_ID } from "@/lib/routingChannels";
 import {
   LabeledControl,
   SettingsLoading,
@@ -32,8 +32,8 @@ type UpstreamModelOption = { id: string; label: string; capability: string };
 /** 勾选推荐时补上的 TokenFree id；视频含 2.5 / 2.0 / Mini */
 const RECOMMENDED_MODEL_IDS: Record<Capability, string[]> = {
   text: ["kimi-k2.6"],
-  image: ["gpt-image-2-5"],
-  video: ["seedance-2-5", "seedance-2-0", "seedance-2-0-mini"],
+  image: ["gpt-image-2-5", ...KIE_PRESET_MODELS.filter((id) => id.includes("seedream"))],
+  video: ["seedance-2-5", "seedance-2-0", "seedance-2-0-mini", ...KIE_PRESET_MODELS.filter((id) => id.includes("seedance"))],
   audio: [
     "qwen-tts-2025-05-22",
     "qwen3-tts-flash",
@@ -49,7 +49,7 @@ function canonicalChannelModelId(model: string): string {
   const mid = (model || "").trim();
   if (!mid) return "";
   const low = mid.toLowerCase();
-  if (!low.includes("seedance")) return mid;
+  if (!low.includes("seedance") || isKieModelId(mid)) return mid;
   if (low.includes("mini")) return "seedance-2-0-mini";
   if (/(?:2-5|2\.5|260628)/.test(low)) return "seedance-2-5";
   if (/(?:2-0|2\.0|260128)/.test(low)) return "seedance-2-0";

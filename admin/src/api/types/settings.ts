@@ -144,8 +144,8 @@ export type AdminRoutingChannel = {
   base_url: string;
   api_key: string;
   has_api_key: boolean;
-  api_format: "openai";
-  protocol: "auto" | "openai";
+  api_format: "openai" | "ark" | "kie";
+  protocol: "auto" | "openai" | "ark" | "kie" | "volc_tts";
   models: string[];
   enabled: boolean;
   sort_order: number;

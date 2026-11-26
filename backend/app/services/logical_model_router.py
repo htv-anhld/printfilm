@@ -207,7 +207,14 @@ def resolve_logical_model_id(
     if not raw:
         snapshot = get_routing_snapshot()
         return _default_model_id(snapshot.default_models, capability) or raw
-    return aliases.get(raw.lower(), raw)
+    alias = aliases.get(raw.lower())
+    if alias and alias.lower() != raw.lower():
+        # 后台真实配置了同名逻辑模型（如 kie 渠道带来的 seedance-2.0-mini）时不再走历史别名
+        snapshot = get_routing_snapshot()
+        if any(model.enabled and model.capability == capability and model.id.lower() == raw.lower()
+               for model in snapshot.logical_models):
+            return raw
+    return alias or raw
 
 
 # 解析上游 endpoint（兼容旧 alias 逻辑）
@@ -278,6 +285,10 @@ def _auto_protocol(channel: SystemModelChannel, upstream_model: str) -> str:
     explicit = (channel.protocol or "auto").lower()
     if explicit not in {"", "auto"}:
         return explicit
+    from app.services.kie_models import is_kie_base_url
+
+    if is_kie_base_url(channel.base_url):
+        return "kie"
     cap = infer_model_capability(upstream_model)
     if cap == "audio":
         return "openai"

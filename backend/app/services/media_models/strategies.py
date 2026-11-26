@@ -259,6 +259,19 @@ class Seedream50FlashStrategy(ImageModelStrategy):
     model_id = "seedream-5.0-flash"
 
 
+class Seedream45Strategy(ImageModelStrategy):
+    """Seedream 4.5（kie：basic=2K / high=4K；有参考图自动走 edit）。"""
+    model_id = "seedream-4.5"
+    resolutions = ("2K", "4K")
+    max_reference_images = 14
+
+
+class Seedream55Strategy(ImageModelStrategy):
+    """Seedream 5.5（kie：1K / 2K；有参考图自动走 image-to-image）。"""
+    model_id = "seedream-5.5"
+    max_reference_images = 10
+
+
 class GptImage2Strategy(ImageModelStrategy):
     model_id = "gpt-image-2"
 
@@ -292,6 +305,11 @@ class Seedance20FastStrategy(VideoModelStrategy):
     model_id = "seedance-2.0-fast"
 
 
+class Seedance20MiniStrategy(VideoModelStrategy):
+    """Seedance 2.0 Mini（kie bytedance/seedance-2-mini；480p / 720p）。"""
+    model_id = "seedance-2.0-mini"
+
+
 class MiniMaxH3Strategy(VideoModelStrategy):
     model_id = "MiniMax-H3"
     resolutions = ("480p", "768p")
@@ -300,8 +318,10 @@ class MiniMaxH3Strategy(VideoModelStrategy):
 
 
 _STRATEGIES = tuple(cls() for cls in (Seedream50ProStrategy, Seedream50Strategy, Seedream50FlashStrategy,
+                                    Seedream45Strategy, Seedream55Strategy,
                                     GptImage2Strategy, GptImage25Strategy, Seedance25Strategy,
-                                    Seedance20Strategy, Seedance20FastStrategy, MiniMaxH3Strategy))
+                                    Seedance20Strategy, Seedance20FastStrategy, Seedance20MiniStrategy,
+                                    MiniMaxH3Strategy))
 
 
 def strategies() -> tuple[MediaModelStrategy, ...]:
@@ -309,8 +329,9 @@ def strategies() -> tuple[MediaModelStrategy, ...]:
 
 
 def get_strategy(model_id: str) -> MediaModelStrategy:
+    from app.services.kie_models import kie_logical_id
     from app.services.media_model_presets import resolve_preset_alias
-    raw = resolve_preset_alias(model_id).lower()
+    raw = (kie_logical_id(model_id) or resolve_preset_alias(model_id)).lower()
     raw = {"doubao-seedance-2-0": "seedance-2.0", "doubao-seedance-2-5": "seedance-2.5",
            "ark-seedream": "seedream-5.0-pro", "kie-seedream-5": "seedream-5.0"}.get(raw, raw)
     for strategy in _STRATEGIES:

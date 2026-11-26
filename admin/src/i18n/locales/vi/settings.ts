@@ -57,6 +57,14 @@ export const viSettings = {
     selected: "Đã chọn {n}",
     upstreamCount: " / thượng nguồn {n}",
     currentList: " · đang hiển thị {n}",
+    kie: {
+      add: "Thêm kênh Kie.ai",
+      hint: "Kie.ai luôn dùng https://api.kie.ai với giao thức kie. Tạo API Key trong trang quản trị:",
+      credit: "Số dư Kie.ai",
+      queryCredit: "Kiểm tra số dư credit",
+      creditInfo: "Còn {credits} credit (khoảng ${usd}, theo giá $0,005/credit)",
+      creditFailed: "Không kiểm tra được số dư Kie.ai",
+    },
     channel: {
       title: "Kênh thượng nguồn",
       editDesc: "Thông tin kết nối và các mô hình kênh này cung cấp",

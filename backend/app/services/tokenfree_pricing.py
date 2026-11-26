@@ -407,8 +407,17 @@ def canonicalize_channel_model_id(model: str) -> str:
     mid = (model or "").strip()
     if "seedance" not in mid.lower():
         return mid
+    from app.services.kie_models import is_kie_model_id
+
+    if is_kie_model_id(mid):
+        # kie 命名空间 id（bytedance/seedance-2-mini 等）是真实上游模型，不折叠成 TokenFree 别名
+        return mid
     low = mid.lower()
-    # Mini / TF 笔误 mimi：无独立 expr，规范到 2.0（避免提交 doubao-*-mini 报 ModelNotOpen）
+    # 点分规范 id seedance-2.0-mini 已是独立逻辑模型（kie bytedance/seedance-2-mini），原样保留；
+    # 计费与用量才能记成 Mini 而不是 2.0
+    if low == "seedance-2.0-mini":
+        return "seedance-2.0-mini"
+    # 其它 Mini 写法 / TF 笔误 mimi：TokenFree 无独立 expr，规范到 2.0（避免提交 doubao-*-mini 报 ModelNotOpen）
     if "mimi" in low or "mini" in low:
         return "seedance-2.0"
     if "fast" in low:
@@ -537,6 +546,11 @@ def cost_fen_official_image(settings: Settings, *, model: str = "", size: str = 
     raw_model = model or getattr(settings, "model_image", "") or ""
     mid = tokenfree_working_image_model(raw_model)
     resolved = resolve_billing_image_size(settings, model=raw_model, size=size)
+    from app.services.kie_models import kie_image_cost_fen, resolve_kie_upstream
+
+    kie_model = resolve_kie_upstream("image", raw_model)
+    if kie_model:
+        return kie_image_cost_fen(kie_model, size or resolved, settings)
     usage_facts: dict[str, Any] = {
         "results": 1,
         "image_count": 1,
@@ -752,6 +766,12 @@ def cost_fen_official_video(
     secs = max(float(seconds or 0), 2.0)
     raw = (model or getattr(settings, "model_video", "") or "seedance-2-5").strip()
     res = normalize_video_resolution(resolution, settings)
+    from app.services.kie_models import kie_video_cost_fen, resolve_kie_upstream
+
+    kie_model = resolve_kie_upstream("video", raw)
+    if kie_model:
+        # 首选路由是 kie.ai：按 credit/秒价目预估（结算时以 creditsConsumed 为准）
+        return kie_video_cost_fen(kie_model, res, secs, settings)
     from app.services.billingexpr import quote_verified_charge_fen
 
     # TokenFree Seedance 现价多为 u("tokens")；无上游 token 时按清晰度估，避免 1080p 按扁平 4 万/秒低估

@@ -212,6 +212,9 @@ export const zhStudioExtra = {
       "desc6": "镜头创作 · 多模态参考",
       "desc7": "快速创作 · 分镜预演",
       "desc8": "人物表演 · 动态视频",
+      "desc9": "经济档 · 草稿与批量出片",
+      "desc10": "精细静帧 · 2K / 4K",
+      "desc11": "新一代静帧 · 参考图改图",
       "loadingModels": "加载模型…"
     },
     "workspaceAccessNotice": {

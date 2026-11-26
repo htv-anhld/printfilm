@@ -155,6 +155,12 @@ async def list_upstream_models(
 
     from app.services.tokenfree_gateway import upstream_locked
 
+    from app.services.kie_models import is_kie_base_url, kie_catalog_rows
+
+    if (proto == "kie" or is_kie_base_url(base)) and not upstream_locked():
+        # kie.ai 没有 /models 目录接口：返回站点已适配的 Seedance / Seedream 静态目录
+        return kie_catalog_rows(capability)
+
     locked_vendor = proto == "kie" or proto == "ark" or "volces.com" in base.lower() or "kie.ai" in base.lower()
     if locked_vendor and upstream_locked():
         # 开源锁定模式：方舟 / Kie 目录统一走 TokenFree 聚合

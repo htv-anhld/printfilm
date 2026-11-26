@@ -212,6 +212,9 @@ export const enStudioExtra = {
       "desc6": "Shots · Multimodal reference",
       "desc7": "Fast drafts · Shot previews",
       "desc8": "Character performance · Motion video",
+      "desc9": "Budget tier · Drafts & batch output",
+      "desc10": "Detailed stills · 2K / 4K",
+      "desc11": "Next-gen stills · Image-to-image",
       "loadingModels": "Loading models…"
     },
     "workspaceAccessNotice": {

@@ -87,6 +87,15 @@ billing_expr USD sell = official_CNY / 7.3 * 1.5
 
 预扣：生图 API 按逻辑模型路由解析出的上游模型名原样调用 TokenFree（如渠道启用的 `gpt-image-2` / `gpt-image-2.5` / `seedream-5-0-pro`，不做硬改写；`gpt-image-2-5` 等历史写法规范到 `gpt-image-2.5`）。价目里有按次价或表达式时，预扣与结算都用该规则（例如 `gpt-image-2` 的 `model_price`），价目键会互查点分/连字符。价目缺失时 **gpt-image / sunburst** 才按 Kie 积分档保底（1K 6 / 2K 10 / 4K 16 积分；默认 3.5 分/积分）。**按张官价不再乘 `billing_estimate_buffer`（默认 1.2）**。LLM / 视频 / TTS 估价仍乘缓冲。视频有 `billing_expr` 时按表达式（分辨率 × 秒，默认无参考视频）；没有表达式才用本站秒价表。漫剧缺省按 720P。勿把 New API 的美元 `cost` 当人民币。
 
+### Kie.ai 渠道（credit 计费）
+
+路由首选渠道是 Kie.ai（协议 `kie` 或 Base URL 主机 `kie.ai`）时：
+
+- **预扣**：按 `backend/app/services/kie_models.py` 的价目表估算（视频 credit/秒 × 时长，Seedance 2.0 / Fast / Mini 分清晰度；Seedream 按张），再 × `BILLING_MARKUP`。这是唯一的 kie 价目表，改价只改这里。
+- **结算**：recordInfo 的 `creditsConsumed` → `kie_credits_to_cost_fen`（`credits × billing_kie_fen_per_credit` 人民币分，再按 `billing_usd_cny` 折成计费币种最小单位）。默认 3.5 分/credit、汇率 7 → 0.5 美分/credit = **$0.005/credit**，与 kie.ai 官价一致；改了汇率要同步改 `billing_kie_fen_per_credit`（= 0.5 × 汇率）。
+- **失败任务**不计费（kie 失败不扣 credit，`upstream_cost_fen` 为空）。
+- 固定媒体价目表（fixed_media）开启时用户价仍以价目表为准，kie credit 只作上游成本留痕。
+
 管理端财务按日汇总用户扣费、调用次数与 Token 用量，不再同步上游日消耗、展示成本对照或计算利润。
 
 项目、漫剧和个人用量接口同样只返回扣费与用量；后端已移除成本报表聚合、上游账户/日用量查询和日报快照模型。结算所需的费用换算与单次消费记录继续用于核实实际扣费。

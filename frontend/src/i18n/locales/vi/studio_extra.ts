@@ -212,6 +212,9 @@ export const viStudioExtra = {
       "desc6": "Dựng cảnh quay · Tham chiếu đa phương thức",
       "desc7": "Tạo nhanh · Dựng thử phân cảnh",
       "desc8": "Diễn xuất nhân vật · Video chuyển động",
+      "desc9": "Bản tiết kiệm · Nháp & xuất hàng loạt",
+      "desc10": "Ảnh tĩnh chi tiết · 2K / 4K",
+      "desc11": "Ảnh tĩnh thế hệ mới · Biến đổi từ ảnh",
       "loadingModels": "Đang tải model…"
     },
     "workspaceAccessNotice": {

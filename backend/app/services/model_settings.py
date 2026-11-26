@@ -900,6 +900,7 @@ async def _save_unlocked_channels(
     from app.services.tokenfree_gateway import TOKENFREE_BASE_URL, TOKENFREE_CHANNEL_ID
     from app.services.tokenfree_pricing import canonicalize_channel_models
     from app.services.upstream_channels import is_valid_channel_id, reset_channel_health
+    from app.services.kie_models import KIE_BASE_URL, is_kie_base_url
 
     seen: set[str] = set()
     for index, item in enumerate(incoming):
@@ -910,7 +911,14 @@ async def _save_unlocked_channels(
             raise ValueError(_("渠道 ID「{id}」重复", id=cid))
         seen.add(cid)
         base = TOKENFREE_BASE_URL if cid == TOKENFREE_CHANNEL_ID else (item.base_url or "").strip().rstrip("/")
-        if item.protocol not in {"volc_tts", "kie"} and not base.lower().startswith(("http://", "https://")):
+        protocol, api_format = item.protocol, item.api_format
+        if cid != TOKENFREE_CHANNEL_ID and (protocol == "kie" or is_kie_base_url(base)):
+            # Kie.ai：协议固定 kie，Base URL 缺省官方地址（只允许 https）
+            protocol, api_format = "kie", "kie"
+            base = base or KIE_BASE_URL
+            if not base.lower().startswith("https://"):
+                raise ValueError(_("Kie.ai 渠道的 Base URL 必须以 https:// 开头"))
+        if protocol not in {"volc_tts", "kie"} and not base.lower().startswith(("http://", "https://")):
             raise ValueError(_("渠道「{name}」的 Base URL 必须以 http:// 或 https:// 开头", name=item.name or cid))
         row = existing_rows.get(cid) or SystemModelChannelRow(id=cid)
         prev_key = _decrypt_secret(row.api_key_ciphertext or "") if row.api_key_ciphertext else ""
@@ -922,8 +930,8 @@ async def _save_unlocked_channels(
         row.name = (item.name or cid).strip()[:128]
         row.base_url = base
         row.api_key_ciphertext = _encrypt_secret(key) if key else None
-        row.api_format = item.api_format
-        row.protocol = item.protocol
+        row.api_format = api_format
+        row.protocol = protocol
         row.models = canonicalize_channel_models(list(item.models or []))
         row.enabled = bool(item.enabled)
         row.sort_order = int(item.sort_order if item.sort_order is not None else index)

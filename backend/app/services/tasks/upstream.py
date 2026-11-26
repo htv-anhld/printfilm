@@ -85,9 +85,13 @@ def _append_to_caller_session(db: Any, task_id: int, event_type: str, payload: d
     _append_event(db, task_id, task, step, event_type, payload)
 
 
-def _video_request(method: str, endpoint: str) -> tuple[bool, bool, str | None]:
+def _video_request(method: str, endpoint: str, params: Any = None) -> tuple[bool, bool, str | None]:
     """识别视频建单与轮询路径，只对异步视频响应回填 provider ID。"""
     path = urlsplit(endpoint).path.rstrip("/")
+    if path.endswith("/api/v1/jobs/recordInfo") and method == "GET":
+        # kie.ai 查询：taskId 在 query；建单（createTask）图/视频共用，由调用方标明 video_submit
+        task_id = params.get("taskId") if isinstance(params, dict) else None
+        return False, True, str(task_id) if task_id else None
     for suffix in ("/videos", "/contents/generations/tasks"):
         if path.endswith(suffix):
             return method == "POST", False, None
@@ -156,9 +160,14 @@ async def _safe_record(task_id: int, event_type: str, payload: dict[str, Any]) -
 
 
 async def observed_request(
-    client: Any, method: str, endpoint: str, *, provider: str = "tokenfree", **kwargs: Any
+    client: Any, method: str, endpoint: str, *, provider: str = "tokenfree",
+    video_submit: bool | None = None, provider_task_prefix: str = "", **kwargs: Any
 ) -> Any:
-    """透明包装一次真实 HTTP 调用，保留参数、返回对象、异常和原重试策略。"""
+    """透明包装一次真实 HTTP 调用，保留参数、返回对象、异常和原重试策略。
+
+    video_submit：显式标明是否视频建单（kie createTask 图/视频同路径）；
+    provider_task_prefix：回填 provider_task_id 时加的前缀（kie 渠道任务 ID 为 ``{channel}::{taskId}``）。
+    """
     # 延迟导入：billing 包 __init__ 会反向导入本模块，模块级导入会形成循环
     from app.services.billing.context import get_current_task_run_id, get_current_team_id
 
@@ -167,7 +176,9 @@ async def observed_request(
     task_id = get_current_task_run_id()
     if task_id is None:
         return await send(endpoint, **kwargs)
-    is_submit, is_poll, provider_id = _video_request(method, endpoint)
+    is_submit, is_poll, provider_id = _video_request(method, endpoint, kwargs.get("params"))
+    if video_submit is not None:
+        is_submit = bool(video_submit) and method == "POST"
     if method not in {"GET", "HEAD", "OPTIONS"} and not is_poll:
         from app.services.billing.unified_ai import guard_upstream_submission, validate_before_upstream
         caller_db = _event_session.get()
@@ -218,8 +229,20 @@ async def observed_request(
         state = str(unwrapped.get("status") or "").lower()
         error = unwrapped.get("error")
         failed = code >= 400 or bool(error) or state in {"failed", "error", "cancelled"}
+        if provider == "kie" and isinstance(data, dict):
+            # kie 业务错误是 HTTP 200 + body.code≠200
+            kie_code = data.get("code")
+            failed = failed or (kie_code not in (None, "", 200, "200"))
+            error = error or (data.get("msg") if failed else None)
+            inner = data.get("data") if isinstance(data.get("data"), dict) else {}
+            state = str(inner.get("state") or state).lower()
         if is_submit and not failed:
-            provider_id = extract_video_task_id(data)
+            if provider == "kie" and isinstance(data, dict) and isinstance(data.get("data"), dict):
+                provider_id = str(data["data"].get("taskId") or "") or None
+            else:
+                provider_id = extract_video_task_id(data)
+            if provider_id and provider_task_prefix:
+                provider_id = f"{provider_task_prefix}{provider_id}"
         payload = {
             **payload, "provider_task_id": provider_id,
             "status_code": code,
