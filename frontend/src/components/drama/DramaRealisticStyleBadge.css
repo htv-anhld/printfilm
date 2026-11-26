@@ -1,0 +1,66 @@
+/* 写实风格提醒：角标 + 说明条（亮/暗主题） */
+.drama-realistic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-style: normal;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.drama-realistic-badge b {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.drama-realistic-badge--card {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 1;
+  padding: 3px 6px;
+}
+
+.drama-realistic-badge--inline {
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.drama-realistic-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+}
+
+.drama-realistic-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+html.dark .drama-realistic-badge {
+  color: #fde68a;
+  background: rgba(120, 53, 15, 0.85);
+  border-color: rgba(251, 191, 36, 0.55);
+}
+
+html.dark .drama-realistic-notice {
+  color: #fde68a;
+  background: rgba(120, 53, 15, 0.35);
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+/* 分集顶栏风格面板的卡片默认非定位元素，角标需要以卡片为参照 */
+.fc-gen-style-card {
+  position: relative;
+}

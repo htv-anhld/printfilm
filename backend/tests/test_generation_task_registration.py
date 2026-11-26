@@ -159,20 +159,21 @@ async def test_episode_compose_registers_one_generation_and_keeps_billing_policy
     monkeypatch.setattr(episodes, "get_owned_episode", AsyncMock(return_value=episode))
     monkeypatch.setattr(episodes, "get_owned_drama_project", AsyncMock(return_value=project))
     monkeypatch.setattr(episode_compose, "load_episode_for_compose", AsyncMock(return_value=episode))
-    compose = AsyncMock(return_value="/static/composed.mp4")
-    monkeypatch.setattr(episode_compose, "compose_episode_video", compose)
+    compose = AsyncMock(return_value=("/static/composed.mp4", 3))
+    monkeypatch.setattr(episode_compose, "compose_episode_video_ex", compose)
 
     async def register(*_args, **kwargs):
         assert kwargs["task_type"] == "episode_compose"
         assert kwargs["billable"] is (team_id is not None)
         result = await kwargs["executor"]()
-        assert kwargs["result_payload_factory"](result) == {"kind": "video", "urls": [result]}
+        assert kwargs["result_payload_factory"](result) == {"kind": "video", "urls": [result[0]]}
         return SimpleNamespace(id=1), result
 
     register_task = AsyncMock(side_effect=register)
     monkeypatch.setattr(episodes, "run_billed_ephemeral", register_task)
     result = await episodes.compose_episode(7, db=SimpleNamespace(), user=SimpleNamespace(id=1))
     assert result["video_url"] == "/static/composed.mp4"
+    assert result["subtitles_burned"] is True
     register_task.assert_awaited_once()
     compose.assert_awaited_once()
 

@@ -58,7 +58,7 @@
   border: 1px solid var(--pf-line);
   border-radius: 14px;
   background: var(--pf-card);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  box-shadow: var(--pf-shadow);
 }
 
 .fc-gen-opt-panel--portal {
@@ -174,29 +174,49 @@
   background: color-mix(in srgb, #8b5cf6 10%, var(--pf-card));
 }
 
+/* 模型卡片：全部走主题 token，深浅色自动适配；紫色仅作选中强调 */
 .fc-gen-model-card {
+  --model-accent: #7c3aed;
+  --model-accent-ink: #6d28d9;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr);
   gap: 10px;
   align-items: start;
   width: 100%;
   padding: 9px 10px;
-  border: 1px solid #e8edf3;
+  border: 1px solid var(--pf-line-strong);
   border-radius: 10px;
-  background: #fff;
+  background: var(--pf-card);
+  color: var(--pf-ink);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.12s ease, background 0.12s ease;
 }
 
-.fc-gen-model-card:hover {
-  border-color: #d4d4d8;
-  background: #fafafa;
+html.dark .fc-gen-model-card {
+  --model-accent: #a78bfa;
+  --model-accent-ink: #c4b5fd;
 }
 
-.fc-gen-model-card.selected {
-  border-color: #a78bfa;
-  background: #faf5ff;
+.fc-gen-model-card:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--pf-ink) 22%, transparent);
+  background: var(--pf-surface-2);
+}
+
+.fc-gen-model-card.selected,
+.fc-gen-model-card.selected:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--model-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--model-accent) 10%, var(--pf-card));
+}
+
+.fc-gen-model-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fc-gen-model-card:focus-visible {
+  outline: 2px solid var(--model-accent);
+  outline-offset: 1px;
 }
 
 .fc-gen-model-card-icon {
@@ -208,23 +228,13 @@
   height: 32px;
   margin-top: 1px;
   border-radius: 8px;
-  color: #57534e;
-  background: #f5f5f4;
-}
-
-.fc-gen-model-card-icon.is-seedance25,
-.fc-gen-model-card-icon.is-seedance,
-.fc-gen-model-card-icon.is-seedanceMini,
-.fc-gen-model-card-icon.is-minimax,
-.fc-gen-model-card-icon.is-seedream,
-.fc-gen-model-card-icon.is-gptImage {
-  color: #57534e;
-  background: #f5f5f4;
+  color: var(--pf-muted);
+  background: var(--pf-surface-2);
 }
 
 .fc-gen-model-card.selected .fc-gen-model-card-icon {
-  color: #6d28d9;
-  background: #ede9fe;
+  color: var(--model-accent-ink);
+  background: color-mix(in srgb, var(--model-accent) 18%, var(--pf-card));
 }
 
 .fc-gen-model-card-body {
@@ -243,7 +253,7 @@
 }
 
 .fc-gen-model-card-head strong {
-  color: #18181b;
+  color: var(--pf-ink);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.25;
@@ -264,29 +274,29 @@
 }
 
 .fc-gen-model-card-badge {
-  color: #71717a;
-  background: #f4f4f5;
+  color: var(--pf-muted);
+  background: var(--pf-surface-2);
 }
 
 .fc-gen-model-card-rec {
-  color: #15803d;
-  background: #f0fdf4;
+  color: var(--pf-accent-strong);
+  background: var(--pf-lime-soft);
 }
 
 .fc-gen-model-card-check {
   margin-left: auto;
-  color: #7c3aed;
+  color: var(--model-accent);
   flex-shrink: 0;
 }
 
 .fc-gen-model-card-desc {
-  color: #71717a;
+  color: var(--pf-muted);
   font-size: 11px;
   line-height: 1.4;
 }
 
 .fc-gen-model-card-meta {
-  color: #52525b;
+  color: color-mix(in srgb, var(--pf-ink) 72%, transparent);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.35;
@@ -294,10 +304,16 @@
 }
 
 .fc-gen-model-card-price {
-  color: #64748b;
+  color: var(--pf-muted);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.35;
+}
+
+.fc-gen-model-empty {
+  margin: 0;
+  color: var(--pf-muted);
+  font-size: 12px;
 }
 
 .fc-gen-chip-row {

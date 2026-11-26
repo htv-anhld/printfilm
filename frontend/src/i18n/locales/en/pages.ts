@@ -705,6 +705,7 @@ export const enPages = {
     },
   },
   studio3d: {
+    webglUnavailable: "Your browser does not support WebGL or has it disabled, so the 3D scene cannot be shown. Enable hardware acceleration or try another browser.",
     title: "3D layout",
     card: "Place characters, props and the camera, then snapshot a composition reference",
     lead: "Drag characters and props, pick a lens, then snapshot from the camera to use as a composition reference for image or video generation.",

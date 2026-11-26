@@ -1,5 +1,6 @@
 import { points } from '../../lib/points.ts'
 import { marketText as mt, marketFeedback } from './translate.ts'
+import { getActiveLocale } from '../../i18n/detect.ts'
 /** 用户提示与接口错误码分开处理，不改变服务端状态和错误契约。 */
 const businessMessages: Record<string, string> = {
   MARKETPLACE_STORAGE_UNAVAILABLE: '文件服务暂未配置或暂时不可用，请稍后重试或联系客服。',
@@ -88,6 +89,8 @@ function validationMessage(row: Record<string, unknown>, field: string): string 
 }
 
 function explainValidation(detail: unknown[]): string {
+  // 中文沿用全角标点，其他语言用半角
+  const zh = getActiveLocale() === 'zh'
   const lines = detail.flatMap(value => {
     const row = record(value)
     if (!row) return []
@@ -95,9 +98,9 @@ function explainValidation(detail: unknown[]): string {
     const field = String(parts.at(-1) ?? '')
     const location = parts.map(part => typeof part === 'number' ? mt("第 {0} 项", [part + 1]) : mt(fieldNames[String(part)] || '') || mt("填写内容")).join(mt("的"))
     const message = validationMessage(row, field)
-    return [location ? `${location}：${message}` : message]
+    return [location ? `${location}${zh ? '：' : ': '}${message}` : message]
   })
-  return [...new Set(lines)].join('；') || mt("请检查表单内容和必填字段")
+  return [...new Set(lines)].join(zh ? '；' : '; ') || mt("请检查表单内容和必填字段")
 }
 
 export function explainMarketplaceError(detail: unknown, status?: number): string {

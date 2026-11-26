@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import "@/styles/admin-primitives.css";
+import { tr } from "@/i18n";
 
 export type AdminListStatItem = {
   label: string;
@@ -17,7 +18,7 @@ type AdminListStatsProps = {
 export function AdminListStats({ items, className }: AdminListStatsProps) {
   if (items.length === 0) return null;
   return (
-    <dl className={cn("admin-list-stats admin-ui-list-stats", className)} aria-label="列表统计">
+    <dl className={cn("admin-list-stats admin-ui-list-stats", className)} aria-label={tr("ui.listStats")}>
       {items.map((item) => (
         <div key={item.label} className="admin-list-stat-card">
           <dt className="admin-list-stat-label">{item.label}</dt>

@@ -130,3 +130,69 @@ def split_script_episodes(text: str) -> tuple[str, list[dict]]:
     if not episodes:
         return "", [{"episodeNumber": 1, "title": "", "body": text.strip()}]
     return header, episodes
+
+
+# 「Tên phim: …」「Tựa đề: …」「Title: …」「剧名：…」等显式片名行
+_TITLE_LABEL = re.compile(
+    r"^[ \t#*【\[]*(?:tên\s*phim|tên\s*truyện|tựa\s*đề|tựa\s*phim|tiêu\s*đề|title|film\s*title|movie\s*title"
+    r"|剧名|片名|标题|作品名)\s*[】\]]?\s*[:：]\s*(?P<title>[^\n]+)$",
+    re.IGNORECASE,
+)
+# 片名候选行上限：过长的行是简介/正文，不是标题
+_TITLE_MAX_CHARS = 80
+
+
+def _clean_title_line(line: str) -> str:
+    """去掉 Markdown 标题符号、书名号、引号与首尾标点。"""
+    text = re.sub(r"^[ \t#*>\-–—]+", "", line or "").strip()
+    text = text.strip("*_`《》「」『』\"'“”【】[] \t")
+    return re.sub(r"\s+", " ", text).strip(" :：-–—.")
+
+
+def _title_case_if_shouting(text: str) -> str:
+    """全大写拉丁片名（TRÂM HOA LÊ）转首字母大写（Trâm Hoa Lê）；中文/大小写混排原样返回。"""
+    if text.isupper() and re.search(r"[A-Za-zÀ-ỹ]", text):
+        return " ".join(w[:1].upper() + w[1:].lower() for w in text.split(" "))
+    return text
+
+
+def humanize_filename_title(filename: str | None) -> str:
+    """文件名兜底片名：去扩展名，下划线/连字符/点换空格，拉丁文首字母大写（tram_hoa_le.txt → Tram Hoa Le）。"""
+    stem = (filename or "").replace("\\", "/").rsplit("/", 1)[-1]
+    if "." in stem:
+        stem = stem.rsplit(".", 1)[0]
+    text = re.sub(r"[_\-.]+", " ", stem)
+    text = re.sub(r"\s+", " ", text).strip()
+    if not text:
+        return ""
+    if re.search(r"[A-Za-zÀ-ỹ]", text) and (text.islower() or text.isupper()):
+        text = " ".join(w[:1].upper() + w[1:].lower() for w in text.split(" "))
+    return text
+
+
+def derive_script_title(header: str, text: str, filename: str | None = None) -> str:
+    """
+    从剧本推导片名：优先「Tên phim: / Title: / 剧名：」行，其次第一集标题前的第一条非空短行，
+    都没有时回退人性化的文件名；仍为空返回空串（由调用方给默认名）。
+    """
+    has_episode_heading = bool(_EPISODE_HEADING.search(text or ""))
+    head = header if has_episode_heading else (text or "")
+    lines = [ln.strip() for ln in (head or "").replace("\r\n", "\n").split("\n") if ln.strip()]
+    # 显式标签行：只扫开头若干行，避免命中正文台词
+    for line in lines[:12]:
+        m = _TITLE_LABEL.match(line)
+        if m:
+            title = _clean_title_line(m.group("title"))
+            if title:
+                return title[:_TITLE_MAX_CHARS]
+    # 无集标题时整篇都是第 1 集正文，首行多半是场景描写，不拿来当片名
+    if has_episode_heading:
+        for line in lines[:3]:
+            title = _clean_title_line(line)
+            if not title or len(title) > _TITLE_MAX_CHARS:
+                continue
+            # 「人物：」「Nhân vật:」之类表头不是片名
+            if re.match(r"^[^:：]{1,20}[:：]", title):
+                continue
+            return _title_case_if_shouting(title)
+    return humanize_filename_title(filename)[:_TITLE_MAX_CHARS]

@@ -45,6 +45,26 @@ def resolve_tokenfree_api_key() -> str:
     return (s.openai_api_key or s.ark_api_key or "").strip()
 
 
+def tokenfree_channel_active() -> bool:
+    """TokenFree 渠道是否在用（已启用且有 Key）。
+
+    渠道表已加载时以渠道 enabled 为准：停用后不再调 TokenFree 用量 / 日志接口
+    （否则每次结算都白白请求一次并 401）。渠道表尚未加载时退回"有 Key 即可"。
+    """
+    try:
+        from app.services.model_settings import get_routing_snapshot
+
+        channels = get_routing_snapshot().channels
+    except Exception:  # noqa: BLE001
+        channels = []
+    if channels:
+        for channel in channels:
+            if channel.id == TOKENFREE_CHANNEL_ID:
+                return bool(channel.enabled and (channel.api_key or "").strip())
+        return False
+    return bool(resolve_tokenfree_api_key())
+
+
 def locked_tokenfree_channel(
     *,
     api_key: str = "",

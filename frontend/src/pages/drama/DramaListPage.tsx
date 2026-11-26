@@ -64,9 +64,16 @@ function formatUpdatedAt(raw?: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-// 封面竖排标题（无预览图时）
-function verticalTitleLabel(name: string, max = 12): string {
-  const clean = (name || '').replace(/\s+/g, '')
+// 封面标题是否适合竖排：仅中日韩文字竖排，拉丁/越南语等保持横排且保留空格
+function isCjkTitle(name: string): boolean {
+  return /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/u.test(name || '')
+}
+
+// 封面占位标题（无预览图时）：CJK 去空格竖排截断，其它文字保留空格并横排截断
+function coverFallbackLabel(name: string): string {
+  const cjk = isCjkTitle(name)
+  const clean = cjk ? (name || '').replace(/\s+/g, '') : (name || '').replace(/\s+/g, ' ').trim()
+  const max = cjk ? 12 : 40
   if (clean.length <= max) return clean
   return `${clean.slice(0, max - 1)}…`
 }
@@ -555,7 +562,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
               </div>
               <div className="drama-agent-ai-footer">
                 <div className="drama-agent-ai-options">
-                  <DramaImageStyleModal value={imageStyleId} onChange={setImageStyleId} disabled={busy} />
+                  <DramaImageStyleModal value={imageStyleId} onChange={setImageStyleId} disabled={busy} videoModelId={genSettings.model} />
                   {createTab === 'ai' ? (
                     <>
                       <span className="drama-agent-opt-divider" aria-hidden />
@@ -665,7 +672,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
                         decoding="async"
                       />
                     ) : (
-                      <span className="pf-drama-card-cover-fallback">{verticalTitleLabel(item.title)}</span>
+                      <span className={`pf-drama-card-cover-fallback${isCjkTitle(item.title) ? '' : ' is-horizontal'}`}>{coverFallbackLabel(item.title)}</span>
                     )}
                     {canvas ? <span className="pf-drama-card-cover-badge is-canvas">{t('drama.list.badgeCanvas')}</span> : null}
                     {!canvas && item.cover_pending ? (

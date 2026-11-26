@@ -30,7 +30,13 @@ def entries(item) -> list[dict]:
 
 def display_entry(entry: dict) -> dict:
     """缺译的历史分类保留原名，并返回补齐提示。"""
-    label = (entry.get("name_en") or entry["name_zh"]) if current_locale.get() == "en" else entry["name_zh"]
+    locale = current_locale.get()
+    if locale == "vi":
+        # 后台分类只维护中英文；内置分类有越南语系统译文，其余回退英文名
+        from .locale import vietnamese
+        label = vietnamese(entry["name_zh"]) or entry.get("name_en") or entry["name_zh"]
+    else:
+        label = (entry.get("name_en") or entry["name_zh"]) if locale == "en" else entry["name_zh"]
     return {**entry, "label": label, "translation_missing": not bool(entry.get("name_en"))}
 
 

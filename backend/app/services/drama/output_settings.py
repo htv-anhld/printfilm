@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 VALID_RATIOS = frozenset({"9:16", "16:9", "1:1"})
 VALID_RESOLUTIONS = frozenset({"480p", "720p", "768p", "1080p"})
@@ -79,7 +82,11 @@ def seedream_still_size_for_video_ratio(aspect_ratio: str | None) -> str:
 
 
 # 项目级生成设置：校验并清洗 video_model / aspect_ratio / resolution（非法值直接丢弃，模型非法抛 ValueError）
-def clean_project_generation_params(params: dict | None) -> dict | None:
+def clean_project_generation_params(
+    params: dict | None,
+    previous: dict | None = None,
+) -> dict | None:
+    """previous 为库里旧 params：旧值里已失效的模型原样回传时只剔除（回落后台默认），不拦整次保存。"""
     if not isinstance(params, dict):
         return params
     out = dict(params)
@@ -105,6 +112,34 @@ def clean_project_generation_params(params: dict | None) -> dict | None:
             from app.services.media_catalog import is_enabled_video_model
 
             if not is_enabled_video_model(model):
+                stale = str((previous or {}).get("video_model") or "").strip() if isinstance(previous, dict) else ""
+                if stale and stale == model:
+                    logger.warning("项目视频模型 %s 已无可用渠道，保存时剔除并回落后台默认模型", model)
+                    out.pop("video_model", None)
+                    return out
                 raise ValueError(model)
             out["video_model"] = model
+    return out
+
+
+def routable_video_model(model_id: str | None) -> str | None:
+    """模型在目录且有可路由渠道则原样返回，否则 None（调用方回落后台默认模型）。"""
+    mid = str(model_id or "").strip()
+    if not mid:
+        return None
+    from app.services.media_catalog import is_enabled_video_model
+
+    return mid if is_enabled_video_model(mid) else None
+
+
+def without_unroutable_video_model(params: dict | None, *, where: str = "") -> dict | None:
+    """接口出参用：剔除已失效的 video_model，让前台显示的就是实际会用的（后台默认）模型。"""
+    if not isinstance(params, dict):
+        return params
+    model = str(params.get("video_model") or "").strip()
+    if not model or routable_video_model(model):
+        return params
+    logger.warning("%s 保存的视频模型 %s 当前不可路由，按后台默认模型展示与生成", where or "params", model)
+    out = dict(params)
+    out.pop("video_model", None)
     return out

@@ -195,6 +195,16 @@ export default function StoryboardPage() {
     return () => clearInterval(timer)
   }, [project?.id, project?.status, project?.active_tasks])
 
+  // 预览弹窗：Esc 关闭
+  useEffect(() => {
+    if (!preview) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setPreview(null)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [preview])
+
   useEffect(() => {
     if (menuShotId == null) return
     function onDoc() {
@@ -1014,7 +1024,9 @@ export default function StoryboardPage() {
                   structure.map((s) => (
                     <li key={s.label}>
                       <span>{s.label}</span>
-                      <span style={{ maxWidth: '60%', textAlign: 'right' }}>{s.text.slice(0, 36)}</span>
+                      <span style={{ maxWidth: '60%', textAlign: 'right' }} title={s.text}>
+                        {s.text.length > 36 ? `${s.text.slice(0, 36).trimEnd()}…` : s.text}
+                      </span>
                     </li>
                   ))
                 ) : (

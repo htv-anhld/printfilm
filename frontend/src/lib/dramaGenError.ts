@@ -66,6 +66,8 @@ const SLOT_ALL_RE =
   /(角色|场景|道具|旁白|参考图|音色)「([^」]+)」|\b(character|scene|prop|narration|reference image|voice)\s*[「"“]([^」"”]+)[」"”]/i
 const SLOT_IMAGE_RE =
   /(角色|场景|道具|参考图)「([^」]+)」|\b(character|scene|prop|reference image)\s*[「"“]([^」"”]+)[」"”]/i
+// 后端 realistic_style_privacy_hint 的三语特征片段（项目画面风格为真人写实）
+const REALISTIC_STYLE_HINT_RE = /是真人写实风格|style "[^"]*" is photorealistic|» là tả thực/i
 
 // 匹配「角色「名」」或 Character "名"，返回本地化类型名与名称
 function matchNamedSlot(text: string, re: RegExp): { kind: string; name: string } | null {
@@ -169,18 +171,20 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
   ) {
     const idx = extractContentIndex(text)
     const named = matchNamedSlot(text, SLOT_IMAGE_RE)
+    // 后端在项目为写实风格时会追加「换插画风格」建议：此时优先建议改项目风格
+    const realisticStyle = REALISTIC_STYLE_HINT_RE.test(text)
     if (named) {
       return {
         title: g('realPerson.title'),
         message: g('realPerson.namedMessage', { kind: named.kind, name: named.name }),
-        suggestion: g('realPerson.namedSuggestion', { name: named.name }),
+        suggestion: realisticStyle ? g('realPerson.styleSuggestion') : g('realPerson.namedSuggestion', { name: named.name }),
       }
     }
     const where = idx != null ? g('realPerson.whereIndex', { n: idx + 1, idx }) : g('realPerson.whereAny')
     return {
       title: g('realPerson.title'),
       message: g('realPerson.message', { where }),
-      suggestion: g('realPerson.suggestion'),
+      suggestion: realisticStyle ? g('realPerson.styleSuggestion') : g('realPerson.suggestion'),
     }
   }
 

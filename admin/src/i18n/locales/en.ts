@@ -13,6 +13,7 @@ import { enDrama } from "./en/drama";
 import { enDashboard } from "./en/dashboard";
 import { enSettings } from "./en/settings";
 import { enCommerce } from "./en/commerce";
+import { enUi } from "./en/ui";
 
 export const en = deepMergeMessages({
   ...enCommon,
@@ -28,4 +29,5 @@ export const en = deepMergeMessages({
   dashboard: enDashboard,
   settings: enSettings,
   commerce: enCommerce,
+  ui: enUi,
 }, enExtra);

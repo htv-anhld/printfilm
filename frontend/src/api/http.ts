@@ -1,5 +1,6 @@
 /** HTTP 基础能力：地址、登录态和响应解析；不依赖浏览器全局配置或业务模块。 */
 import { getMediaPriceVersion, setMediaPriceVersion } from '../lib/mediaPriceVersion.ts'
+import { tr } from '../i18n'
 
 /** 空间/路由切换的主动取消不属于业务失败，不能显示为红色报错。 */
 export function isRequestAborted(cause: unknown): boolean {
@@ -13,6 +14,11 @@ export function apiErrorMessage(detail: unknown, fallback: string): string {
   if (Array.isArray(detail)) {
     const message = detail.map((item) => {
       if (item && typeof item === 'object' && 'msg' in item) {
+        // Pydantic 邮箱格式错误是英文原文，对用户换成界面语言提示
+        const loc = 'loc' in item && Array.isArray(item.loc) ? item.loc : []
+        if (loc[loc.length - 1] === 'email' && 'type' in item && String(item.type).startsWith('value_error')) {
+          return tr('common.invalidEmail')
+        }
         return String(item.msg || JSON.stringify(item))
       }
       return JSON.stringify(item)

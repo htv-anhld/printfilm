@@ -639,6 +639,7 @@ export const zhPages = {
     },
   },
   studio3d: {
+    webglUnavailable: "浏览器不支持或已禁用 WebGL，无法显示 3D 场景。请开启硬件加速或更换浏览器。",
     title: "3D 布局",
     card: "摆放人物、道具与机位，截图作为构图参考",
     lead: "拖放人物和道具、选择焦距，从机位截图作为生图或生视频的构图参考。",

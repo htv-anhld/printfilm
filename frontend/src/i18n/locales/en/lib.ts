@@ -1,6 +1,19 @@
 /** en: lib 命名空间（t('lib.xxx')） */
 
 export const enLib = {
+  toolRunDetail: {
+    video: 'Video generation',
+    image: 'Image generation',
+    audio: 'Audio generation',
+    text: 'Text generation',
+    record: 'Generation record',
+    queued: 'Task is queued. Results will update automatically.',
+    running: 'Task is generating. Results will update automatically.',
+    succeeded: 'Task completed, but there is no media result to preview.',
+    failed: 'Generation failed.',
+    cancelled: 'Task cancelled.',
+    status: 'Task status: {status}',
+  },
   listSep: ', ',
   agentSkill: {
     none: 'No Skill',
@@ -184,6 +197,11 @@ export const enLib = {
     'pixel-art': 'Pixel art',
     'shadow-puppet-illustration': 'Shadow puppet illustration',
   },
+  imageStyleRealism: {
+    badge: 'Realistic',
+    seedanceWarning:
+      'Realistic style: Seedance may reject character images that look like real people when generating video (PrivacyInformation). Prefer an illustrated/animated style if you plan to generate video with Seedance.',
+  },
   genError: {
     failedTitle: 'Generation failed',
     shortSuggestion: 'Follow the hint above, then generate this shot again.',
@@ -242,6 +260,8 @@ export const enLib = {
         'The video service’s review rejected this: an input image{where} may contain a real person’s likeness, so generation was refused.',
       suggestion:
         'Open the assets panel and regenerate an anime/illustration-style look for the related characters/scenes with AI (avoid real photos), or upload a compliant image, then generate this shot again.',
+      styleSuggestion:
+        'This project uses a realistic style, so character images are easily flagged as real people. Switch the project to an illustrated/animated style (e.g. 3D animation, Ghibli-style hand-drawn) in project settings, regenerate the character images, then regenerate this shot.',
     },
     retryLimit: {
       title: 'Still failing after several attempts',

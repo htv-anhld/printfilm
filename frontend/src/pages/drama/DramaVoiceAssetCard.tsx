@@ -81,7 +81,7 @@ export function DramaVoiceAssetCard({
           ) : (
             <>
               <Volume2 size={16} strokeWidth={1.75} aria-hidden />
-              <span>{t('drama.voiceCard.fillToPreview')}</span>
+              <span>{onSynth ? t('drama.voiceCard.fillToPreview') : t('drama.voiceCard.synthDisabled')}</span>
             </>
           )}
         </div>

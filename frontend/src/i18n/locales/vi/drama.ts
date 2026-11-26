@@ -119,6 +119,7 @@ export const viDrama = {
     descLabel: 'Mô tả giọng đọc',
     descPlaceholder: 'Mô tả giọng: tuổi, giới tính, ngữ điệu, tốc độ…',
     fillToPreview: 'Nhập mô tả để tạo bản nghe thử',
+    synthDisabled: 'Tính năng tạo giọng đọc đang tắt — hãy chọn giọng có sẵn từ thư viện',
     synthing: 'Đang tạo…',
     resynth: 'Tạo lại',
     synthFromPrompt: 'Tạo theo prompt',
@@ -651,5 +652,12 @@ export const viDrama = {
       replanTitle: 'Phân cảnh lại bằng AI',
       replanNote: 'Lên lại kịch bản từng cảnh và cấu trúc @duration theo kịch bản và tài nguyên; hãy chờ các video đang tạo hoàn tất trước để tránh xung đột trạng thái. Cảnh trống phải viết dạng hình ảnh như “Cảnh trống: …”, không viết thành lời thoại.',
     },
+  },
+  statusNotice: {
+    close: 'Đóng thông báo',
+    networkTitle: 'Tạm thời không kết nối được dịch vụ',
+    failedTitle: 'Thao tác chưa hoàn tất',
+    networkHint: 'Hãy kiểm tra kết nối mạng rồi thử lại. Nếu có tác vụ tạo đang chạy, hãy xem trạng thái tác vụ sau.',
+    details: 'Xem chi tiết lỗi',
   },
 }

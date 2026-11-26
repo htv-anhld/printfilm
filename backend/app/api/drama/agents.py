@@ -69,7 +69,9 @@ async def script_summary(
 ) -> dict:
     # 入队摘要任务，立即返回；前端轮询 script.params.summary_status
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
-    if project.team_id is not None and project.script:
+    if project.script:
+        # 行锁串行化并发请求（双击 / React StrictMode 双挂载 / 多标签页），
+        # 否则两请求都读到非 generating 状态，重复入队摘要 → 双倍 LLM 费用与重复抽取资产
         await locked_script(db, project.id)
     if not project.script:
         raise HTTPException(status_code=400, detail=_("缺少剧本"))
@@ -153,8 +155,8 @@ async def episode_script(
     if not project.script or not project.script.summary:
         raise HTTPException(status_code=400, detail=_("请先生成剧本摘要"))
 
-    if project.team_id is not None:
-        project.script = await locked_script(db, project.id)
+    # 行锁串行化并发入队（个人项目同样需要，避免重复生成分集）
+    project.script = await locked_script(db, project.id)
 
     summary = project.script.summary if isinstance(project.script.summary, dict) else {}
     total = resolve_episode_target(summary, project.params, project.script.params)

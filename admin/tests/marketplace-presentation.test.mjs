@@ -4,6 +4,10 @@ import { readFileSync } from 'node:fs'
 import { stripTypeScriptTypes } from 'node:module'
 import { MarketplaceRequestError } from '../src/features/marketplace/errors.ts'
 import { fieldStatusLabel, recordStatus, statusLabel, statusOptions } from '../src/features/marketplace/presentation.ts'
+import { applyLocale } from '../src/i18n/detect.ts'
+
+// 上游用例按中文原文比对
+applyLocale('zh', false)
 
 test('相同 pending 状态按审核、支付、打款、任务、举报区分含义', () => {
   assert.equal(statusLabel('works', 'pending'), '待审核')
@@ -86,6 +90,7 @@ const apiSource = readFileSync(new URL('../src/features/marketplace/api.ts', imp
   .replace(/^import .* from 'react'\r?\n/m, '')
   .replace(/^import .* from '@\/lib\/auth'\r?\n/m, "const getToken = () => 'test-token'\n")
   .replace("from './errors'", `from ${JSON.stringify(new URL('../src/features/marketplace/errors.ts', import.meta.url).href)}`)
+  .replace("from '../../i18n/zhText.ts'", `from ${JSON.stringify(new URL('../src/i18n/zhText.ts', import.meta.url).href)}`)
 const api = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(apiSource)).toString('base64')}`)
 
 test('JSON null 错误响应不会抛出属性读取错误，请求和授权函均返回中文业务错误', async () => {

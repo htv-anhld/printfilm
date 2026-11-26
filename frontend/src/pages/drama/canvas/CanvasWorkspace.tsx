@@ -36,7 +36,7 @@ function CanvasWorkspaceContent({
     loading,
     flushSave,
   } = useCanvasStore()
-  const { screenToFlowPosition } = useReactFlow()
+  const { screenToFlowPosition, getNodes } = useReactFlow()
   const embedded = variant === 'embedded'
   // contextMenu 右键菜单位置（null = 关闭）
   const [contextMenu, setContextMenu] = useState<CanvasContextMenuState | null>(null)
@@ -56,9 +56,21 @@ function CanvasWorkspaceContent({
     (kind: CanvasNodeKind) => {
       const size = CANVAS_NODE_SIZE[kind]
       const position = getViewportCenterNodePosition(screenToFlowPosition, size)
+      /* 视口中心已有节点时阶梯错开，避免连续添加的节点完全叠在一起 */
+      const others = getNodes()
+      const overlaps = (x: number, y: number) =>
+        others.some((n) => {
+          const w = n.measured?.width ?? n.width ?? 200
+          const h = n.measured?.height ?? n.height ?? 240
+          return x < n.position.x + w && x + size.width > n.position.x && y < n.position.y + h && y + size.height > n.position.y
+        })
+      for (let i = 0; i < 12 && overlaps(position.x, position.y); i++) {
+        position.x += size.width / 2 + 40
+        position.y += 40
+      }
       void addNodeOfKind(kind, position)
     },
-    [addNodeOfKind, screenToFlowPosition],
+    [addNodeOfKind, getNodes, screenToFlowPosition],
   )
 
   /* Ctrl/Cmd+S 保存；Ctrl/Cmd+Z / Ctrl+Shift+Z / Ctrl+Y 撤销重做 */

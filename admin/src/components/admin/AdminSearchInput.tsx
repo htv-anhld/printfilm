@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useI18n } from "@/i18n";
+import { tr, useI18n } from "@/i18n";
 import type { KeyboardEventHandler } from "react";
 import { Search, X } from "lucide-react";
 import "@/styles/admin-controls.css";
@@ -39,7 +39,7 @@ export function AdminSearchInput({
           }
         }}
       />
-      {value ? <button type="button" className="admin-control-clear" aria-label="清除搜索" onMouseDown={(event) => event.preventDefault()} onClick={() => onChange("")}><X size={13} /></button> : null}
+      {value ? <button type="button" className="admin-control-clear" aria-label={tr("ui.clearSearch")} onMouseDown={(event) => event.preventDefault()} onClick={() => onChange("")}><X size={13} /></button> : null}
     </div>
   );
 }

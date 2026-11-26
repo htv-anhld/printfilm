@@ -124,6 +124,9 @@ def _episode_out(
         params["fragment_script_changed"] = bool(
             frags and stored_fp and stored_fp != _script_body_fingerprint(current_body)
         )
+    from app.services.drama.output_settings import without_unroutable_video_model
+
+    params = without_unroutable_video_model(params, where=f"漫剧分集 {ep.id}") or {}
     return DramaEpisodeOut(
         id=ep.id,
         name=ep.name,
@@ -460,9 +463,26 @@ async def update_episode(
     if body.name is not None:
         ep.name = body.name.strip() or ep.name
     if body.params is not None:
-        ep.params = body.params
+        ep.params = _checked_episode_params(body.params, ep.params)
     await db.commit()
     return await _episode_out_with_tasks(db, user, ep)
+
+
+def _checked_episode_params(params: dict, previous: dict | None) -> dict:
+    """本集 params 整体替换前校验 video_model：新选的模型无可用渠道 → 400；沿用的旧失效值只剔除。"""
+    from app.services.drama.output_settings import routable_video_model
+
+    if not isinstance(params, dict):
+        return params
+    model = str(params.get("video_model") or "").strip()
+    if not model or routable_video_model(model):
+        return params
+    stale = str((previous or {}).get("video_model") or "").strip() if isinstance(previous, dict) else ""
+    if stale != model:
+        raise HTTPException(status_code=400, detail=_("视频模型不可用：{model}", model=model))
+    out = dict(params)
+    out.pop("video_model", None)
+    return out
 
 
 @router.post(
@@ -936,7 +956,7 @@ async def compose_episode(
     user: User = Depends(get_current_user),
 ) -> dict:
     """统一画幅重编码后拼接本集分镜，供浏览器无损失败时回退。"""
-    from app.services.drama.episode_compose import compose_episode_video, load_episode_for_compose
+    from app.services.drama.episode_compose import compose_episode_video_ex, load_episode_for_compose
 
     ep = await get_owned_episode(db, episode_id, user)
     project = await get_owned_drama_project(db, ep.project_id, user)
@@ -947,21 +967,32 @@ async def compose_episode(
     try:
         async def compose_current_episode():
             """只合成本次受理的分集，系统占用持续到文件完成。"""
-            return await compose_episode_video(db, episode=episode, project=project, fragment_ids=req.fragment_ids)
+            return await compose_episode_video_ex(
+                db, episode=episode, project=project, fragment_ids=req.fragment_ids
+            )
 
-        _, url = await run_billed_ephemeral(
+        _task, (url, subtitle_lines) = await run_billed_ephemeral(
             db, user, domain="drama", task_type="episode_compose", executor=compose_current_episode,
             drama_project_id=project.id, episode_id=episode.id,
             payload={"fragment_ids": req.fragment_ids},
             billable=project.team_id is not None,
-            result_payload_factory=lambda result: {"kind": "video", "urls": [result] if result else []},
+            result_payload_factory=lambda result: {"kind": "video", "urls": [result[0]] if result and result[0] else []},
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        # 分镜视频源文件已丢失（如本地素材被清理）：给可操作的提示，而不是裸 500
+        logger.warning("episode compose missing media episode_id=%s: %s", episode_id, exc)
+        raise HTTPException(status_code=400, detail=_("部分分镜视频文件已丢失，请重新生成相关镜头后再合成")) from exc
     except Exception as exc:  # noqa: BLE001
         logger.exception("episode compose failed episode_id=%s", episode_id)
         raise HTTPException(status_code=500, detail=_("全片合成失败：{error}", error=exc)) from exc
-    return {"ok": True, "video_url": url, "episode_id": episode_id}
+    return {
+        "ok": True,
+        "video_url": url,
+        "episode_id": episode_id,
+        "subtitles_burned": subtitle_lines > 0,
+    }
 
 
 @router.post(

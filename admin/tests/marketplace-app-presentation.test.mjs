@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { appAmountFen, appMoney, appRecordFields, appRecordIds } from '../src/features/marketplace/appPresentation.ts'
+import { applyLocale } from '../src/i18n/detect.ts'
+
+// 上游用例按中文原文比对
+applyLocale('zh', false)
 
 test('App运营只显示业务白名单，Apple签名和密钥不会被任意序列化', () => {
   const fields = appRecordFields({ product_id: 'video.coins.600', amount_fen: 600, environment: 'Sandbox', raw_payload: { signedPayload: 'private' }, signed_transaction_info: 'private', app_account_token: 'private', private_key: 'private', nested: { amount_fen: 999 } })

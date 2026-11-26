@@ -3,8 +3,10 @@ import { useState } from 'react'
 import { BookOpen, ChevronDown } from 'lucide-react'
 import { DramaImageStyleCardGrid } from '../../components/drama/DramaImageStyleCardGrid'
 import { DramaImageStylePreviewImg } from '../../components/drama/DramaImageStylePreviewImg'
+import { DramaRealisticStyleBadge, DramaRealisticStyleNotice } from '../../components/drama/DramaRealisticStyleBadge'
+import { useMediaModelsCatalog } from '../../hooks/useMediaModelsCatalog'
 import Modal from '../../components/ui/Modal'
-import { getImageStyleLabel, type ImageStyleId } from '../../lib/dramaImageStyles'
+import { getImageStyleLabel, shouldWarnRealisticStyle, type ImageStyleId } from '../../lib/dramaImageStyles'
 import { useI18n } from '../../i18n'
 
 type Props = {
@@ -19,6 +21,8 @@ type Props = {
   title?: string
   /** 未选时的触发文案 */
   emptyLabel?: string
+  /** 当前视频模型（决定是否提示写实风格风险）；不传时用后台默认视频模型 */
+  videoModelId?: string
 }
 
 // 渲染风格库触发器与画面风格 Modal
@@ -30,8 +34,13 @@ export function DramaImageStyleModal({
   fieldLabel: fieldLabelProp,
   title: titleProp,
   emptyLabel,
+  videoModelId: videoModelIdProp,
 }: Props) {
   const { t } = useI18n()
+  const catalog = useMediaModelsCatalog()
+  const videoModelId = videoModelIdProp || catalog?.defaults?.video_model || ''
+  // warnSelected 选中的是写实风格且视频模型是 Seedance：触发器与弹窗都给提醒
+  const warnSelected = shouldWarnRealisticStyle(value, videoModelId)
   const fieldLabel = fieldLabelProp ?? t('drama.styleModal.fieldLabel')
   const title = titleProp ?? t('drama.styleModal.title')
   const [open, setOpen] = useState(false)
@@ -65,6 +74,7 @@ export function DramaImageStyleModal({
               <span className="drama-style-picker-thumb is-empty" aria-hidden />
             )}
             <span className="drama-style-picker-text">{triggerLabel}</span>
+            {warnSelected ? <DramaRealisticStyleBadge variant="inline" /> : null}
             <ChevronDown size={14} strokeWidth={2} className={open ? 'is-open' : undefined} />
           </button>
         </div>
@@ -78,6 +88,7 @@ export function DramaImageStyleModal({
         >
           <BookOpen size={15} strokeWidth={1.8} />
           <span className="drama-agent-opt-label">{triggerLabel}</span>
+          {warnSelected ? <DramaRealisticStyleBadge variant="inline" /> : null}
           <ChevronDown size={13} strokeWidth={2} />
         </button>
       )}
@@ -87,7 +98,13 @@ export function DramaImageStyleModal({
         <p className="drama-style-modal-hint">
           {t('drama.styleModal.coverNote')}
         </p>
-        <DramaImageStyleCardGrid value={value} onChange={select} noneLabel={t('drama.styleModal.none')} />
+        {warnSelected ? <DramaRealisticStyleNotice /> : null}
+        <DramaImageStyleCardGrid
+          value={value}
+          onChange={select}
+          noneLabel={t('drama.styleModal.none')}
+          videoModelId={videoModelId}
+        />
       </Modal>
     </>
   )

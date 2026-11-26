@@ -322,7 +322,7 @@ async def generate_voice(
         )
 
     try:
-        _, updated = await run_billed_ephemeral(
+        _task, updated = await run_billed_ephemeral(
             db,
             user,
             domain="drama",

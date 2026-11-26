@@ -9,5 +9,6 @@ export default {
   '分享已处理，记录同步失败，请重试同步': 'The share action finished. Retry syncing the record.',
   '重试同步分享记录': 'Retry syncing share record',
   '发送作品链接': 'Send video link', '复制作品链接': 'Copy video link',
+  '中文签署原文': 'Chinese original (authoritative signed text)',
   '账号状态已变化，请重新准备分享': 'Your account changed. Please prepare a new share link.',
 }

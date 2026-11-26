@@ -5,6 +5,7 @@ import {
   MiniMap,
   ReactFlow,
   SelectionMode,
+  useNodesInitialized,
   useReactFlow,
   type Connection,
   type Edge,
@@ -144,12 +145,20 @@ export function FreeCanvasFlow({ projectId, onPaneContextMenu }: FreeCanvasFlowP
     fittedRef.current = false
   }, [projectId])
 
+  // nodesInitialized 节点尺寸已测量：未测量就 fitView 会按 0 尺寸算，直接缩放到 maxZoom（200%）只露出两个节点
+  const nodesInitialized = useNodesInitialized()
+
   // 只在首次加载完成后自适应一次；之后用户新建节点（含右键在指定位置新建）不再移动视口
   useEffect(() => {
     if (fittedRef.current || loading) return
+    if (nodes.length === 0) {
+      fittedRef.current = true
+      return
+    }
+    if (!nodesInitialized) return
     fittedRef.current = true
-    if (nodes.length > 0) void fitView({ padding: 0.2 })
-  }, [loading, nodes.length, fitView])
+    void fitView({ padding: 0.2, maxZoom: 1 })
+  }, [loading, nodes.length, nodesInitialized, fitView])
 
   return (
     <div

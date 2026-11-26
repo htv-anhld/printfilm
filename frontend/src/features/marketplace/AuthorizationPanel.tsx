@@ -103,7 +103,7 @@ export default function AuthorizationPanel({ onSigned }: { onSigned?: () => void
       <h3>{locale !== 'zh' && status.reading_reference ? status.reading_reference.title : status.template.title}</h3>
       <p>{mt("版本")} {status.template.version}</p>
       {locale !== 'zh' && status.reading_reference && <div className="pf-market-letter-reference" lang="en"><p role="note">{status.reading_reference.disclaimer}</p><ol className="pf-market-letter-notices">{status.reading_reference.notices.map(item => <li key={item}>{item}</li>)}</ol><div className="pf-market-letter">{status.reading_reference.body}</div></div>}
-      <details open={locale === 'zh'}><summary>{locale !== 'zh' ? 'Chinese original (authoritative signed text)' : '中文签署原文'}</summary><ol lang="zh-CN" className="pf-market-letter-notices">{status.template.notices.map(item => <li key={item}>{item}</li>)}</ol><div lang="zh-CN" className="pf-market-letter">{status.template.body}</div></details>
+      <details open={locale === 'zh'}><summary>{mt('中文签署原文')}</summary><ol lang="zh-CN" className="pf-market-letter-notices">{status.template.notices.map(item => <li key={item}>{item}</li>)}</ol><div lang="zh-CN" className="pf-market-letter">{status.template.body}</div></details>
       {status.current ? <>
         <p className="pf-market-notice">{mt("已签署：")}{status.current.signer_name} · {date(status.current.created_at)}{mt("。可点击预览或下载已签署授权函。")}</p>
         <div className="pf-market-letter-actions"><button type="button" onClick={() => { void openPreview() }} disabled={previewBusy}>{previewBusy ? mt("正在打开…") : mt("预览授权函")}</button><button type="button" onClick={() => { void downloadLetter() }} disabled={previewBusy}>{previewBusy ? mt("处理中…") : mt("下载授权函")}</button></div>

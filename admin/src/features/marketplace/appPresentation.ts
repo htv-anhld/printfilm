@@ -1,15 +1,16 @@
+import { tz, zhLazy } from '../../i18n/zhText.ts'
 import { points } from '../../lib/points.ts'
 /** App运营只展示明确允许的业务字段，避免将Apple签名和支付密钥带到页面。 */
-export const appPanels = {
+export const appPanels = zhLazy({
   products: '苹果充值商品', transactions: '苹果交易', notifications: '苹果通知', wallets: '统一积分账户',
   'recharge-orders': '各渠道充值订单', 'funding-sources': '资金来源', 'funding-reviews': 'Web资金对账',
   debts: '欠费记录', repayments: '欠费偿还',
   'wallet-entries': '统一积分流水', 'unlock-orders': '积分解锁订单', adjustments: '退款与收益冲正',
   media: 'App播放准备', revenue: 'App收益明细', settlements: '月度对账', payouts: '创作者打款',
-} as const
+} as const)
 export type AppPanel = keyof typeof appPanels
 
-const names: Record<string, string> = {
+const names: Record<string, string> = zhLazy({
   payment_client: '支付客户端', payment_amount_minor: '原币实付（最小单位）', storefront: 'Apple商店地区', valuation_status: '财务核算状态',
   expected_prices: '固定售价', fx_snapshot: '财务汇率快照',
   spendable_fen: '实际可消费积分', pending_commitment_fen: '任务预留积分', sku_id: '共同套餐编号', balance_fen: '平台可用积分', frozen_fen: '冻结额度', debt_fen: '未补齐欠费',
@@ -36,8 +37,8 @@ const names: Record<string, string> = {
   settlement_id: '对账记录编号', payout_id: '打款记录编号', operator_id: '操作人编号', processed_at: '处理时间',
   active: '有效状态', refunded_at: '退款时间', reconciled_at: '对账确认时间', anomaly: '核对说明',
   eligible: '可结算', reference: '业务关联编号', unlock_id: '解锁记录编号', debt_offset_fen: '历史退款抵扣',
-}
-const labels: Record<string, string> = {
+})
+const labels: Record<string, string> = zhLazy({
   pending_fx: '待汇率核算', valued: '已核算',
   android_epay_order: '国内安卓充值', android_domestic: '国内 Android', web: 'Web', ios: 'iOS', android_international: '国际 Android', web_order: 'Web充值', apple_transaction: '苹果充值', signup_grant: '注册赠额', admin_grant: '管理员赠额',
   source_refund: '退款追回', ai_overage: 'AI实际费用超出预扣', legacy_overage: '历史欠费',
@@ -56,7 +57,7 @@ const labels: Record<string, string> = {
   ONE_TIME_CHARGE: '一次性购买', REFUND: '苹果退款', REFUND_REVERSED: '苹果撤销退款',
   CONSUMPTION_REQUEST: '消费信息请求', TEST: '苹果测试通知',
   offset_only: '已全额抵扣',
-}
+})
 
 /** 界面金额使用元，财务接口仍使用整数分。 */
 export function appMoney(value: unknown) {
@@ -69,17 +70,17 @@ export function appRecordFields(item: Record<string, unknown>, panel?: AppPanel)
     if (!names[key] || value === null || value === undefined || value === '') return []
     let text: string
     if (key === 'expected_prices' && typeof value === 'object') text = Object.entries(value).map(([currency, amount]) => `${currency} ${(Number(amount) / 100).toFixed(2)}`).join(' / ')
-    else if (key === 'fx_snapshot' && typeof value === 'object') { const rate = value as Record<string, unknown>; text = rate.cny_per_unit ? `版本 ${rate.version} · ${rate.cny_per_unit} CNY · ${rate.source}` : '待核算' }
-    else if (typeof value === 'boolean') text = value ? '是' : '否'
+    else if (key === 'fx_snapshot' && typeof value === 'object') { const rate = value as Record<string, unknown>; text = rate.cny_per_unit ? tz("版本 {0} · {1} CNY · {2}", [rate.version, rate.cny_per_unit, rate.source]) : tz("待核算") }
+    else if (typeof value === 'boolean') text = value ? tz("是") : tz("否")
     else if (['spendable_fen', 'pending_commitment_fen', 'debt_fen', 'frozen_delta_fen', 'frozen_after', 'available_units', 'units', 'repaid_units', 'outstanding_units', 'balance_coins', 'balance', 'available_coins', 'remaining_coins', 'coin_amount', 'coins_delta', 'delta_coins', 'balance_after', 'balance_after_coins', 'balance_fen', 'frozen_fen', 'credit_fen', 'bonus_fen', 'charge_fen', 'delta_fen', 'balance_after_fen', 'unlock_price_fen', 'coins', 'total_units', 'remaining_units', 'debt_units', 'available_fen'].includes(key)) text = points(value)
     else if (key.endsWith('_fen')) text = appMoney(value)
     else if (Array.isArray(value)) text = value.filter(entry => typeof entry === 'number' || typeof entry === 'string').join('、') || '—'
     else if (typeof value === 'number' || typeof value === 'string') {
       const state = String(value)
-      if (key === 'settlement_status') text = ({ pending: '待对账', reconciled: '已对账', paid: '已打款', revoked: '已冲正' } as Record<string, string>)[state] || labels[state] || state
-      else if (key === 'status' && panel === 'unlock-orders') text = ({ paid: '已解锁', revoked: '已撤销' } as Record<string, string>)[state] || labels[state] || state
-      else if (key === 'status' && panel === 'payouts' && state === 'paid') text = '已打款'
-      else if (key === 'status' && panel === 'media' && state === 'done') text = '已就绪'
+      if (key === 'settlement_status') text = ({ pending: tz("待对账"), reconciled: tz("已对账"), paid: tz("已打款"), revoked: tz("已冲正") } as Record<string, string>)[state] || labels[state] || state
+      else if (key === 'status' && panel === 'unlock-orders') text = ({ paid: tz("已解锁"), revoked: tz("已撤销") } as Record<string, string>)[state] || labels[state] || state
+      else if (key === 'status' && panel === 'payouts' && state === 'paid') text = tz("已打款")
+      else if (key === 'status' && panel === 'media' && state === 'done') text = tz("已就绪")
       else text = labels[state] || state
     }
     else return []
@@ -90,18 +91,18 @@ export function appRecordFields(item: Record<string, unknown>, panel?: AppPanel)
 /** 精确解析以元填写的金额；只有净到账允许负数，所有场景拒绝指数及额外小数。 */
 export function appAmountFen(value: FormDataEntryValue | null, allowZero = true, allowNegative = false): number {
   const text = String(value ?? '').trim()
-  if (!(allowNegative ? /^-?\d+(?:\.\d{1,2})?$/ : /^\d+(?:\.\d{1,2})?$/).test(text)) throw new Error(allowNegative ? '金额须为数字，最多保留两位小数。' : '金额须为非负数字，最多保留两位小数。')
+  if (!(allowNegative ? /^-?\d+(?:\.\d{1,2})?$/ : /^\d+(?:\.\d{1,2})?$/).test(text)) throw new Error(allowNegative ? tz("金额须为数字，最多保留两位小数。") : tz("金额须为非负数字，最多保留两位小数。"))
   const [whole, decimal = ''] = text.replace(/^-/, '').split('.')
   const fen = (Number(whole) * 100 + Number(decimal.padEnd(2, '0'))) * (text.startsWith('-') ? -1 : 1)
-  if (!Number.isSafeInteger(fen) || (!allowZero && fen <= 0)) throw new Error('请填写有效金额。')
+  if (!Number.isSafeInteger(fen) || (!allowZero && fen <= 0)) throw new Error(tz("请填写有效金额。"))
   return fen
 }
 
 /** 财务记录关联服务端编号，不能用逗号分隔的任意字符串代替。 */
 export function appRecordIds(value: FormDataEntryValue | null): number[] {
   const values = String(value ?? '').trim().split(/[\s,，]+/).filter(Boolean)
-  if (!values.length || values.some(value => !/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value)))) throw new Error('请填写有效记录编号，多个编号用逗号分隔。')
+  if (!values.length || values.some(value => !/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value)))) throw new Error(tz("请填写有效记录编号，多个编号用逗号分隔。"))
   const ids = values.map(Number)
-  if (new Set(ids).size !== ids.length) throw new Error('记录编号不能重复。')
+  if (new Set(ids).size !== ids.length) throw new Error(tz("记录编号不能重复。"))
   return ids
 }

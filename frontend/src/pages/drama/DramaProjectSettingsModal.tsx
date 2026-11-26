@@ -258,6 +258,7 @@ export function DramaProjectSettingsModal({
             value={styleId}
             disabled={saving}
             onChange={(id) => void handleStyleChange(id)}
+            videoModelId={videoModelId}
           />
         </section>
 

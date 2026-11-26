@@ -997,6 +997,13 @@
   letter-spacing: 0.12em;
 }
 
+.pf-drama-card-cover-fallback.is-horizontal {
+  writing-mode: horizontal-tb;
+  letter-spacing: 0;
+  text-align: center;
+  line-height: 1.35;
+}
+
 .pf-drama-card-body {
   padding: 0.85rem 1rem 1rem;
   display: flex;
@@ -2683,9 +2690,15 @@
 
 .pf-side-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* 侧栏仅约 220px，越南语按钮文案较长：放不下两列时自动换行成单列 */
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: 0.45rem;
   margin-top: 0.55rem;
+}
+
+.pf-side-actions > .pf-btn {
+  min-width: 0;
+  white-space: normal;
 }
 
 .pf-avatar {
@@ -4012,6 +4025,17 @@ button.pf-link {
   min-width: 0;
 }
 
+/* 1101–1500px：三栏会把分镜表挤到 ~600px；改为两栏，「生成进度」落到左侧设置栏下方 */
+@media (min-width: 1101px) and (max-width: 1500px) {
+  .pf-board {
+    grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  }
+
+  .pf-board > .pf-board-main {
+    grid-row: span 2;
+  }
+}
+
 .pf-board-main {
   display: flex;
   flex-direction: column;
@@ -4049,12 +4073,14 @@ button.pf-link {
 
 .pf-shot-table-wrap {
   min-width: 0;
-  overflow-x: hidden;
+  /* 主栏较窄（1440 及以下三栏布局）时横向滚动，避免旁白列被挤成一字一行 */
+  overflow-x: auto;
   margin: 0;
 }
 
 .pf-shot-table {
   width: 100%;
+  min-width: 760px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -4092,7 +4118,7 @@ button.pf-link {
 
 /* ?????????? / ??????????????????? */
 .pf-shot-table .col-no {
-  width: 3.6rem;
+  width: 2.8rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--pf-ink);
@@ -4121,11 +4147,28 @@ button.pf-link {
 
 .pf-shot-table .col-status {
   width: 6.4rem;
-  white-space: nowrap;
 }
 
 .pf-shot-table .col-ops {
   width: 8.4rem;
+}
+
+/* 横向滚动时操作列固定在右侧，保证「编辑 / 重绘」始终可见 */
+.pf-shot-table thead th.col-ops,
+.pf-shot-table td.col-ops {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--pf-card);
+  box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18);
+}
+
+.pf-shot-table thead th.col-ops {
+  background: var(--pf-surface-2);
+}
+
+.pf-shot-table tbody tr:nth-child(even) td.col-ops {
+  background: var(--pf-surface-2);
 }
 
 /* 列样式里的 nowrap 只作用于单元格正文，表头允许换行 */
@@ -5258,6 +5301,8 @@ button.pf-shot-editable:disabled {
   border-radius: 10px;
   padding: 0.55rem 0.75rem;
   font: inherit;
+  background: var(--pf-card);
+  color: var(--pf-ink);
 }
 
 .pf-api-secret {
@@ -6501,6 +6546,10 @@ button.pf-shot-editable:disabled {
   color: var(--pf-muted);
   font-size: 0.92rem;
   line-height: 1.6;
+  /* 多行提示（如批量生成的问题清单以 \n 分隔）保留换行；过长时内部滚动 */
+  white-space: pre-line;
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
 }
 
 .pf-dialog-input {
@@ -7554,6 +7603,18 @@ button.pf-shot-editable:disabled {
   font-size: 0.88rem;
 }
 
+/* 表单控件跟随主题（原先是浏览器默认凹陷边框，暗色下尤为突兀） */
+.pf-partners-form input,
+.pf-partners-form textarea {
+  border: 1px solid var(--pf-line);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  font-weight: 400;
+  background: var(--pf-card);
+  color: var(--pf-ink);
+}
+
 .pf-partners-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -7834,4 +7895,15 @@ button.pf-shot-editable:disabled {
 
 .pf-skip-content:focus {
   top: 12px;
+}
+
+/* 暗色模式遮罩：--pf-ink 在暗色下是浅色，混出来的遮罩发灰发亮；统一改用半透明黑 */
+html.dark .pf-dialog-veil,
+html.dark .modal-backdrop {
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--pf-lime) 6%, transparent), transparent 55%),
+    rgb(0 0 0 / 62%);
+}
+html.dark .pf-dialog-root--drawer .pf-dialog-veil {
+  background: rgb(0 0 0 / 50%);
 }

@@ -1,0 +1,16 @@
+[
+  {
+    "AllowedOrigins": [
+      "http://localhost:18080",
+      "http://127.0.0.1:18080",
+      "http://localhost:18081",
+      "http://127.0.0.1:18081",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173"
+    ],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag", "Content-Length", "Content-Type", "Content-Disposition"],
+    "MaxAgeSeconds": 3600
+  }
+]

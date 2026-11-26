@@ -1,6 +1,7 @@
 """双语展示不改变分类关联、金额、用户原文、发布版本或签署原件。"""
 import asyncio
 import hashlib
+import re
 from types import SimpleNamespace
 
 from fastapi import FastAPI, HTTPException
@@ -18,7 +19,7 @@ from app.marketplace.categories import category_fields, merge_config, legacy_ent
 from test_marketplace import ctx, work_body, asset, rights
 
 
-@pytest.mark.parametrize('header,expected', [(None,'zh'), ('fr','zh'), ('en-US','en'), ('en;q=0,zh-CN;q=0.7','zh'), ('zh;q=.2,en-US;q=.9','en'), ('en;q=oops','zh')])
+@pytest.mark.parametrize('header,expected', [(None,'zh'), ('fr','zh'), ('en-US','en'), ('en;q=0,zh-CN;q=0.7','zh'), ('zh;q=.2,en-US;q=.9','en'), ('en;q=oops','zh'), ('vi-VN','vi'), ('vi,en;q=0.8','vi')])
 def test_language_negotiation(header, expected):
     assert negotiate_language(header) == expected
 
@@ -51,6 +52,31 @@ async def test_concurrent_locale_and_response_contract():
         assert failed.json()['detail']['message'].startswith('File services')
         assert (await client.get('/api/marketplace/notify')).text == 'success'
     assert current_locale.get() == 'zh'
+
+
+async def test_vietnamese_labels_and_errors():
+    """越南语请求返回越南语标签与错误说明，业务码与原始字段保持不变。"""
+    app = FastAPI()
+    app.add_middleware(MarketplaceLocaleMiddleware)
+    @app.get('/api/marketplace/example')
+    async def example():
+        return {'content_type': 'work', 'sale_type': 'free', 'title': '我的中文标题'}
+    @app.get('/api/marketplace/error')
+    async def failure():
+        raise HTTPException(503, {'code': 'MARKETPLACE_STORAGE_UNAVAILABLE', 'message': '文件服务暂未配置或不可用'})
+    @app.get('/api/marketplace/unknown')
+    async def unknown():
+        raise HTTPException(409, '某个没有译文的中文提示')
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+        ok = await client.get('/api/marketplace/example', headers={'Accept-Language': 'vi'})
+        assert ok.headers['content-language'] == 'vi'
+        assert ok.json()['content_type_label'] == 'Video' and ok.json()['sale_type_label'] == 'Xem miễn phí'
+        assert ok.json()['title'] == '我的中文标题'
+        failed = await client.get('/api/marketplace/error', headers={'Accept-Language': 'vi'})
+        assert failed.json()['detail']['code'] == 'MARKETPLACE_STORAGE_UNAVAILABLE'
+        assert not re.search(r'[\u3400-\u9fff]', failed.json()['detail']['message'])
+        missing = await client.get('/api/marketplace/unknown', headers={'Accept-Language': 'vi'})
+        assert missing.json()['detail'] == 'Nội dung đã thay đổi, vui lòng làm mới và thử lại.'
 
 
 async def test_category_rename_disable_and_language_stable(ctx):

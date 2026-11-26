@@ -119,6 +119,7 @@ export const zhDrama = {
     descLabel: '音色描述',
     descPlaceholder: '描述音色：年龄、性别、语气、语速…',
     fillToPreview: '填写描述后合成试听',
+    synthDisabled: '音色合成功能未开启，请从素材库选择已有音色',
     synthing: '合成中…',
     resynth: '重新合成',
     synthFromPrompt: '按提示词合成',
@@ -651,5 +652,12 @@ export const zhDrama = {
       replanTitle: 'AI 重新分镜',
       replanNote: '会按剧本与资产重新规划各镜脚本与 @duration 结构；进行中的视频生成需等待完成后再操作，以免状态冲突。空镜须用「空镜：…」等画面写法，勿写成对白。',
     },
+  },
+  statusNotice: {
+    close: '关闭提示',
+    networkTitle: '暂时无法连接服务',
+    failedTitle: '操作未完成',
+    networkHint: '请检查网络连接后重试。如有生成任务进行中，可稍后查看任务状态。',
+    details: '查看错误详情',
   },
 }

@@ -139,6 +139,66 @@ IMAGE_STYLE_LABELS: dict[str, str] = {
 }
 
 
+# IMAGE_STYLE_REALISTIC 风格是否为真人写实（影视/摄影质感）；False 为插画/动画类。
+# Seedance 会以 PrivacyInformation 拒收「像真人」的角色参考图，写实风格出的角色图大概率全镜失败。
+# 与前端 lib/dramaImageStyles.ts 的 IMAGE_STYLE_REALISTIC 对齐（tests/test_image_styles.py 校验）。
+IMAGE_STYLE_REALISTIC: dict[str, bool] = {
+    "retro-sci-fi-atompunk": True,
+    "palace-intrigue-cold": True,
+    "domestic-suspense-cold": True,
+    "ancient-romance-soft": True,
+    "ancient-chinese-mythology": True,
+    "japanese-youth-film": True,
+    "japanese-daily-natural": True,
+    "korean-urban-soft": True,
+    "chinese-urban-realistic": True,
+    "wuxia-realistic-photo": True,
+    "90s-realistic-film": True,
+    "retro-narrative-film": True,
+    "american-retro-hollywood": True,
+    "neon-cyberpunk-film": True,
+    "90s-rural-china-film": True,
+    "cgi-3d-animation": False,
+    "ghibli-handdrawn-anime": False,
+    "tezuka-era-cartoon": False,
+    "shanghai-animation": False,
+    "pixel-art": False,
+    "shadow-puppet-illustration": False,
+}
+
+
+# 风格是否为真人写实（未知 / 空风格按非写实处理）
+def is_realistic_image_style(style_id: str | None) -> bool:
+    return bool(IMAGE_STYLE_REALISTIC.get((style_id or "").strip(), False))
+
+
+# 视频被 PrivacyInformation 拒收时的补充建议：项目用写实风格才返回，否则空串
+def realistic_style_privacy_hint(style_id: str | None, locale: str | None = None) -> str:
+    sid = (style_id or "").strip()
+    if not is_realistic_image_style(sid):
+        return ""
+    from app.i18n import translate
+
+    return translate(
+        "当前项目画面风格「{style}」是真人写实风格，Seedance 容易把这类角色图判为真人而拒绝生成；建议在项目设置里换成插画/动画类风格（如 3D 动画、宫崎骏气质手绘），重新生成角色图后再生成视频",  # noqa: E501
+        locale,
+        style=get_image_style_display_label(sid, locale),
+    )
+
+
+# Seedance 参考图真人拦截（PrivacyInformation）错误：项目为写实风格时在原文后追加「换插画风格」建议
+def append_realistic_style_hint(message: str, style_id: str | None, locale: str | None = None) -> str:
+    text = message or ""
+    from app.services.ark import ArkGateway
+
+    if not ArkGateway._is_seedance_input_privacy_error(text):
+        return text
+    hint = realistic_style_privacy_hint(style_id, locale)
+    if not hint or hint in text:
+        return text
+    return f"{text.rstrip('。. ')}。{hint}"
+
+
 # 根据风格 ID 返回展示名称（中文原名；拼进 LLM 提示词时用这个）
 def get_image_style_label(style_id: str) -> str:
     return IMAGE_STYLE_LABELS.get(style_id, style_id)
@@ -154,10 +214,14 @@ def get_image_style_display_label(style_id: str, locale: str | None = None) -> s
     return translate(label, locale)
 
 
-# 序列化内置风格列表（id + 本地化名称），供接口返回
-def list_image_styles(locale: str | None = None) -> list[dict[str, str]]:
+# 序列化内置风格列表（id + 本地化名称 + 是否写实），供接口返回
+def list_image_styles(locale: str | None = None) -> list[dict[str, str | bool]]:
     return [
-        {"id": sid, "label": get_image_style_display_label(sid, locale)}
+        {
+            "id": sid,
+            "label": get_image_style_display_label(sid, locale),
+            "realistic": is_realistic_image_style(sid),
+        }
         for sid in IMAGE_STYLE_IDS
     ]
 

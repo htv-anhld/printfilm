@@ -240,7 +240,7 @@ function WorkspaceInner() {
         {titleLock.error && <p role="alert" className="pf-team-alert">{titleLock.error}<button type="button" onClick={titleLock.retry}>{t('drama.teamLock.retry')}</button></p>}
         {error ? <DramaErrorNotice message={error} className="drama-workspace-alert" onDismiss={() => setError('')} /> : null}
 
-        <main className="drama-workspace-main">
+        <div className="drama-workspace-main">
           {assetsOpen ? <AssetsStep projectId={id} onError={setError} /> : null}
           {!assetsOpen && activeStep === 'outline' ? (
             <OutlineStep
@@ -253,7 +253,7 @@ function WorkspaceInner() {
               onError={setError}
             />
           ) : null}
-        </main>
+        </div>
       </div>
     </AppShell>
   )

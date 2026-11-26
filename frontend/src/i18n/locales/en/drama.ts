@@ -119,6 +119,7 @@ export const enDrama = {
     descLabel: 'Voice description',
     descPlaceholder: 'Describe the voice: age, gender, tone, pace…',
     fillToPreview: 'Add a description to synthesize a preview',
+    synthDisabled: 'Voice synthesis is turned off — pick an existing voice from the library',
     synthing: 'Synthesizing…',
     resynth: 'Re-synthesize',
     synthFromPrompt: 'Synthesize from prompt',
@@ -651,5 +652,12 @@ export const enDrama = {
       replanTitle: 'AI re-storyboard',
       replanNote: 'Re-plans each shot\'s script and @duration structure from the script and assets; wait for running video generations to finish first to avoid state conflicts. Write empty shots as visuals like “Empty shot: …”, not as dialogue.',
     },
+  },
+  statusNotice: {
+    close: 'Dismiss',
+    networkTitle: 'Cannot reach the service right now',
+    failedTitle: 'Action not completed',
+    networkHint: 'Check your network connection and try again. If a generation task is running, check its status later.',
+    details: 'Show error details',
   },
 }

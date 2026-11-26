@@ -12,6 +12,9 @@
   --m-lime-ink: #111318;
   --m-lime-deep: #5f8f00;
   --m-warn: #c67a12;
+  --m-surface: #ffffff;
+  --m-lime-soft: #f4ffd6;
+  --m-warn-soft: #fff8ec;
   min-height: 100vh;
   min-height: 100dvh;
   background:
@@ -105,7 +108,7 @@
 
 .pf-method-nav .pf-nav-lang {
   border-color: var(--m-line);
-  background: #fff;
+  background: var(--m-surface);
 }
 
 .pf-method-btn {
@@ -135,13 +138,13 @@
 
 .pf-method-btn.is-ghost {
   border: 1px solid var(--m-line);
-  background: #fff;
+  background: var(--m-surface);
   color: var(--m-txt);
 }
 
 .pf-method-btn.is-ghost:hover {
   color: var(--m-txt);
-  background: #f4ffd6;
+  background: var(--m-lime-soft);
 }
 
 .pf-method-btn.is-lg {
@@ -205,7 +208,7 @@
 
 .pf-method-notice {
   border-color: rgba(198, 122, 18, 0.28);
-  background: #fff8ec;
+  background: var(--m-warn-soft);
 }
 
 .pf-method-notice strong,
@@ -236,7 +239,7 @@
   padding: 0.4rem 0.75rem;
   border-radius: 999px;
   border: 1px solid var(--m-line);
-  background: #fff;
+  background: var(--m-surface);
   color: var(--m-soft);
   text-decoration: none;
   font-size: 0.86rem;
@@ -245,7 +248,7 @@
 .pf-method-toc a:hover {
   border-color: #7ab800;
   color: var(--m-txt);
-  background: #f4ffd6;
+  background: var(--m-lime-soft);
 }
 
 .pf-method-section {
@@ -431,7 +434,7 @@
   padding: 1.6rem 1.5rem;
   border-radius: 22px;
   border: 1px solid rgba(182, 255, 0, 0.55);
-  background: linear-gradient(135deg, #f4ffd6 0%, #ffffff 70%);
+  background: linear-gradient(135deg, var(--m-lime-soft) 0%, var(--m-surface) 70%);
 }
 
 .pf-method-close h2 {
@@ -523,4 +526,24 @@
   .pf-method-btn:hover {
     transform: none;
   }
+}
+
+/* 暗色主题：沿用同一组变量，只替换纸面与文字色 */
+html.dark .pf-method {
+  --m-bg: #0b0f0c;
+  --m-panel: #111712;
+  --m-surface: #141a15;
+  --m-line: rgba(255, 255, 255, 0.14);
+  --m-line-soft: rgba(255, 255, 255, 0.08);
+  --m-txt: #eef2ec;
+  --m-soft: #b9c2b6;
+  --m-muted: #8d978a;
+  --m-lime-deep: #b6ff00;
+  --m-lime-soft: rgba(182, 255, 0, 0.12);
+  --m-warn-soft: rgba(198, 122, 18, 0.14);
+  color-scheme: dark;
+}
+
+html.dark .pf-method-nav {
+  background: rgba(11, 15, 12, 0.88);
 }

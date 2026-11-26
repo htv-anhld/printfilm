@@ -23,6 +23,7 @@ import {
   normalizeAssetTab,
   readFragmentGenerationStatus,
   readFragmentVideoVersions,
+  rescaleFragmentDurationTags,
   resolveFragmentDurationSec,
   type AssetScope,
   type AssetTab,
@@ -157,6 +158,11 @@ function EpisodeEditInner() {
   const [episode, setEpisode] = useState<DramaEpisode | null>(null)
   const [episodeList, setEpisodeList] = useState<DramaEpisode[]>([])
   const [fragments, setFragments] = useState<DramaFragment[]>([])
+  /* fragmentsRef 最近一次提交的分镜（供 state updater 外的副作用读取） */
+  const fragmentsRef = useRef<DramaFragment[]>([])
+  useEffect(() => {
+    fragmentsRef.current = fragments
+  }, [fragments])
   const [assets, setAssets] = useState<DramaAsset[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [assetScope, setAssetScope] = useState<AssetScope>('episode')
@@ -210,14 +216,16 @@ function EpisodeEditInner() {
   useEffect(() => {
     // 目录到达后，把旧 Kie/方舟 id 换成后台默认视频模型
     if (!mediaCatalog) return
-    // 优先项目创建时选的视频模型（未手动切换时），其次按目录可用性回退到后台默认
+    // 优先本集已保存的视频模型，其次项目创建时选的模型（未手动切换时），最后按目录可用性回退到后台默认
+    const episodeModel = String(episodeParams.video_model || '')
     const projectModel = String(projectParams.video_model || '')
     const availableIds = mediaCatalog.video_models.filter((m) => m.available !== false).map((m) => m.id)
     setModelId((prev) => {
+      if (availableIds.includes(episodeModel)) return episodeModel
       if (!modelTouchedRef.current && availableIds.includes(projectModel)) return projectModel
       return resolveCatalogModelSelection(mediaCatalog, 'video', prev)
     })
-  }, [mediaCatalog, projectParams.video_model])
+  }, [mediaCatalog, projectParams.video_model, episodeParams.video_model])
 
   const selected = fragments[selectedIndex] || null
   const selectedDuration = selected?.duration_sec ?? 8
@@ -455,6 +463,32 @@ function EpisodeEditInner() {
     }
   }
 
+  // 切换本集视频模型：先更新界面，再写入 episode.params.video_model，刷新或切回本集后仍保留；失败回滚
+  async function handleEpisodeModelChange(id: string) {
+    modelTouchedRef.current = true
+    setModelId(id)
+    if (readOnly) return
+    const prevParams = episodeParamsRef.current
+    if (String(prevParams.video_model || '') === id) return
+    const nextParams = { ...prevParams, video_model: id }
+    setEpisodeParams(nextParams)
+    episodeParamsRef.current = nextParams
+    try {
+      const updated = await dramaApi.updateEpisode(eid, { params: nextParams })
+      const updatedParams =
+        updated.params && typeof updated.params === 'object' && !Array.isArray(updated.params)
+          ? (updated.params as Record<string, unknown>)
+          : nextParams
+      setEpisode(updated)
+      setEpisodeParams(updatedParams)
+      episodeParamsRef.current = updatedParams
+    } catch (err) {
+      setEpisodeParams(prevParams)
+      episodeParamsRef.current = prevParams
+      setError(err instanceof Error ? err.message : t('episode.genOpts.modelSaveFailed'))
+    }
+  }
+
   // 持久化本集字幕方式，并动态改写当前分镜里的字幕提示词
   async function handleEpisodeSubtitleChange(mode: DramaSubtitleMode) {
     if (readOnly) return
@@ -642,11 +676,15 @@ function EpisodeEditInner() {
           },
         }
       })
+      return next
+    })
+    /* 全局队列同步放在 state updater 之外：updater 在渲染期执行，内部通知 DramaGenQueuePanel 会触发
+     * “Cannot update a component while rendering a different component”。本次更新不改 id/排序/正文，取最新已提交分镜即可。 */
       syncEpisodeVideoJobs({
         projectId: pid,
         episodeId: eid,
         episodeName: episode?.name,
-        fragments: next.map((f) => ({
+        fragments: fragmentsRef.current.map((f) => ({
           id: f.id,
           sort_order: f.sort_order,
           content: f.content,
@@ -673,18 +711,16 @@ function EpisodeEditInner() {
         }),
         taskItems: st.tasks,
       })
-      return next
-    })
     return st
   }
 
   applyStatusRef.current = applyGenerateStatus
 
-  // 进页检查是否有进行中的生成任务或 AI 分镜
-  async function resumeGenerateIfNeeded() {
+  // 进页检查是否有进行中的生成任务或 AI 分镜；loaded 为 reload 刚取到的分集，避免重复请求
+  async function resumeGenerateIfNeeded(loaded?: DramaEpisode) {
     let resumingPlan = false
     try {
-      const ep = await dramaApi.getEpisode(eid)
+      const ep = loaded ?? (await dramaApi.getEpisode(eid))
       if (readFragmentPlanStatus(ep) === 'generating') {
         resumingPlan = true
         setPlanning(true)
@@ -755,7 +791,7 @@ function EpisodeEditInner() {
         },
       ])
     }
-    await resumeGenerateIfNeeded()
+    await resumeGenerateIfNeeded(ep)
   }
 
   reloadRef.current = reload
@@ -1135,8 +1171,9 @@ function EpisodeEditInner() {
       return
     }
 
-    const allBlocking: string[] = []
-    const allWarnings: string[] = []
+    /* 同一问题文案按分镜合并（「Đoạn 01, Đoạn 02: …」），避免确认框重复刷屏 */
+    const blockingByMsg = new Map<string, string[]>()
+    const warningsByMsg = new Map<string, string[]>()
     const doneIndices: number[] = []
     for (let i = 0; i < fragments.length; i++) {
       if (!opts?.forceRegen && shouldSkipGenerateAllFragment(fragments[i])) {
@@ -1145,9 +1182,15 @@ function EpisodeEditInner() {
       }
       const { blocking, warnings } = collectDramaGenerateGateIssues(fragments[i], assets)
       const label = formatFragLabel(i, fragments[i]?.duration_sec)
-      for (const issue of blocking) allBlocking.push(t('episode.edit.issueLine', { label, message: issue.message }))
-      for (const issue of warnings) allWarnings.push(t('episode.edit.issueLine', { label, message: issue.message }))
+      for (const issue of blocking) blockingByMsg.set(issue.message, [...(blockingByMsg.get(issue.message) || []), label])
+      for (const issue of warnings) warningsByMsg.set(issue.message, [...(warningsByMsg.get(issue.message) || []), label])
     }
+    const joinIssues = (byMsg: Map<string, string[]>) =>
+      [...byMsg.entries()].map(([message, labels]) =>
+        t('episode.edit.issueLine', { label: labels.join(', '), message }),
+      )
+    const allBlocking = joinIssues(blockingByMsg)
+    const allWarnings = joinIssues(warningsByMsg)
     const pendingCount = fragments.length - doneIndices.length
     if (pendingCount <= 0) {
       setStatus(t('episode.edit.allDoneSkipped'))
@@ -1563,10 +1606,7 @@ function EpisodeEditInner() {
             subtitleMode={subtitleMode}
             characterIntroMode={characterIntroMode}
             onStyleChange={setVideoStyleId}
-            onModelChange={(id) => {
-              modelTouchedRef.current = true
-              setModelId(id)
-            }}
+            onModelChange={(id) => void handleEpisodeModelChange(id)}
             onEpisodeOutputChange={handleEpisodeOutputChange}
             onLinkLastFrameChange={(enabled) => void handleLinkLastFrameChange(enabled)}
             onSubtitleModeChange={(mode) => void handleEpisodeSubtitleChange(mode)}
@@ -1657,6 +1697,13 @@ function EpisodeEditInner() {
                 onChange={(e) =>
                   updateSelected({ duration_sec: Number(e.target.value) || 8 })
                 }
+                onBlur={(e) => {
+                  /* 失焦时把正文 @duration 标签按比例缩放到新总时长；逐键缩放会在输入「1→10」时丢失比例 */
+                  if (!selected) return
+                  const total = Number(e.target.value) || 0
+                  const rescaled = rescaleFragmentDurationTags(selected.content || '', total)
+                  if (rescaled !== (selected.content || '')) updateSelected({ content: rescaled })
+                }}
               />
               s
             </label>

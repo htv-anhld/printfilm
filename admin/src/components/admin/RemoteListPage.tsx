@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
@@ -41,24 +41,35 @@ export function RemoteListPage<T extends { id: number | string }>({
 }) {
   /* 查询条件 */
   const [q, setQ] = useState("");
+  /* 防抖后的关键词：避免每次按键都请求 */
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   /* 数据 */
   const [data, setData] = useState<ListOut<T> | null>(null);
   const [loading, setLoading] = useState(true);
   const extra = JSON.stringify(extraParams || {});
+  /* 请求序号：只采用最新一次请求的结果，防止慢响应覆盖新结果 */
+  const reqSeq = useRef(0);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQ(q.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [q]);
 
   const load = useCallback(async () => {
+    const seq = ++reqSeq.current;
     setLoading(true);
     try {
-      const qs = new URLSearchParams({ page: String(page), page_size: String(pageSize), q, ...JSON.parse(extra) });
-      setData(await api<ListOut<T>>(`${endpoint}?${qs}`));
+      const qs = new URLSearchParams({ page: String(page), page_size: String(pageSize), q: debouncedQ, ...JSON.parse(extra) });
+      const res = await api<ListOut<T>>(`${endpoint}?${qs}`);
+      if (seq === reqSeq.current) setData(res);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      if (seq === reqSeq.current) toast.error(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      if (seq === reqSeq.current) setLoading(false);
     }
-  }, [endpoint, page, pageSize, q, extra]);
+  }, [endpoint, page, pageSize, debouncedQ, extra]);
 
   useEffect(() => {
     void load();

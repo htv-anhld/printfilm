@@ -28,6 +28,13 @@ type TeamRow = {
 
 const SUB_STATUSES = ["", "active", "scheduled_cancel", "past_due", "canceled", "expired"];
 
+/** 订阅状态显示文案；未知状态原样返回 */
+function subStatusLabel(t: (path: string) => string, status: string): string {
+  const key = `commerce.subs.statuses.${status}`;
+  const text = t(key);
+  return text === key ? status : text;
+}
+
 /** 管理端：订阅列表 */
 export function SubscriptionsPage() {
   const { t } = useI18n();
@@ -43,7 +50,7 @@ export function SubscriptionsPage() {
         <select className="settings-select max-w-[200px]" value={status} onChange={(e) => setStatus(e.target.value)}>
           {SUB_STATUSES.map((s) => (
             <option key={s || "all"} value={s}>
-              {s || t("common.all")}
+              {s ? subStatusLabel(t, s) : t("common.all")}
             </option>
           ))}
         </select>
@@ -51,7 +58,7 @@ export function SubscriptionsPage() {
       columns={[
         { key: "email", title: t("commerce.subs.user"), render: (r) => r.email },
         { key: "plan", title: t("commerce.subs.plan"), render: (r) => `${r.plan_id} · ${r.interval}${r.team_id ? ` · ${t("commerce.subs.seats", { n: r.seats })}` : ""}` },
-        { key: "status", title: t("commerce.subs.status"), render: (r) => r.status },
+        { key: "status", title: t("commerce.subs.status"), render: (r) => subStatusLabel(t, r.status) },
         { key: "credits", title: t("commerce.subs.credits"), render: (r) => money(r.credits_per_period), className: "tabular-nums" },
         { key: "end", title: t("commerce.subs.periodEnd"), render: (r) => (r.current_period_end ? formatDateTime(r.current_period_end) : "—") },
         { key: "ref", title: "Creem", render: (r) => <span className="font-mono text-xs">{r.provider_sub_id}</span> },

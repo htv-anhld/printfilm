@@ -347,6 +347,7 @@ EN: dict[str, str] = {
     "{model} 已停用": "{model} is disabled",
     "未配置可用的默认{capability}模型": "No usable default {capability} model is configured",
     "{model} 没有启用的可用渠道绑定": "{model} has no enabled channel binding",
+    "{model} 当前没有可用渠道，请换一个模型后重试": "{model} has no available channel right now. Pick another model and try again",
     "国内安卓真实支付要求已启用 Production 统一钱包。": "Real Android payments in China require the unified wallet enabled in Production.",
     "已有统一钱包账户，不能切回旧记账；请使用资金迁移维护入口。": "Unified wallet accounts already exist, so you can't switch back to legacy accounting; use the fund migration maintenance tool.",
     "国内版与国际版 Bundle ID 不能相同。": "The domestic and international Bundle IDs must differ.",
@@ -403,6 +404,7 @@ EN: dict[str, str] = {
     '从中文剧本拆出可复用角色、场景与跨镜连续性，并转成 Printfilm 画布资产规划。用于抽取角色/场景、整理视觉设定、判断复用或造型变体、编写资产参考图提示词；不生成媒体。': 'Extracts reusable characters, scenes and cross-shot continuity from a script and turns them into a Printfilm canvas asset plan: character/scene extraction, visual settings, reuse vs. look variants, asset reference-image prompts. Generates no media.',
     '把中文剧本和角色场景资产拆成有戏剧职责、空间连续性、可见起止状态和参考连线的逐镜规划。用于拆分镜、设计镜头表、写首帧与视频提示词、检查轴线和站位；不生成媒体。': 'Breaks a script and its character/scene assets into a shot-by-shot plan with dramatic purpose, spatial continuity, visible start/end states and reference links: shot splitting, shot lists, first-frame and video prompts, axis and blocking checks. Generates no media.',
     '把已确认分镜、关键帧和真实参考素材转成可复制的中文视频提示词，控制动作、表演、运镜、口型、声音、起止状态和素材职责。用于文生/图生视频提示词优化；不生成媒体、不改变分镜边界。': 'Turns confirmed shots, keyframes and real reference material into ready-to-copy video prompts covering action, performance, camera, lip-sync, sound, start/end states and asset roles. For text/image-to-video prompt tuning; generates no media and does not change shot boundaries.',
+    '部分分镜视频文件已丢失，请重新生成相关镜头后再合成': 'Some shot videos are missing; regenerate those shots and compose again',
 }
 
 
@@ -753,6 +755,7 @@ VI: dict[str, str] = {
     "{model} 已停用": "{model} đã bị tắt",
     "未配置可用的默认{capability}模型": "Chưa cấu hình mô hình {capability} mặc định khả dụng",
     "{model} 没有启用的可用渠道绑定": "{model} không có liên kết kênh nào đang bật",
+    "{model} 当前没有可用渠道，请换一个模型后重试": "{model} hiện không có kênh nào khả dụng, vui lòng chọn model khác rồi thử lại",
     "国内安卓真实支付要求已启用 Production 统一钱包。": "Thanh toán thật trên Android nội địa yêu cầu đã bật ví hợp nhất ở môi trường Production.",
     "已有统一钱包账户，不能切回旧记账；请使用资金迁移维护入口。": "Đã có tài khoản ví hợp nhất, không thể quay lại cách ghi sổ cũ; hãy dùng mục bảo trì chuyển tiền.",
     "国内版与国际版 Bundle ID 不能相同。": "Bundle ID bản nội địa và bản quốc tế không được trùng nhau.",
@@ -809,4 +812,5 @@ VI: dict[str, str] = {
     '从中文剧本拆出可复用角色、场景与跨镜连续性，并转成 Printfilm 画布资产规划。用于抽取角色/场景、整理视觉设定、判断复用或造型变体、编写资产参考图提示词；不生成媒体。': 'Tách nhân vật, bối cảnh tái sử dụng được và tính liên tục giữa các cảnh từ kịch bản, rồi lập kế hoạch tài nguyên cho canvas Printfilm: trích nhân vật/bối cảnh, thiết lập hình ảnh, chọn dùng lại hay tạo biến thể, viết prompt ảnh tham chiếu. Không tạo media.',
     '把中文剧本和角色场景资产拆成有戏剧职责、空间连续性、可见起止状态和参考连线的逐镜规划。用于拆分镜、设计镜头表、写首帧与视频提示词、检查轴线和站位；不生成媒体。': 'Chia kịch bản và tài nguyên nhân vật/bối cảnh thành kế hoạch từng cảnh với vai trò kịch tính, liên tục không gian, trạng thái đầu/cuối rõ ràng và liên kết tham chiếu: tách cảnh, lập bảng cảnh quay, viết prompt khung đầu và video, kiểm tra trục và vị trí. Không tạo media.',
     '把已确认分镜、关键帧和真实参考素材转成可复制的中文视频提示词，控制动作、表演、运镜、口型、声音、起止状态和素材职责。用于文生/图生视频提示词优化；不生成媒体、不改变分镜边界。': 'Chuyển phân cảnh đã chốt, khung hình chính và tư liệu tham chiếu thật thành prompt video sẵn để sao chép, kiểm soát hành động, diễn xuất, chuyển động máy, khẩu hình, âm thanh, trạng thái đầu/cuối và vai trò tư liệu. Dùng để tối ưu prompt tạo video từ văn bản/ảnh; không tạo media, không đổi ranh giới phân cảnh.',
+    '部分分镜视频文件已丢失，请重新生成相关镜头后再合成': 'Một số video phân cảnh đã bị mất, hãy tạo lại các cảnh đó rồi ghép lại',
 }

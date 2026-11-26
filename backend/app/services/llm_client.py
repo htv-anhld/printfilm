@@ -112,6 +112,88 @@ def _build_chat_payload(
     return payload
 
 
+# 参数兼容规则名：drop_temperature / drop_response_format / max_completion_tokens
+_PARAM_RULES = ("max_completion_tokens", "drop_temperature", "drop_response_format")
+# 进程级缓存：(base_url, model) → 已确认上游不支持的参数规则，避免每次调用都先吃一次 400
+_UNSUPPORTED_PARAMS: dict[tuple[str, str], set[str]] = {}
+
+
+def _static_param_rules(model: str, payload: dict[str, Any]) -> set[str]:
+    """已知模型族的参数限制（无需试错）。
+
+    Claude（OpenAI 兼容层）：新模型弃用 temperature；response_format 只认 json_schema，
+    不认 json_object / text。
+    """
+    mid = (model or "").strip().lower()
+    rules: set[str] = set()
+    if mid.startswith("claude") or "/claude" in mid:
+        if _claude_rejects_temperature(mid):
+            rules.add("drop_temperature")
+        fmt = payload.get("response_format")
+        if isinstance(fmt, dict) and fmt.get("type") != "json_schema":
+            rules.add("drop_response_format")
+    return rules
+
+
+_CLAUDE_VERSION_RE = re.compile(r"claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:-(\d{1,2}))?(?!\d)")
+
+
+def _claude_rejects_temperature(model: str) -> bool:
+    """Claude 新一代（Fable/Mythos、5.x、Opus 4.7/4.8）不再接受 temperature；4.6 及更早仍可用。"""
+    match = _CLAUDE_VERSION_RE.search(model)
+    if not match:
+        return False
+    family, major, minor = match.group(1), int(match.group(2)), int(match.group(3) or 0)
+    if family in {"fable", "mythos"} or major >= 5:
+        return True
+    return family == "opus" and major == 4 and minor >= 7
+
+
+def _apply_param_rule(payload: dict[str, Any], rule: str) -> bool:
+    """按规则就地调整 payload；有改动返回 True。"""
+    if rule == "max_completion_tokens" and "max_tokens" in payload:
+        payload["max_completion_tokens"] = payload.pop("max_tokens")
+        return True
+    if rule == "drop_temperature" and "temperature" in payload:
+        payload.pop("temperature")
+        return True
+    if rule == "drop_response_format" and "response_format" in payload:
+        payload.pop("response_format")
+        return True
+    return False
+
+
+def apply_known_param_rules(payload: dict[str, Any], base: str) -> dict[str, Any]:
+    """发送前主动套用已知 / 已学到的参数限制，返回调整后的新 payload。
+
+    参数:
+        payload: chat/completions 请求体（不会被修改）
+        base: 渠道 Base URL，与 model 一起作为缓存键
+    """
+    model = str(payload.get("model") or "")
+    out = dict(payload)
+    rules = _static_param_rules(model, out) | _UNSUPPORTED_PARAMS.get(_param_cache_key(base, model), set())
+    for rule in _PARAM_RULES:
+        if rule in rules:
+            _apply_param_rule(out, rule)
+    return out
+
+
+def _param_cache_key(base: str, model: str) -> tuple[str, str]:
+    """参数缓存键：规范化 base 与模型名。"""
+    return ((base or "").strip().rstrip("/").lower(), (model or "").strip().lower())
+
+
+def remember_unsupported_param(base: str, model: str, rule: str) -> None:
+    """记录某渠道+模型不支持的参数（进程级，重启清空）。"""
+    _UNSUPPORTED_PARAMS.setdefault(_param_cache_key(base, model), set()).add(rule)
+
+
+def clear_param_cache() -> None:
+    """清空参数兼容缓存（测试 / 管理端改渠道后使用）。"""
+    _UNSUPPORTED_PARAMS.clear()
+
+
 def _resolve_chat_attempts(model_id: str | None = None) -> list[tuple[str, str, str, str]]:
     """解析文字模型的候选渠道 (api_key, model, base, channel_id)，按优先级排序（failover 顺序）。"""
     settings = get_settings()
@@ -156,13 +238,16 @@ def prepare_chat_request(
 ) -> tuple[str, dict[str, str], dict[str, Any]]:
     """流式调用用：取首选渠道，返回 (url, headers, payload)；与批量调用同一套模型解析。"""
     api_key, model, base, _channel_id = _resolve_chat_attempts(model_id)[0]
-    payload = _build_chat_payload(
-        model,
-        system,
-        user,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        response_format=response_format,
+    payload = apply_known_param_rules(
+        _build_chat_payload(
+            model,
+            system,
+            user,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response_format=response_format,
+        ),
+        base,
     )
     return f"{base}/chat/completions", {
         "Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
@@ -237,17 +322,23 @@ def adjust_payload_for_param_error(payload: dict[str, Any], error_text: str) -> 
     - 要求 max_completion_tokens → max_tokens 改名
     - response_format 类型不支持 → 去掉（提示词本身要求输出 JSON，调用方会解析）
     """
-    text = (error_text or "").lower()
+    rule = classify_param_error(payload, error_text)
+    if rule is None:
+        return None
     out = dict(payload)
-    if "max_completion_tokens" in text and "max_tokens" in out:
-        out["max_completion_tokens"] = out.pop("max_tokens")
-        return out
-    if "temperature" in text and "temperature" in out:
-        out.pop("temperature")
-        return out
-    if "response_format" in text and "response_format" in out:
-        out.pop("response_format")
-        return out
+    _apply_param_rule(out, rule)
+    return out
+
+
+def classify_param_error(payload: dict[str, Any], error_text: str) -> str | None:
+    """把上游 400 报错映射成参数规则名；无法识别或 payload 无对应参数时返回 None。"""
+    text = (error_text or "").lower()
+    if "max_completion_tokens" in text and "max_tokens" in payload:
+        return "max_completion_tokens"
+    if "temperature" in text and "temperature" in payload:
+        return "drop_temperature"
+    if "response_format" in text and "response_format" in payload:
+        return "drop_response_format"
     return None
 
 
@@ -265,13 +356,16 @@ async def _chat_once(
     strict_output: bool = False,
 ) -> str:
     """单渠道单次调用；渠道级故障抛 _ChannelFailover，业务错误抛 RuntimeError。"""
-    payload = _build_chat_payload(
-        model,
-        system,
-        user,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        response_format=response_format,
+    payload = apply_known_param_rules(
+        _build_chat_payload(
+            model,
+            system,
+            user,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response_format=response_format,
+        ),
+        base,
     )
 
     logger.info(
@@ -302,11 +396,14 @@ async def _chat_once(
                 raise
             if res.status_code != 400:
                 break
-            adjusted = adjust_payload_for_param_error(payload, res.text or "")
-            if adjusted is None:
+            rule = classify_param_error(payload, res.text or "")
+            if rule is None:
                 break
             logger.warning("文字 LLM model=%s 参数不被支持，调整后重试：%s", model, (res.text or "")[:200])
-            payload = adjusted
+            # 记住该渠道+模型的限制，后续调用发送前直接套用，不再重复吃 400
+            remember_unsupported_param(base, model, rule)
+            payload = dict(payload)
+            _apply_param_rule(payload, rule)
         if is_failover_status(res.status_code) or is_quota_exhausted(res.status_code, res.text or ""):
             raise _ChannelFailover(f"LLM error {res.status_code}: {res.text[:800]}")
         if res.status_code >= 400:

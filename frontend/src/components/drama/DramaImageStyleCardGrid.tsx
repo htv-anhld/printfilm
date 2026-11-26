@@ -1,7 +1,8 @@
 /** 画面风格卡片网格：无风格 + 缩略图选项 */
 import { Check } from 'lucide-react'
 import { DramaImageStylePreviewImg } from './DramaImageStylePreviewImg'
-import { IMAGE_STYLE_OPTIONS, type ImageStyleId } from '../../lib/dramaImageStyles'
+import { DramaRealisticStyleBadge } from './DramaRealisticStyleBadge'
+import { IMAGE_STYLE_OPTIONS, shouldWarnRealisticStyle, type ImageStyleId } from '../../lib/dramaImageStyles'
 import { useI18n } from '../../i18n'
 
 type Props = {
@@ -10,6 +11,8 @@ type Props = {
   allowNone?: boolean
   noneLabel?: string
   className?: string
+  /** 当前视频模型：Seedance 时给写实风格卡片加提醒角标 */
+  videoModelId?: string
 }
 
 // 渲染可点选的画面风格卡片网格
@@ -19,6 +22,7 @@ export function DramaImageStyleCardGrid({
   allowNone = true,
   noneLabel: noneLabelProp,
   className,
+  videoModelId,
 }: Props) {
   const { t } = useI18n()
   const noneLabel = noneLabelProp ?? t('drama.styleModal.none')
@@ -44,6 +48,7 @@ export function DramaImageStyleCardGrid({
             onClick={() => onChange(opt.id)}
           >
             <DramaImageStylePreviewImg styleId={opt.id} alt={opt.label} />
+            {shouldWarnRealisticStyle(opt.id, videoModelId) ? <DramaRealisticStyleBadge /> : null}
             <span>{opt.label}</span>
             {selected ? (
               <Check className="drama-style-modal-check on-media" size={12} strokeWidth={2.5} />

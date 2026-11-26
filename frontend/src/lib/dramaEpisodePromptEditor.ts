@@ -314,7 +314,16 @@ export function insertMentionChipAtRange(range: Range, chip: DramaMentionChipDat
 }
 
 // 将编辑器 DOM 序列化为 content 字符串
-export function serializePromptEditorContent(root: HTMLElement) {
+/**
+ * 编辑器 DOM → 正文。
+ * @param options.splitDurationLines 时长 chip 是分段边界：前后同行文字各自换行，保证 @duration:N 独占一行
+ *   （后端按整行解析，同行续写会被整段丢弃）。光标前序列化（@ 触发检测）传 false 保持原样。
+ */
+export function serializePromptEditorContent(
+  root: HTMLElement,
+  options: { splitDurationLines?: boolean } = {},
+) {
+  const splitDurationLines = options.splitDurationLines ?? true
   let result = ''
 
   const walk = (node: Node) => {
@@ -346,6 +355,11 @@ export function serializePromptEditorContent(root: HTMLElement) {
   }
 
   root.childNodes.forEach((child) => walk(child))
+  if (splitDurationLines) {
+    result = result
+      .replace(/(\S)[ \t]*(@duration:\d+)/g, '$1\n$2')
+      .replace(/(@duration:\d+)[ \t]*(?=\S)/g, '$1\n')
+  }
   // 界面上显示的是本地化标记，存回去前还原成后端认识的中文标记
   return delocalizeDramaMarkers(result, getActiveLocale())
 }
@@ -408,7 +422,7 @@ export function serializePromptEditorContentBeforeCaret(root: HTMLElement) {
     range.setEnd(anchorNode, selection.anchorOffset)
     const holder = document.createElement('div')
     holder.appendChild(range.cloneContents())
-    return serializePromptEditorContent(holder)
+    return serializePromptEditorContent(holder, { splitDurationLines: false })
   } catch {
     return null
   }
@@ -428,7 +442,7 @@ export function detectActiveMentionTrigger(root: HTMLElement): {
     return { query: fromSel.query, range: fromSel.range }
   }
   const before = serializePromptEditorContentBeforeCaret(root)
-  const text = (before ?? serializePromptEditorContent(root)).replace(/\s+$/u, '')
+  const text = (before ?? serializePromptEditorContent(root, { splitDurationLines: false })).replace(/\s+$/u, '')
   const match = text.match(/@([^\s@]*)$/)
   if (!match || isCompletedContentToken(match[0])) return null
   return { query: match[1] || '', range: null }

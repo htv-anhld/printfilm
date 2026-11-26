@@ -1970,11 +1970,7 @@ class ArkGateway:
         if getattr(self.settings, "local_media_mock", False) or task_id.startswith(local_media_mock.VIDEO_PREFIX):
             return self._local_media_result(task_id)
         if self.mock or task_id.startswith("mock-task-"):
-            return TaskResult(
-                status="succeeded",
-                url=f"/static/mock/video_{task_id[-8:]}.mp4",
-                last_frame_url=f"/static/mock/last_{task_id[-8:]}.jpg",
-            )
+            return self._mock_video_result(task_id)
 
         task_route, raw_task_id = self._route_for_task(task_id)
         deadline = time.monotonic() + self.settings.ark_video_poll_timeout
@@ -2037,11 +2033,7 @@ class ArkGateway:
         if getattr(self.settings, "local_media_mock", False) or task_id.startswith(local_media_mock.VIDEO_PREFIX):
             return self._local_media_result(task_id)
         if self.mock or task_id.startswith("mock-task-"):
-            return TaskResult(
-                status="succeeded",
-                url=f"/static/mock/video_{task_id[-8:]}.mp4",
-                last_frame_url=f"/static/mock/last_{task_id[-8:]}.jpg",
-            )
+            return self._mock_video_result(task_id)
         task_route, raw_task_id = self._route_for_task(task_id)
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_FETCH_READ_SEC, connect=15.0)) as client:
@@ -2065,6 +2057,22 @@ class ArkGateway:
             return TaskResult(status="failed", error=resp.text[:500], provider_task_id=task_id)
         return self._finalize_video_result(
             _build_task_result_from_payload(resp.json()), task_id, task_route
+        )
+
+    def _mock_video_result(self, task_id: str) -> TaskResult:
+        """ARK_MOCK 视频结果：优先指向真实存在的本地夹具 default.mp4，避免前端/合成拿到 404 地址。"""
+        fixture = local_media_mock.ASSET_ROOT / "default.mp4"
+        if fixture.is_file():
+            frame = local_media_mock.ASSET_ROOT / "default.jpg"
+            return TaskResult(
+                status="succeeded",
+                url="/static/mock/local/default.mp4",
+                last_frame_url="/static/mock/local/default.jpg" if frame.is_file() else None,
+            )
+        return TaskResult(
+            status="succeeded",
+            url=f"/static/mock/video_{task_id[-8:]}.mp4",
+            last_frame_url=f"/static/mock/last_{task_id[-8:]}.jpg",
         )
 
     def _local_media_result(self, task_id: str) -> TaskResult:
@@ -2364,7 +2372,8 @@ class ArkGateway:
             # 与真实路径一致：停用的音频模型在 mock 下同样拒绝（抛 ValueError）
             self._resolved_audio_model()
             digest = hashlib.md5(f"{speaker}:{clean}".encode()).hexdigest()[:8]
-            dest = Path(__file__).resolve().parents[2] / "static" / "mock" / f"audio_{digest}.mp3"
+            # 写到 generated/mock（挂了数据卷），重建容器后旧记录引用的 mock 文件仍在
+            dest = Path(__file__).resolve().parents[2] / "static" / "generated" / "mock" / f"audio_{digest}.mp3"
             dest.parent.mkdir(parents=True, exist_ok=True)
             if not dest.exists() or dest.stat().st_size < 1000:
                 if edge_speaker:
@@ -2372,7 +2381,7 @@ class ArkGateway:
                 else:
                     await self._tts_edge(clean, dest)
             _meta("edge-tts", edge_tts_voice_for_speaker(speaker if edge_speaker else ""), simulated=True)
-            return f"/static/mock/audio_{digest}.mp3"
+            return f"/static/generated/mock/audio_{digest}.mp3"
 
         dest_dir = storage.project_dir(project_id or 0)
         dest = dest_dir / f"shot_{(shot_no or 0):03d}_tts.mp3"
@@ -2696,7 +2705,8 @@ class ArkGateway:
     def _write_mock_image(self, prompt: str, size: str | None = None) -> str:
         """写出 mock 立绘 SVG；每次唯一文件名，避免重试覆盖。"""
         digest = uuid.uuid4().hex[:12]
-        root = Path(__file__).resolve().parents[2] / "static" / "mock"
+        # 写到 generated/mock（挂了数据卷），重建容器后旧记录引用的 mock 图仍在
+        root = Path(__file__).resolve().parents[2] / "static" / "generated" / "mock"
         root.mkdir(parents=True, exist_ok=True)
         path = root / f"image_{digest}.svg"
         hue = int(digest[:2], 16)
@@ -2724,7 +2734,7 @@ class ArkGateway:
   <text x="{int(w*0.08)}" y="{int(h*0.84)}" fill="#d7cfc3" font-family="sans-serif" font-size="18">{safe}</text>
 </svg>"""
         path.write_text(svg, encoding="utf-8")
-        return f"/static/mock/image_{digest}.svg"
+        return f"/static/generated/mock/image_{digest}.svg"
 
     @staticmethod
     def _is_portrait_size(size: str) -> bool:

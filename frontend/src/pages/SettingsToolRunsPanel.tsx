@@ -4,7 +4,7 @@ import { Download, Eye } from 'lucide-react'
 import BillingErrorNotice from '../components/billing/BillingErrorNotice'
 import Modal from '../components/ui/Modal'
 import Pagination from '../components/ui/Pagination'
-import { fetchMediaBlob, triggerBlobDownload } from '../lib/clientDownload'
+import { downloadMediaUrl } from '../lib/clientDownload'
 import {
   getToolRun,
   listToolRuns,
@@ -126,8 +126,7 @@ export default function SettingsToolRunsPanel() {
     setActionError('')
     setDownloading(abs)
     try {
-      const blob = await fetchMediaBlob(abs)
-      triggerBlobDownload(blob, downloadName(item, abs))
+      await downloadMediaUrl(abs, downloadName(item, abs))
     } catch (err) {
       setActionError(err instanceof Error ? err.message : t('history.downloadFailed'))
     } finally {

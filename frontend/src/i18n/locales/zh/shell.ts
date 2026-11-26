@@ -35,6 +35,7 @@ export const zhShell = {
     loginRequired: '未登录',
     generateFailed: '生成失败',
     queryFailed: '查询失败',
+    invalidEmail: '邮箱地址格式不正确',
     requestFailed: '请求失败',
     uploadFailed: '上传失败',
     pleaseSelect: '请选择',
@@ -202,6 +203,7 @@ export const zhShell = {
     wechat: '微信',
   },
   wechatGroup: {
+    openDraggable: '加入微信用户群（可拖动）',
     short: '加群',
     open: '加入微信用户群',
     title: 'printfilm 用户群',

@@ -1,5 +1,5 @@
 .pf-text-editor-backdrop{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:rgb(0 0 0 / 52%);padding:24px 32px;box-sizing:border-box}
-.pf-text-editor{width:min(1280px,100%);height:calc(100dvh - 48px);display:flex;flex-direction:column;background:#fff;color:#2e2e36;border:1px solid #e6e6e9;border-radius:24px;box-shadow:0 24px 80px #0003;overflow:hidden;font:16px/1.8 "PingFang SC","Microsoft YaHei",sans-serif;box-sizing:border-box;outline:none}
+.pf-text-editor{width:min(1280px,100%);height:calc(100dvh - 48px);display:flex;flex-direction:column;background:#fff;color:#2e2e36;border:1px solid #e6e6e9;border-radius:24px;box-shadow:0 24px 80px #0003;overflow:hidden;font:16px/1.8 Inter,"PingFang SC","Microsoft YaHei",sans-serif;box-sizing:border-box;outline:none}
 .pf-text-editor-toolbar{display:flex;flex-shrink:0;align-items:center;gap:12px;min-height:64px;padding:8px 20px;background:#f7f7f9;border-bottom:1px solid #e3e3e8;box-sizing:border-box}
 .pf-text-editor-toolbar nav{display:flex;align-items:center;gap:4px;overflow-x:auto;min-width:0;scrollbar-width:thin}
 .pf-text-editor-toolbar nav>span{display:flex;flex-shrink:0;align-items:center}

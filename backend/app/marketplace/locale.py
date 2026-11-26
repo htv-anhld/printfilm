@@ -1,17 +1,20 @@
 """市场请求语言隔离；语言不参与身份、定价和媒体权限判断。"""
 from contextvars import ContextVar
+import json
+from pathlib import Path
+
 from fastapi import Header
 
 current_locale: ContextVar[str] = ContextVar("marketplace_locale", default="zh")
 
 
-def locale_header(accept_language: str | None = Header(default=None, description="Display language: zh-CN or en-US (quality weights supported). Defaults to Chinese. Business codes, amounts and user content are unchanged.")):
+def locale_header(accept_language: str | None = Header(default=None, description="Display language: zh-CN, en-US or vi-VN (quality weights supported). Defaults to Chinese. Business codes, amounts and user content are unchanged.")):
     """在 OpenAPI 声明统一语言头；请求语言由中间件隔离。"""
     return accept_language
 
 
 def negotiate_language(header: str | None) -> str:
-    """按 Accept-Language 权重选择简体中文或英文，不支持时保持中文兼容。"""
+    """按 Accept-Language 权重选择简体中文、英文或越南语，不支持时保持中文兼容。"""
     candidates = []
     for index, part in enumerate((header or "").split(",")):
         pieces = part.strip().lower().split(";")
@@ -20,14 +23,34 @@ def negotiate_language(header: str | None) -> str:
             quality = next((float(piece.strip()[2:]) for piece in pieces[1:] if piece.strip().startswith("q=")), 1.0)
         except ValueError:
             continue
-        if language in ("zh", "en") and 0 < quality <= 1:
+        if language in ("zh", "en", "vi") and 0 < quality <= 1:
             candidates.append((quality, -index, language))
     return max(candidates)[2] if candidates else "zh"
 
 
+# 越南语译文以中文原文为键（与前端 locale-vi.json 同步）；缺译回退全站 _() 目录，再回退英文
+VI_CATALOG: dict[str, str] = json.loads(Path(__file__).with_name("locale_messages_vi.json").read_text(encoding="utf-8"))
+
+
+def vietnamese(zh: str) -> str | None:
+    """取中文原文对应的越南语系统译文；没有维护译文时返回 None。"""
+    if zh in VI_CATALOG:
+        return VI_CATALOG[zh]
+    from app.i18n import catalogs
+    return catalogs().get("vi", {}).get(zh)
+
+
+def is_foreign() -> bool:
+    """当前请求是否使用非中文展示（英文或越南语）。"""
+    return current_locale.get() in ("en", "vi")
+
+
 def localized(zh: str, en: str) -> str:
     """仅选择已维护的系统译文，不翻译用户原文。"""
-    return en if current_locale.get() == "en" else zh
+    locale = current_locale.get()
+    if locale == "vi":
+        return vietnamese(zh) or en
+    return en if locale == "en" else zh
 
 
 LABELS = {

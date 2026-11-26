@@ -38,8 +38,18 @@ SCENE_LOCATION_RE = re.compile(
     r"(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?\s*(?:内|外|内外)"
     r"|(?i:(?:(?:day|night|morning|evening|dawn|dusk|ngày|đêm|sáng|trưa|chiều|tối)\s*[-–—.,/]?\s*)?"
     r"(?:int\.?\s*/\s*ext|int|ext|nội|ngoại)\.?(?:\s*cảnh)?\s*[-–—.,/]?)"
+    # 编号场头（越/英剧本常见、也是上传示例格式）：Cảnh 1. Trạm xe buýt – chiều mưa / SCENE 2: HALL - NIGHT
+    r"|(?i:(?:cảnh|scene)\s*\d+[a-z]?\s*[.:：、)\-–—])"
     r")\s+(.+)$"
 )
+# 编号场头剩余部分前缀的内外景标记（Ngoại cảnh - / INT. / NGÀY - NỘI -）
+_LOCATION_MARKER_PREFIX_RE = re.compile(
+    r"^(?:(?:int\.?\s*/\s*ext|int|ext|nội|ngoại)\.?(?:\s*cảnh)?"
+    r"|day|night|ngày|đêm)\s*[-–—.,/:]\s*",
+    re.IGNORECASE,
+)
+# 西文场头「地点 – 时段/补充」分隔（两侧需有空格，避免误切连字符词）
+_LOCATION_SEGMENT_SPLIT_RE = re.compile(r"\s+[-–—]\s+")
 # 出场人物行（兼容 Characters: / Cast: / Nhân vật:）
 CAST_LINE_RE = re.compile(r"^(?:出场人物|(?i:characters|cast|nhân vật(?: xuất hiện)?))[：:]\s*(.+)$")
 EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。", "none", "None", "không", "Không", "không có", "Không có"}
@@ -120,9 +130,19 @@ def _unmask_asset_mentions(text: str) -> str:
 
 
 def normalize_scene_location_name(raw: str) -> str:
-    # 去掉斜杠说明、压缩空白
+    """
+    场头地点规范化：去斜杠说明、压缩空白、去时段尾巴。
+    西文场头（无汉字）再去掉前缀内外景标记，并只取「地点 – 时段 – 补充」的第一段，
+    使「Trạm xe buýt – chiều mưa」与「Trạm xe buýt – tiếp」归为同一场景资产。
+    """
     primary = re.split(r"[／/]", raw)[0].strip()
     cleaned = re.sub(r"\s+", " ", primary).strip()
+    if not any("\u4e00" <= ch <= "\u9fff" for ch in cleaned):
+        prev = None
+        while prev != cleaned:
+            prev = cleaned
+            cleaned = _LOCATION_MARKER_PREFIX_RE.sub("", cleaned).strip()
+        cleaned = _LOCATION_SEGMENT_SPLIT_RE.split(cleaned)[0].strip().rstrip(".:,;")
     cleaned = _LOCATION_TIME_SUFFIX_RE.sub("", cleaned).strip()
     if len(cleaned) < 2 or len(cleaned) > 40:
         return ""
@@ -614,17 +634,19 @@ def _format_location_opener(
     scene_asset_id: int | None,
     scene_name: str | None,
 ) -> str:
+    """场头开场句：绑定场景资产；句末标点按内容语言（zh 用「。」，vi/en 用「.」）。"""
+    end = "。" if is_zh() else "."
     if not location_line:
         if scene_asset_id and scene_name:
-            return f"@asset:{scene_asset_id} {scene_name}。"
+            return f"@asset:{scene_asset_id} {scene_name}{end}"
         return ""
     match = SCENE_LOCATION_RE.match(location_line)
     if match and match.group(1) and scene_asset_id:
         prefix = location_line[: len(location_line) - len(match.group(1))].strip()
         location_part = match.group(1).strip()
-        compressed = re.sub(r"\s+", "", prefix)
-        return f"{compressed} @asset:{scene_asset_id} {location_part}。"
-    return location_line if location_line.endswith("。") else f"{location_line}。"
+        compressed = re.sub(r"\s+", "", prefix) if is_zh() else re.sub(r"\s+", " ", prefix)
+        return f"{compressed} @asset:{scene_asset_id} {location_part}{end}"
+    return location_line if location_line.endswith(("。", ".", "!", "?")) else f"{location_line}{end}"
 
 
 def _infer_bgm_mood(hints: str) -> str:
@@ -965,7 +987,8 @@ def _build_production_cues(
     # 字幕 / BGM / 人物介绍前置提示（字幕 cue 不含「旁白」字样，避免 Seedance 整镜念白）
     hint = " ".join(filter(None, [location_line or "", *narrative_lines[:3]]))
     # BGM 描述按内容语言写（前缀「【BGM：」是结构标记，保持中文）
-    lines = [f"【BGM：{content_text(_infer_bgm_mood(hint))}；{content_text('音量低于人声')}】"]
+    sep = "；" if is_zh() else "; "
+    lines = [f"【BGM：{content_text(_infer_bgm_mood(hint))}{sep}{content_text('音量低于人声')}】"]
     if include_subtitles:
         lines.insert(0, DRAMA_SUBTITLE_CUE)
     lines.extend(character_intro_lines)
@@ -1172,9 +1195,36 @@ def plan_fragments_from_scene(
     return fragments
 
 
+_INLINE_DURATION_RE = re.compile(r"@duration:\d+")
+
+
+def split_inline_duration_tags(content: str) -> list[str]:
+    """
+    把与正文同行的 @duration:N 拆成独立行（编辑器里时长 chip 后直接续写文字时会出现
+    「@duration:7 文字」）。否则严格整行匹配会跳过该行及其后整段，保存时静默丢正文。
+    """
+    out: list[str] = []
+    for raw in (content or "").replace("\r\n", "\n").split("\n"):
+        stripped = raw.strip()
+        if "@duration:" not in stripped or re.fullmatch(r"@duration:\d+", stripped):
+            out.append(raw)
+            continue
+        pos = 0
+        for m in _INLINE_DURATION_RE.finditer(raw):
+            before = raw[pos:m.start()].strip()
+            if before:
+                out.append(before)
+            out.append(m.group(0))
+            pos = m.end()
+        after = raw[pos:].strip()
+        if after:
+            out.append(after)
+    return out
+
+
 # 解析已有分镜正文：片头 cue + (@duration + 正文) 块
 def parse_fragment_timed_blocks(content: str) -> tuple[list[str], list[tuple[int, list[str]]]]:
-    lines = (content or "").replace("\r\n", "\n").split("\n")
+    lines = split_inline_duration_tags(content)
     header: list[str] = []
     blocks: list[tuple[int, list[str]]] = []
     i = 0

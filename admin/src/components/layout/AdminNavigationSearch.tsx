@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { ArrowUpRight, Search, type LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { tr } from "@/i18n";
 
 type Group = { label: string; items: { to: string; label: string; icon: LucideIcon }[] };
 
@@ -20,11 +21,11 @@ export function AdminNavigationSearch({ open, onOpenChange, groups }: {
   useEffect(() => { document.getElementById(`${listId}-${active}`)?.scrollIntoView({ block: "nearest" }); }, [active, listId]);
   return <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="admin-navigation-dialog">
-      <DialogTitle className="sr-only">搜索管理功能</DialogTitle>
-      <DialogDescription className="sr-only">输入功能名称，用上下方向键选择，回车进入。</DialogDescription>
+      <DialogTitle className="sr-only">{tr("ui.navSearchTitle")}</DialogTitle>
+      <DialogDescription className="sr-only">{tr("ui.navSearchDesc")}</DialogDescription>
       <div className="admin-navigation-search"><Search size={20} /><input
-        autoFocus placeholder="搜索用户、任务、财务等功能…" value={query}
-        role="combobox" aria-label="搜索管理功能" aria-expanded={open} aria-controls={listId}
+        autoFocus placeholder={tr("ui.navSearchPlaceholder")} value={query}
+        role="combobox" aria-label={tr("ui.navSearchTitle")} aria-expanded={open} aria-controls={listId}
         aria-activedescendant={items.length ? `${listId}-${active}` : undefined} aria-autocomplete="list"
         onChange={(event) => { setQuery(event.target.value); setActive(0); }}
         onKeyDown={(event) => {
@@ -34,16 +35,16 @@ export function AdminNavigationSearch({ open, onOpenChange, groups }: {
           }
           if (event.key === "Enter" && items[active]) { event.preventDefault(); go(items[active].to); }
         }} /></div>
-      <div className="admin-navigation-results" role="listbox" id={listId} aria-label="管理功能">
+      <div className="admin-navigation-results" role="listbox" id={listId} aria-label={tr("ui.navSearchResults")}>
         {items.map((item, index) => <button type="button" role="option" aria-selected={index === active}
           className={index === active ? "is-selected" : ""} id={`${listId}-${index}`} key={item.to}
           onMouseMove={() => setActive(index)} onClick={() => go(item.to)}>
           <span className="admin-navigation-result-icon"><item.icon size={18} /></span>
           <span><strong>{item.label}</strong><small>{item.group}</small></span><ArrowUpRight size={16} />
         </button>)}
-        {!items.length && <p className="admin-navigation-empty">没有找到相关功能，请尝试其他关键词。</p>}
+        {!items.length && <p className="admin-navigation-empty">{tr("ui.navSearchEmpty")}</p>}
       </div>
-      <div className="admin-navigation-footer"><span><kbd>↑</kbd><kbd>↓</kbd> 切换</span><span><kbd>Enter</kbd> 进入</span><span><kbd>Esc</kbd> 关闭</span></div>
+      <div className="admin-navigation-footer"><span><kbd>↑</kbd><kbd>↓</kbd> {tr("ui.navSwitch")}</span><span><kbd>Enter</kbd> {tr("ui.navEnter")}</span><span><kbd>Esc</kbd> {tr("ui.navClose")}</span></div>
     </DialogContent>
   </Dialog>;
 }

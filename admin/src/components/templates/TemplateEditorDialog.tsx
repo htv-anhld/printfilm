@@ -37,6 +37,8 @@ type TemplateEditorDialogProps = {
   editing: AdminTemplate | null;
   form: TemplateFormState;
   categorySuggestions?: string[];
+  /** 分类原值 → 当前语言名称（仅用于展示，写入仍用原值） */
+  categoryLabels?: Record<string, string>;
   onOpenChange: (open: boolean) => void;
   onChange: (patch: Partial<TemplateFormState>) => void;
   onSave: () => void;
@@ -88,6 +90,7 @@ export function TemplateEditorDialog({
   editing,
   form,
   categorySuggestions = [],
+  categoryLabels = {},
   onOpenChange,
   onChange,
   onSave,
@@ -131,7 +134,7 @@ export function TemplateEditorDialog({
       size="full"
       className="template-editor-dialog max-h-[92vh] overflow-hidden"
       bodyClassName="p-0 overflow-hidden"
-      title={editing ? t("templates.editor.editTitle", { name: editing.name }) : t("templates.create")}
+      title={editing ? t("templates.editor.editTitle", { name: editing.display_name || editing.name }) : t("templates.create")}
       subtitle={editing ? editing.id : t("templates.editor.subtitle")}
       footer={
         <>
@@ -229,7 +232,7 @@ export function TemplateEditorDialog({
                   label={t("templates.editor.categories")}
                   hint={
                     categorySuggestions.length
-                      ? t("templates.editor.commonCategories", { list: categorySuggestions.slice(0, 8).join(t("templates.editor.listSep")) + (categorySuggestions.length > 8 ? "…" : "") })
+                      ? t("templates.editor.commonCategories", { list: categorySuggestions.slice(0, 8).map((c) => categoryLabels[c] || c).join(t("templates.editor.listSep")) + (categorySuggestions.length > 8 ? "…" : "") })
                       : t("templates.editor.categoriesHint")
                   }
                 >
@@ -245,12 +248,13 @@ export function TemplateEditorDialog({
                         <button
                           type="button"
                           key={category}
+                          title={category}
                           onClick={() => {
                             const current = form.category.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
                             if (!current.includes(category)) onChange({ category: [...current, category].join(",") });
                           }}
                         >
-                          + {category}
+                          + {categoryLabels[category] || category}
                         </button>
                       ))}
                     </div>

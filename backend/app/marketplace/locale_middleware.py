@@ -29,7 +29,12 @@ class MarketplaceLocaleMiddleware:
         if scope["type"] != "http" or not (scope["path"].startswith(("/api/marketplace/", "/api/admin/marketplace/", "/api/billing/apple/", "/api/billing/android-epay/", "/api/billing/orders/")) or scope["path"] in {"/api/billing/wallet", "/api/billing/skus", "/api/billing/orders"}):
             return await self.app(scope, receive, send)
         headers = dict(scope.get("headers", []))
-        locale = "zh" if scope["path"].startswith("/api/admin/") else negotiate_language(headers.get(b"accept-language", b"").decode("latin1"))
+        if scope["path"].startswith("/api/admin/"):
+            # 管理后台走全站 X-Locale（vi / en / zh）；未声明时保持中文
+            admin_locale = headers.get(b"x-locale", b"").decode("latin1").strip().lower()
+            locale = admin_locale if admin_locale in ("en", "vi") else "zh"
+        else:
+            locale = negotiate_language(headers.get(b"accept-language", b"").decode("latin1"))
         token = current_locale.set(locale)
         start, chunks, transform = None, [], False
 
@@ -45,7 +50,7 @@ class MarketplaceLocaleMiddleware:
                     if not any(name.lower() == "accept-language" for name in names):
                         names.append("Accept-Language")
                     start["headers"] = [(k, v) for k, v in start["headers"] if k.lower() not in {b"content-language", b"vary", b"content-length"}]
-                    start["headers"] += [(b"content-language", b"en" if locale == "en" else b"zh-CN"), (b"vary", ", ".join(names).encode("latin1"))]
+                    start["headers"] += [(b"content-language", {"en": b"en", "vi": b"vi"}.get(locale, b"zh-CN")), (b"vary", ", ".join(names).encode("latin1"))]
                     return
                 await send(start)
             elif message["type"] == "http.response.body" and transform:

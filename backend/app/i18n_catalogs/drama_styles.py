@@ -22,6 +22,12 @@ EN: dict[str, str] = {
     "上美画风": "Shanghai Animation Studio style",
     "像素风": "Pixel art",
     "皮影戏插画": "Shadow puppet illustration",
+    # 视频被 PrivacyInformation 拒收且项目为写实风格时的补充建议
+    "当前项目画面风格「{style}」是真人写实风格，Seedance 容易把这类角色图判为真人而拒绝生成；建议在项目设置里换成插画/动画类风格（如 3D 动画、宫崎骏气质手绘），重新生成角色图后再生成视频": (
+        "The project style \"{style}\" is photorealistic, and Seedance often rejects such character images as real people. "
+        "Switch the project to an illustrated/animated style (e.g. 3D animation, Ghibli-style hand-drawn), "
+        "regenerate the character images, then generate the video again"
+    ),
 }
 
 VI: dict[str, str] = {
@@ -46,4 +52,10 @@ VI: dict[str, str] = {
     "上美画风": "Phong cách xưởng phim Thượng Hải",
     "像素风": "Pixel art",
     "皮影戏插画": "Minh họa múa rối bóng",
+    # 视频被 PrivacyInformation 拒收且项目为写实风格时的补充建议
+    "当前项目画面风格「{style}」是真人写实风格，Seedance 容易把这类角色图判为真人而拒绝生成；建议在项目设置里换成插画/动画类风格（如 3D 动画、宫崎骏气质手绘），重新生成角色图后再生成视频": (
+        "Phong cách hiện tại của dự án «{style}» là tả thực, Seedance dễ coi ảnh nhân vật kiểu này là người thật và từ chối tạo; "
+        "hãy vào cài đặt dự án đổi sang phong cách minh họa/hoạt hình (vd. Hoạt hình 3D, Vẽ tay phong cách Ghibli), "
+        "tạo lại ảnh nhân vật rồi tạo video lại"
+    ),
 }

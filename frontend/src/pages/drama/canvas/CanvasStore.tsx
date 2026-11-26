@@ -1054,10 +1054,14 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     }
   }, [flush, loading])
 
-  /* 页面关闭前尽量刷一次保存 */
+  /* 页面关闭/整页跳转前：有未落盘改动就立即保存，并弹出浏览器「离开页面？」确认，
+   * 给保存请求留出完成时间（卸载中的 fetch 会被浏览器取消，2 秒防抖内离开会丢改动） */
   useEffect(() => {
-    const onBeforeUnload = () => {
-      if (dirty) void flush()
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!dirty) return
+      void flush().catch(() => {})
+      event.preventDefault()
+      event.returnValue = ''
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)

@@ -1,6 +1,19 @@
 /** zh: lib 命名空间（t('lib.xxx')） */
 
 export const zhLib = {
+  toolRunDetail: {
+    video: '视频生成',
+    image: '图片生成',
+    audio: '音频生成',
+    text: '文字生成',
+    record: '生成记录',
+    queued: '任务正在排队，结果会自动更新。',
+    running: '任务正在生成，结果会自动更新。',
+    succeeded: '任务已完成，暂无可预览的媒体结果。',
+    failed: '生成失败。',
+    cancelled: '任务已取消。',
+    status: '任务状态：{status}',
+  },
   listSep: '、',
   agentSkill: {
     none: '不使用 Skill',
@@ -183,6 +196,11 @@ export const zhLib = {
     'pixel-art': '像素风',
     'shadow-puppet-illustration': '皮影戏插画',
   },
+  imageStyleRealism: {
+    badge: '写实',
+    seedanceWarning:
+      '写实风格：使用 Seedance 生成视频时，像真人的角色图可能被拒绝（PrivacyInformation）。如果要用 Seedance 出视频，建议选择插画/动画类风格。',
+  },
   genError: {
     failedTitle: '生成失败',
     shortSuggestion: '请按提示处理后重新生成该分镜。',
@@ -235,6 +253,8 @@ export const zhLib = {
       message: '视频服务审核未通过：输入图片{where}可能含真人肖像，已拒绝生成。',
       suggestion:
         '打开左侧资产，为相关角色/场景重新用 AI 生成偏动漫或插画的形象（避免真人照片），或上传合规图后再重新生成该分镜。',
+      styleSuggestion:
+        '项目当前是写实风格，角色图容易被判为真人。请在项目设置里换成插画/动画类风格（如 3D 动画、宫崎骏气质手绘），重新生成角色图后再重新生成本镜。',
     },
     retryLimit: {
       title: '多次生成仍失败',

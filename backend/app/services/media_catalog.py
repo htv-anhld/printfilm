@@ -258,6 +258,17 @@ def catalog_payload() -> dict[str, Any]:
     )
 
 
+def _has_media_strategy(model_id: str) -> bool:
+    """是否为已注册生成策略的模型（未知旧名走兼容放行，不做路由校验）。"""
+    from app.services.media_models.prices import resolve_strategy
+
+    try:
+        resolve_strategy(model_id)
+    except ValueError:
+        return False
+    return True
+
+
 def is_valid_project_media_model(model_id: str | None, capability: LogicalModelCapability) -> bool:
     """科普项目 image_model / video_model：与 /api/media-models 及 TokenFree 路由一致。"""
     mid = (model_id or "").strip()
@@ -265,6 +276,9 @@ def is_valid_project_media_model(model_id: str | None, capability: LogicalModelC
         return True
     from app.services.model_settings import get_routing_snapshot
     if not is_model_enabled(capability, mid, get_routing_snapshot().logical_models):
+        return False
+    if capability == "video" and _has_media_strategy(mid) and not is_media_model_routable("video", mid):
+        # 已知视频模型但没有渠道（如 seedance-2.0-fast 未上架）：保存了也生成不了，直接拒绝
         return False
     from app.services.logical_model_router import resolve_logical_model_candidates
 
@@ -290,10 +304,29 @@ def is_valid_project_media_model(model_id: str | None, capability: LogicalModelC
     return False
 
 
+def is_media_model_routable(capability: LogicalModelCapability, model_id: str | None) -> bool:
+    """模型当前能否落到某条启用渠道（与生成准入 pin_route 同一判定）。
+
+    例：预设里有 seedance-2.0-fast，但 TokenFree 渠道 models 没勾选它 → False。
+    """
+    mid = (model_id or "").strip()
+    if not mid:
+        return False
+    from app.services.media_models.runtime import pin_route
+
+    try:
+        pin_route(capability, mid)
+    except ValueError:
+        return False
+    return True
+
+
 def is_enabled_video_model(model_id: str | None) -> bool:
-    """严格校验：只接受 /api/media-models 视频列表（后台启用）里的模型。"""
+    """严格校验：只接受 /api/media-models 视频列表（后台启用且有可路由渠道）里的模型。"""
     mid = normalize_model_name((model_id or "").strip())
     if not mid:
         return False
     rows = catalog_payload().get("video_models") or []
-    return any(normalize_model_name(str(row.get("id") or "")) == mid for row in rows)
+    if not any(normalize_model_name(str(row.get("id") or "")) == mid for row in rows):
+        return False
+    return is_media_model_routable("video", model_id)

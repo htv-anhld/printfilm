@@ -26,6 +26,13 @@ export const zhCommerce = {
     credits: "每月额度",
     periodEnd: "本期结束",
     seats: "{n} 席位",
+    statuses: {
+      active: "生效中",
+      scheduled_cancel: "到期取消",
+      past_due: "逾期未付",
+      canceled: "已取消",
+      expired: "已过期",
+    },
   },
   teams: {
     nav: "团队",
@@ -54,6 +61,17 @@ export const zhCommerce = {
     markPaid: "标记已打款",
     ratePrompt: "佣金比例（%）",
     markPaidConfirm: "将 {amount} 标记为已打款给 {email}？请先完成实际转账。",
+    statuses: {
+      pending: "待审核",
+      approved: "已通过",
+      rejected: "已拒绝",
+      suspended: "已暂停",
+    },
+    rejectConfirm: "拒绝 {email} 的合作伙伴申请？",
+    suspendConfirm: "暂停合作伙伴 {email}？其推广码将停止计佣。",
+    rateInvalid: "佣金比例须为 0–100 的数字",
+    rewardInvalid: "奖励金额须为非负数",
+    submissionRejectConfirm: "拒绝 {email} 提交的内容？",
   },
   submissions: {
     nav: "推广内容",

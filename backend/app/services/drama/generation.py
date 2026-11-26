@@ -1597,9 +1597,12 @@ async def prepare_fragment_video_for_submit(
         project.params,
     )
     # 本次请求未指定时，回退项目创建时选的视频模型
+    # 项目里存的模型若已无可用渠道（如 seedance-2.0-fast 未上架），回落后台默认而不是提交必失败的模型
+    from app.services.drama.output_settings import routable_video_model
+
     mid = (
         (model_id or "").strip()
-        or str((project.params or {}).get("video_model") or "").strip()
+        or routable_video_model((project.params or {}).get("video_model"))
         or None
     )
     from app.services.media_models.runtime import current_snapshot, operation_for
@@ -1785,6 +1788,41 @@ async def submit_prepared_fragment_video(
     *,
     project_id: int,
 ) -> str:
+    """提交分镜视频；参考图被判真人且项目为写实风格时，错误里追加「换插画风格」建议。"""
+    try:
+        return await _submit_prepared_fragment_video(prepared, project_id=project_id)
+    except RuntimeError as exc:
+        hinted = await _privacy_error_with_style_hint(str(exc), project_id)
+        if hinted != str(exc):
+            raise RuntimeError(hinted) from exc
+        raise
+
+
+async def _privacy_error_with_style_hint(message: str, project_id: int) -> str:
+    """读取项目画面风格，给 PrivacyInformation 报错拼上写实风格提示；读库失败则原样返回。"""
+    from app.services.ark import ArkGateway
+    from app.services.drama.image_styles import append_realistic_style_hint
+
+    if not ArkGateway._is_seedance_input_privacy_error(message):
+        return message
+    try:
+        from app.database import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as db:
+            project = await db.get(DramaProject, project_id)
+            style_id = (project.params or {}).get("image_style_id") if project else None
+    except Exception:  # noqa: BLE001
+        logger.warning("读取项目 %s 画面风格失败，PrivacyInformation 报错不追加风格建议", project_id)
+        return message
+    return append_realistic_style_hint(message, str(style_id or ""))
+
+
+async def _submit_prepared_fragment_video(
+    prepared: FragmentVideoPrepared,
+    *,
+    project_id: int,
+) -> str:
+    """按 submit_mode 把预备好的分镜视频请求发给上游。"""
     ark = get_ark()
     if prepared.submit_mode == "kie":
         raise RuntimeError(_("已改为 TokenFree 通道，请重新生成本镜视频"))

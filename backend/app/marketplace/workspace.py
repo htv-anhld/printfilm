@@ -106,7 +106,7 @@ async def support(db: DB):
 
 def support_fields(item):
     from .locale import current_locale
-    english = current_locale.get() == "en"
+    english = current_locale.get() in ("en", "vi")  # 客服名称只维护中英文，越南语展示英文
     return {"name": (item.name_en or item.name) if english else item.name,
             "hours": (item.hours_en or item.hours) if english else item.hours,
             "wechat": item.wechat, "name_en": item.name_en, "hours_en": item.hours_en,

@@ -71,6 +71,12 @@ export const viLabels = {
     v1_seedance: "API Seedance",
     tool_image: "Công cụ tạo ảnh",
     tool_video: "Công cụ tạo video",
+    tool_audio: "Công cụ tạo âm thanh",
+    tool_text: "Công cụ tạo văn bản",
+    image_generate: "Tạo ảnh",
+    voice_preview: "Nghe thử giọng",
+    creation_turn: "Hội thoại sáng tạo",
+    mock_delay: "Tác vụ trễ giả lập",
   },
   dramaGeneration: {
     queued: "Đang chờ",

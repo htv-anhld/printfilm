@@ -74,6 +74,8 @@ export const zhTasks = {
     schedule: "调度",
     priority: "优先级",
     leaseUntil: "租约到期",
+    scheduledAt: "计划执行时间",
+    nextActionAt: "下次处理时间",
     related: "关联实体",
     asset: "资产",
     script: "剧本",
