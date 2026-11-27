@@ -82,14 +82,16 @@ def build_tokenfree_openai_image_body(
     ref_urls: list[str] | None = None,
     style_ref_urls: list[str] | None = None,
 ) -> dict[str, Any]:
-    """GPT Image 2.5：POST /images/generations（openai 渠道），并带上 resolution 供计费。"""
+    """GPT Image 2.5：POST /images/generations（openai 渠道），并带上 resolution 供计费。
+
+    /images/generations 读不了图；参考图链接写进提示词会被上游以「prompt 不能含 URL」拒单，故不带。
+    """
+    del ref_urls, style_ref_urls
     narrative = build_tokenfree_image_body(
         model=model,
         prompt=prompt,
         size=size,
         aspect_ratio=aspect_ratio,
-        ref_urls=ref_urls,
-        style_ref_urls=style_ref_urls,
     )
     pixel = (size or "").strip()
     if not _is_pixel_size(pixel):

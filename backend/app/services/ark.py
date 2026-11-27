@@ -1410,11 +1410,13 @@ class ArkGateway:
                 structured_refs=True,
             )
         elif "gpt-image" in chosen.lower():
-            # OpenAI 兼容生图（TokenFree gpt-image-2 / OpenAI 官方）：不认 watermark / image 字段，参考图写进提示词
+            # OpenAI 兼容生图（TokenFree gpt-image-2 / OpenAI 官方）：不认 watermark / image 字段。
+            # /images/generations 不能读图，参考图链接写进提示词也看不到，且上游会以
+            # 「The prompt cannot contain URLs」拒单 → 不带参考图，只发文字。
             path = "/images/generations"
             prompt_text = full_prompt
             if refs:
-                prompt_text = f"{prompt_text}\n参考图：{' '.join(refs)}"
+                logger.info("gpt-image /images/generations 不支持参考图，忽略 %s 张", len(refs))
             body = {
                 "model": chosen,
                 "prompt": prompt_text,
