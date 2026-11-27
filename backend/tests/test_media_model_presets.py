@@ -120,7 +120,10 @@ def test_minimax_h3_video_options() -> None:
 
 def test_seedance_20_options_safe() -> None:
     opts = model_generation_options("seedance-2.0")
-    assert opts["allowed_resolutions"] == ["480p", "720p"]
+    # 策略列全部档位（1080p / 4k 仅 kie 渠道可出）；未配 kie 时实际可选仍只有两档
+    assert opts["allowed_resolutions"] == ["480p", "720p", "1080p", "4k"]
+    from app.services.seedance_resolutions import allowed_video_resolutions
+    assert allowed_video_resolutions("seedance-2.0") == ["480p", "720p"]
     assert opts["duration_max"] == 15
     assert video_duration_bounds("seedance-2.0") == (4, 15)
     assert clamp_video_duration("seedance-2.0", 30) == 15

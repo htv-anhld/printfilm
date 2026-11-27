@@ -704,7 +704,10 @@ class ArkGateway:
         return f"{base}{path}"
 
     # 按逻辑路由解析 ARK 渠道凭证
-    def _resolve_ark_route(self, capability: str, model_id: str | None) -> ResolvedModelRoute | None:
+    def _resolve_ark_route(
+        self, capability: str, model_id: str | None, *, resolution: str | None = None
+    ) -> ResolvedModelRoute | None:
+        """解析本次调用的路由；视频带 resolution 时挑支持该清晰度的渠道（1080p / 4k → kie）。"""
         operation = current_operation.get()
         snapshot = current_snapshot.get()
         if snapshot and (capability in {"image", "video"} or any(
@@ -717,6 +720,13 @@ class ArkGateway:
         resolve_upstream_model(capability, model_id)
         logical_id = resolve_logical_model_id(capability, model_id)
         route = resolve_logical_model(capability, logical_id)
+        if route is not None and capability == "video" and resolution:
+            from app.services.logical_model_router import resolve_logical_model_candidates
+            from app.services.seedance_resolutions import pick_route_for_resolution
+
+            better = pick_route_for_resolution(resolve_logical_model_candidates(capability, logical_id), resolution)
+            if better is not None:
+                route = better
         if route is None:
             from app.services.model_settings import get_routing_snapshot
             if get_routing_snapshot().channels:
@@ -1698,7 +1708,7 @@ class ArkGateway:
         # Seedance needs a publicly reachable https image (data URI often rejected / odd errors)
         image_ref = await self._resolve_image_ref(safe_image_url, prefer_https=True)
         wanted = (model or "").strip() or (strategy.model_id if strategy is not None else "") or self.settings.model_video
-        route = pinned_route or self._resolve_ark_route("video", wanted)
+        route = pinned_route or self._resolve_ark_route("video", wanted, resolution=resolution)
         from app.services.tokenfree_pricing import canonicalize_channel_model_id
 
         video_model = canonicalize_channel_model_id(
@@ -1901,7 +1911,9 @@ class ArkGateway:
                 **{key: body[key] for key in ("duration", "resolution", "generate_audio", "watermark", "return_last_frame", "content") if key in body},
                 "aspect_ratio": body.get("ratio") or "9:16",
             }, model=str(body.get("model") or ""))
-        route = pinned_route or self._resolve_ark_route("video", str(body.get("model") or ""))
+        route = pinned_route or self._resolve_ark_route(
+            "video", str(body.get("model") or ""), resolution=str(body.get("resolution") or "")
+        )
         if strategy is not None:
             body = {**body, **strategy.build_provider_request(normalized, {"upstream_model": route.upstream_model if route else strategy.model_id})}
         from app.services.media_models.runtime import existing_provider_task

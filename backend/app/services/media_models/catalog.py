@@ -30,6 +30,12 @@ async def priced_catalog(db, catalog: dict) -> dict:
             row["prices"] = prices
             row["price_version"] = catalog["price_version"]
             row["available_resolutions"] = [x for x in strategy.resolutions if x in prices] if book else list(strategy.resolutions)
+            if strategy.capability == "video":
+                # 策略列全部档位；实际只开放有渠道能出的档（如 Seedance 2.0 的 1080p / 4k 需要 kie 渠道）
+                from app.services.seedance_resolutions import allowed_video_resolutions
+                routable = set(allowed_video_resolutions(row["id"]))
+                row["allowed_resolutions"] = [x for x in row["allowed_resolutions"] if x in routable]
+                row["available_resolutions"] = [x for x in row["available_resolutions"] if x in routable]
             try:
                 route = pin_route(strategy.capability, row["id"])
             except ValueError as exc:

@@ -768,10 +768,12 @@ def cost_fen_official_video(
     res = normalize_video_resolution(resolution, settings)
     from app.services.kie_models import kie_video_cost_fen, resolve_kie_upstream
 
-    kie_model = resolve_kie_upstream("video", raw)
+    # kie 有 4k 档（TokenFree 预估表没有），按原始清晰度判断路由与估价
+    kie_res = (resolution or "").strip().lower() or res
+    kie_model = resolve_kie_upstream("video", raw, kie_res)
     if kie_model:
         # 首选路由是 kie.ai：按 credit/秒价目预估（结算时以 creditsConsumed 为准）
-        return kie_video_cost_fen(kie_model, res, secs, settings)
+        return kie_video_cost_fen(kie_model, kie_res, secs, settings)
     from app.services.billingexpr import quote_verified_charge_fen
 
     # TokenFree Seedance 现价多为 u("tokens")；无上游 token 时按清晰度估，避免 1080p 按扁平 4 万/秒低估

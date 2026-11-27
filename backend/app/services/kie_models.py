@@ -31,7 +31,7 @@ SEEDREAM_55_I2I = "seedream/5-5-image-to-image"
 
 # 视频：credit/秒（不含参考视频的档位）
 KIE_VIDEO_CREDITS_PER_SEC: dict[str, dict[str, float]] = {
-    SEEDANCE_2: {"480p": 19.0, "720p": 41.0, "1080p": 102.0},
+    SEEDANCE_2: {"480p": 19.0, "720p": 41.0, "1080p": 102.0, "4k": 208.0},
     SEEDANCE_2_FAST: {"480p": 11.7, "720p": 24.8},
     SEEDANCE_2_MINI: {"480p": 3.8, "720p": 8.2},
 }
@@ -106,7 +106,7 @@ def kie_logical_id(model: str | None) -> str:
 
 
 def kie_video_allowed_resolutions(model: str | None) -> tuple[str, ...]:
-    """该视频模型可用清晰度（不开放 4k）。"""
+    """该视频模型可用清晰度（Seedance 2.0 含 1080p / 4k；Fast / Mini 仅 480p / 720p）。"""
     table = KIE_VIDEO_CREDITS_PER_SEC.get(_norm(model)) or KIE_VIDEO_CREDITS_PER_SEC[SEEDANCE_2_FAST]
     return tuple(table)
 
@@ -180,17 +180,31 @@ def kie_image_cost_fen(model: str | None, resolution: str | None, settings=None)
     return kie_credits_to_cost_fen(kie_image_credits(model, resolution), settings) or 1
 
 
-def resolve_kie_upstream(capability: str, model: str | None) -> str:
-    """预估用：model 是 kie id 直接返回；否则按当前路由首选渠道判断是否 kie，返回其上游 id。"""
+def resolve_kie_upstream(capability: str, model: str | None, resolution: str | None = None) -> str:
+    """预估用：model 是 kie id 直接返回；否则按当前路由首选渠道判断是否 kie，返回其上游 id。
+
+    视频带 resolution 时与提交一致：挑第一条支持该清晰度的渠道（1080p / 4k 落到 kie）。
+    """
     raw = (model or "").strip()
     if is_kie_model_id(raw):
         return _norm(raw)
     if not raw:
         return ""
     try:
-        from app.services.logical_model_router import resolve_logical_model, resolve_logical_model_id
+        from app.services.logical_model_router import (
+            resolve_logical_model,
+            resolve_logical_model_candidates,
+            resolve_logical_model_id,
+        )
 
-        route = resolve_logical_model(capability, resolve_logical_model_id(capability, raw))  # type: ignore[arg-type]
+        logical_id = resolve_logical_model_id(capability, raw)  # type: ignore[arg-type]
+        route = resolve_logical_model(capability, logical_id)  # type: ignore[arg-type]
+        if capability == "video" and resolution:
+            from app.services.seedance_resolutions import pick_route_for_resolution
+
+            route = pick_route_for_resolution(
+                resolve_logical_model_candidates(capability, logical_id), resolution  # type: ignore[arg-type]
+            ) or route
     except Exception:  # noqa: BLE001 — 预估不能因路由异常失败
         return ""
     if route is not None and is_kie_route(route):

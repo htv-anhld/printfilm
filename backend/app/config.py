@@ -165,6 +165,10 @@ class Settings(BaseSettings):
     billing_tts_per_m: float = 2.0
     # Kie：1 credit 折合人民币分（约 $0.005 ≈ ¥0.035 → 3.5）
     billing_kie_fen_per_credit: float = 3.5
+    # Kie 完成回调：公网可达的完整地址（如 https://example.com/api/kie/callback）；空 = 只轮询
+    kie_callback_url: str = ""
+    # Kie 回调 HMAC 密钥（kie 控制台 Webhook HMAC Key）；配置后不带合法签名的回调一律拒绝
+    kie_webhook_hmac_key: str = ""
     # TokenFree / New API：quota→USD→人民币（500000 quota = 1 USD）
     # 与 TokenFree / New API 控制台一致（价目表达式里常见 /7.3 折美元）
     billing_usd_cny: float = 7.3

@@ -52,7 +52,10 @@ def tag_kie_task_id(channel_id: str, raw_task_id: str) -> str:
 
 
 def _public_url(url: str, field: str) -> str:
-    """kie 只拉公网 http(s) 或 asset:// 素材；本地 /static、data URI 直接报错。"""
+    """最终校验：kie 只拉 http(s) 或 asset:// 素材。
+
+    本地 / 内网素材应在建单前经 ``kie_upload`` 换成临时公网链接；仍是 /static 或 data URI 的直接报错。
+    """
     value = (url or "").strip()
     if value.startswith(("https://", "http://", "asset://")):
         return value
@@ -152,7 +155,14 @@ def build_kie_video_input(body: dict[str, Any], *, upstream_model: str) -> dict[
 
 async def submit_kie_video(route: Any, body: dict[str, Any]) -> str:
     """建 kie 视频任务，返回带渠道前缀的任务 ID。"""
+    from app.services.kie_upload import KieUploadError, localize_kie_video_body
+
     model = (route.upstream_model or body.get("model") or "").strip()
+    try:
+        # 没开 OSS 时参考图 / 首帧是本地或内网地址：先上传到 kie 换临时公网链接
+        body = await localize_kie_video_body(route, body)
+    except KieUploadError as exc:
+        raise RuntimeError(str(exc)) from exc
     payload = build_kie_video_input(body, upstream_model=model)
     logger.info(
         "kie video create model=%s duration=%s resolution=%s ratio=%s frames=%s refs=%s audio=%s",
@@ -165,7 +175,9 @@ async def submit_kie_video(route: Any, body: dict[str, Any]) -> str:
         payload["generate_audio"],
     )
     try:
-        raw_id = await client_for_route(route).create_task(model, payload, video=True)
+        from app.services.kie_callback import callback_url
+
+        raw_id = await client_for_route(route).create_task(model, payload, video=True, callback_url=callback_url())
     except KieError as exc:
         raise RuntimeError(str(exc)) from exc
     return tag_kie_task_id(route.channel_id, raw_id)
@@ -224,14 +236,27 @@ async def poll_kie_task(route: Any, task_id: str, *, timeout_sec: float, interva
     """阻塞轮询到终态或超时（科普流水线内联等待用）。"""
     from app.services.ark import TaskResult
 
+    from app.services.kie_callback import register_waiter, release_waiter
+
+    _cid, raw_id = split_channel_task_id(task_id)
+    # 配了回调时，回调到达会提前结束本轮等待
+    woke = register_waiter(raw_id)
     deadline = time.monotonic() + max(1.0, float(timeout_sec))
     delay = min(3.0, max(1.0, float(interval_sec)))
-    while time.monotonic() < deadline:
-        result = await fetch_kie_task(route, task_id)
-        if result.status in {"succeeded", "failed"}:
-            return result
-        await asyncio.sleep(delay)
-        delay = min(float(interval_sec) or 8.0, delay * 1.5)
+    try:
+        while time.monotonic() < deadline:
+            result = await fetch_kie_task(route, task_id)
+            if result.status in {"succeeded", "failed"}:
+                return result
+            # 先等后清：回调在查询期间到达也不会丢
+            try:
+                await asyncio.wait_for(woke.wait(), timeout=delay)
+            except TimeoutError:
+                pass
+            woke.clear()
+            delay = min(float(interval_sec) or 8.0, delay * 1.5)
+    finally:
+        release_waiter(raw_id)
     return TaskResult(status="failed", error="poll timeout", provider_task_id=task_id)
 
 
@@ -281,20 +306,41 @@ async def generate_kie_image(
     timeout_sec: float = IMAGE_POLL_TIMEOUT_SEC,
 ) -> tuple[str, KieTaskRecord]:
     """建生图任务并同步等到结果；返回 (公网图片 URL, record)。失败抛 RuntimeError（已翻译）。"""
+    from app.services.kie_upload import KieUploadError, ensure_kie_media_url
+
+    try:
+        image_urls = [await ensure_kie_media_url(route, url) for url in image_urls if (url or "").strip()]
+    except KieUploadError as exc:
+        raise RuntimeError(str(exc)) from exc
     model, payload = build_kie_image_request(
         route.upstream_model, prompt=prompt, aspect_ratio=aspect_ratio,
         resolution=resolution, image_urls=image_urls,
     )
     client = client_for_route(route)
     logger.info("kie image create model=%s refs=%s", model, len(payload.get("image_urls") or []))
+    from app.services.kie_callback import callback_url, register_waiter, release_waiter
+
     try:
-        task_id = await client.create_task(model, payload)
+        task_id = await client.create_task(model, payload, callback_url=callback_url())
     except KieError as exc:
         raise RuntimeError(str(exc)) from exc
+    woke = register_waiter(task_id)
+    try:
+        return await _wait_kie_image(client, task_id, woke, timeout_sec)
+    finally:
+        release_waiter(task_id)
+
+
+async def _wait_kie_image(client: Any, task_id: str, woke: asyncio.Event, timeout_sec: float) -> tuple[str, KieTaskRecord]:
+    """同步等生图结果；回调到达时提前查询。"""
     deadline = time.monotonic() + timeout_sec
     delay = 2.0
     while time.monotonic() < deadline:
-        await asyncio.sleep(delay)
+        try:
+            await asyncio.wait_for(woke.wait(), timeout=delay)
+        except TimeoutError:
+            pass
+        woke.clear()
         delay = min(IMAGE_POLL_INTERVAL_SEC * 2, delay * 1.3)
         try:
             record = await client.get_task(task_id)

@@ -47,11 +47,11 @@ Giá (credit/giây, không có video tham chiếu): 2.0 — 480p 19 · 720p 41 �
 - 4.5: `seedream/4.5-text-to-image` (`prompt`, `aspect_ratio`, `quality`: `basic`=2K | `high`=4K), `seedream/4.5-edit` (+ `image_urls` ≤14). 6,5 credit/ảnh.
 - 5.5: `seedream/5-5-text-to-image` (`prompt`, `aspect_ratio`, `size`: `1K|1.5K|2K`, `output_format`), `seedream/5-5-image-to-image` (`image_urls` 1–10). 1K/1.5K 3,6 credit, 2K 6,3 credit.
 - Kết quả: `resultJson.resultUrls` (giống video).
-- Ảnh đầu vào phải là URL công khai. Có "File Upload API" (Base64/stream/URL) nhưng chưa tìm được tài liệu endpoint.
+- Ảnh đầu vào phải là URL công khai — site tự tải tư liệu nội bộ lên File Upload API (xem mục dưới).
 
 ## Cách cấu hình trong admin
 
-Yêu cầu: `UPSTREAM_LOCK_TOKENFREE=false` (chế độ nhiều kênh) và OSS đang bật — kie chỉ tải được ảnh/video tham chiếu qua URL HTTPS công khai; ảnh `/static/...` khi OSS tắt sẽ báo lỗi rõ ràng thay vì gửi đi.
+Yêu cầu: `UPSTREAM_LOCK_TOKENFREE=false` (chế độ nhiều kênh). Không bắt buộc bật OSS: tư liệu nội bộ (`/static/...`, `http://localhost...`, IP nội bộ, data URI) được tự tải lên kho tạm của kie trước khi tạo tác vụ.
 
 1. Vào **Cài đặt → Mô hình**, bấm **Thêm kênh Kie.ai**. Kênh mới có ID `kie`, giao thức `kie`, Base URL cố định `https://api.kie.ai` và đã tick sẵn 5 mô hình: `bytedance/seedance-2`, `bytedance/seedance-2-fast`, `bytedance/seedance-2-mini`, `seedream/4.5-text-to-image`, `seedream/5-5-text-to-image` (nút **Lấy mô hình** cũng trả về đúng danh mục tĩnh này — kie không có API `/models`).
 2. Dán API Key (lấy ở https://kie.ai/api-key), bấm **Kiểm tra số dư credit** để thử Key, rồi **Lưu**.
@@ -67,7 +67,30 @@ Yêu cầu: `UPSTREAM_LOCK_TOKENFREE=false` (chế độ nhiều kênh) và OSS 
 
 Hành vi khi chạy:
 - Video (phân cảnh drama, video cảnh khoa phổ, công cụ tạo video) và ảnh Seedream đi qua kie; TaskRun/poller giữ nguyên. Mã tác vụ lưu dạng `kie::<taskId>`.
-- Thời lượng kẹp 4–15 giây; Fast/Mini chỉ 480p/720p (yêu cầu 1080p tự hạ xuống 720p, có log). Lưu ý: chiến lược `seedance-2.0` của site vẫn chỉ mở 480p/720p, nên 1080p của kie `bytedance/seedance-2` chưa chọn được từ giao diện.
+- Thời lượng kẹp 4–15 giây; Fast/Mini chỉ 480p/720p. `seedance-2.0` mở thêm **1080p và 4K khi có kênh kie** (xem mục dưới).
 - Khung đầu/cuối và tư liệu tham chiếu loại trừ nhau: nếu có cả hai, giữ tham chiếu (chế độ "tham chiếu toàn năng"), bỏ khung đầu/cuối và ghi log.
 - `generate_audio` theo cài đặt âm thanh gốc hiện có. Không hỗ trợ "nháp → bản chính" (draft).
 - Tính tiền: tạm giữ theo bảng giá credit trong `backend/app/services/kie_models.py`, quyết toán theo `creditsConsumed` (xem `docs/BILLING.md`). Tác vụ lỗi không tính tiền.
+
+## 1080p / 4K cho Seedance 2.0
+
+- Chiến lược `seedance-2.0` khai báo đủ `480p | 720p | 1080p | 4k`, trong đó `1080p` và `4k` đánh dấu "chỉ kie" (`kie_only_resolutions`).
+- Danh sách độ phân giải trả cho giao diện = mức của chính model **hợp** các mức mà kênh kie của model đó hỗ trợ (`seedance_resolutions.allowed_video_resolutions`). Không có kênh kie → vẫn chỉ 480p/720p.
+- Khi tạo tác vụ, router chọn **kênh đầu tiên hỗ trợ độ phân giải đã chọn** (`pick_route_for_resolution`): 480p/720p giữ nguyên thứ tự kênh (TokenFree trước), 1080p/4K tự đi qua kie. Không có kênh nào hỗ trợ → báo lỗi, không tự hạ mức.
+- Ước tính giá cũng chọn kênh theo cùng quy tắc. Giá kie: 1080p 102 credit/giây, 4K 208 credit/giây (5 giây 4K ≈ 1.040 credit ≈ $5,2).
+- Nếu bật bảng giá cố định (media pricing), cần nhập giá cho `seedance-2.0` 1080p/4k thì mức đó mới hiện.
+- Màn hình drama (chọn độ phân giải cho cả dự án) vẫn tối đa 1080p; 4K chỉ có ở trang tạo video và canvas Studio.
+
+## Tự tải tư liệu lên kie (File Upload API)
+
+- `POST https://kieai.redpandaai.co/api/file-stream-upload` (multipart: `file`, `uploadPath`, `fileName`), header `Authorization: Bearer <KEY>`. Miễn phí, file bị xoá sau **24 giờ**. Phản hồi: `data.downloadUrl`. Lỗi cũng trả HTTP 200 + `code` khác 200.
+- Ngoài ra có `/api/file-base64-upload` (`base64Data`, ≤10MB) và `/api/file-url-upload` (`fileUrl`, ≤100MB) — site không dùng.
+- Mã: `backend/app/services/kie_upload.py`. Cần upload khi URL là `/static/...`, data URI, hoặc http(s) tới localhost / IP nội bộ / tên máy không có dấu chấm / `.local` / `.internal`. Đọc file cục bộ trước, không có thì tải qua http nội bộ. Giới hạn 100MB/file.
+- Cùng nội dung (SHA-256) dùng lại link trong 20 giờ (cache trong tiến trình), tên file trên kie = mã băm để tránh ghi đè lẫn nhau.
+
+## Callback khi tác vụ xong
+
+- Bật bằng biến môi trường `KIE_CALLBACK_URL=https://<domain>/api/kie/callback` (phải là địa chỉ công khai; máy dev sau NAT thì để trống). Tuỳ chọn `KIE_WEBHOOK_HMAC_KEY` = Webhook HMAC Key trong console kie.
+- Endpoint: `POST /api/kie/callback` (`backend/app/api/kie_callback.py`). Nếu có khoá HMAC: kiểm tra `X-Webhook-Signature = base64(HMAC-SHA256(taskId + "." + X-Webhook-Timestamp))`, lệch giờ tối đa 10 phút; sai → 401.
+- **Không tin nội dung callback**: callback chỉ là tín hiệu "kiểm tra ngay". Site vẫn gọi `recordInfo` để lấy trạng thái, link kết quả và `creditsConsumed`. Callback giả mạo tối đa chỉ làm site hỏi thêm một lần.
+- Tác dụng: TaskRun đang `awaiting_poll` được kéo `next_action_at` về hiện tại (trừ khi đang `finalizing`); vòng chờ nội tuyến (khoa phổ, tạo ảnh) thoát chờ ngay. Poll định kỳ vẫn chạy làm dự phòng nếu callback không tới.

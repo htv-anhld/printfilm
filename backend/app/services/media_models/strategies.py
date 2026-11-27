@@ -45,6 +45,8 @@ class MediaModelStrategy:
     max_count = 1  # Existing gateway delivers one output per request.
     duration_min = 4
     duration_max = 15
+    # 只有 kie 渠道能出的档位（非 kie 路由不开放）
+    kie_only_resolutions: tuple[str, ...] = ()
 
     @property
     def studio_reference_limit(self) -> int:
@@ -298,7 +300,14 @@ class Seedance25Strategy(VideoModelStrategy):
 
 
 class Seedance20Strategy(VideoModelStrategy):
+    """Seedance 2.0：TokenFree 仅 480p / 720p；kie bytedance/seedance-2 额外开放 1080p / 4k。
+
+    策略列全部档位（价目表可配置）；实际可选档由路由决定（seedance_resolutions.allowed_video_resolutions），
+    提交时按清晰度挑选支持该档的渠道。
+    """
     model_id = "seedance-2.0"
+    resolutions = ("480p", "720p", "1080p", "4k")
+    kie_only_resolutions = ("1080p", "4k")
 
 
 class Seedance20FastStrategy(VideoModelStrategy):

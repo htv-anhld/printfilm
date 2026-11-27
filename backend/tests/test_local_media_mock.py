@@ -16,7 +16,7 @@ async def test_media_returns_playable_fixtures_and_records_inputs(monkeypatch, t
     network = AsyncMock(side_effect=AssertionError("Media provider must not be contacted"))
     monkeypatch.setattr("app.services.ark.observed_request", network)
     gateway = ArkGateway(Settings(local_media_mock=True, ark_mock=False, ark_base_url="https://www.tokenfree.com/v1"))
-    monkeypatch.setattr(gateway, "_resolve_ark_route", lambda *args: None)
+    monkeypatch.setattr(gateway, "_resolve_ark_route", lambda *args, **kwargs: None)
     monkeypatch.setattr("app.services.seedance_image_aspect.ensure_seedance_compatible_image_url", AsyncMock(side_effect=lambda url: url))
     monkeypatch.setattr(gateway, "_resolve_image_ref", AsyncMock(side_effect=lambda url, **kwargs: url))
     assert gateway.mock is False
@@ -65,7 +65,7 @@ async def test_minimax_receives_full_plain_prompt_including_newlines(monkeypatch
     from types import SimpleNamespace
     monkeypatch.setattr(local_media_mock, "LOG_PATH", tmp_path / "requests.jsonl")
     gateway = ArkGateway(Settings(local_media_mock=True, ark_mock=False))
-    monkeypatch.setattr(gateway, "_resolve_ark_route", lambda *args: SimpleNamespace(
+    monkeypatch.setattr(gateway, "_resolve_ark_route", lambda *args, **kwargs: SimpleNamespace(
         upstream_model="MiniMax-H3", base_url="https://www.tokenfree.com/v1", channel_id="tokenfree", api_key="test-key"))
     monkeypatch.setattr("app.services.seedance_image_aspect.ensure_seedance_compatible_image_url", AsyncMock(side_effect=lambda url: url))
     monkeypatch.setattr(gateway, "_resolve_image_ref", AsyncMock(side_effect=lambda url, **kwargs: url))
@@ -87,7 +87,7 @@ async def test_mock_captures_same_final_http_arguments_as_real_gateway(monkeypat
     monkeypatch.setattr("app.services.drama.voice_reference_audio.validate_seedance_body_reference_audios", AsyncMock())
     gateways = [ArkGateway(Settings(local_media_mock=value, ark_mock=False, ark_api_key="test-key")) for value in [False, True]]
     for gateway in gateways:
-        monkeypatch.setattr(gateway, "_resolve_ark_route", lambda capability, *args: SimpleNamespace(
+        monkeypatch.setattr(gateway, "_resolve_ark_route", lambda capability, *args, **kwargs: SimpleNamespace(
             upstream_model="MiniMax-H3" if capability == "video" else "gpt-image-2.5",
             base_url="https://www.tokenfree.com/v1", channel_id="tokenfree", api_key="test-key"))
         monkeypatch.setattr(gateway, "_resolve_image_ref", AsyncMock(side_effect=lambda url, **kwargs: url))

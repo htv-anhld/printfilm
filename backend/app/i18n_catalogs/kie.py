@@ -50,6 +50,15 @@ EN: dict[str, str] = {
     ),
     "约 1–3 分钟/镜": "About 1–3 min per shot",
     "约 15–60 秒/张": "About 15–60 s per image",
+    '{model} 当前没有支持 {resolution} 的渠道，请换一个清晰度': '{model} has no channel that supports {resolution}. Please choose another resolution',
+    '素材数据损坏，无法上传到 Kie.ai': 'The media data is corrupted and cannot be uploaded to Kie.ai',
+    '素材文件超过 100MB，Kie.ai 无法接收': 'The media file is larger than 100MB, which Kie.ai cannot accept',
+    '读取素材失败（HTTP {code}），无法上传到 Kie.ai': 'Could not read the media (HTTP {code}), so it cannot be uploaded to Kie.ai',
+    '找不到素材文件，无法上传到 Kie.ai': 'The media file was not found, so it cannot be uploaded to Kie.ai',
+    '素材文件为空，无法上传到 Kie.ai': 'The media file is empty and cannot be uploaded to Kie.ai',
+    '回调内容不是合法 JSON': 'The callback body is not valid JSON',
+    '回调缺少任务号': 'The callback is missing a task ID',
+    '回调签名无效': 'Invalid callback signature',
 }
 
 VI: dict[str, str] = {
@@ -102,4 +111,13 @@ VI: dict[str, str] = {
     ),
     "约 1–3 分钟/镜": "Khoảng 1–3 phút/cảnh",
     "约 15–60 秒/张": "Khoảng 15–60 giây/ảnh",
+    '{model} 当前没有支持 {resolution} 的渠道，请换一个清晰度': '{model} hiện không có kênh nào hỗ trợ {resolution}, vui lòng chọn độ phân giải khác',
+    '素材数据损坏，无法上传到 Kie.ai': 'Dữ liệu tư liệu bị hỏng, không thể tải lên Kie.ai',
+    '素材文件超过 100MB，Kie.ai 无法接收': 'Tệp tư liệu lớn hơn 100MB, Kie.ai không nhận được',
+    '读取素材失败（HTTP {code}），无法上传到 Kie.ai': 'Không đọc được tư liệu (HTTP {code}), không thể tải lên Kie.ai',
+    '找不到素材文件，无法上传到 Kie.ai': 'Không tìm thấy tệp tư liệu, không thể tải lên Kie.ai',
+    '素材文件为空，无法上传到 Kie.ai': 'Tệp tư liệu trống, không thể tải lên Kie.ai',
+    '回调内容不是合法 JSON': 'Nội dung callback không phải JSON hợp lệ',
+    '回调缺少任务号': 'Callback thiếu mã tác vụ',
+    '回调签名无效': 'Chữ ký callback không hợp lệ',
 }
