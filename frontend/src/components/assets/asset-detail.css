@@ -2,7 +2,8 @@
 .pf-modal-panel.pf-asset-detail-shell { width: min(1420px, 100%); max-height: calc(100dvh - 40px); border: 0; border-radius: 22px; }
 .pf-asset-detail-shell > .pf-modal-body { padding: 0; overflow: hidden; gap: 0; }
 .pf-asset-detail-dialog { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(360px, 1fr); width: min(1420px, 100%); height: min(860px, calc(100dvh - 56px)); overflow: hidden; border-radius: 22px; background: var(--pf-card); box-shadow: 0 26px 90px #131b2433; outline: none; }
-.pf-asset-detail-media { position: relative; min-width: 0; min-height: 0; display: grid; place-items: center; overflow: hidden; background: var(--pf-surface-2); }
+/* 行列轨道固定为容器尺寸：否则 auto 行按视频固有高度撑开，竖屏视频 height:100% 失效被裁切 */
+.pf-asset-detail-media { position: relative; min-width: 0; min-height: 0; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; overflow: hidden; background: var(--pf-surface-2); }
 .pf-asset-detail-media.is-video { background: #101218; }
 .pf-asset-detail-media > img, .pf-asset-detail-media > video { display: block; width: 100%; height: 100%; object-fit: contain; }
 .pf-asset-detail-media > pre { align-self: stretch; justify-self: stretch; overflow: auto; margin: 0; padding: 36px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--pf-ink); font: inherit; line-height: 1.9; }

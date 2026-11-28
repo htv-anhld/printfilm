@@ -240,6 +240,8 @@ export type User = {
   phone?: string
   email_verified?: boolean
   sub_credit_fen?: number
+  /** user | admin；管理员可在前台看到尚未启用的入口（如数字资产市场） */
+  role?: string
 }
 
 export type OAuthAppRow = {
@@ -981,6 +983,10 @@ export const api = {
   },
   wallet() {
     return request<Wallet>('/api/billing/wallet?view=production')
+  },
+  /** 数字资产市场是否已启用（公开接口，侧栏决定是否显示入口） */
+  marketplaceCapabilities() {
+    return request<{ enabled: boolean }>('/api/marketplace/capabilities')
   },
   billingSkus(language?: 'zh' | 'en' | 'vi') {
     return request<{

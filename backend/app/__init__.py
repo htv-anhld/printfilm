@@ -1,1 +1,1 @@
-"""PRINTFILM platform backend."""
+"""Prismreel platform backend."""

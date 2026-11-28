@@ -7,6 +7,8 @@ import { captureReferral } from './lib/referral'
 import { formatMoney } from './lib/money'
 import { setPointFormatter } from './lib/points'
 import './index.css'
+// 暗色主题文字兜底：为写死深色文字的规则补亮色（scripts/gen_dark_text_css.py 生成）
+import './styles/darkText.generated.css'
 
 // 所有后端请求带 X-Locale（后端按界面语言返回报错与内容）
 installLocaleHeader()

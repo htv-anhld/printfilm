@@ -219,7 +219,7 @@ export function UsersPage() {
           <TableBody>
             {(data?.items ?? []).map((u) => (
               <TableRow key={u.id}>
-                <TableCell className="font-mono text-xs text-[#909399]">{formatAccountId(u.id)}</TableCell>
+                <TableCell className="font-mono text-xs text-[#6f687a]">{formatAccountId(u.id)}</TableCell>
                 <TableCell className="font-medium">{u.email}</TableCell>
                 <TableCell>{u.nickname || "—"}</TableCell>
                 <TableCell className="text-xs">{u.phone || "—"}</TableCell>

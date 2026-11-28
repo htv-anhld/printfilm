@@ -4,7 +4,7 @@ import { api } from '../api'
 import BrandMark from '../components/BrandMark'
 import { useI18n } from '../i18n'
 
-/** OAuth 同意页（authorization_endpoint）：第三方应用 / MCP 客户端请求代用户调用 PRINTFILM */
+/** OAuth 同意页（authorization_endpoint）：第三方应用 / MCP 客户端请求代用户调用 Prismreel */
 export default function OAuthAuthorizePage() {
   const { t } = useI18n()
   const [params] = useSearchParams()

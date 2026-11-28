@@ -4,12 +4,12 @@ import { HelpCircle, Mail, Building2, GitBranch, Phone, MessageCircle } from 'lu
 import AppShell from '../components/layout/AppShell'
 import { useI18n } from '../i18n'
 import { GITHUB_REPO_URL } from '../lib/siteLinks'
-import { SUPPORT_EMAIL, WECHAT_ID } from '../lib/siteContact'
+import { SUPPORT_EMAIL } from '../lib/siteContact'
 
 const CHANNEL_ICONS = {
   email: Mail,
   phone: Phone,
-  wechat: MessageCircle,
+  whatsapp: MessageCircle,
   help: HelpCircle,
   enterprise: Building2,
   github: GitBranch,
@@ -39,10 +39,10 @@ export default function ContactPage() {
   const [sent, setSent] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  /** 复制客服微信号，并保留页面中的成功反馈。 */
-  async function copyWechat() {
+  /** 复制渠道上的号码/账号，并保留页面中的成功反馈。 */
+  async function copyChannelText(text: string) {
     try {
-      await navigator.clipboard.writeText(WECHAT_ID)
+      await navigator.clipboard.writeText(text)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
     } catch {
@@ -60,7 +60,7 @@ export default function ContactPage() {
       message.trim() || t('contact.mailEmpty'),
     ].join('\n')
     const href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-      `[PRINTFILM] ${topic}`,
+      `[Prismreel] ${topic}`,
     )}&body=${encodeURIComponent(body)}`
     window.location.href = href
     setSent(true)
@@ -94,8 +94,8 @@ export default function ContactPage() {
                 <h2>{ch.title}</h2>
                 <p>{ch.desc}</p>
                 {ch.copyText ? (
-                  <button type="button" className="pf-contact-card-link" onClick={() => void copyWechat()}>
-                    {copied ? t('contact.copied') : `${t('contact.copyWechat')} ${ch.copyText}`}
+                  <button type="button" className="pf-contact-card-link" onClick={() => void copyChannelText(ch.copyText || '')}>
+                    {copied ? t('contact.copied') : `${t('contact.copyLabel')} ${ch.copyText}`}
                   </button>
                 ) : ch.href ? (
                   isExternal ? (

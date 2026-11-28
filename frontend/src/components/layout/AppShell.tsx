@@ -51,7 +51,7 @@ export default function AppShell({ children, active, wide, flush, hideFooter }: 
               {t('footer.github')}
             </a>
           </nav>
-          <p>© {new Date().getFullYear()} PRINTFILM. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Prismreel. All rights reserved.</p>
         </footer>
       ) : null}
       </div>

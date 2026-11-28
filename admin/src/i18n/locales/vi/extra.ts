@@ -117,7 +117,7 @@ export const viExtra = {
         "sharing": "Bật chia sẻ tác phẩm",
         "sharingDesc": "Cho phép chia sẻ liên kết video đơn và tập phim hiện tại. Cần tên miền HTTPS công khai hợp lệ, không dùng localhost hay địa chỉ mạng nội bộ.",
         "shareBase": "Địa chỉ gốc chia sẻ công khai",
-        "shareBaseHint": "Ví dụ https://www.printfilm.com; tên miền cần chuyển /s/, /.well-known/apple-app-site-association và /.well-known/assetlinks.json về backend, các trang tác phẩm còn lại do Web xử lý.",
+        "shareBaseHint": "Ví dụ https://www.prismreel.com; tên miền cần chuyển /s/, /.well-known/apple-app-site-association và /.well-known/assetlinks.json về backend, các trang tác phẩm còn lại do Web xử lý.",
         "teamIdHint": "Team ID trong tài khoản Apple Developer, dùng để liên kết Universal Links.",
         "androidPkg": "Tên gói Android",
         "androidPkgHint": "Trùng với applicationId của ứng dụng Android; nhập cùng dấu vân tay chứng chỉ. Không cần cấu hình Apple để dùng chia sẻ Android.",

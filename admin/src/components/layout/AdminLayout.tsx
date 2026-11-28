@@ -285,10 +285,10 @@ export function AdminLayout() {
         inert={isMobile && !mobileOpen}
       >
         <div className="admin-brand">
-          <div className="admin-brand-mark">PF</div>
+          <img className="admin-brand-mark" src="/logo.svg" alt="Prismreel" />
           {!collapsed || mobileDrawerOpen ? (
             <div className="admin-brand-copy">
-              <div className="admin-brand-name">PRINTFILM</div>
+              <div className="admin-brand-name">Prismreel</div>
               <div className="admin-brand-sub">{t("layout.admin")}</div>
             </div>
           ) : null}
@@ -326,13 +326,13 @@ export function AdminLayout() {
           <div className="admin-avatar">{initial}</div>
           {!collapsed || mobileDrawerOpen ? (
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-medium text-[#e8f0eb]" title={user?.email}>{user?.email}</div>
-              <div className="text-xs text-[rgba(240,245,242,0.45)]">{t("layout.superAdmin")}</div>
+              <div className="truncate text-[13px] font-medium text-[#ebe8f0]" title={user?.email}>{user?.email}</div>
+              <div className="text-xs text-[rgba(236,230,245,0.72)]">{t("layout.superAdmin")}</div>
             </div>
           ) : null}
           <button
             type="button"
-            className="admin-icon-btn !text-[rgba(240,245,242,0.55)] hover:!text-[#e8f0eb]"
+            className="admin-icon-btn !text-[rgba(236,230,245,0.72)] hover:!text-[#ebe8f0]"
             onClick={handleLogout}
             title={t("layout.logout")}
             aria-label={t("layout.logout")}
@@ -359,7 +359,7 @@ export function AdminLayout() {
             <div>
               <div className="admin-topbar-title">{title}</div>
               <div className="admin-topbar-crumb">
-                PRINTFILM · {t("layout.crumb")}
+                Prismreel · {t("layout.crumb")}
                 <ChevronRight className="mx-1 inline h-3 w-3 align-[-2px]" aria-hidden="true" />
                 {title}
               </div>

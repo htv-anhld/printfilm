@@ -511,7 +511,7 @@ async def ai_chat(
 
         try:
             reply = await drama_chat_text(
-                "你是 PRINTFILM 漫剧创作助手，帮助用户构思短剧创意、人物与分集结构。用简洁中文回答。",
+                "你是 Prismreel 漫剧创作助手，帮助用户构思短剧创意、人物与分集结构。用简洁中文回答。",
                 body.message,
                 # 助手聊天：按界面语言回答（zh 不追加指令）
                 locale=get_locale(),

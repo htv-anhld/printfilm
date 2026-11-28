@@ -181,7 +181,7 @@ async def create_checkout_session(*, order: Order, sku_name: str) -> dict:
             "price_data": {
                 "currency": payment["payment_currency"],
                 "unit_amount": payment["payment_amount_minor"],
-                "product_data": {"name": f"PRINTFILM · {sku_name}"},
+                "product_data": {"name": f"Prismreel · {sku_name}"},
             },
             "quantity": 1,
         }],

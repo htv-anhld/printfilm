@@ -261,12 +261,12 @@ async def create_invite(db: AsyncSession, team: Team, actor: User, email: str, r
     db.add(invite)
     await db.flush()
     body = (
-        _("{who} 邀请你加入 PRINTFILM 团队「{team}」。", who=actor.nickname or actor.email, team=team.name)
+        _("{who} 邀请你加入 Prismreel 团队「{team}」。", who=actor.nickname or actor.email, team=team.name)
         + "\n\n"
         + _("7 天内打开以下链接接受邀请：")
         + f"\n{invite_link(token)}\n"
     )
-    sent = await send_email(to_addrs=[email], subject=_("PRINTFILM 团队邀请"), body=body)
+    sent = await send_email(to_addrs=[email], subject=_("Prismreel 团队邀请"), body=body)
     if not sent:
         logger.warning("team invite email not sent team=%s email=%s", team.id, email)
     return invite, token

@@ -10,16 +10,16 @@
 .pf-is-steps button > span { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 8px; background: #f0f2ed; font-size: 12px; }
 .pf-is-steps button > strong { font-size: 13px; font-weight: 600; }
 .pf-is-steps .is-complete { color: #647b43; }
-.pf-is-steps .is-current { background: #edf5da; color: #41572a; }
-.pf-is-steps .is-current > span { background: #bddf7b; }
+.pf-is-steps .is-current { background: #e5daf5; color: #41572a; }
+.pf-is-steps .is-current > span { background: #a57bdf; }
 .pf-is-steps button:disabled { cursor: default; }
-.pf-is-steps button:focus-visible { outline: 2px solid #91b73b; outline-offset: 1px; }
-.pf-is-progress { display: flex; align-items: center; gap: 18px; padding: 18px 22px; border: 1px solid #dce8c6; border-radius: 12px; background: #f4f8ec; margin: 0 0 24px; font-size: 12px; }
+.pf-is-steps button:focus-visible { outline: 2px solid #6f3bb7; outline-offset: 1px; }
+.pf-is-progress { display: flex; align-items: center; gap: 18px; padding: 18px 22px; border: 1px solid #dce8c6; border-radius: 12px; background: #f1ecf8; margin: 0 0 24px; font-size: 12px; }
 .pf-is-progress > div:first-child { flex: 1; }
 .pf-is-progress strong { font-size: 14px; }
 .pf-is-progress p { margin: 6px 0 0; color: #839174; line-height: 1.7; }
 .pf-is-progress-track { width: 180px; height: 5px; border-radius: 5px; background: #e1e8d5; overflow: hidden; }
-.pf-is-progress-track > span { height: 100%; display: block; background: #a2c866; transition: width .3s; }
+.pf-is-progress-track > span { height: 100%; display: block; background: #8f66c8; transition: width .3s; }
 .pf-is-resume-note { padding: 15px 20px; background: #fcf7e9; border-radius: 10px; color: #8c7742; font-size: 13px; }
 .pf-is-section { border: 1px solid #e3e7dd; border-radius: 18px; background: #fff; padding: 28px; }
 .pf-is-section-head { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 25px; }
@@ -53,7 +53,7 @@
 .pf-is-final h3 { font-size: 26px; line-height: 1.5; margin: 23px 0 12px; overflow-wrap: anywhere; }
 .pf-is-final p { margin: 0 0 28px; font-size: 13px; color: #8b987f; }
 .pf-is-final > div:last-child { display: flex; align-items: flex-start; flex-direction: column; gap: 12px; }
-.pf-is-complete { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border-radius: 7px; background: #edf5e3; color: #668747; font-size: 12px; }
+.pf-is-complete { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border-radius: 7px; background: #ebe3f5; color: #668747; font-size: 12px; }
 .pf-is-next { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 18px; border: 1px solid #e3e7dd; border-radius: 14px; background: #fff; margin-top: 22px; padding: 20px 24px; }
 .pf-is-next strong { font-size: 14px; }
 .pf-is-next p { margin: 7px 0 0; font-size: 12px; color: #8b977e; line-height: 1.7; }

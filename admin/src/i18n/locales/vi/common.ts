@@ -1,5 +1,5 @@
 export const viCommon = {
-  meta: { title: "PRINTFILM – Trang quản trị" },
+  meta: { title: "Prismreel – Trang quản trị" },
   common: {
     loadFailed: "Tải thất bại",
     loadDetailFailed: "Không tải được chi tiết",

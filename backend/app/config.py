@@ -28,7 +28,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "PRINTFILM"
+    app_name: str = "Prismreel"
     debug: bool = True
     # 是否打印 SQLAlchemy 原始 SQL（默认关，避免刷屏；需要排查 SQL 时设 SQL_ECHO=true）
     sql_echo: bool = False
@@ -274,7 +274,7 @@ class Settings(BaseSettings):
     marketplace_share_android_sha256_fingerprints: str = ""
     # 完整视频最长秒数。环境变量 MARKETPLACE_MAX_DURATION_SECONDS；管理端保存后以数据库为准。
     marketplace_max_duration_seconds: int = 1800
-    # Printfilm Studio 新工作台；默认关闭，便于灰度发布。
+    # Prismreel Studio 新工作台；默认关闭，便于灰度发布。
     printfilm_studio_enabled: bool = False
 
     tos_endpoint: str = ""

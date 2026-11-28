@@ -251,12 +251,11 @@ def is_local_static_url(url: str | None) -> bool:
     base = settings.public_base_url.rstrip("/")
     if url.startswith(f"{base}/static/"):
         return True
-    # 主站 / 旧站 / 历史拼写错误域名、本地调试地址
+    # 主站 / 应用子域、本地调试地址
     for host in (
-        "www.printfilm.com",
-        "printfilm.com",
-        "kepu.printfilm.com",
-        "kepu.printtfilm.com",
+        "www.prismreel.com",
+        "prismreel.com",
+        "app.prismreel.com",
         "127.0.0.1:8000",
         "localhost:8000",
     ):

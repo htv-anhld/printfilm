@@ -1,1 +1,1 @@
-"""Printfilm Studio Agent domain."""
+"""Prismreel Studio Agent domain."""

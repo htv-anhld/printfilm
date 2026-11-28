@@ -135,7 +135,7 @@ async def request_password_reset(db: AsyncSession, email: str) -> dict[str, Any]
     link = build_reset_link(token)
     # 邮件按发起找回请求的界面语言撰写
     body = (
-        _("您正在重置 PRINTFILM 账号密码。")
+        _("您正在重置 Prismreel 账号密码。")
         + "\n\n"
         + _("请在 30 分钟内打开以下链接设置新密码：")
         + f"\n{link}\n\n"
@@ -143,7 +143,7 @@ async def request_password_reset(db: AsyncSession, email: str) -> dict[str, Any]
     )
     sent = await send_email(
         to_addrs=[email_norm],
-        subject=_("PRINTFILM 密码重置"),
+        subject=_("Prismreel 密码重置"),
         body=body,
     )
     if not sent:

@@ -155,7 +155,7 @@ export function SiteSettingsPanel() {
               <input
                 className="settings-input"
                 type="url"
-                placeholder="https://www.printfilm.com"
+                placeholder="https://www.prismreel.com"
                 autoComplete="url"
                 value={form.public_base_url}
                 onChange={(e) => patchField("public_base_url", e.target.value)}
@@ -236,7 +236,7 @@ export function SiteSettingsPanel() {
           <div className="settings-toggle-row"><div><strong>{t("settings.site.mp.socialInit")}</strong><span>{t("settings.site.mp.socialInitDesc")}</span></div><Switch checked={form.marketplace_social_initialization_enabled ?? false} onCheckedChange={value => patchField("marketplace_social_initialization_enabled", value)} /></div>
           <div className="settings-toggle-row"><div><strong>{t("settings.site.mp.sharing")}</strong><span>{t("settings.site.mp.sharingDesc")}</span></div><Switch checked={form.marketplace_sharing_enabled ?? false} onCheckedChange={value => patchField("marketplace_sharing_enabled", value)} /></div>
           <div className="settings-field-grid">
-            <LabeledControl label={t("settings.site.mp.shareBase")} hint={t("settings.site.mp.shareBaseHint")} className="settings-field-span-full"><input className="settings-input" type="url" value={form.marketplace_share_base_url ?? ''} onChange={event => patchField("marketplace_share_base_url", event.target.value)} placeholder="https://www.printfilm.com" /></LabeledControl>
+            <LabeledControl label={t("settings.site.mp.shareBase")} hint={t("settings.site.mp.shareBaseHint")} className="settings-field-span-full"><input className="settings-input" type="url" value={form.marketplace_share_base_url ?? ''} onChange={event => patchField("marketplace_share_base_url", event.target.value)} placeholder="https://www.prismreel.com" /></LabeledControl>
             <LabeledControl label="Apple Team ID" hint={t("settings.site.mp.teamIdHint")}><input className="settings-input" value={form.marketplace_share_apple_team_id ?? ''} maxLength={10} onChange={event => patchField("marketplace_share_apple_team_id", event.target.value)} placeholder="ABCDEFGHIJ" /></LabeledControl>
             <LabeledControl label={t("settings.site.mp.androidPkg")} hint={t("settings.site.mp.androidPkgHint")}><input className="settings-input" value={form.marketplace_share_android_package_name ?? ''} maxLength={255} onChange={event => patchField("marketplace_share_android_package_name", event.target.value)} placeholder="com.example.app" /></LabeledControl>
             <LabeledControl label={t("settings.site.mp.androidSha")} hint={t("settings.site.mp.androidShaHint")} className="settings-field-span-full"><textarea className="settings-input" rows={4} maxLength={10000} value={form.marketplace_share_android_sha256_fingerprints ?? ''} onChange={event => patchField("marketplace_share_android_sha256_fingerprints", event.target.value)} placeholder={t("settings.site.mp.androidShaPlaceholder")} /></LabeledControl>

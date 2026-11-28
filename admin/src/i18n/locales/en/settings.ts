@@ -280,7 +280,7 @@ export const enSettings = {
     panel1Title: "1. Public URL",
     panel1Desc: "Payment callbacks, share links and OSS backfill",
     baseUrl: "Backend public base URL",
-    baseUrlHint: "e.g. https://www.printfilm.com",
+    baseUrlHint: "e.g. https://www.prismreel.com",
     infraNote: "Infrastructure such as the database, Redis and SECRET_KEY is still configured via server environment variables, not on this page.",
     panel2Title: "2. Media tools",
     panel2Desc: "Composing and frame extraction rely on local ffmpeg / ffprobe",

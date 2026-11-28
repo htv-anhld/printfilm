@@ -13,7 +13,7 @@
 .pf-pricing-hero-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 388px); align-items: center; gap: clamp(28px, 5vw, 76px); }
 .pf-pricing-hero-copy { min-width: 0; }
 .pf-pricing-eyebrow { display: flex; align-items: center; gap: 9px; margin: 0 0 18px; color: #6c7467; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-.pf-pricing-eyebrow > span { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--pf-lime); box-shadow: 0 0 0 4px #eaf2da; }
+.pf-pricing-eyebrow > span { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--pf-lime); box-shadow: 0 0 0 4px #e4daf2; }
 .pf-pricing-hero-copy h1 { margin: 0 0 16px; font-size: clamp(30px, 3.5vw, 46px); font-weight: 800; letter-spacing: -.045em; line-height: 1.22; text-wrap: balance; overflow-wrap: anywhere; }
 .pf-pricing-lead { max-width: 36rem; margin: 0; color: var(--pricing-muted); font-size: 14px; line-height: 1.85; }
 .pf-pricing-hero-features { display: flex; flex-wrap: wrap; gap: 12px 20px; padding: 0; margin: 23px 0 0; list-style: none; }
@@ -25,10 +25,10 @@
 
 /* 账户卡避免将加载中或匿名账户显示成零余额。 */
 .pf-pricing-wallet-dark { position: relative; isolation: isolate; min-width: 0; overflow: hidden; padding: 23px 25px 19px; border: 1px solid #292e27; border-radius: 20px; background: #171c16; color: #fff; box-shadow: 0 12px 24px #1a201312; }
-.pf-pricing-wallet-dark::before { content: ''; position: absolute; z-index: -1; width: 215px; height: 215px; top: -126px; right: -49px; border: 1px solid #c5ed8730; border-radius: 50%; box-shadow: 0 0 0 25px #c5ed8706, 0 0 0 51px #c5ed8704; pointer-events: none; }
+.pf-pricing-wallet-dark::before { content: ''; position: absolute; z-index: -1; width: 215px; height: 215px; top: -126px; right: -49px; border: 1px solid #b287ed30; border-radius: 50%; box-shadow: 0 0 0 25px #b287ed06, 0 0 0 51px #b287ed04; pointer-events: none; }
 .pf-pricing-wallet-dark-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .pf-pricing-wallet-dark-label { display: inline-flex; align-items: center; gap: 8px; color: #d4dccd; font-size: 12px; }
-.pf-pricing-wallet-dark-label svg { color: #bbdf8c; flex-shrink: 0; }
+.pf-pricing-wallet-dark-label svg { color: #af8cdf; flex-shrink: 0; }
 .pf-pricing-wallet-dark-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
 .pf-pricing-wallet-eye, .pf-pricing-wallet-history { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 32px; appearance: none; padding: 6px 8px; border: 1px solid #ffffff16; border-radius: 7px; background: #ffffff08; color: #d4dccd; font: inherit; font-size: 11px; cursor: pointer; }
 .pf-pricing-wallet-eye { width: 32px; padding: 0; flex: 0 0 auto; }
@@ -44,13 +44,13 @@
 .pf-pricing-wallet-dark-updated { display: flex; align-items: center; gap: 6px; margin: 17px 0 0; color: #9aa78f; font-size: 10px; line-height: 1.6; }
 .pf-pricing-wallet-dark-updated > span { width: 5px; height: 5px; border-radius: 50%; background: #a4c77a; flex: 0 0 auto; }
 .pf-pricing-wallet-dark-updated > span.is-loading { animation: pf-pricing-pulse 1.6s ease-in-out infinite; }
-.pf-pricing-wallet-login { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 17px 0 0; color: #d6f2ad; font-size: 11px; text-decoration: none; line-height: 1.6; }
+.pf-pricing-wallet-login { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 17px 0 0; color: #caadf2; font-size: 11px; text-decoration: none; line-height: 1.6; }
 .pf-pricing-wallet-login:hover { color: #fff; }
 .pf-pricing-wallet-error { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin: 15px 0 0; color: #ebc591; font-size: 10px; line-height: 1.6; }
 .pf-pricing-wallet-error button { display: inline-flex; align-items: center; gap: 4px; padding: 3px 0 3px 5px; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 
 .pf-pricing-body { min-width: 0; }
-.pf-pricing-hint, .pf-pricing-error { display: flex; align-items: center; gap: 9px; padding: 13px 16px; margin: 0 0 16px; border: 1px solid #d8e7c5; border-radius: 10px; background: #f3f9e9; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.pf-pricing-hint, .pf-pricing-error { display: flex; align-items: center; gap: 9px; padding: 13px 16px; margin: 0 0 16px; border: 1px solid #d8e7c5; border-radius: 10px; background: #f0e9f9; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
 .pf-pricing-hint > svg { color: #63853b; flex: 0 0 auto; }
 .pf-pricing-error { border-color: #f0d8d2; background: #fff5f2; color: #a53e2c; }
 .pf-pricing-topup-panel { padding: clamp(18px, 2.7vw, 32px); border: 1px solid var(--pricing-line); border-radius: 22px; background: #fff; }
@@ -80,10 +80,10 @@
 .pf-pricing-sku-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); align-items: stretch; gap: 14px; }
 .pf-pricing-sku-card { display: flex; flex-direction: column; min-width: 0; padding: 21px 19px 19px; border: 1px solid var(--pricing-line); border-radius: 14px; background: #fff; scroll-margin-top: 100px; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
 .pf-pricing-sku-card:hover { border-color: #bcc5af; box-shadow: 0 6px 16px #1a201309; transform: translateY(-2px); }
-.pf-pricing-sku-card.is-recommended { border-color: #adc86a; background: linear-gradient(180deg, #f5fae9, #fff 66%); box-shadow: inset 0 0 0 1px #b5d17720; }
+.pf-pricing-sku-card.is-recommended { border-color: #916ac8; background: linear-gradient(180deg, #f0e9fa, #fff 66%); box-shadow: inset 0 0 0 1px #9c77d120; }
 .pf-pricing-sku-card-head { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 9px; margin-bottom: 6px; }
 .pf-pricing-sku-tier { margin: 0; font-size: 14px; line-height: 1.5; font-weight: 750; overflow-wrap: anywhere; }
-.pf-pricing-rec-badge { display: inline-flex; flex: 0 0 auto; align-items: center; padding: 3px 7px; border-radius: 5px; background: #ddf7ac; color: #486419; font-size: 9px; font-weight: 750; line-height: 1.4; }
+.pf-pricing-rec-badge { display: inline-flex; flex: 0 0 auto; align-items: center; padding: 3px 7px; border-radius: 5px; background: #cbacf7; color: #381964; font-size: 9px; font-weight: 750; line-height: 1.4; }
 .pf-pricing-sku-hint { min-height: 20px; margin: 0 0 27px; color: var(--pricing-muted); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
 .pf-pricing-sku-price { display: flex; align-items: baseline; gap: 3px; margin: 0 0 23px; font-variant-numeric: tabular-nums; }
 .pf-pricing-sku-price .yen { font-size: 18px; font-weight: 500; }
@@ -98,7 +98,7 @@
 .pf-pricing-sku-cta > svg { flex: 0 0 auto; }
 .pf-pricing-sku-cta:hover:not(:disabled) { border-color: #99a78a; background: #ebf0e3; }
 .pf-pricing-sku-cta.is-primary { border-color: var(--pf-lime); background: var(--pf-lime); color: #24320b; }
-.pf-pricing-sku-cta.is-primary:hover:not(:disabled) { border-color: #ace900; background: #ace900; }
+.pf-pricing-sku-cta.is-primary:hover:not(:disabled) { border-color: #630cdd; background: #630cdd; }
 .pf-pricing-sku-cta:disabled { opacity: .55; cursor: wait; }
 .pf-pricing-spinner { animation: pf-pricing-spin .8s linear infinite; }
 .pf-pricing-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
@@ -129,7 +129,7 @@
 .pf-pricing-site-links a { color: inherit; text-decoration: none; }
 .pf-pricing-site-links a:hover { color: var(--pf-ink); }
 .pf-pricing-site-copy { flex-basis: 100%; margin: -4px 0 0; color: #92998c; font-size: 9px; }
-.pf-pricing-page :is(button, a):focus-visible { outline: 2px solid #769b32; outline-offset: 4px; }
+.pf-pricing-page :is(button, a):focus-visible { outline: 2px solid #5e329b; outline-offset: 4px; }
 .pf-pricing-wallet-dark :is(button, a):focus-visible { outline-color: var(--pf-lime); }
 
 @keyframes pf-pricing-pulse { 50% { opacity: .45; } }

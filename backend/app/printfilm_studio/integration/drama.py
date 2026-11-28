@@ -1,4 +1,4 @@
-"""Project and drama write integrations used by Printfilm Studio Agent tools.
+"""Project and drama write integrations used by Prismreel Studio Agent tools.
 
 The Agent executor intentionally calls these functions instead of changing ORM
 rows inline.  This keeps project validation and the write boundary in one

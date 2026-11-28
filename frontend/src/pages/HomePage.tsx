@@ -1,4 +1,4 @@
-/** PRINTFILM 首页仪表盘（参照 Dravelio）：Hero + 创作输入框 + 快捷入口 + 精选风格 + 最近作品 */
+/** Prismreel 首页仪表盘（参照 Dravelio）：Hero + 创作输入框 + 快捷入口 + 精选风格 + 最近作品 */
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Clapperboard, Film, FolderOpen, LayoutGrid, Wrench } from 'lucide-react'

@@ -1,0 +1,159 @@
+/* 自动生成：scripts/gen_dark_text_css.py — 暗色主题文字兜底（勿手改） */
+/* App.css */
+html.dark .auth-notice{color:#71f4bd}
+html.dark .auth-divider{color:#b8bbc1}
+/* components/layout/sidebar.css */
+html.dark .pf-sidebar-group-label{color:#bbbfba}
+html.dark .pf-sidebar-link{color:#bbbfbb}
+html.dark .pf-sidebar-link.is-active > svg:first-child{color:#bcd491}
+html.dark .pf-sidebar-link-arrow{color:#bad194}
+html.dark .pf-sidebar-utilities > a{color:#bcc0b9}
+html.dark .pf-sidebar-account small{color:#bfc2b7}
+html.dark .pf-sidebar-account > svg{color:#bec3b6}
+html.dark .pf-sidebar-icon-button{color:#bdc4b5}
+html.dark .pf-project-list-intro{color:#bcc0ba}
+@media (max-width: 1000px){html.dark .pf-mobile-current{color:#bec3b7}}
+/* components/layout/topbar.css */
+html.dark .pf-topbar-link{color:#b8bbc2}
+html.dark .pf-topbar-link:hover{color:#c7ccd5}
+html.dark .pf-topbar-link.is-active{color:#d3d8e0}
+html.dark .pf-topbar-link-arrow{color:#b8bcc2}
+html.dark .pf-topbar-help{color:#b7bbc2}
+html.dark .pf-topbar-help:hover,html.dark .pf-topbar-help.is-active{color:#bfc6d1}
+html.dark .pf-topbar-account-heading strong{color:#ccd5c7}
+html.dark .pf-topbar-account-heading > span{color:#bdc1b8}
+html.dark .pf-topbar-account-group > span{color:#bec3b7}
+html.dark .pf-topbar-account-group a,html.dark .pf-topbar-account-logout{color:#bcc4b5}
+html.dark .pf-topbar-account-logout{color:#c8a29d}
+html.dark .pf-topbar-menu-heading > div > span{color:#bec2b7}
+html.dark .pf-topbar-menu-heading strong{color:#ccd7d0}
+html.dark .pf-topbar-menu-group > span{color:#bdc2b7}
+html.dark .pf-topbar-menu-footer > a{color:#bdc2b8}
+html.dark .pf-project-list-intro{color:#bcc0ba}
+/* components/projects/project-create.css */
+html.dark .pf-project-create-modal .pf-modal-head h3{color:#cfd7cb}
+html.dark .pf-project-create-context{color:#bdc2b7}
+html.dark .pf-project-create-intro h4{color:#cfd7cb}
+html.dark .pf-project-create-intro p{color:#bcc1b8}
+html.dark .pf-project-create-label{color:#c0ccb7}
+html.dark .pf-project-create-label small{color:#bdc3b7}
+html.dark .pf-project-create-input-meta{color:#bdc2b7}
+html.dark .pf-project-create-input-meta.is-ready > span:first-child{color:#bcd293}
+html.dark .pf-project-create-episode-input > span{color:#bec3b6}
+html.dark .pf-project-create-episodes > p{color:#bec4b6}
+html.dark .pf-project-create-style .drama-style-picker-text{color:#bcc6b4}
+html.dark .pf-project-create-style > p{color:#bec3b7}
+html.dark .pf-project-create-description > summary{color:#bdc3b7}
+html.dark .pf-project-create-field-error{color:#dc9889}
+html.dark .pf-project-create-footer-note{color:#bec4b6}
+/* features/marketplace/dramaPublishing.css */
+html.dark .pf-drama-publish-episode label.pf-drama-publish-update{color:#e2b983}
+html.dark .pf-drama-publish-warning{color:#e2b983}
+/* features/marketplace/marketplace.css */
+html.dark .pf-market [role=alert]{color:#e58480}
+html.dark .pf-market-kicker{color:#bdce97}
+html.dark .pf-market-principles svg{color:#b4c3a2}
+html.dark .pf-market-item-foot{color:#bec7b3}
+html.dark .pf-req-mark{color:#ed8078}
+html.dark .pf-market-guide-heading svg{color:#b8cb9a}
+html.dark .pf-market-upload-zone svg{color:#b5c3a2}
+html.dark .pf-market-upload-selection{color:#bed491}
+html.dark .pf-market-letter-modal .pf-modal-head h3{color:#acc3a2}
+html.dark .pf-market-letter-modal-summary strong{color:#abc5a0}
+html.dark .pf-market-letter-modal-eyebrow{color:#ac8adb}
+html.dark .pf-market-letter-modal-meta{color:#b9c3b6}
+html.dark .pf-market-letter-modal-summary p{color:#bac1b8}
+html.dark .pf-market-letter-preview-label{color:#bac5b5}
+html.dark .pf-market-publish-steps a{color:#aa83e2}
+html.dark .pf-market-series-mark{color:#bac5b4}
+/* pages/drama/canvas/canvas.css */
+html.dark .fc-save-pill.is-dirty{color:#f4be71}
+html.dark .fc-save-pill.is-saving{color:#b2bbc8}
+html.dark .fc-save-pill.is-error{color:#eb7a7a}
+/* pages/drama/canvas/nodes/dramaImageGenOptions.css */
+html.dark .fc-skill-picker-error,html.dark .pf-skill-picker-error{color:#eb7a7a}
+/* pages/drama/drama.css */
+html.dark .drama-project-row-menu button.is-danger{color:#ea7b7b}
+html.dark .drama-error{color:#eb7a7a}
+html.dark .drama-voice-card-badge{color:#7f79ec}
+html.dark .drama-voice-card-icon{color:#8d86df}
+html.dark .drama-outline-ep-meta em.is-waiting{color:#f4c971}
+html.dark .drama-outline-section-icon.is-summary{color:#739bf2}
+html.dark .drama-ep-banner-error{color:#ea7b7b}
+html.dark .drama-ep-continuity-hint.is-ready{color:#71f4cf}
+html.dark .drama-ep-voice-meta span.is-unbound{color:#f4aa71}
+html.dark .drama-ep-compose-error{color:#eb7a7a}
+html.dark .drama-ep-clip-shell.is-failed .drama-ep-clip-empty{color:#ea7b7b}
+html.dark .drama-ep-preview-banner-btn.is-ghost{color:#c0bcb9}
+html.dark .drama-gen-fab-error-title{color:#eb7a7a}
+html.dark .drama-gen-fab-error{color:#eb7a7a}
+html.dark .drama-gen-fab-error-tip{color:#e38282}
+html.dark .drama-gen-detail-card p{color:#bdbdbd}
+html.dark .drama-gen-detail-tip{color:#e38282 !important}
+html.dark .drama-gen-detail-raw-toggle{color:#eb7a7a}
+html.dark .drama-gen-detail-events span{color:#bdbdbd}
+html.dark .drama-btn-danger-text{color:#eb7a7a}
+html.dark .drama-batch-voice-error{color:#eb7a7a}
+/* pages/drama/episodeCanvas/episodeCanvas.css */
+html.dark .ep-asset-node-count{color:#8d86df}
+/* pages/pricing.css */
+html.dark .pf-pricing-eyebrow{color:#bcc1b9}
+html.dark .pf-pricing-hero-features li{color:#bcc3b7}
+html.dark .pf-pricing-hero-feature-icon{color:#bdce97}
+html.dark .pf-pricing-wallet-dark-balance.is-loading{color:#bdc4b5}
+html.dark .pf-pricing-hint > svg{color:#b5d095}
+html.dark .pf-pricing-pay-trust > svg{color:#bdc5b5}
+html.dark .pf-pricing-pay-tile-soon,html.dark .pf-pricing-pay-tile-sub{color:#bcc2b8}
+html.dark .pf-pricing-sku-credit em{color:#bdc9b1}
+html.dark .pf-pricing-sku-bonus{color:#bcd491}
+html.dark .pf-pricing-state > svg{color:#bfc9b1}
+html.dark .pf-pricing-site-foot{color:#bdc1b8}
+html.dark .pf-pricing-site-brand a{color:#bec7b3}
+html.dark .pf-pricing-site-copy{color:#bcc1b9}
+/* pages/studio/imageTextStoryboard.css */
+html.dark .pf-image-storyboard{color:#cad4c2}
+html.dark .pf-is-header p{color:#bcc2b7}
+html.dark .pf-is-steps button{color:#bdc2b7}
+html.dark .pf-is-steps .is-complete{color:#b7c99c}
+html.dark .pf-is-progress p{color:#bdc4b5}
+html.dark .pf-is-eyebrow{color:#bdc6b3}
+html.dark .pf-is-section-head p{color:#bcc3b7}
+html.dark .pf-is-copy p{color:#bcc4b5}
+html.dark .pf-is-script-card header{color:#bdc5b4}
+html.dark .pf-is-script-field > label{color:#bdc4b5}
+html.dark .pf-is-script-field > p{color:#bcc6b4}
+html.dark .pf-is-audio > div{color:#bdc5b4}
+html.dark .pf-is-audio strong{color:#b1c5a0}
+html.dark .pf-is-audio p{color:#bdc4b5}
+html.dark .pf-is-media-card .pf-shared-project-actions .pf-btn{color:#b4c2a3}
+html.dark .pf-is-empty{color:#bec7b3}
+html.dark .pf-is-empty h3{color:#bcc8b2}
+html.dark .pf-is-final p{color:#bcc4b6}
+html.dark .pf-is-next p{color:#bdc4b6}
+/* pages/studio/shortVideoCreate.css */
+html.dark .sv-create-page{color:#c6d5ca}
+html.dark .sv-back{color:#b8c1bb}
+html.dark .sv-create-header p,html.dark .sv-section-heading p,html.dark .sv-settings > p{color:#bac0bb}
+html.dark .sv-style-card p{color:#bcc3b6}
+html.dark .sv-input-tabs button{color:#bdc2b7}
+html.dark .sv-input-tabs button.is-active{color:#b1c3a2}
+html.dark .sv-field small{color:#bec3b7}
+html.dark .sv-examples button{color:#bdc2b7}
+html.dark .sv-actions > span,html.dark .sv-saved-note{color:#bdc3b6}
+html.dark .sv-output-modes span{color:#bac0bb}
+html.dark .sv-output-modes svg{color:#ab87de}
+html.dark .sv-model-settings .media-cost-notice{color:#bac0bb}
+html.dark .sv-model-error{color:#dcab89}
+html.dark .sv-setting-summary,html.dark .sv-workflow-hint{color:#bec8b1}
+html.dark .sv-setting-summary span{color:#bec3b7}
+html.dark .sv-loading{color:#bec4b5}
+/* styles/printfilm.css */
+html.dark .pf-tool-error{color:#ed8078}
+html.dark .pf-badge.run{color:#829be3}
+html.dark .pf-topup-status.is-pending{color:#e4ca81}
+html.dark .pf-pricing-pay-tip{color:#f4aa71}
+html.dark .pf-pricing-sku-bonus{color:#a97aeb}
+html.dark .pf-pay-sheet-close{color:#b8bbc1}
+html.dark .pf-pay-expire.is-expired{color:#e28c83}
+html.dark .pf-dialog--success .pf-dialog-mark{color:#8ad0db}
+html.dark .pf-pricing-plan-features svg{color:#a97aeb}

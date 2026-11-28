@@ -1,5 +1,5 @@
 export const zhCommon = {
-  meta: { title: "PRINTFILM 管理后台" },
+  meta: { title: "Prismreel 管理后台" },
   common: {
     loadFailed: "加载失败",
     loadDetailFailed: "加载详情失败",

@@ -10,10 +10,10 @@ from .locale import localized
 DEFAULT_PRODUCTS = [
     dict(sku_id=sku, product_id=product, name=name, purchase_option_id="buy", offer_id=None, enabled=True)
     for sku, product, name in (
-        ("topup_10", "printfilm_credits_trial", "PrintFilm Trial Credits"),
-        ("topup_49", "printfilm_credits_basic", "PrintFilm Basic Credits"),
-        ("topup_99", "printfilm_credits_plus", "PrintFilm Plus Credits"),
-        ("topup_199", "printfilm_credits_pro", "PrintFilm Pro Credits"))]
+        ("topup_10", "printfilm_credits_trial", "Prismreel Trial Credits"),
+        ("topup_49", "printfilm_credits_basic", "Prismreel Basic Credits"),
+        ("topup_99", "printfilm_credits_plus", "Prismreel Plus Credits"),
+        ("topup_199", "printfilm_credits_pro", "Prismreel Pro Credits"))]
 
 
 def fail(code, zh, en, status=409):

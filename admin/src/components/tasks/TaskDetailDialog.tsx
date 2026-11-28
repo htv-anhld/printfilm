@@ -250,7 +250,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
     >
       {loading && !task ? (
         <div className="task-detail-loading">
-          <Loader2 className="h-6 w-6 animate-spin text-[#67c23a]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#407723]" />
           <span>{t("tasks.detail.loading")}</span>
         </div>
       ) : task ? (
@@ -443,14 +443,14 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                       <tbody>
                         {(task.usage_lines?.length ?? 0) === 0 ? (
                           <tr>
-                            <td colSpan={8} className="text-center text-sm text-[#909399]">
+                            <td colSpan={8} className="text-center text-sm text-[#6f687a]">
                               {t("tasks.detail.noUsage")}
                             </td>
                           </tr>
                         ) : (
                           task.usage_lines?.map((line) => (
                             <tr key={line.id}>
-                              <td className="text-[11px] text-[#909399]">{fmtTime(line.created_at)}</td>
+                              <td className="text-[11px] text-[#6f687a]">{fmtTime(line.created_at)}</td>
                               <td>{line.capability ?? "—"}</td>
                               <td className="font-mono text-xs">{line.billing_key}</td>
                               <td className="max-w-[120px] truncate text-xs">{line.model || "—"}</td>
@@ -487,7 +487,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                   <tbody>
                     {(task.steps?.length ?? 0) === 0 ? (
                       <tr>
-                        <td colSpan={6} className="text-center text-sm text-[#909399]">
+                        <td colSpan={6} className="text-center text-sm text-[#6f687a]">
                           {t("tasks.detail.noSteps")}
                         </td>
                       </tr>
@@ -496,7 +496,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                         <tr key={step.id}>
                           <td>
                             <div className="font-mono text-xs">{step.step_key}</div>
-                            <div className="text-[11px] text-[#909399]">{step.step_type}</div>
+                            <div className="text-[11px] text-[#6f687a]">{step.step_type}</div>
                           </td>
                           <td>
                             <span className={`admin-status-pill is-${taskStatusTone(step.status)}`}>
@@ -508,10 +508,10 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                             {redactTaskText(step.provider_name ?? "—")}
                             {step.provider_task_id ? ` · ${redactTaskText(step.provider_task_id)}` : ""}
                           </td>
-                          <td className="max-w-[200px] truncate text-[11px] text-[#f56c6c]" title={redactTaskText(step.error_message ?? "")}>
+                          <td className="max-w-[200px] truncate text-[11px] text-[#d30f0f]" title={redactTaskText(step.error_message ?? "")}>
                             {redactTaskText(step.error_message ?? "—")}
                           </td>
-                          <td className="text-[11px] text-[#909399]">
+                          <td className="text-[11px] text-[#6f687a]">
                             <div>{t("tasks.detail.stepStart", { time: fmtTime(step.started_at) })}</div>
                             <div>{t("tasks.detail.stepEnd", { time: fmtTime(step.finished_at) })}</div>
                           </td>

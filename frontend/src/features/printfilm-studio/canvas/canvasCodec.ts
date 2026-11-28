@@ -4,7 +4,7 @@ export type CanvasNode = { id: string; type: string; position: { x: number; y: n
 export type CanvasEdge = { id: string; source: string; target: string; [key: string]: unknown }
 export type CanvasDocument = { toonflowCanvas: true; version: 1; nodes: CanvasNode[]; edges: CanvasEdge[]; viewport: { x: number; y: number; zoom: number }; [key: string]: unknown }
 
-/** Printfilm Studio 的持久化边界：保留历史 Toonflow 字段和未知扩展字段。 */
+/** Prismreel Studio 的持久化边界：保留历史 Toonflow 字段和未知扩展字段。 */
 export function decodeCanvasDocument(raw: unknown): CanvasDocument {
   const input = raw && typeof raw === 'object' ? { ...(raw as Record<string, unknown>) } : {}
   if (input.version !== undefined && input.version !== 1) throw new Error(tr('studioCanvas.canvasCodec.badVersion'))

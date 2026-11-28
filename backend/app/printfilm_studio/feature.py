@@ -1,4 +1,4 @@
-"""Feature gate helpers for Printfilm Studio."""
+"""Feature gate helpers for Prismreel Studio."""
 
 from app.printfilm_studio import ensure_enabled
 

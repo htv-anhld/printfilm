@@ -1,21 +1,26 @@
 /*
- * 主题 token（参照 Dravelio：浅色 + 深色，主色青柠绿）
+ * 主题 token（Prismreel 品牌：主色紫 #8B3DFF，辅以品红/橙渐变；浅色 + 深色）
+ * 变量名沿用 --pf-lime*（历史命名），值已改为品牌紫，避免全站改名
  * 深色由 <html class="dark"> 切换，见 src/lib/theme.ts 与 index.html 首屏脚本
  */
 :root {
   /* 主色：亮绿底 + 深色字；--pf-accent-strong 用于浅底上的绿色文字/链接 */
-  --pf-lime: #62f53d;
-  --pf-lime-hover: #7bff5a;
-  --pf-lime-ink: #0a1406;
-  --pf-lime-soft: #e7fbe0;
-  --pf-accent-strong: #1c8a0e;
+  --pf-lime: #8b3dff;
+  --pf-lime-hover: #7a2ff0;
+  --pf-lime-ink: #ffffff;
+  --pf-lime-soft: #f1e9ff;
+  --pf-accent-strong: #6d28d9;
+  /* 品牌渐变（logo 胶片带）：用于强调条、进度、品牌装饰 */
+  --pf-brand-gradient: linear-gradient(90deg, #c026ff 0%, #8b3dff 45%, #e23d9b 72%, #ff8a1a 100%);
 
-  --pf-ink: #121512;
-  --pf-muted: #687068;
-  --pf-bg: #f7f8f6;
+  --pf-ink: #15121f;
+  --pf-muted: #5a566e;
+  /* 次要说明文字（原 color-mix(muted 75%, transparent)）：浅色保持原观感 */
+  --pf-muted-soft: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  --pf-bg: #f7f6fa;
   --pf-card: #ffffff;
   /* 次级面：hover、输入底、分组底 */
-  --pf-surface-2: #f1f3f0;
+  --pf-surface-2: #f0eef5;
   --pf-line: rgba(15, 17, 19, 0.08);
   --pf-line-strong: rgba(15, 17, 19, 0.14);
   --pf-overlay: rgba(8, 12, 9, 0.45);
@@ -32,7 +37,7 @@
   --paper-deep: var(--pf-surface-2);
   --accent: var(--pf-lime);
   --teal: #2a6f7a;
-  --crimson: #d4402f;
+  --crimson: #b42318;
   --moss: #2a6f7a;
   --muted: var(--pf-muted);
   --line: var(--pf-line);
@@ -51,17 +56,22 @@
 }
 
 html.dark {
-  --pf-lime: #62f53d;
-  --pf-lime-hover: #7bff5a;
-  --pf-lime-ink: #0a1406;
-  --pf-lime-soft: rgba(98, 245, 61, 0.14);
-  --pf-accent-strong: #62f53d;
+  --pf-lime: #8b3dff;
+  --pf-lime-hover: #9d5cff;
+  --pf-lime-ink: #ffffff;
+  --pf-lime-soft: rgba(139, 61, 255, 0.18);
+  /* 深底上的紫色文字/链接：提亮到 ≥7:1 */
+  --pf-accent-strong: #c4a5ff;
 
-  --pf-ink: #f2f5f1;
-  --pf-muted: #919a92;
-  --pf-bg: #080c09;
-  --pf-card: #111712;
-  --pf-surface-2: #19201a;
+  --pf-ink: #f3f1f8;
+  /* 深底上的次要文字：≥8:1（原 #919a92 在卡片底仅 5.7:1，读起来发灰发虚） */
+  --pf-muted: #b5afc6;
+  /* 深色不做半透明叠加，直接给实色，保证 ≥6.5:1 */
+  --pf-muted-soft: #9f99b1;
+  /* 品牌 Night 色系（logo 图标底色 #14102A） */
+  --pf-bg: #0b0912;
+  --pf-card: #13101c;
+  --pf-surface-2: #1c1828;
   --pf-line: rgba(255, 255, 255, 0.07);
   --pf-line-strong: rgba(255, 255, 255, 0.14);
   --pf-overlay: rgba(0, 0, 0, 0.6);

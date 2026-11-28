@@ -14,7 +14,7 @@ import os
 os.environ.setdefault("BILLING_CURRENCY", "CNY")
 os.environ.setdefault("BILLING_MARKUP", "1.0")
 os.environ.setdefault("BILLING_FIRST_TOPUP_BONUS_FEN", "0")
-# 上游 Printfilm Studio 用例默认依赖开发者 backend/.env 里的 PRINTFILM_STUDIO_ENABLED=true；
+# 上游 Prismreel Studio 用例默认依赖开发者 backend/.env 里的 PRINTFILM_STUDIO_ENABLED=true；
 # 配置项仅来自环境变量（无 DB overlay），测试环境在此显式开启，关闭路径的用例自行 monkeypatch。
 os.environ.setdefault("PRINTFILM_STUDIO_ENABLED", "true")
 

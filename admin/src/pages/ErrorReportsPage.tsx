@@ -103,7 +103,7 @@ export function ErrorReportsPage() {
                   {openId === row.id ? (
                     <TableRow>
                       <TableCell colSpan={6}>
-                        <p className="mb-1 text-xs text-[#909399]">
+                        <p className="mb-1 text-xs text-[#6f687a]">
                           {t("commerce.errors.firstSeen")}: {row.first_seen_at ? formatDateTime(row.first_seen_at) : "—"} ·{" "}
                           {row.user_agent || ""}
                         </p>

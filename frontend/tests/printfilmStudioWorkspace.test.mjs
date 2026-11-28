@@ -344,7 +344,7 @@ test('workspace creates, drags and autosaves nodes while a workflow is running',
 
     await settle(1350)
     assert.equal(saves.at(-1).document.nodes.length, 8)
-    await click(document.querySelector('[aria-label="打开 Printfilm Agent"]'))
+    await click(document.querySelector('[aria-label="打开 Prismreel Agent"]'))
     await click(document.querySelector('[title="引用节点与素材"]'))
     const agentInput = document.querySelector('[aria-label="Agent 消息"]')
     assert.equal(document.activeElement, agentInput)

@@ -44,8 +44,8 @@
   --ink: #141814;
   --paper: #f0eee8;
   --panel: #faf9f6;
-  --forest: #1f5c48;
-  --forest-deep: #163f33;
+  --forest: #6d28d9;
+  --forest-deep: #4c1d95;
   position: relative;
   min-height: 100vh;
   display: grid;
@@ -62,10 +62,10 @@
   justify-content: flex-end;
   padding: clamp(2rem, 5vw, 4.5rem);
   background:
-    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(31, 92, 72, 0.18), transparent 55%),
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(56, 31, 92, 0.18), transparent 55%),
     radial-gradient(ellipse 50% 40% at 90% 80%, rgba(184, 160, 120, 0.22), transparent 50%),
-    linear-gradient(155deg, #1a2e26 0%, #24352e 42%, #2c3f36 100%);
-  color: #f4f1ea;
+    linear-gradient(155deg, #221a2e 0%, #2b2435 42%, #342c3f 100%);
+  color: #eeeaf4;
   isolation: isolate;
 }
 
@@ -157,7 +157,7 @@
   justify-content: center;
   padding: clamp(1.5rem, 4vw, 3rem);
   background:
-    radial-gradient(circle at 80% 10%, rgba(31, 92, 72, 0.06), transparent 40%),
+    radial-gradient(circle at 80% 10%, rgba(56, 31, 92, 0.06), transparent 40%),
     var(--panel);
 }
 
@@ -209,7 +209,7 @@
 .login-field input:focus {
   outline: none;
   border-color: var(--forest);
-  box-shadow: 0 0 0 3px rgba(31, 92, 72, 0.15);
+  box-shadow: 0 0 0 3px rgba(56, 31, 92, 0.15);
 }
 
 .login-submit {
@@ -219,7 +219,7 @@
   border: 0;
   border-radius: 0.4rem;
   background: var(--forest);
-  color: #f7f5f0;
+  color: #f3f0f7;
   font-family: var(--font-sans);
   font-size: 0.95rem;
   font-weight: 600;
@@ -244,7 +244,7 @@
 .login-hint {
   margin-top: 1.5rem;
   font-size: 0.8rem;
-  color: #7a827a;
+  color: #70687b;
 }
 
 @keyframes login-rise {
@@ -291,26 +291,26 @@
 /* 弹窗通过 Portal 挂载，需在自身继承同一套后台主题变量。 */
 .admin-app,
 .admin-modal {
-  --admin-bg: #e9eef5;
+  --admin-bg: #f6f5fa;
   --admin-bg-subtle: #dfe6f0;
   --admin-card: #ffffff;
   --admin-text: #1a211c;
   --admin-muted: #64748b;
   --admin-border: #e2e8f0;
   --color-border: #e2e8f0;
-  --admin-table-head: #e9f0fb;
+  --admin-table-head: #f3f0f9;
   --admin-table-head-text: #5b6b7c;
-  --admin-tag-bg: #e8f1ff;
-  --admin-tag-text: #3d6ea8;
-  --admin-forest: #1f5c48;
-  --admin-forest-deep: #163f33;
-  --admin-accent: #3d9a72;
-  --admin-accent-soft: rgba(61, 154, 114, 0.12);
-  --admin-accent-ring: rgba(31, 92, 72, 0.16);
-  --admin-sidebar: #142820;
+  --admin-tag-bg: #f1e9ff;
+  --admin-tag-text: #5b21b6;
+  --admin-forest: #6d28d9;
+  --admin-forest-deep: #4c1d95;
+  --admin-accent: #8b3dff;
+  --admin-accent-soft: rgba(139, 61, 255, 0.12);
+  --admin-accent-ring: rgba(56, 31, 92, 0.16);
+  --admin-sidebar: #14102a;
   --admin-sidebar-border: rgba(255, 255, 255, 0.06);
-  --admin-sidebar-text: rgba(240, 245, 242, 0.72);
-  --admin-sidebar-muted: rgba(240, 245, 242, 0.42);
+  --admin-sidebar-text: rgba(242, 240, 245, 0.72);
+  --admin-sidebar-muted: rgba(242, 240, 245, 0.42);
   --admin-sidebar-w: 232px;
   --admin-radius: 12px;
   --admin-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.05);
@@ -320,7 +320,7 @@
   display: flex;
   min-height: 100vh;
   background:
-    radial-gradient(ellipse 90% 60% at 100% 0%, rgba(61, 154, 114, 0.06), transparent 55%),
+    radial-gradient(ellipse 90% 60% at 100% 0%, rgba(100, 61, 154, 0.06), transparent 55%),
     var(--admin-bg);
   color: var(--admin-text);
   font-family: "Be Vietnam Pro", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -358,14 +358,14 @@
   border-radius: 11px;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, #4caf82 0%, var(--admin-forest) 100%);
-  color: #f4f1ea;
+  background: linear-gradient(145deg, #754caf 0%, var(--admin-forest) 100%);
+  color: #eeeaf4;
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
   flex-shrink: 0;
-  box-shadow: 0 6px 16px rgba(31, 92, 72, 0.35);
+  box-shadow: 0 6px 16px rgba(56, 31, 92, 0.35);
 }
 
 .admin-brand-name {
@@ -374,7 +374,7 @@
   font-weight: 800;
   letter-spacing: 0.12em;
   line-height: 1.2;
-  color: #f4f1ea;
+  color: #eeeaf4;
 }
 
 .admin-brand-sub {
@@ -426,8 +426,8 @@
 }
 
 .admin-nav-item.is-active {
-  background: rgba(61, 154, 114, 0.16);
-  color: #e8f5ee;
+  background: var(--admin-accent);
+  color: #fff;
   box-shadow: inset 0 0 0 1px rgba(61, 154, 114, 0.22);
 }
 
@@ -439,11 +439,11 @@
   bottom: 9px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: #6fd4a8;
+  background: #c4a5ff;
 }
 
 .admin-nav-item.is-active svg {
-  color: #6fd4a8;
+  color: #fff;
 }
 
 .admin-user-card {
@@ -463,8 +463,8 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: rgba(61, 154, 114, 0.18);
-  color: #8fe0b8;
+  background: rgba(100, 61, 154, 0.18);
+  color: #7c5ca8;
   font-size: 13px;
   font-weight: 700;
   flex-shrink: 0;
@@ -900,7 +900,7 @@
 .admin-stat-hint {
   margin-top: 6px;
   font-size: 11px;
-  color: #9aa39c;
+  color: #6f687a;
 }
 
 .admin-stat-icon {
@@ -918,12 +918,12 @@
 
 .admin-stat-card.tone-info .admin-stat-icon {
   background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
+  color: #2060eb;
 }
 
 .admin-stat-card.tone-warn .admin-stat-icon {
   background: rgba(217, 119, 6, 0.12);
-  color: #d97706;
+  color: #ac5f05;
 }
 
 .admin-status-pill {
@@ -955,7 +955,7 @@
 
 .admin-status-pill.is-fail {
   background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 .admin-tab {
@@ -1011,13 +1011,13 @@
 }
 
 .admin-btn-primary {
-  background: linear-gradient(180deg, #4caf82, var(--admin-forest));
+  background: linear-gradient(180deg, #754caf, var(--admin-forest));
   color: #f7f5f0;
-  box-shadow: 0 4px 12px rgba(31, 92, 72, 0.28);
+  box-shadow: 0 4px 12px rgba(56, 31, 92, 0.28);
 }
 
 .admin-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #56b88b, var(--admin-forest-deep));
+  background: linear-gradient(180deg, #7f56b8, var(--admin-forest-deep));
 }
 
 .admin-btn-secondary {
@@ -1028,13 +1028,13 @@
 
 .admin-btn-secondary:hover:not(:disabled) {
   border-color: #c5d4cc;
-  background: #f8faf9;
+  background: #f9f8fa;
 }
 
 .admin-btn-danger {
   border-color: rgba(239, 68, 68, 0.35);
   background: rgba(239, 68, 68, 0.08);
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 .admin-btn-danger:hover:not(:disabled) {
@@ -1148,7 +1148,7 @@
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 500;
-  color: #64748b;
+  color: #726585;
   white-space: nowrap;
 }
 
@@ -1226,7 +1226,7 @@
 .admin-control::placeholder,
 .admin-input::placeholder,
 .settings-input::placeholder {
-  color: #94a3b8;
+  color: #586a84;
 }
 
 .admin-control:disabled,
@@ -1236,7 +1236,7 @@
 .settings-select:disabled {
   cursor: not-allowed;
   background: #f8fafc;
-  color: #94a3b8;
+  color: #586a84;
   opacity: 1;
 }
 
@@ -1267,7 +1267,7 @@ textarea.admin-control {
   margin: 0;
   font-size: 12px;
   line-height: 1.45;
-  color: #94a3b8;
+  color: #586a84;
 }
 
 .admin-form-grid {
@@ -1342,7 +1342,7 @@ textarea.admin-control {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(61, 154, 114, 0.1);
+  background: rgba(100, 61, 154, 0.1);
   color: var(--admin-forest);
 }
 
@@ -1366,7 +1366,7 @@ textarea.admin-control {
   left: auto;
   top: 50%;
   transform: translateY(-50%);
-  color: #9aa3ad;
+  color: #71677f;
   pointer-events: none;
 }
 
@@ -1407,7 +1407,7 @@ textarea.admin-control {
   margin: 0;
   font-size: 12px;
   line-height: 1.45;
-  color: #94a3b8;
+  color: #586a84;
 }
 
 .admin-chip-filter {
@@ -1448,7 +1448,7 @@ textarea.admin-control {
 }
 
 .admin-chip:hover {
-  border-color: rgba(61, 154, 114, 0.45);
+  border-color: rgba(100, 61, 154, 0.45);
   color: var(--admin-forest);
 }
 
@@ -1529,11 +1529,11 @@ textarea.admin-control {
   padding: 16px 16px 14px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 10px 28px rgba(18, 26, 22, 0.06);
+  box-shadow: 0 10px 28px rgba(21, 18, 26, 0.06);
 }
 
 .admin-dashboard-kpi.tone-teal {
-  background: linear-gradient(145deg, #d8f0e6 0%, #b8e0cf 48%, #9fd4bf 100%);
+  background: linear-gradient(145deg, #e2d6f2 0%, #c9b8e0 48%, #b59fd4 100%);
 }
 
 .admin-dashboard-kpi.tone-blue {
@@ -1553,7 +1553,7 @@ textarea.admin-control {
 }
 
 .admin-dashboard-kpi.tone-mint {
-  background: linear-gradient(145deg, #dff5ee 0%, #c8ebdf 48%, #b0e0d2 100%);
+  background: linear-gradient(145deg, #e8ddf7 0%, #d6c5ee 48%, #c4b0e0 100%);
 }
 
 .admin-dashboard-kpi.tone-slate {
@@ -1593,11 +1593,11 @@ textarea.admin-control {
   padding: 12px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 6px 18px rgba(18, 26, 22, 0.05);
+  box-shadow: 0 6px 18px rgba(21, 18, 26, 0.05);
 }
 
 .admin-dashboard-insight.tone-teal {
-  background: linear-gradient(145deg, #e8f6f0 0%, #d8eee4 100%);
+  background: linear-gradient(145deg, #eee7f7 0%, #e1d6f0 100%);
 }
 
 .admin-dashboard-insight.tone-blue {
@@ -1617,7 +1617,7 @@ textarea.admin-control {
 }
 
 .admin-dashboard-insight.tone-mint {
-  background: linear-gradient(145deg, #e4f6ef 0%, #d4ede4 100%);
+  background: linear-gradient(145deg, #ebe3f7 0%, #ded2ef 100%);
 }
 
 .admin-dashboard-insight.tone-slate {
@@ -1642,7 +1642,7 @@ textarea.admin-control {
 
 .admin-dashboard-insight-label {
   font-size: 12px;
-  color: rgba(22, 40, 32, 0.62);
+  color: rgba(29, 22, 40, 0.62);
 }
 
 .admin-dashboard-insight-value {
@@ -1651,14 +1651,14 @@ textarea.admin-control {
   font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.1;
-  color: #142820;
+  color: #1c1428;
   font-variant-numeric: tabular-nums;
 }
 
 .admin-dashboard-insight-hint {
   margin-top: 4px;
   font-size: 11px;
-  color: rgba(22, 40, 32, 0.52);
+  color: rgba(29, 22, 40, 0.72);
 }
 
 .admin-dashboard-mini-card-head {
@@ -1695,7 +1695,7 @@ textarea.admin-control {
 .admin-dashboard-kpi-label {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(22, 40, 32, 0.68);
+  color: rgba(29, 22, 40, 0.68);
 }
 
 .admin-dashboard-kpi-value {
@@ -1705,7 +1705,7 @@ textarea.admin-control {
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.03em;
-  color: #142820;
+  color: #1c1428;
 }
 
 .admin-dashboard-kpi-foot {
@@ -1715,7 +1715,7 @@ textarea.admin-control {
   gap: 8px;
   margin-top: 10px;
   font-size: 11px;
-  color: rgba(22, 40, 32, 0.58);
+  color: rgba(29, 22, 40, 0.58);
 }
 
 .admin-dashboard-kpi-trend {
@@ -1891,7 +1891,7 @@ textarea.admin-control {
   min-height: 88px;
   padding: 14px 10px;
   border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f8f7fa 100%);
   color: var(--admin-text);
   text-decoration: none;
   font-size: 12px;
@@ -1901,7 +1901,7 @@ textarea.admin-control {
 }
 
 .admin-dashboard-tool-btn:hover {
-  box-shadow: 0 8px 18px rgba(31, 92, 72, 0.08);
+  box-shadow: 0 8px 18px rgba(56, 31, 92, 0.08);
   transform: translateY(-1px);
   color: var(--admin-forest);
 }
@@ -1952,7 +1952,7 @@ textarea.admin-control {
   margin: 4px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: #909399;
+  color: #6f687a;
 }
 
 .admin-modal-body {
@@ -2154,7 +2154,7 @@ textarea.admin-control {
 
 .admin-page-btn:hover:not(:disabled) {
   color: var(--admin-forest);
-  box-shadow: inset 0 0 0 1px rgba(61, 154, 114, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(100, 61, 154, 0.45);
   background: var(--admin-accent-soft);
 }
 
@@ -2230,7 +2230,7 @@ textarea.admin-control {
   display: grid;
   place-items: center;
   background: #f0f3f1;
-  color: #b0bab4;
+  color: #b4acbe;
   font-size: 20px;
 }
 
@@ -2253,7 +2253,7 @@ textarea.admin-control {
   padding: 14px;
   border-radius: 12px;
   border: 1px solid var(--admin-border);
-  background: #f8faf9;
+  background: #f9f8fa;
   color: var(--admin-text);
   text-decoration: none;
   font-size: 13px;
@@ -2262,9 +2262,9 @@ textarea.admin-control {
 }
 
 .admin-quick-btn:hover {
-  border-color: rgba(61, 154, 114, 0.4);
+  border-color: rgba(100, 61, 154, 0.4);
   background: var(--admin-accent-soft);
-  box-shadow: 0 4px 14px rgba(31, 92, 72, 0.08);
+  box-shadow: 0 4px 14px rgba(56, 31, 92, 0.08);
   transform: translateY(-1px);
 }
 
@@ -2276,7 +2276,7 @@ textarea.admin-control {
   margin-top: 12px;
   border-radius: 10px;
   border: 1px solid var(--admin-border);
-  background: linear-gradient(135deg, #f8faf9 0%, #f0f5f2 100%);
+  background: linear-gradient(135deg, #f9f8fa 0%, #f2f0f5 100%);
   padding: 12px 14px;
 }
 
@@ -2583,14 +2583,14 @@ textarea.admin-control {
 .admin-domain-card {
   border-radius: 12px;
   border: 1px solid var(--admin-border);
-  background: #f8faf9;
+  background: #f9f8fa;
   padding: 14px 16px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .admin-domain-card:hover {
-  border-color: rgba(61, 154, 114, 0.35);
-  box-shadow: 0 4px 16px rgba(31, 92, 72, 0.06);
+  border-color: rgba(100, 61, 154, 0.35);
+  box-shadow: 0 4px 16px rgba(56, 31, 92, 0.06);
 }
 
 /* ---- Model settings (compact SaaS panels) ---- */
@@ -2614,7 +2614,7 @@ textarea.admin-control {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #0f1c17;
+  color: #140f1c;
 }
 
 .settings-head {
@@ -2752,7 +2752,7 @@ textarea.admin-control {
 
 .settings-status-extra {
   font-size: 11px;
-  color: #909399;
+  color: #6f687a;
 }
 
 .settings-subsection-title {
@@ -2766,7 +2766,7 @@ textarea.admin-control {
   margin: 12px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #909399;
+  color: #6f687a;
 }
 
 .settings-runtime-summary {
@@ -2787,7 +2787,7 @@ textarea.admin-control {
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #909399;
+  color: #6f687a;
 }
 
 .settings-inline-switch {
@@ -2800,7 +2800,7 @@ textarea.admin-control {
   padding: 10px 12px;
   border: 1px solid var(--admin-border);
   border-radius: 10px;
-  background: #f8faf9;
+  background: #f9f8fa;
   gap: 12px;
 }
 
@@ -2810,7 +2810,7 @@ textarea.admin-control {
 }
 
 .settings-page .settings-panel-header {
-  background: #f7faf8;
+  background: #f8f7fa;
 }
 
 .settings-readiness-row {
@@ -2829,7 +2829,7 @@ textarea.admin-control {
 
 .settings-readiness-item em {
   font-style: normal;
-  color: #909399;
+  color: #6f687a;
   font-size: 11px;
 }
 
@@ -2845,8 +2845,8 @@ textarea.admin-control {
 }
 
 .settings-readiness-dot.is-on {
-  background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+  background: #6622c5;
+  box-shadow: 0 0 0 3px rgba(102, 34, 197, 0.18);
 }
 
 .settings-readiness-dot.is-off {
@@ -2937,17 +2937,17 @@ textarea.admin-control {
   padding: 1px 8px;
   font-size: 10px;
   background: #f4f4f5;
-  color: #71717a;
+  color: #6f6779;
 }
 
 .settings-cap-tag.is-text {
   background: #f4f4f5;
-  color: #71717a;
+  color: #6f6779;
 }
 
 .settings-cap-tag.is-image {
-  background: #ecfdf3;
-  color: #067647;
+  background: #f3ebfe;
+  color: #350973;
 }
 
 .settings-cap-tag.is-video {
@@ -2957,12 +2957,12 @@ textarea.admin-control {
 
 .settings-cap-tag.is-audio {
   background: #fff7ed;
-  color: #c2410c;
+  color: #bd3f0c;
 }
 
 .settings-cap-tag.is-warn {
   background: #fef2f2;
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 .settings-secret-row,
@@ -2981,7 +2981,7 @@ textarea.admin-control {
 
 .settings-model-count {
   font-size: 11px;
-  color: #909399;
+  color: #6f687a;
 }
 
 .settings-model-cap-row {
@@ -3011,7 +3011,7 @@ textarea.admin-control {
   border-radius: 999px;
   background: #f0f2f5;
   font-size: 10px;
-  color: #909399;
+  color: #6f687a;
 }
 
 .settings-model-cap-chip.is-active {
@@ -3075,7 +3075,7 @@ textarea.admin-control {
   padding: 16px 8px;
   text-align: center;
   font-size: 12px;
-  color: #909399;
+  color: #6f687a;
 }
 
 .settings-logic-table {
@@ -3100,7 +3100,7 @@ textarea.admin-control {
 }
 
 .settings-readiness-card.is-ready {
-  border-color: rgba(61, 154, 114, 0.35);
+  border-color: rgba(100, 61, 154, 0.35);
   background: var(--admin-accent-soft);
 }
 
@@ -3137,7 +3137,7 @@ textarea.admin-control {
   margin: 4px 0 0;
   font-size: 11px;
   line-height: 1.4;
-  color: #909399;
+  color: #6f687a;
 }
 
 .settings-field-grid--3 {
@@ -3188,7 +3188,7 @@ textarea.admin-control {
   margin: 2px 0 0;
   font-size: 11px;
   line-height: 1.4;
-  color: #909399;
+  color: #6f687a;
 }
 
 .settings-panel-actions {
@@ -3237,7 +3237,7 @@ textarea.admin-control {
   height: 22px;
   border-radius: 6px;
   background: #fff;
-  color: #64748b;
+  color: #726585;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
@@ -3271,7 +3271,7 @@ textarea.admin-control {
 }
 
 .settings-input.is-secret::placeholder {
-  color: #94a3b8;
+  color: #586a84;
 }
 
 .settings-page .settings-toggle-row {
@@ -3354,8 +3354,8 @@ textarea.admin-control {
 }
 
 .template-card:hover {
-  border-color: rgba(61, 154, 114, 0.4);
-  box-shadow: 0 8px 24px rgba(31, 92, 72, 0.08);
+  border-color: rgba(100, 61, 154, 0.4);
+  box-shadow: 0 8px 24px rgba(56, 31, 92, 0.08);
   transform: translateY(-1px);
 }
 
@@ -3370,7 +3370,7 @@ textarea.admin-control {
   aspect-ratio: 16 / 10;
   padding: 0;
   border: none;
-  background: linear-gradient(135deg, #1f5c48 0%, #3d9a72 100%);
+  background: linear-gradient(135deg, #381f5c 0%, #643d9a 100%);
   cursor: pointer;
   overflow: hidden;
 }
@@ -3392,7 +3392,7 @@ textarea.admin-control {
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #2d6a4f 0%, #52b788 55%, #1b4332 100%);
+  background: linear-gradient(135deg, #462d6a 0%, #7c52b7 55%, #2c1b43 100%);
 }
 
 .template-card-cover-gradient {
@@ -3503,7 +3503,7 @@ textarea.admin-control {
 
 .template-card-icon-btn--danger:hover {
   background: #fef0f0;
-  color: #f56c6c;
+  color: #e61010;
 }
 
 .template-card-desc {
@@ -3518,7 +3518,7 @@ textarea.admin-control {
 }
 
 .template-card-desc--empty {
-  color: #c0c4cc;
+  color: #c5bfcd;
   font-style: italic;
 }
 
@@ -3537,7 +3537,7 @@ textarea.admin-control {
 }
 
 .template-card-tag--muted {
-  color: #909399;
+  color: #6f687a;
   background: #f5f7fa;
 }
 
@@ -3587,7 +3587,7 @@ textarea.admin-control {
   gap: 14px;
   padding: 16px;
   border-right: 1px solid var(--admin-border);
-  background: #f8faf9;
+  background: #f9f8fa;
   overflow-y: auto;
 }
 
@@ -3614,7 +3614,7 @@ textarea.admin-control {
   width: 100%;
   height: 100%;
   font-size: 12px;
-  color: #909399;
+  color: #6f687a;
   background: linear-gradient(145deg, #f5f7fa, #eef2f6);
 }
 
@@ -3645,7 +3645,7 @@ textarea.admin-control {
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: #909399;
+  color: #6f687a;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
@@ -3721,7 +3721,7 @@ textarea.admin-control {
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.5;
-  color: #909399;
+  color: #6f687a;
 }
 
 .template-editor-footer {
@@ -3869,7 +3869,7 @@ textarea.admin-control {
 .task-icon-btn.is-danger:hover {
   border-color: #fca5a5;
   background: #fef2f2;
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 .task-icon-btn:disabled {
@@ -3917,7 +3917,7 @@ textarea.admin-control {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: #909399;
+  color: #6f687a;
 }
 
 .task-summary-jump {
@@ -3962,7 +3962,7 @@ textarea.admin-control {
   background: none;
   padding: 2px;
   border-radius: 4px;
-  color: #909399;
+  color: #6f687a;
   cursor: pointer;
 }
 
@@ -4015,7 +4015,7 @@ textarea.admin-control {
 
 .task-timeline-label {
   font-size: 11px;
-  color: #909399;
+  color: #6f687a;
 }
 
 .task-timeline-time {
@@ -4069,14 +4069,14 @@ textarea.admin-control {
 .task-http-chip {
   padding: 1px 7px;
   border-radius: 6px;
-  background: rgba(61, 154, 114, 0.12);
+  background: rgba(100, 61, 154, 0.12);
   color: var(--admin-forest);
   font-weight: 600;
 }
 
 .task-http-chip.is-fail {
   background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 .task-upstream-meta {
@@ -4124,7 +4124,7 @@ textarea.admin-control {
 .task-json-toggle > summary > span {
   font-size: 10px;
   font-weight: 500;
-  color: #909399;
+  color: #6f687a;
 }
 
 .task-json-toggle[open] > summary {
@@ -4150,7 +4150,7 @@ textarea.admin-control {
   justify-content: center;
   gap: 10px;
   min-height: 240px;
-  color: #909399;
+  color: #6f687a;
 }
 
 .task-detail-body {
@@ -4174,7 +4174,7 @@ textarea.admin-control {
   border-radius: 8px 8px 0 0;
   padding: 8px 14px;
   font-size: 13px;
-  color: #909399;
+  color: #6f687a;
   cursor: pointer;
 }
 
@@ -4219,7 +4219,7 @@ textarea.admin-control {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #909399;
+  color: #6f687a;
 }
 
 .task-detail-meta {
@@ -4233,7 +4233,7 @@ textarea.admin-control {
   padding: 10px;
   border-radius: 8px;
   background: #fef0f0;
-  color: #f56c6c;
+  color: #e61010;
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -4256,7 +4256,7 @@ textarea.admin-control {
 .task-detail-dl dt {
   margin: 0;
   font-size: 11px;
-  color: #909399;
+  color: #6f687a;
 }
 
 .task-detail-dl dd {

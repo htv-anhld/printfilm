@@ -431,7 +431,7 @@ export function PaymentSettingsPanel() {
                       <td className="p-2">
                         <div className="font-medium">
                           {row.label}
-                          {row.recommended ? <span className="ml-1 text-xs text-[#409eff]">{t("settings.payment.recommended")}</span> : null}
+                          {row.recommended ? <span className="ml-1 text-xs text-[#0068d4]">{t("settings.payment.recommended")}</span> : null}
                         </div>
                         <div className="text-xs text-muted-foreground font-mono">{row.id}</div>
                         {row.note ? <div className="text-xs text-muted-foreground">{row.note}</div> : null}
@@ -446,7 +446,7 @@ export function PaymentSettingsPanel() {
                       <td className="p-2">
                         <div>{row.rate_label}</div>
                         {row.verify_url ? (
-                          <a className="text-xs text-[#409eff] hover:underline" href={row.verify_url} target="_blank" rel="noreferrer">
+                          <a className="text-xs text-[#0068d4] hover:underline" href={row.verify_url} target="_blank" rel="noreferrer">
                             {t("settings.payment.verify")}
                           </a>
                         ) : null}

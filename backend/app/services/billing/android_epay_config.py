@@ -90,11 +90,11 @@ def payment_return_origin(config):
     try:
         return validate_payment_origin(value)
     except ValueError:
-        raise ValueError("支付返回站点留空，但现有网站地址未配置为公网 HTTPS 根地址。请在「支付后返回 App → 返回站点」填写网页站点根地址，例如 https://www.printfilm.com。") from None
+        raise ValueError("支付返回站点留空，但现有网站地址未配置为公网 HTTPS 根地址。请在「支付后返回 App → 返回站点」填写网页站点根地址，例如 https://www.prismreel.com。") from None
 
 
 def validate_payment_origin(value):
     try:
         return validate_share_origin(value)
     except ValueError:
-        raise ValueError("支付返回站点必须是公网 HTTPS 根地址，例如 https://www.printfilm.com；不能包含路径、账号或查询参数。") from None
+        raise ValueError("支付返回站点必须是公网 HTTPS 根地址，例如 https://www.prismreel.com；不能包含路径、账号或查询参数。") from None

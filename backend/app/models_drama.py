@@ -11,7 +11,7 @@ from app.database import Base
 
 
 class DramaProject(Base):
-    # One drama series owned by a PRINTFILM user
+    # One drama series owned by a Prismreel user
     __tablename__ = "drama_projects"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

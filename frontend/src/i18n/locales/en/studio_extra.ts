@@ -1,4 +1,4 @@
-// Printfilm Studio 画布文案（由 scratchpad/merge_studio_keys.py 生成）
+// Prismreel Studio 画布文案（由 scratchpad/merge_studio_keys.py 生成）
 export const enStudioExtra = {
   "studioCanvas": {
     "common": {
@@ -231,8 +231,8 @@ export const enStudioExtra = {
       "loadFailedMessage": "The canvas cannot be read right now. Please retry."
     },
     "canvasAgentButton": {
-      "collapse": "Collapse Printfilm Agent",
-      "open": "Open Printfilm Agent",
+      "collapse": "Collapse Prismreel Agent",
+      "open": "Open Prismreel Agent",
       "running": "Agent running",
       "creating": "Creating",
       "collapseAssistant": "Collapse assistant",
@@ -304,7 +304,7 @@ export const enStudioExtra = {
       "exported": "Canvas exported",
       "linkCopied": "Workspace link copied",
       "linkManual": "Workspace link: copy it from the address bar",
-      "resetConfirm": "Clear this Printfilm Studio canvas? Saved nodes and connections will be removed.",
+      "resetConfirm": "Clear this Prismreel Studio canvas? Saved nodes and connections will be removed.",
       "resetDone": "Canvas reset",
       "resetFailed": "Reset failed",
       "dragCopied": "Node copied by dragging",
@@ -420,7 +420,7 @@ export const enStudioExtra = {
       "arrangeH": "Arrange horizontally",
       "arrangeV": "Arrange vertically",
       "arrangeGrid": "Arrange in grid",
-      "askAgent": "Ask the Printfilm partner",
+      "askAgent": "Ask the Prismreel partner",
       "delete": "Delete",
       "confirmFramesShort": "Confirm two images in “Set first/last frame”",
       "localCompose": "Local composition · no model cost",
@@ -768,7 +768,7 @@ export const enStudioExtra = {
       "defaultName": "My creative workflow",
       "saveFailed": "Failed to save recipe",
       "tooLarge": "Recipe file cannot exceed 1MB",
-      "notRecipe": "Not a Printfilm Studio recipe file",
+      "notRecipe": "Not a Prismreel Studio recipe file",
       "readFailed": "File could not be read",
       "title": "Recipe library",
       "close": "Close recipe library",

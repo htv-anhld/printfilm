@@ -439,8 +439,8 @@ export function RoutingSettingsPanel() {
 
       {(data?.validation_errors.length ?? 0) > 0 ? (
         <SettingsSurface className="border-[#fde2e2] bg-[#fef0f0]">
-          <div className="text-xs font-medium text-[#f56c6c]">{t("settings.routing.validation")}</div>
-          <ul className="mt-1 space-y-0.5 text-xs text-[#f56c6c]">
+          <div className="text-xs font-medium text-[#d30f0f]">{t("settings.routing.validation")}</div>
+          <ul className="mt-1 space-y-0.5 text-xs text-[#d30f0f]">
             {data?.validation_errors.map((item) => (
               <li key={item}>· {item}</li>
             ))}
@@ -520,7 +520,7 @@ export function RoutingSettingsPanel() {
                     ))}
                   </div>
                   <div className="settings-model-search">
-                    <Search className="h-3.5 w-3.5 shrink-0 text-[#909399]" aria-hidden />
+                    <Search className="h-3.5 w-3.5 shrink-0 text-[#6f687a]" aria-hidden />
                     <input
                       className="settings-input"
                       value={modelSearch}
@@ -676,7 +676,7 @@ export function RoutingSettingsPanel() {
                                     );
                                   }}
                                 />
-                                {error ? <p className="mt-1 text-[11px] text-[#b64d43]" role="alert">{error}</p> : null}
+                                {error ? <p className="mt-1 text-[11px] text-[#af4a40]" role="alert">{error}</p> : null}
                               </>
                             )}
                           </td>

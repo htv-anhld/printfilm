@@ -71,4 +71,4 @@ license: MIT
 
 ## 来源与改编
 
-规则提炼自 MIT 许可的 https://github.com/zenstory-ai/drama-skills/tree/main/skills/short-drama-storyboard ，已改为 Printfilm 自包含的画布工具协议；原项目的 Markdown 文件协议、外部脚本和生产适配器不在本 Skill 内执行。
+规则提炼自 MIT 许可的 https://github.com/zenstory-ai/drama-skills/tree/main/skills/short-drama-storyboard ，已改为 Prismreel 自包含的画布工具协议；原项目的 Markdown 文件协议、外部脚本和生产适配器不在本 Skill 内执行。

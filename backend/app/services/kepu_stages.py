@@ -16,6 +16,27 @@ def _is_image_text(project: Any) -> bool:
     return (getattr(project, "pipeline_mode", None) or "full") == "image_text"
 
 
+# Seedance 内置口播实测只能稳定说中文 / 英文；越南语等会被读成普通话
+SEEDANCE_NATIVE_SPEECH_LOCALES = frozenset({"zh", "en"})
+
+
+def kepu_native_audio_enabled(project: Any | None = None) -> bool:
+    """科普 full 是否由 Seedance 视频内置口播（计费阶段判定与流水线共用的唯一真相源）。
+
+    静图模式、或内容语言不在 Seedance 可说语言内（如越南语）时返回 False：
+    改走「Seedance 只出环境音效 + 后期外部 TTS 旁白」。
+    """
+    from app.config import get_settings
+    from app.services.kepu_locale import content_locale_of
+
+    if project is not None:
+        if _is_image_text(project):
+            return False
+        if content_locale_of(project) not in SEEDANCE_NATIVE_SPEECH_LOCALES:
+            return False
+    return bool(getattr(get_settings(), "kepu_seedance_native_audio", True))
+
+
 def shot_image_ready(shot: Any) -> bool:
     """分镜是否已有可用分镜图。"""
     return bool(getattr(shot, "image_url", None) or getattr(shot, "image_ark_url", None))
@@ -53,9 +74,7 @@ def project_audio_ready(project: Any) -> bool:
     # full + Seedance 内置口播：assets 阶段不强制外部配音
     if not _is_image_text(project):
         try:
-            from app.config import get_settings
-
-            if bool(getattr(get_settings(), "kepu_seedance_native_audio", True)):
+            if kepu_native_audio_enabled(project):
                 return True
         except Exception:  # noqa: BLE001
             # 配置异常时不 fail-open，避免误跳过外部 TTS

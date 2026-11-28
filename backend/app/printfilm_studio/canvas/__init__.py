@@ -1,1 +1,1 @@
-"""Printfilm Studio canvas domain."""
+"""Prismreel Studio canvas domain."""

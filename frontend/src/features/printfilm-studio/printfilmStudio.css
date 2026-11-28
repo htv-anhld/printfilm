@@ -443,7 +443,7 @@
 .pf-left-rail button{color:#6b7280}
 .pf-left-rail button:hover,.pf-left-rail button.is-active{color:#2563eb;background:#eff6ff}
 .pf-image-gallery .pf-skel-media{cursor:grab}.pf-image-gallery .pf-skel-media:active{cursor:grabbing}
-/* Printfilm Studio material library: shared canvas assets and durable imports. */
+/* Prismreel Studio material library: shared canvas assets and durable imports. */
 .pf-library{position:absolute;left:24px;top:22px;bottom:92px;z-index:9;width:min(390px,calc(100vw - 48px));box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:22px 18px 16px;border:1px solid #e6e5ec;border-radius:22px;background:#fff;color:#292a32;box-shadow:0 14px 40px #27273518}
 .pf-library>header{display:flex;align-items:center;gap:10px;margin-bottom:10px}.pf-library>header b{font-size:18px}.pf-library>header span{padding:4px 9px;border-radius:12px;background:#f0eff4;color:#656673;font-size:12px}.pf-library>header button{margin-left:auto;border:0;background:transparent;color:#737582;cursor:pointer}
 .pf-library-actions{display:flex;gap:8px}.pf-library-actions button{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;padding:10px 5px;border:1px solid #e1e0e7;border-radius:12px;background:#fff;color:#666d6b;font-size:12px;font-weight:600;cursor:pointer}.pf-library-actions button:nth-child(2){background:#292a32;color:white;border-color:#292a32}.pf-library-actions button.is-active{color:#79569d;background:#f6f2fa}.pf-library button:disabled{opacity:.5;cursor:default}

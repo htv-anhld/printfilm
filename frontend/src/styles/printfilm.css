@@ -1,4 +1,4 @@
-/* PRINTFILM SaaS shell & page layouts */
+/* Prismreel SaaS shell & page layouts */
 
 .pf-shell {
   min-height: 100vh;
@@ -1073,7 +1073,7 @@
   background: var(--pf-lime-soft);
   display: grid;
   place-items: center;
-  color: #5a6b20;
+  color: #3f206b;
   margin-bottom: 0.35rem;
 }
 
@@ -2976,7 +2976,7 @@
 }
 
 .pf-drama-search input::placeholder {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .pf-asset-toolbar-meta {
@@ -3191,7 +3191,11 @@ button.pf-link {
   border-radius: var(--pf-radius-sm);
   padding: 0.85rem 1rem;
   font-size: 0.9rem;
-  color: #3a4518;
+  color: #2b1845;
+}
+
+html.dark .pf-hint {
+  color: #dcccf2;
 }
 
 /* ??? Home ??? */
@@ -4205,7 +4209,7 @@ button.pf-link {
 .pf-shot-thumb.empty {
   display: grid;
   place-items: center;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   font-size: 0.72rem;
 }
 
@@ -4302,7 +4306,7 @@ button.pf-shot-editable:disabled {
 
 .pf-prompt-chip span {
   font-size: 0.78rem;
-  color: #1a1714;
+  color: var(--pf-ink);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -4432,6 +4436,15 @@ button.pf-shot-editable:disabled {
 
 .pf-shot-status.bad {
   color: #a1261a;
+}
+
+/* 深色：浅底配色在深底上发暗，换成亮色系 */
+html.dark .pf-shot-status.warn {
+  color: #fcd34d;
+}
+
+html.dark .pf-shot-status.bad {
+  color: #fca5a5;
 }
 
 .pf-shot-status .mark {
@@ -4975,7 +4988,7 @@ button.pf-shot-editable:disabled {
 }
 
 .pf-icon-btn.danger {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .pf-icon-btn.danger:hover:not(:disabled) {
@@ -5287,6 +5300,10 @@ button.pf-shot-editable:disabled {
   color: #b45309;
 }
 
+html.dark .pf-usage-record-charge {
+  color: #fbbf24;
+}
+
 .pf-api-create {
   display: flex;
   gap: 0.6rem;
@@ -5462,7 +5479,7 @@ button.pf-shot-editable:disabled {
   padding: 2.5rem clamp(1.25rem, 3vw, 2.5rem) 3.25rem;
   background:
     radial-gradient(ellipse 70% 80% at 0% 0%, rgba(186, 230, 253, 0.55), transparent 58%),
-    radial-gradient(ellipse 60% 70% at 100% 20%, rgba(190, 242, 100, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 70% at 100% 20%, rgba(159, 100, 242, 0.35), transparent 55%),
     linear-gradient(180deg, var(--pf-surface-2) 0%, var(--pf-lime-soft) 100%);
 }
 
@@ -5894,7 +5911,7 @@ button.pf-shot-editable:disabled {
 
 .pf-pricing-sku-bonus {
   margin: 0.35rem 0 0;
-  color: #5f7a12;
+  color: #3d127a;
   font-size: 0.82rem;
   font-weight: 600;
   min-height: 1.2em;
@@ -7264,7 +7281,7 @@ button.pf-shot-editable:disabled {
   padding: 0 0.95rem 0 0.85rem;
   border: 0;
   border-radius: 999px;
-  background: #07c160;
+  background: #057a3e;
   color: #fff;
   cursor: pointer;
   font: inherit;
@@ -7285,12 +7302,12 @@ button.pf-shot-editable:disabled {
 }
 
 .pf-wx-fab-btn:hover {
-  background: #06ad56;
+  background: #068a47;
   transform: translateY(-1px);
 }
 
 .pf-wx-fab-btn.is-open {
-  background: #05964b;
+  background: #046c37;
 }
 
 .pf-wx-fab-label {
@@ -7369,6 +7386,26 @@ button.pf-shot-editable:disabled {
   font-weight: 650;
   letter-spacing: 0.02em;
   color: var(--pf-ink);
+}
+
+/* 直接打开 WhatsApp 对话（品牌紫按钮，整行） */
+.pf-wx-fab-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  background: var(--pf-lime);
+  color: var(--pf-lime-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pf-wx-fab-open:hover {
+  background: var(--pf-lime-hover);
 }
 
 .pf-wx-fab-copy {
@@ -7519,7 +7556,7 @@ button.pf-shot-editable:disabled {
 .pf-pricing-plan-features svg {
   flex-shrink: 0;
   margin-top: 0.15rem;
-  color: #5f7a12;
+  color: #3d127a;
 }
 
 @media (max-width: 1100px) {

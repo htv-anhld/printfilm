@@ -1,6 +1,6 @@
 ---
 name: short-drama-assets
-description: 从中文剧本拆出可复用角色、场景与跨镜连续性，并转成 Printfilm 画布资产规划。用于抽取角色/场景、整理视觉设定、判断复用或造型变体、编写资产参考图提示词；不生成媒体。
+description: 从中文剧本拆出可复用角色、场景与跨镜连续性，并转成 Prismreel 画布资产规划。用于抽取角色/场景、整理视觉设定、判断复用或造型变体、编写资产参考图提示词；不生成媒体。
 tasks:
   - asset_plan
 license: MIT
@@ -57,4 +57,4 @@ license: MIT
 
 ## 来源与改编
 
-规则提炼自 MIT 许可的 https://github.com/zenstory-ai/drama-skills/tree/main/skills/short-drama-assets ，已改为 Printfilm 自包含的画布工具协议；原项目的文件写入、外部脚本和生产适配器不在本 Skill 内执行。
+规则提炼自 MIT 许可的 https://github.com/zenstory-ai/drama-skills/tree/main/skills/short-drama-assets ，已改为 Prismreel 自包含的画布工具协议；原项目的文件写入、外部脚本和生产适配器不在本 Skill 内执行。

@@ -15,7 +15,7 @@ def media_task_payload(kind: str, prompt: str, **options: Any) -> dict[str, Any]
 
 
 async def create_media_task(canvas, kind: str, prompt: str, **options: Any) -> dict[str, Any]:
-    """Create a Printfilm Studio media task through the existing billing queue."""
+    """Create a Prismreel Studio media task through the existing billing queue."""
     from app.services.studio_generation import enqueue_generation
     from app.models_tasks import TaskRun
     from uuid import uuid4

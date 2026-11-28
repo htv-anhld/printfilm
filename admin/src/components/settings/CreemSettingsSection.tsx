@@ -89,7 +89,7 @@ export function CreemSettingsSection({
         </LabeledControl>
         <LabeledControl label={t("settings.payment.creem.webhookUrl")} className="settings-field-span-full">
           <input className="settings-input font-mono" readOnly value={webhookUrl} />
-          <p className="mt-1 text-xs text-[#909399]">{t("settings.payment.creem.webhookUrlHint")}</p>
+          <p className="mt-1 text-xs text-[#6f687a]">{t("settings.payment.creem.webhookUrlHint")}</p>
         </LabeledControl>
       </div>
     </SettingsPanel>

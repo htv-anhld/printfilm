@@ -2,8 +2,8 @@
 
 export const viShell = {
   meta: {
-    title: 'PRINTFILM · Nền tảng video ngắn AI',
-    description: 'PRINTFILM: phim truyện AI từ kịch bản đến từng tập hoàn chỉnh, video ngắn AI từ điểm bán hàng đến phân cảnh và video hoàn chỉnh.',
+    title: 'Prismreel · Nền tảng video ngắn AI',
+    description: 'Prismreel: phim truyện AI từ kịch bản đến từng tập hoàn chỉnh, video ngắn AI từ điểm bán hàng đến phân cảnh và video hoàn chỉnh.',
   },
   common: {
     comingSoon: 'Sắp ra mắt',
@@ -106,6 +106,7 @@ export const viShell = {
     dramaStudio: 'Drama Studio',
     studio3d: 'Studio 3D',
     library: 'Thư viện tư liệu',
+    marketplace: 'Chợ tác phẩm',
     partners: 'Đối tác sáng tạo',
     mcp: 'AI agent (MCP)',
     settings: 'Cài đặt',
@@ -202,16 +203,17 @@ export const viShell = {
     phone: 'Điện thoại hỗ trợ',
     wechat: 'WeChat',
   },
-  wechatGroup: {
-    openDraggable: 'Tham gia nhóm người dùng WeChat (có thể kéo)',
-    short: 'Nhóm',
-    open: 'Tham gia nhóm người dùng WeChat',
-    title: 'Nhóm người dùng printfilm',
-    lead: 'Học làm phim ngắn · hỗ trợ triển khai · trao đổi mẫu',
-    idLabel: 'ID WeChat',
+  supportChat: {
+    openDraggable: 'Chat hỗ trợ qua WhatsApp (có thể kéo)',
+    short: 'Hỗ trợ',
+    open: 'Chat hỗ trợ qua WhatsApp',
+    title: 'Hỗ trợ Prismreel',
+    lead: 'Hướng dẫn sử dụng · nạp tiền · báo lỗi',
+    idLabel: 'WhatsApp',
     copy: 'Sao chép',
     copied: 'Đã sao chép',
-    tip: 'Thêm ID WeChat gitpp88, ghi chú “vào nhóm” để được mời vào nhóm người dùng.',
+    openApp: 'Mở WhatsApp',
+    tip: 'Nhắn tin WhatsApp kèm email tài khoản để được hỗ trợ nhanh hơn.',
   },
   auth: {
     or: 'hoặc',
@@ -233,7 +235,7 @@ export const viShell = {
     registerTitle: 'Tạo tài khoản nhà sáng tạo',
     forgotTitle: 'Khôi phục mật khẩu',
     resetTitle: 'Đặt mật khẩu mới',
-    lede: 'PRINTFILM · Nền tảng sáng tạo phim truyện AI và video ngắn AI',
+    lede: 'Prismreel · Nền tảng sáng tạo phim truyện AI và video ngắn AI',
     nickname: 'Tên hiển thị',
     email: 'Email',
     password: 'Mật khẩu',

@@ -1,17 +1,17 @@
 /* 自动生成：scripts/gen_dark_css.py — 暗色主题颜色覆盖（勿手改） */
 /* generation.css */
-html.dark .gen-layout,html.dark .gen-floating{--gen-accent-ink:#c5df9c;--gen-focus:#81a444}
+html.dark .gen-layout,html.dark .gen-floating{--gen-accent-ink:#b38feb;--gen-focus:#9f78f8}
 html.dark .gen-layout{color:var(--pf-ink)}
 html.dark .gen-eyebrow{color:var(--pf-ink)}
 html.dark .gen-eyebrow > svg{color:var(--gen-accent-ink)}
 html.dark .gen-hero h1 span{color:var(--gen-accent-ink)}
 html.dark .gen-hero p,html.dark .gen-tasks-heading p{color:var(--gen-muted)}
-html.dark .gen-hero-art{color:#809066}
-html.dark .gen-hero-art .gen-wave{color:#515d3b}
+html.dark .gen-hero-art{color:#bac4ab}
+html.dark .gen-hero-art .gen-wave{color:#c1ccae}
 html.dark .gen-composer{border:1px solid var(--gen-line);background:var(--pf-card);box-shadow:0 6px 24px #00000022}
 html.dark .gen-composer:focus-within{border-color:#60723c;box-shadow:0 0 0 3px #00000085, 0 8px 28px #00000022}
 html.dark .gen-prompt-wrap textarea{border:0;outline:0;color:var(--pf-ink);background:transparent}
-html.dark .gen-prompt-wrap textarea::placeholder{color:#737d6b}
+html.dark .gen-prompt-wrap textarea::placeholder{color:#b7bdb2}
 html.dark .gen-counter{background:var(--pf-bg);color:var(--gen-muted)}
 html.dark .gen-references{border-right:1px solid var(--gen-line)}
 html.dark .gen-ref-count{color:var(--gen-muted)}
@@ -24,25 +24,25 @@ html.dark .gen-submit-group > span{color:var(--gen-muted)}
 html.dark .gen-estimate{color:var(--pf-muted)}
 html.dark .gen-estimate strong{color:var(--pf-ink)}
 html.dark .gen-estimate > button{border:0;background:transparent;color:var(--gen-accent-ink)}
-html.dark .gen-primary{border:1px solid #b9ff0c;background:var(--gen-accent);color:#172300;box-shadow:0 1px 2px #00000022}
-html.dark .gen-primary:hover{background:#b9ff10;color:#172300}
+html.dark .gen-primary{border:1px solid var(--gen-accent);background:var(--gen-accent);color:var(--pf-lime-ink);box-shadow:0 1px 2px #00000022}
+html.dark .gen-primary:hover{background:#751cf3;color:#172300}
 html.dark .gen-primary:disabled{box-shadow:none}
 html.dark .gen-secondary{border:1px solid var(--gen-line);background:var(--pf-card);color:var(--gen-muted);box-shadow:0 1px 2px #0000001b}
 html.dark .gen-secondary:hover{background:#272d1a;border-color:#60723c;color:var(--gen-accent-ink)}
 html.dark .gen-icon-button{border:1px solid var(--gen-line);color:var(--gen-muted);background:var(--pf-card)}
 html.dark .gen-icon-button:hover{background:#272d1a;color:var(--gen-accent-ink);border-color:#60723c}
-html.dark .gen-notice{color:#41997b;background:#192b22;border:1px solid #24382e}
+html.dark .gen-notice{color:#a2d8c5;background:#192b22;border:1px solid #24382e}
 html.dark .gen-notice a{color:var(--gen-accent-ink)}
 html.dark .gen-recent{border:1px solid var(--gen-line);background:var(--pf-card)}
 html.dark .gen-recent > header{border-bottom:1px solid var(--gen-line)}
 html.dark .gen-recent header a{color:var(--gen-accent-ink)}
-html.dark .gen-empty{color:#737d6b}
+html.dark .gen-empty{color:#b7bdb2}
 html.dark .gen-empty strong{color:var(--gen-muted)}
-html.dark .gen-empty p{color:#737d6b}
-html.dark .gen-gallery-preview{border:0;background:var(--pf-bg);color:#737d6b}
+html.dark .gen-empty p{color:#b7bdb2}
+html.dark .gen-gallery-preview{border:0;background:var(--pf-bg);color:#b7bdb2}
 html.dark .gen-result-status{background:#1a1a1aee;color:var(--gen-muted)}
-html.dark .gen-result-status.is-succeeded{color:#27ba8d}
-html.dark .gen-result-status.is-failed{color:#dc7f86}
+html.dark .gen-result-status.is-succeeded{color:#8decb1}
+html.dark .gen-result-status.is-failed{color:#f486a1}
 html.dark .gen-gallery-caption p,html.dark .gen-gallery-title{color:var(--gen-muted)}
 html.dark .gen-gallery-title{border:0;background:transparent}
 html.dark .gen-gallery-title:hover{color:var(--gen-accent-ink)}
@@ -67,16 +67,16 @@ html.dark .gen-auto-sync > i{background:#578f78;box-shadow:0 0 0 3px #000000}
 html.dark .gen-status-tabs button{border:1px solid transparent;background:var(--pf-card);color:var(--gen-muted)}
 html.dark .gen-status-tabs button:hover{background:var(--pf-bg)}
 html.dark .gen-status-tabs button.is-active{border-color:#3d482c;background:var(--gen-accent-soft);color:var(--gen-accent-ink)}
-html.dark .gen-status-tabs span{background:var(--pf-bg);color:#737d6b}
-html.dark .gen-status-tabs button.is-active > span{background:#455329;color:var(--gen-accent-ink)}
+html.dark .gen-status-tabs span{background:var(--pf-bg);color:#b7bdb2}
+html.dark .gen-status-tabs button.is-active > span{background:#3a2953;color:var(--gen-accent-ink)}
 html.dark .gen-search{border:1px solid var(--gen-line);background:var(--pf-card);color:var(--gen-muted)}
 html.dark .gen-search:focus-within{border-color:#60723c;box-shadow:0 0 0 3px #00000085}
 html.dark .gen-search input{border:0;outline:0;background:transparent;color:var(--pf-ink)}
 html.dark .gen-search input:focus-visible{outline:none}
-html.dark .gen-search input::placeholder{color:#737d6b}
-html.dark .gen-search-submit,html.dark .gen-search-clear{border:0;background:var(--pf-bg);color:#737d6b}
+html.dark .gen-search input::placeholder{color:#b7bdb2}
+html.dark .gen-search-submit,html.dark .gen-search-clear{border:0;background:var(--pf-bg);color:#b7bdb2}
 html.dark .gen-search-submit:hover{background:var(--gen-accent-soft);color:var(--gen-accent-ink)}
-html.dark .gen-search-clear{background:transparent;color:#737d6b}
+html.dark .gen-search-clear{background:transparent;color:#b7bdb2}
 html.dark .gen-search-clear:hover{background:var(--pf-bg)}
 html.dark .gen-reset-filters{border:0;background:transparent;color:var(--gen-muted)}
 html.dark .gen-reset-filters:hover{color:var(--gen-accent-ink)}
@@ -84,8 +84,8 @@ html.dark .gen-list-heading{border-block:1px solid var(--gen-line);background:va
 html.dark .gen-task-list{background:var(--pf-card)}
 html.dark .gen-task-row{border-bottom:1px solid var(--gen-line)}
 html.dark .gen-task-row:hover{background:var(--pf-bg)}
-html.dark .gen-task-cover{border:1px solid var(--gen-line);background:var(--pf-bg);color:#737d6b}
-html.dark .gen-cover-overlay{color:#1a1a1a;background:#07080a85}
+html.dark .gen-task-cover{border:1px solid var(--gen-line);background:var(--pf-bg);color:#b7bdb2}
+html.dark .gen-cover-overlay{color:#b8b8b8;background:#07080a85}
 html.dark .gen-task-title{border:0;background:transparent;color:var(--pf-ink)}
 html.dark .gen-task-title:hover{color:var(--gen-accent-ink)}
 html.dark .gen-task-metadata{color:var(--gen-muted)}
@@ -94,13 +94,13 @@ html.dark .gen-task-number{color:var(--gen-muted)}
 html.dark .gen-task-metadata code{color:var(--gen-muted)}
 html.dark .gen-task-row small{color:var(--gen-muted)}
 html.dark .gen-state{border:1px solid transparent;background:var(--pf-bg);color:var(--gen-muted)}
-html.dark .gen-state.is-succeeded{color:#41997c;background:#1c2a23;border-color:#25352c}
-html.dark .gen-state.is-failed{color:#9a4b61;background:#2f0e16;border-color:#341d25}
+html.dark .gen-state.is-succeeded{color:#97e2ca;background:#1c2a23;border-color:#25352c}
+html.dark .gen-state.is-failed{color:#f288a5;background:#2f0e16;border-color:#341d25}
 html.dark .gen-state.is-cancelled{color:var(--gen-muted);background:var(--pf-bg)}
 html.dark .gen-task-cost strong{color:var(--pf-ink)}
 html.dark .gen-task-time > span{color:var(--gen-muted)}
-html.dark .gen-task-error{border:0;background:transparent;color:#814255}
-html.dark .gen-task-error:hover{color:#9d516d}
+html.dark .gen-task-error{border:0;background:transparent;color:#d2a7b4}
+html.dark .gen-task-error:hover{color:#d2a8b7}
 html.dark .gen-row-actions .gen-secondary{color:var(--gen-muted);border-color:var(--gen-line)}
 html.dark .gen-row-actions .gen-icon-button{color:var(--gen-muted);border-color:var(--gen-line)}
 html.dark .gen-task-pagination{border-top:1px solid var(--gen-line);color:var(--gen-muted)}
@@ -108,7 +108,7 @@ html.dark .gen-task-pagination > span > strong{color:var(--pf-ink)}
 html.dark .gen-pagination-divider{background:var(--gen-line)}
 html.dark .gen-task-pagination .pf-page-btn{color:var(--gen-muted);border-color:var(--gen-line)}
 html.dark .gen-task-pagination .pf-page-btn.active{background:var(--gen-accent-soft);border-color:#3d482c;color:var(--gen-accent-ink)}
-html.dark .gen-inline-error{color:#c7788b;background:#2f0e14}
+html.dark .gen-inline-error{color:#d8a1af;background:#2f0e14}
 @media (max-width: 650px){
   html.dark .gen-task-row{border-top:1px solid var(--gen-line);border-bottom:0}
   html.dark .gen-references{border-right:0;border-bottom:1px solid var(--gen-line)}
@@ -130,13 +130,13 @@ html.dark .gen-select-option small{color:var(--gen-muted)}
 html.dark .gen-select-option.is-highlighted{background:var(--pf-bg)}
 html.dark .gen-select-option.is-selected{background:var(--gen-accent-soft);color:var(--gen-accent-ink)}
 html.dark .gen-option-icon{color:var(--gen-muted);background:var(--pf-bg);border:1px solid var(--gen-line)}
-html.dark .gen-select-option.is-selected .gen-option-icon{color:var(--gen-accent-ink);background:#455329;border-color:#455331}
+html.dark .gen-select-option.is-selected .gen-option-icon{color:var(--gen-accent-ink);background:#3a2953;border-color:#3f3153}
 html.dark .gen-option-check{color:var(--gen-accent-ink)}
 html.dark .gen-date-trigger{border:1px solid var(--gen-line);background:var(--pf-card);color:var(--gen-muted)}
 html.dark .gen-date-trigger > svg:first-child{color:var(--gen-muted)}
 html.dark .gen-date-trigger:hover{border-color:#60723c}
 html.dark .gen-date-trigger.is-open{border-color:#7a9d4f;box-shadow:0 0 0 3px #00000085}
-html.dark .has-value .gen-date-trigger{color:var(--gen-accent-ink);border-color:#455331;background:#272d1a}
+html.dark .has-value .gen-date-trigger{color:var(--gen-accent-ink);border-color:#3f3153;background:#272d1a}
 html.dark .gen-date-clear{border:0;background:var(--gen-accent-soft);color:var(--gen-accent-ink)}
 html.dark .gen-calendar-header > span{color:var(--pf-ink)}
 html.dark .gen-calendar-header > span > svg{color:var(--gen-muted)}
@@ -145,7 +145,7 @@ html.dark .gen-plain-icon:hover{background:var(--gen-accent-soft);color:var(--ge
 html.dark .gen-calendar-presets{border-bottom:1px solid var(--gen-line)}
 html.dark .gen-calendar-presets button{border:1px solid var(--gen-line);color:var(--gen-muted);background:var(--pf-card)}
 html.dark .gen-calendar-presets button:hover{background:var(--pf-bg)}
-html.dark .gen-calendar-presets button.is-active{background:var(--gen-accent-soft);border-color:#455331;color:var(--gen-accent-ink)}
+html.dark .gen-calendar-presets button.is-active{background:var(--gen-accent-soft);border-color:#3f3153;color:var(--gen-accent-ink)}
 html.dark .gen-calendar-month-label{color:var(--pf-ink)}
 html.dark .gen-calendar-weekdays{color:var(--gen-muted)}
 html.dark .gen-calendar-grid > button{border:0;background:transparent;color:var(--pf-ink)}
@@ -165,15 +165,15 @@ html.dark .gen-reference-slot{border:1px solid var(--pf-line);background:var(--p
 html.dark .gen-reference-slot-title > small{color:var(--pf-muted)}
 html.dark .gen-reference-placeholder{border:1px dashed color-mix(in srgb, var(--pf-lime) 28%, var(--pf-line));background:color-mix(in srgb, var(--pf-lime-soft) 32%, var(--pf-bg));color:#71815e}
 html.dark .gen-reference-placeholder > small{color:var(--pf-muted)}
-html.dark .gen-reference-source-actions > button{border:0;background:transparent;color:#648037}
+html.dark .gen-reference-source-actions > button{border:0;background:transparent;color:#c2d7a2}
 html.dark .gen-reference-source-actions > button:hover{background:var(--pf-lime-soft)}
 html.dark .gen-reference-source-actions > button:focus-visible,html.dark .gen-reference-remove:focus-visible{outline:2px solid #81a444}
 html.dark .gen-reference-limits{color:var(--pf-muted)}
-html.dark .gen-reference-media{border:1px solid var(--pf-line);background:var(--pf-bg);color:#92a27f}
-html.dark .gen-reference-media > span{background:#07080aef;color:#1a1a1a}
+html.dark .gen-reference-media{border:1px solid var(--pf-line);background:var(--pf-bg);color:#b9c3ac}
+html.dark .gen-reference-media > span{background:#07080aef;color:#b8b8b8}
 html.dark .gen-reference-remove{border:1px solid var(--pf-line);background:#1a1a1af0;color:var(--pf-ink)}
 html.dark .gen-mixed-reference-actions > button{border:1px solid var(--pf-line);background:var(--pf-card)}
-html.dark .gen-reference-kind{background:#1a1a1af0;color:#648037}
+html.dark .gen-reference-kind{background:#1a1a1af0;color:#c2d7a2}
 html.dark .gen-reference-picker{color:var(--pf-ink)}
 html.dark .gen-reference-picker-loading{color:var(--pf-muted)}
 html.dark .gen-reference-picker-pagination > span{color:var(--pf-muted)}

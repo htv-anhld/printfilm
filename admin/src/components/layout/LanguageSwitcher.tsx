@@ -31,8 +31,8 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
           className={cn(
             "h-7 min-w-[2.25rem] cursor-pointer rounded-[7px] px-2 text-xs font-semibold transition-colors",
             locale === l
-              ? "bg-[var(--admin-forest,#1f5c48)] text-white"
-              : "text-[var(--admin-muted,#64748b)] hover:bg-[rgba(61,154,114,0.12)] hover:text-[var(--admin-forest,#1f5c48)]",
+              ? "bg-[var(--admin-forest,#6d28d9)] text-white"
+              : "text-[var(--admin-muted,#64748b)] hover:bg-[var(--admin-accent-soft)] hover:text-[var(--admin-forest,#6d28d9)]",
           )}
         >
           {SHORT[l]}

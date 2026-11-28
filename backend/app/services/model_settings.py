@@ -395,7 +395,9 @@ async def _ensure_bootstrapped_channels(db: AsyncSession) -> list[SystemModelCha
     # A first direct settings PATCH may have already saved payment values.
     # Preserve them when initializing model channels, and encrypt env secrets.
     config = dict(app_row.config_json or {})
-    config["flat"] = _encrypt_flat_config(_effective_flat(_decrypt_flat_config(config)))
+    config["flat"] = _keep_undecryptable(
+        _encrypt_flat_config(_effective_flat(_decrypt_flat_config(config))), _undecryptable_secrets(config)
+    )
     config.setdefault("logical_models", [model.model_dump() for model in logical_models])
     config.setdefault("default_models", default_models_to_dict(defaults))
     app_row.config_json = config
@@ -514,12 +516,45 @@ def _decrypt_flat_config(raw: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def _encrypt_flat_config(raw: dict[str, Any]) -> dict[str, Any]:
+    """加密 flat 密钥字段；已是密文（enc: 前缀）的原样保留，绝不二次加密。
+
+    曾因运行时 flat 里缺该字段、回写时把库里已有密文再加密一层，导致密钥「无法解密」被丢弃
+    （2026-11-27 OSS / Creem 密钥丢失事故）。
+    """
     data = dict(raw)
     for field in SECRET_FIELDS:
         value = data.get(field)
-        if value:
+        if value and not str(value).startswith(ENCRYPTED_PREFIX):
             data[field] = _encrypt_secret(str(value))
     return data
+
+
+def _undecryptable_secrets(config: dict[str, Any] | None) -> dict[str, str]:
+    """库里解不开（SECRET_KEY 错配 / 历史二次加密）的密钥原文，按字段返回。"""
+    raw = (config or {}).get("flat") if isinstance((config or {}).get("flat"), dict) else {}
+    out: dict[str, str] = {}
+    for field in SECRET_FIELDS:
+        value = str((raw or {}).get(field) or "")
+        if not value.startswith(ENCRYPTED_PREFIX):
+            continue
+        plain = _decrypt_secret(value)
+        if not plain or plain.startswith(ENCRYPTED_PREFIX):
+            out[field] = value
+    return out
+
+
+def _keep_undecryptable(new_flat: dict[str, Any], kept: dict[str, str], touched: set[str] | None = None) -> dict[str, Any]:
+    """回写 flat 时保留解不开的原密文，除非本次显式重填 / 清空了该字段。
+
+    否则「解密失败 → 回落 .env 空值 → 加密回写」会把管理员配置的密钥永久抹掉。
+    """
+    touched = touched or set()
+    for field, cipher in kept.items():
+        if field in touched or f"clear_{field}" in touched:
+            continue
+        new_flat[field] = cipher
+        logger.warning("密钥字段 %s 无法用当前 SECRET_KEY 解密，保留原密文（需在管理端重填）", field)
+    return new_flat
 
 
 def _effective_flat(stored: dict[str, Any] | None) -> dict[str, Any]:
@@ -623,7 +658,8 @@ async def load_model_settings_cache(db: AsyncSession) -> None:
     if old_ids != new_ids or old_caps != new_caps or old_defaults != default_models or flat_changed:
         config["logical_models"] = [model.model_dump() for model in logical_models]
         config["default_models"] = default_models_to_dict(default_models)
-        config["flat"] = _encrypt_flat_config(flat_cfg) if flat_cfg else config.get("flat")
+        kept = _undecryptable_secrets(config)
+        config["flat"] = _keep_undecryptable(_encrypt_flat_config(flat_cfg), kept) if flat_cfg else config.get("flat")
         app_row.config_json = config
         await db.commit()
     from app.services.media_models.reference_limits import reference_limit_settings
@@ -733,6 +769,8 @@ async def patch_admin_model_settings(
     app_row = await _get_or_create_app_row(db)
     config = dict(app_row.config_json or {})
     stored_flat = _decrypt_flat_config(config)
+    # 解不开的密文（SECRET_KEY 错配）不能因一次无关保存被删掉：未重填 / 未清空时原样写回
+    undecryptable = _undecryptable_secrets(config)
     current = _effective_flat(stored_flat if stored_flat else None)
     previous_apple_environment = current["apple_environment"]
     if patch.get("unified_wallet_enabled") is True and not current["unified_wallet_enabled"]:
@@ -815,7 +853,7 @@ async def patch_admin_model_settings(
             raise ValueError(str(exc)) from exc
         if missing:
             raise ValueError(_("App 数据库结构未准备好：{items}", items="，".join(missing)))
-    config["flat"] = _encrypt_flat_config(current)
+    config["flat"] = _keep_undecryptable(_encrypt_flat_config(current), undecryptable, set(applied))
     app_row.config_json = config
     await db.commit()
     await load_model_settings_cache(db)

@@ -2,8 +2,8 @@
 
 export const enShell = {
   meta: {
-    title: 'PRINTFILM · AI short video',
-    description: 'PRINTFILM: turn scripts into episodic AI dramas, or offers into AI short videos.',
+    title: 'Prismreel · AI short video',
+    description: 'Prismreel: turn scripts into episodic AI dramas, or offers into AI short videos.',
   },
   common: {
     comingSoon: 'Coming soon',
@@ -106,6 +106,7 @@ export const enShell = {
     dramaStudio: 'Drama Studio',
     studio3d: '3D Studio',
     library: 'Media library',
+    marketplace: 'Marketplace',
     partners: 'Creative partners',
     mcp: 'AI agents (MCP)',
     settings: 'Settings',
@@ -202,16 +203,17 @@ export const enShell = {
     phone: 'Customer service',
     wechat: 'WeChat',
   },
-  wechatGroup: {
-    openDraggable: 'Join WeChat user group (draggable)',
-    short: 'WeChat',
-    open: 'Join WeChat user group',
-    title: 'printfilm user group',
-    lead: 'Short drama tips · deploy help · templates',
-    idLabel: 'WeChat ID',
+  supportChat: {
+    openDraggable: 'Chat with support on WhatsApp (draggable)',
+    short: 'Support',
+    open: 'Chat with support on WhatsApp',
+    title: 'Prismreel support',
+    lead: 'How-to · top-ups · bug reports',
+    idLabel: 'WhatsApp',
     copy: 'Copy',
     copied: 'Copied',
-    tip: 'Add WeChat ID gitpp88 with note “join group” and we will invite you.',
+    openApp: 'Open WhatsApp',
+    tip: 'Message us on WhatsApp with your account email for faster help.',
   },
   auth: {
     or: 'or',
@@ -233,7 +235,7 @@ export const enShell = {
     registerTitle: 'Create a creator account',
     forgotTitle: 'Reset your password',
     resetTitle: 'Choose a new password',
-    lede: 'PRINTFILM · AI drama and AI short video',
+    lede: 'Prismreel · AI drama and AI short video',
     nickname: 'Display name',
     email: 'Email',
     password: 'Password',

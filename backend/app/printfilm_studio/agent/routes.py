@@ -28,7 +28,7 @@ router = APIRouter(prefix="/printfilm-studio", tags=["printfilm-studio-agent"])
 
 
 class SessionCreate(BaseModel):
-    title: str = Field(default="Printfilm Studio 会话", max_length=200)
+    title: str = Field(default="Prismreel Studio 会话", max_length=200)
     model_id: str | None = Field(default=None, max_length=128)
 
 
@@ -80,7 +80,7 @@ async def update_session(session_id: str, body: SessionUpdate, db: AsyncSession 
     if row.status == 'running':
         raise HTTPException(409, _('当前执行结束后才能更改会话设置'))
     if body.title is not None:
-        row.title = body.title.strip() or _('Printfilm Studio 会话')
+        row.title = body.title.strip() or _('Prismreel Studio 会话')
     if 'model_id' in body.model_fields_set:
         config = await agent_config(user)
         if body.model_id and body.model_id not in {item['id'] for item in config['models']}:

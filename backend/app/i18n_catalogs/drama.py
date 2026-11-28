@@ -201,6 +201,11 @@ EN: dict[str, str] = {
     "音色设计失败({code}): {message}": "Voice design failed ({code}): {message}",
     "音色设计未完成 status={status} logid={log_id}": "Voice design did not finish status={status} logid={log_id}",
     "音色设计未返回 demo_audio logid={log_id}": "Voice design returned no demo_audio logid={log_id}",
+    '{name} · 分镜 {n}': '{name} · Shot {n}',
+    '{name} · 历史版本 {n}': '{name} · Version {n}',
+    '{name} · 成片': '{name} · Final video',
+    '{name} · 镜头 {n}': '{name} · Shot {n}',
+    '分集合成': 'Episode compose',
 }
 
 VI: dict[str, str] = {
@@ -400,4 +405,9 @@ VI: dict[str, str] = {
     "音色设计失败({code}): {message}": "Thiết kế giọng đọc thất bại ({code}): {message}",
     "音色设计未完成 status={status} logid={log_id}": "Thiết kế giọng đọc chưa hoàn tất status={status} logid={log_id}",
     "音色设计未返回 demo_audio logid={log_id}": "Thiết kế giọng đọc không trả về demo_audio logid={log_id}",
+    '{name} · 分镜 {n}': '{name} · Phân cảnh {n}',
+    '{name} · 历史版本 {n}': '{name} · Phiên bản {n}',
+    '{name} · 成片': '{name} · Video hoàn chỉnh',
+    '{name} · 镜头 {n}': '{name} · Cảnh {n}',
+    '分集合成': 'Ghép tập',
 }

@@ -1,4 +1,4 @@
-"""Printfilm Studio 导演 Skill 的阶段选择与注入测试。"""
+"""Prismreel Studio 导演 Skill 的阶段选择与注入测试。"""
 
 import pytest
 from sqlalchemy import select

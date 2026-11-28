@@ -1,4 +1,4 @@
-"""Printfilm Studio canvas and agent integration."""
+"""Prismreel Studio canvas and agent integration."""
 
 from app.i18n import _
 from app.config import get_settings
@@ -9,4 +9,4 @@ def ensure_enabled() -> None:
     from fastapi import HTTPException
 
     if not get_settings().printfilm_studio_enabled:
-        raise HTTPException(status_code=404, detail=_("Printfilm Studio 功能未启用"))
+        raise HTTPException(status_code=404, detail=_("Prismreel Studio 功能未启用"))

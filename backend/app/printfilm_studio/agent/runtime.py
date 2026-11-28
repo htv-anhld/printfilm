@@ -16,7 +16,7 @@ from app.printfilm_studio.agent.streaming import VisibleReplyBuffer
 from app.services.agent.compose import with_skill_system
 from app.services.llm_client import chat_completions
 
-SYSTEM_PROMPT = """你是 Printfilm Studio 创作助手。用简体中文回答。
+SYSTEM_PROMPT = """你是 Prismreel Studio 创作助手。用简体中文回答。
 需要查看项目、分集、资产、任务或画布时，只输出一个 JSON 对象：{"tool":"工具名","input":{}}。
 需要修改画布时，只输出：{"tool":"add_canvas_node","input":{...}}，或在可见回复后附加 ```json {"canvas_operations":[...]} ```。
 多条工具调用使用 JSON 数组 [{"tool":"add_canvas_node","input":{...}}, ...]，每轮最多 12 个工具。画布节点增删改和连接的数组会原子提交。

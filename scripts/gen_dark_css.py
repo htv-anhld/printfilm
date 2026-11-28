@@ -29,6 +29,11 @@ def fmt(r, g, b, a):
     return f'#{r:02x}{g:02x}{b:02x}' + ('' if a >= 0.999 else f'{round(a*255):02x}')
 
 KEEP_LIGHT_TEXT = [False]
+# 正在转换的是文字颜色（color）：暗色下必须足够亮，否则「深字压深底」读不清
+TEXT_COLOR = [False]
+# 文字最低明度（HLS L）：彩色 0.74、灰色 0.72，约合深底上 ≥7:1 的对比度
+TEXT_MIN_L_CHROMA = 0.74
+TEXT_MIN_L_GRAY = 0.72
 
 def is_accent(v):
     if re.search(r"var\(--[\w-]*(accent|primary|brand|lime)", v): return True
@@ -52,6 +57,8 @@ def map_color(r, g, b, a, shadow):
     else:
         l = 0.93 - l * 0.83  # trắng→~0.10, đen→~0.93
         s = s * 0.55 if l < 0.3 else s
+    if TEXT_COLOR[0]:  # chữ: luôn đủ sáng trên nền tối (trạng thái/lỗi/cảnh báo không được tối)
+        l = max(l, TEXT_MIN_L_CHROMA if s > 0.2 else TEXT_MIN_L_GRAY)
     r2, g2, b2 = colorsys.hls_to_rgb(h, l, s)
     return fmt(r2*255, g2*255, b2*255, a)
 
@@ -141,8 +148,10 @@ def emit(items, ind=''):
                 if not p.startswith('--'): decls.append(f'{p}:{v}')
                 continue
             KEEP_LIGHT_TEXT[0] = accent_bg and p in ('color', 'fill', 'stroke')
+            TEXT_COLOR[0] = (p in ('color', 'caret-color') or bool(re.match(r'--[\w-]*(ink|text|fg)\b', p))) and not accent_bg
             decls.append(f'{p}:{conv_value(v, shadow=p in ("box-shadow", "text-shadow"))}')
             KEEP_LIGHT_TEXT[0] = False
+            TEXT_COLOR[0] = False
         if not decls or not any(HEX.search(d) or RGB.search(d) or d.split(':',1)[1].strip().startswith('#') for d in decls) and not any('var(' in d or 'transparent' in d or 'none' in d for d in decls): continue
         sels = [w for w in (wrap_sel(s) for s in split_sel(pre)) if w]
         if sels: out.append(f'{ind}{",".join(sels)}{{{";".join(decls)}}}')

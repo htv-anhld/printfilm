@@ -1,4 +1,4 @@
-/* Drama module styles ? PRINTFILM tokens (lime #b6ff00, white cards, 14px radius) */
+/* Drama module styles ? Prismreel tokens (lime #a78bfa, white cards, 14px radius) */
 
 .drama-page {
   --drama-lime: var(--pf-lime);
@@ -40,7 +40,7 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border: 1px solid rgba(190, 242, 100, 0.45);
+  border: 1px solid rgba(159, 100, 242, 0.45);
 }
 
 .drama-agent-hero h1 {
@@ -284,7 +284,7 @@
 }
 
 .drama-agent-char-count.is-ok {
-  color: #3f5a22;
+  color: #39225a;
   border-color: color-mix(in srgb, var(--drama-lime) 40%, transparent);
   background: color-mix(in srgb, var(--drama-lime) 18%, var(--pf-card));
   font-weight: 600;
@@ -547,7 +547,7 @@
 .drama-ep-count-custom > p {
   margin: 0 0 8px;
   font-size: 12px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-ep-count-custom-row {
@@ -601,7 +601,7 @@
 
 .drama-btn-primary:disabled {
   background: var(--pf-surface-2);
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   cursor: not-allowed;
 }
 
@@ -625,7 +625,7 @@
 }
 
 .drama-btn-ghost:disabled {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   cursor: not-allowed;
 }
 
@@ -874,7 +874,7 @@
 }
 
 .drama-project-row-time {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-project-row-more {
@@ -1814,7 +1814,7 @@
   border: none;
   border-radius: 10px;
   background: transparent;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   cursor: pointer;
   opacity: 0;
   transition:
@@ -1857,7 +1857,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-voice-card-field textarea {
@@ -1900,7 +1900,7 @@
 }
 
 .drama-voice-card-player.is-empty {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   font-size: 13px;
 }
 
@@ -2185,7 +2185,7 @@
   background: transparent;
   cursor: pointer;
   font: inherit;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   padding: 4px;
 }
 
@@ -2207,7 +2207,7 @@
   font-size: 12px;
   font-weight: 700;
   background: var(--pf-surface-2);
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-step-bar button.active .drama-step-num {
@@ -2222,7 +2222,7 @@
 }
 
 .drama-step-sep {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   font-size: 14px;
   margin: 0 2px;
 }
@@ -2269,7 +2269,7 @@
 
 .drama-next-btn:disabled {
   background: color-mix(in srgb, var(--pf-ink) 8%, transparent);
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   cursor: not-allowed;
 }
 
@@ -2291,7 +2291,7 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border: 1px solid rgba(190, 242, 100, 0.45);
+  border: 1px solid rgba(159, 100, 242, 0.45);
 }
 
 .drama-step-hero-sub,
@@ -2564,7 +2564,7 @@
 .drama-outline-sidebar-head p {
   margin: 2px 0 0;
   font-size: 12px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-outline-add-btn {
@@ -2674,12 +2674,16 @@
 .drama-outline-ep-meta em {
   font-style: normal;
   font-size: 11px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-outline-ep-meta em.is-shot {
-  color: #059669;
+  color: #047857;
   font-weight: 600;
+}
+
+html.dark .drama-outline-ep-meta em.is-shot {
+  color: #34d399;
 }
 
 .drama-outline-ep-meta em.is-waiting {
@@ -2799,12 +2803,16 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   margin-right: 4px;
 }
 
 .drama-outline-saved.is-ready {
-  color: #16a34a;
+  color: #15803d;
+}
+
+html.dark .drama-outline-saved.is-ready {
+  color: #4ade80;
 }
 
 .drama-outline-regen-btn {
@@ -2871,7 +2879,7 @@
 .drama-outline-section-title p {
   margin: 2px 0 0;
   font-size: 12px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-outline-section-icon {
@@ -2943,7 +2951,7 @@
 }
 
 .drama-outline-section-empty {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-outline-scenes {
@@ -2999,7 +3007,7 @@ html.dark .drama-outline-scene-duration {
 .drama-outline-script-summary-hint {
   margin-left: auto;
   font-weight: 500;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-outline-scene-stats {
@@ -3103,7 +3111,7 @@ html.dark .drama-outline-script-speaker {
 }
 
 .drama-outline-script-colon {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-outline-script-other {
@@ -3215,7 +3223,7 @@ html.dark .drama-outline-script-speaker {
   margin: 0;
   padding: 12px 10px;
   font-size: 12px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-episodes-page {
@@ -3571,7 +3579,7 @@ html.dark .drama-outline-script-speaker {
 .drama-character-field span {
   display: block;
   font-size: 11px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   margin-bottom: 2px;
 }
 
@@ -3732,8 +3740,8 @@ html.dark .drama-outline-script-speaker {
 
 .drama-ep-card.is-planning,
 .drama-ep-card.is-generating {
-  border-color: rgba(190, 242, 100, 0.55);
-  box-shadow: 0 0 0 1px rgba(190, 242, 100, 0.25);
+  border-color: rgba(159, 100, 242, 0.55);
+  box-shadow: 0 0 0 1px rgba(159, 100, 242, 0.25);
 }
 
 .drama-ep-card-skeleton {
@@ -3927,7 +3935,7 @@ html.dark .drama-outline-script-speaker {
 .drama-ep-card-progress-bar {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #bef264 0%, var(--pf-lime) 100%);
+  background: linear-gradient(90deg, #c4b5fd 0%, var(--pf-lime) 100%);
   transition: width 0.35s ease;
 }
 
@@ -3962,7 +3970,7 @@ html.dark .drama-outline-script-speaker {
 }
 
 .drama-ep-card-ai-btn:disabled {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   cursor: not-allowed;
 }
 
@@ -4498,7 +4506,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 }
 
 .drama-ep-asset-card.is-linked {
-  outline: 2px solid var(--drama-lime, #b7f34a);
+  outline: 2px solid var(--drama-lime, #904af3);
   outline-offset: -2px;
 }
 
@@ -4527,7 +4535,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
   padding-bottom: 133.333%; /* 3:4 */
   background: var(--ep-soft);
   overflow: hidden;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   font-weight: 700;
   flex: none;
 }
@@ -4566,7 +4574,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
   margin: 24px 0;
   text-align: center;
   font-size: 12px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   line-height: 1.5;
 }
 
@@ -4677,6 +4685,15 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
   color: #92400e;
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+/* 深色：错误/提醒文字换亮色，避免深红深棕压在深底上 */
+html.dark .drama-ep-script-issue.is-error {
+  color: #fda4af;
+}
+
+html.dark .drama-ep-script-issue.is-warn {
+  color: #fcd34d;
 }
 
 .drama-ep-link-last-frame {
@@ -4814,7 +4831,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 
 .drama-ep-ref-voice-badge.bound {
   background: rgba(17, 17, 17, 0.82);
-  color: #b7f34a;
+  color: #904af3;
 }
 
 .drama-ep-voice-row {
@@ -5080,7 +5097,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 
 .drama-ep-prompt-editor.is-editing:empty::before {
   content: attr(data-placeholder);
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   pointer-events: none;
 }
 
@@ -5244,7 +5261,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
   border: 1px solid var(--pf-line);
   border-radius: 8px;
   background: var(--pf-surface-2);
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-ep-mention-pop-search:focus-within {
@@ -5264,7 +5281,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 }
 
 .drama-ep-mention-pop-search input::placeholder {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-ep-mention-pop-search input::-webkit-search-cancel-button {
@@ -5283,7 +5300,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 .drama-ep-mention-pop-empty {
   margin: 16px 8px;
   font-size: 13px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   text-align: center;
 }
 
@@ -5314,7 +5331,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   flex-shrink: 0;
 }
 
@@ -5851,7 +5868,8 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
   border: none;
   border-radius: 999px;
   background: var(--drama-lime, var(--pf-lime));
-  color: var(--drama-ink, var(--pf-ink));
+  /* 青柠底永远配深字（深色主题下 --pf-ink 是浅色，会变成白字压亮绿） */
+  color: var(--pf-lime-ink);
   font: inherit;
   font-size: 13px;
   font-weight: 650;
@@ -5875,7 +5893,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 
 .drama-ep-compose-btn:disabled {
   background: var(--pf-surface-2);
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   cursor: not-allowed;
 }
 
@@ -5943,7 +5961,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 }
 
 .drama-ep-player-placeholder {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   text-align: center;
   display: grid;
   gap: 6px;
@@ -6078,7 +6096,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 }
 
 .drama-ep-clip-empty {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
 }
 
 .drama-ep-clip-shell.is-failed .drama-ep-clip-empty {
@@ -6350,7 +6368,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
   background: var(--ep-soft);
   display: grid;
   place-items: center;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   font-size: 18px;
 }
 
@@ -6367,7 +6385,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
 
 .drama-ep-clip-spec {
   font-size: 10px;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   letter-spacing: 0.01em;
 }
 
@@ -7007,7 +7025,7 @@ html.dark .drama-ep-header-gen-opts .fc-gen-opt-btn {
   margin-top: 10px;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--pf-lime), #dfff80, var(--pf-lime));
+  background: linear-gradient(90deg, var(--pf-lime), #b686f9, var(--pf-lime));
   background-size: 200% 100%;
   animation: drama-gen-queue-slide 1.2s linear infinite;
 }

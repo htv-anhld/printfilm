@@ -96,7 +96,7 @@ export function LibraryAdminPage() {
           />
         </label>
       </AdminFilterBar>
-      {kind === "bgm" ? <p className="text-xs text-[#909399]">{t("commerce.library.bgmHint")}</p> : null}
+      {kind === "bgm" ? <p className="text-xs text-[#6f687a]">{t("commerce.library.bgmHint")}</p> : null}
       {items.length === 0 ? (
         <EmptyState title={t("commerce.library.empty")} />
       ) : (
@@ -111,7 +111,7 @@ export function LibraryAdminPage() {
               <div className="flex items-start justify-between gap-2 text-sm">
                 <div>
                   <div className="font-medium">{item.name}</div>
-                  <div className="text-xs text-[#909399]">
+                  <div className="text-xs text-[#6f687a]">
                     {item.tags.join(", ")}
                     {item.duration_sec ? ` · ${Math.round(item.duration_sec)}s` : ""}
                   </div>

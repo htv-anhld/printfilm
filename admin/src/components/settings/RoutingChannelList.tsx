@@ -70,20 +70,20 @@ export function RoutingChannelTabs({
             )}
           >
             <button type="button" className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => onSelect(ch.id)}>
-              <span className="w-5 shrink-0 text-xs text-[#909399]">#{index + 1}</span>
+              <span className="w-5 shrink-0 text-xs text-[#6f687a]">#{index + 1}</span>
               <span className="truncate font-medium">{ch.name || ch.id}</span>
-              <span className="truncate font-mono text-xs text-[#909399]">{ch.id}</span>
+              <span className="truncate font-mono text-xs text-[#6f687a]">{ch.id}</span>
               {ch.id === primaryId ? (
-                <em className="rounded bg-[#f0f9eb] px-1.5 text-xs not-italic text-[#67c23a]">
+                <em className="rounded bg-[#f0f9eb] px-1.5 text-xs not-italic text-[#407723]">
                   {t("settings.routing.channel.primary")}
                 </em>
               ) : null}
               {!ch.enabled ? (
-                <em className="rounded bg-[#f4f4f5] px-1.5 text-xs not-italic text-[#909399]">
+                <em className="rounded bg-[#f4f4f5] px-1.5 text-xs not-italic text-[#6f687a]">
                   {t("settings.routing.channel.disabled")}
                 </em>
               ) : null}
-              <span className="ml-auto shrink-0 text-xs text-[#909399]">
+              <span className="ml-auto shrink-0 text-xs text-[#6f687a]">
                 {t("settings.routing.channel.modelCount", { n: ch.models.length })}
               </span>
             </button>
@@ -131,7 +131,7 @@ export function RoutingChannelTabs({
             <Plus className="h-3.5 w-3.5" />
             {t("settings.routing.kie.add")}
           </button>
-          <span className="text-xs text-[#909399]">{t("settings.routing.channel.failoverHint")}</span>
+          <span className="text-xs text-[#6f687a]">{t("settings.routing.channel.failoverHint")}</span>
         </div>
       ) : null}
     </div>
@@ -214,17 +214,17 @@ export function RoutingChannelFields({
           onChange={(e) => onChange({ base_url: e.target.value })}
         />
         {isKie ? (
-          <p className="mt-1 text-xs text-[#909399]">
+          <p className="mt-1 text-xs text-[#6f687a]">
             {t("settings.routing.kie.hint")}
-            <a className="ml-1 text-[#409eff] hover:underline" href={KIE_CONSOLE_URL} target="_blank" rel="noreferrer">
+            <a className="ml-1 text-[#0068d4] hover:underline" href={KIE_CONSOLE_URL} target="_blank" rel="noreferrer">
               {KIE_CONSOLE_URL}
             </a>
           </p>
         ) : null}
         {isTokenfree ? (
-          <p className="mt-1 text-xs text-[#909399]">
+          <p className="mt-1 text-xs text-[#6f687a]">
             {t("settings.routing.console")}
-            <a className="ml-1 text-[#409eff] hover:underline" href={TOKENFREE_CONSOLE_URL} target="_blank" rel="noreferrer">
+            <a className="ml-1 text-[#0068d4] hover:underline" href={TOKENFREE_CONSOLE_URL} target="_blank" rel="noreferrer">
               {TOKENFREE_CONSOLE_URL}
             </a>
           </p>

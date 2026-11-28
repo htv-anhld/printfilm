@@ -137,7 +137,7 @@ async def handle(db: AsyncSession, user: User, app_id: int | None, message: dict
                     "protocolVersion": asked if asked in SUPPORTED_VERSIONS else SUPPORTED_VERSIONS[0],
                     "capabilities": {"tools": {"listChanged": False}},
                     "serverInfo": SERVER_INFO,
-                    "instructions": "Generate images and short videos with PRINTFILM. Each generation spends the user's credits.",
+                    "instructions": "Generate images and short videos with Prismreel. Each generation spends the user's credits.",
                 },
             )
         if method == "ping":

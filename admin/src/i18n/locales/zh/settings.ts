@@ -280,7 +280,7 @@ export const zhSettings = {
     panel1Title: "1. 公网地址",
     panel1Desc: "支付回调、分享链接与 OSS 回填",
     baseUrl: "后端公网基址",
-    baseUrlHint: "例：https://www.printfilm.com",
+    baseUrlHint: "例：https://www.prismreel.com",
     infraNote: "数据库、Redis、SECRET_KEY 等基础设施仍通过服务器环境变量配置，不在此页修改。",
     panel2Title: "2. 媒体工具",
     panel2Desc: "合成与抽帧依赖本机 ffmpeg / ffprobe",

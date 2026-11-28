@@ -424,7 +424,7 @@ html.dark .fc-gen-model-card {
 .fc-skill-picker-item input,
 .pf-skill-picker-item input {
   margin-top: 2px;
-  accent-color: #65a30d;
+  accent-color: #7c3aed;
 }
 
 .fc-skill-picker-item span,
@@ -443,7 +443,7 @@ html.dark .fc-gen-model-card {
 
 .fc-skill-picker-item em,
 .pf-skill-picker-item em {
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   font-style: normal;
   font-size: 11px;
   line-height: 1.4;
@@ -567,7 +567,7 @@ html.dark .fc-gen-model-card {
 .fc-skill-picker-empty,
 .pf-skill-picker-empty {
   margin: 0;
-  color: color-mix(in srgb, var(--pf-muted) 75%, transparent);
+  color: var(--pf-muted-soft);
   font-size: 12px;
 }
 

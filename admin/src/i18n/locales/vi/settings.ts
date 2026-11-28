@@ -280,7 +280,7 @@ export const viSettings = {
     panel1Title: "1. Địa chỉ công khai",
     panel1Desc: "Callback thanh toán, liên kết chia sẻ và điền lại OSS",
     baseUrl: "Địa chỉ công khai của backend",
-    baseUrlHint: "Ví dụ: https://www.printfilm.com",
+    baseUrlHint: "Ví dụ: https://www.prismreel.com",
     infraNote: "Cơ sở dữ liệu, Redis, SECRET_KEY… vẫn cấu hình qua biến môi trường máy chủ, không sửa ở trang này.",
     panel2Title: "2. Công cụ media",
     panel2Desc: "Ghép video và trích khung hình cần ffmpeg / ffprobe trên máy",
