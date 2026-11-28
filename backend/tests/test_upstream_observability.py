@@ -317,7 +317,7 @@ async def test_actual_ark_video_submit_records_gateway_body_and_provider_id(monk
 
     gateway = ark_module.ArkGateway(SimpleNamespace(ark_base_url="https://www.tokenfree.com/v1"))
     monkeypatch.setattr(ark_module.ArkGateway, "mock", property(lambda _self: False))
-    monkeypatch.setattr(gateway, "_resolve_ark_route", lambda *_args: None)
+    monkeypatch.setattr(gateway, "_resolve_ark_route", lambda *_args, **_kw: None)
     monkeypatch.setattr(gateway, "_route_headers", lambda *_args: {"Authorization": "Bearer private-key"})
     monkeypatch.setattr(gateway, "_seedance_duration", lambda value, **_kwargs: int(value))
     body = {"model": model, "duration": 6, "content": [{"type": "text", "text": "真实视频提示词"}]}

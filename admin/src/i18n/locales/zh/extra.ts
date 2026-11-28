@@ -117,7 +117,7 @@ export const zhExtra = {
         "sharing": "启用作品分享",
         "sharingDesc": "允许分享单视频和当前短剧分集的业务链接。需要有效的公网 HTTPS 域名，不能填写 localhost 或局域网地址。",
         "shareBase": "分享公网基址",
-        "shareBaseHint": "例如 https://www.printfilm.com；域名应将 /s/、/.well-known/apple-app-site-association 和 /.well-known/assetlinks.json 转发至后端，其余作品页面交给 Web。",
+        "shareBaseHint": "例如 https://www.prismreel.com；域名应将 /s/、/.well-known/apple-app-site-association 和 /.well-known/assetlinks.json 转发至后端，其余作品页面交给 Web。",
         "teamIdHint": "Apple 开发者账号中的 Team ID，用于 Universal Links 关联。",
         "androidPkg": "Android 包名",
         "androidPkgHint": "与安卓应用 applicationId 一致；与证书指纹一起填写。不需要配置 Apple 即可使用安卓分享。",

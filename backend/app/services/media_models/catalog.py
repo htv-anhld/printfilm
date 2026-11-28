@@ -30,18 +30,37 @@ async def priced_catalog(db, catalog: dict) -> dict:
             row["prices"] = prices
             row["price_version"] = catalog["price_version"]
             row["available_resolutions"] = [x for x in strategy.resolutions if x in prices] if book else list(strategy.resolutions)
+            if strategy.capability == "video":
+                # 策略列全部档位；实际只开放有渠道能出的档（如 Seedance 2.0 的 1080p / 4k 需要 kie 渠道）
+                from app.services.seedance_resolutions import allowed_video_resolutions
+                routable = set(allowed_video_resolutions(row["id"]))
+                row["allowed_resolutions"] = [x for x in row["allowed_resolutions"] if x in routable]
+                row["available_resolutions"] = [x for x in row["available_resolutions"] if x in routable]
             try:
-                pin_route(strategy.capability, row["id"])
+                route = pin_route(strategy.capability, row["id"])
             except ValueError as exc:
                 # 没有可路由渠道（如渠道 models 未勾选 seedance-2.0-fast）：直接隐藏，前台不可选
                 logger.debug("媒体目录隐藏不可路由模型 %s：%s", row["id"], exc)
                 continue
             row["available"] = bool(row["available_resolutions"])
             row["pricing_hint"] = "按张计费" if strategy.capability == "image" else "按提交时长计费"
+            if _is_kie(route):
+                row["provider"] = "kie"
+                if not book:
+                    # 无固定价目表时给出 kie 秒价 / 张价参考（含加价倍率）
+                    from app.services.kie_models import kie_price_hint
+                    row["pricing_hint"] = kie_price_hint(route.get("upstream_model")) or row["pricing_hint"]
             rows.append(row)
         catalog[key] = rows
     _repair_catalog_defaults(catalog)
     return catalog
+
+
+def _is_kie(route: dict | None) -> bool:
+    """固定路由快照是否指向 kie.ai。"""
+    from types import SimpleNamespace
+    from app.services.kie_models import is_kie_route
+    return bool(route) and is_kie_route(SimpleNamespace(protocol=route.get("protocol"), base_url=route.get("base_url")))
 
 
 def _repair_catalog_defaults(catalog: dict) -> None:

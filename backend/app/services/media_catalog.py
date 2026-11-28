@@ -89,8 +89,11 @@ def build_media_catalog(
     seen_image: set[str] = set()
     seen_video: set[str] = set()
 
+    from app.services.kie_models import kie_logical_id
+
     def _canon(mid: str) -> str:
-        aliased = resolve_preset_alias(mid)
+        # kie 上游 id（bytedance/seedance-2-fast）与逻辑模型合并成一行
+        aliased = kie_logical_id(mid) or resolve_preset_alias(mid)
         return (aliased or mid).strip() or mid
 
     default_image = _canon((defaults.image_model or "").strip())

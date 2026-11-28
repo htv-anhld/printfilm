@@ -89,6 +89,34 @@ PRESET_MODELS: dict[LogicalModelCapability, tuple[dict[str, str], ...]] = {
     ),
 }
 
+# 不进预设下拉、只在对应渠道（kie.ai）带上时出现的模型展示文案
+EXTRA_DISPLAY_MODELS: tuple[dict[str, str], ...] = (
+    {
+        "id": "seedance-2.0-mini",
+        "label": "Seedance 2.0 Mini",
+        "note": "2.0 经济档，适合草稿与批量出片；4–15 秒，最高 720p（Kie.ai）",
+        "pricing_hint": "按模型与分辨率定价",
+        "eta_hint": "约 1–3 分钟/镜",
+    },
+    {
+        "id": "seedream-4.5",
+        "label": "Seedream 4.5",
+        "note": "细节扎实的静帧，支持 2K / 4K，可带参考图编辑",
+        "pricing_hint": "按模型与分辨率定价",
+        "eta_hint": "约 15–60 秒/张",
+    },
+    {
+        "id": "seedream-5.5",
+        "label": "Seedream 5.5",
+        "note": "新一代 Seedream，1K / 2K，可带参考图改图（Kie.ai）",
+        "pricing_hint": "按模型与分辨率定价",
+        "eta_hint": "约 15–60 秒/张",
+    },
+)
+
+# 锁定 TokenFree 时没有的档位：默认模型落回最接近的预设
+LOCKED_PRESET_FALLBACKS: dict[str, str] = {"seedance-2.0-mini": "seedance-2.0"}
+
 # 生图常用比例（与 Seedream 尺寸表交集）
 IMAGE_ASPECT_RATIOS: tuple[str, ...] = (
     "auto",
@@ -121,9 +149,9 @@ PRESET_MODEL_ALIASES: dict[str, str] = {
     "seedance2": "seedance-2.0",
     "seedance-2-0": "seedance-2.0",
     "seedance2.0": "seedance-2.0",
-    # Mini 上游未开通：历史选择一律落到 2.0，避免 ModelNotOpen
+    # TokenFree 的 Mini 上游未开通：历史连字符 / 方舟接入点一律落到 2.0；
+    # 点分 seedance-2.0-mini 是 kie.ai 渠道的真实档位（见 kie_models），不再别名
     "seedance-2-0-mini": "seedance-2.0",
-    "seedance-2.0-mini": "seedance-2.0",
     "doubao-seedance-2-0-mini-260615": "seedance-2.0",
     "seedance-2-0-fast": "seedance-2.0-fast",
     "seedance-2.0-fast": "seedance-2.0-fast",
@@ -168,7 +196,7 @@ def lookup_preset_row(model_id: str | None) -> dict[str, str] | None:
     mid = normalize_model_name(resolve_preset_alias(model_id))
     if not mid:
         return None
-    for rows in PRESET_MODELS.values():
+    for rows in (*PRESET_MODELS.values(), EXTRA_DISPLAY_MODELS):
         for row in rows:
             if normalize_model_name(row["id"]) == mid:
                 return dict(row)
@@ -228,6 +256,7 @@ def current_model_selection(capability: str, model_id: str | None, fallback: str
 def clamp_default_to_preset(capability: LogicalModelCapability, model_id: str | None) -> str:
     """非法或不空缺省时落到该能力第一项预设。"""
     raw = resolve_preset_alias(current_model_selection(capability, model_id))
+    raw = LOCKED_PRESET_FALLBACKS.get(raw.lower(), raw)
     if is_preset_model(capability, raw):
         # 返回预设表里的规范写法
         for mid in preset_ids(capability):

@@ -207,7 +207,7 @@ export function PartnerSubmissionsPage() {
           key: "url",
           title: t("commerce.submissions.url"),
           render: (r) => (
-            <a className="text-[#409eff] hover:underline" href={r.url} target="_blank" rel="noreferrer noopener">
+            <a className="text-[#0068d4] hover:underline" href={r.url} target="_blank" rel="noreferrer noopener">
               {r.platform || r.url}
             </a>
           ),

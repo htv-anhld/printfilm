@@ -116,7 +116,8 @@ async def plan_items(db, task) -> list[dict]:
                       "strategy_version": strategy.version, "params": normalized,
                       "reference_limits": strategy.describe()["reference_limits"],
                       "target_id": target, "shot_no": shot_no, "optional": optional,
-                      "route": pin_route(capability, model)})
+                      "route": pin_route(capability, model,
+                                         resolution=normalized.get("resolution") if capability == "video" else None)})
 
     kind = task.task_type
     if task.domain == "kepu" and kind in {"project_pipeline", "shot_regen_image", "shot_regen_video"}:

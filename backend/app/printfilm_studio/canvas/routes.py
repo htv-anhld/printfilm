@@ -1,4 +1,4 @@
-"""Printfilm Studio canvas API."""
+"""Prismreel Studio canvas API."""
 
 from __future__ import annotations
 

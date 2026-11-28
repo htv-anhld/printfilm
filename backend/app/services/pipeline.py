@@ -200,10 +200,10 @@ def _is_image_text(project: Project) -> bool:
 
 
 def _kepu_seedance_native_audio(project: Project | None = None) -> bool:
-    """科普 full：Seedance 视频内置口播，不走外部 TTS。"""
-    if project is not None and _is_image_text(project):
-        return False
-    return bool(getattr(get_settings(), "kepu_seedance_native_audio", True))
+    """科普 full：Seedance 视频内置口播，不走外部 TTS（越南语等改走后期 TTS，见 kepu_native_audio_enabled）。"""
+    from app.services.kepu_stages import kepu_native_audio_enabled
+
+    return kepu_native_audio_enabled(project)
 
 
 def _kepu_seedance_sfx_audio(project: Project | None = None) -> bool:

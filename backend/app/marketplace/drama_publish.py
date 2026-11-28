@@ -228,7 +228,7 @@ async def pause_sales(db, series):
 
 
 async def ensure_import_rights(db, episode):
-    """PrintFilm 分集统一关联账号授权；材料关联绝不等于审核通过。"""
+    """Prismreel 分集统一关联账号授权；材料关联绝不等于审核通过。"""
     if episode.source != "printfilm" or not episode.asset_id:
         return
     mapping = episode.source_snapshot or {}

@@ -1,4 +1,4 @@
-"""Toonflow-compatible canvas codec used only at the Printfilm Studio boundary."""
+"""Toonflow-compatible canvas codec used only at the Prismreel Studio boundary."""
 
 from __future__ import annotations
 

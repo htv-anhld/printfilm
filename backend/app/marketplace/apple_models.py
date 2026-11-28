@@ -9,7 +9,7 @@ from .models import MarketBase, Record
 
 
 class AppleAccountToken(Record, MarketBase):
-    """稳定 UUID 仅映射 PrintFilm 账号；不可认领其他账号的交易。"""
+    """稳定 UUID 仅映射 Prismreel 账号；不可认领其他账号的交易。"""
     __tablename__ = "marketplace_apple_account_tokens"
     user_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
     token: Mapped[str] = mapped_column(String(36), unique=True)

@@ -102,13 +102,13 @@ async def send_verification(user: User, *, force: bool = False) -> dict[str, Any
     redis_client.setex(_cooldown_key(int(user.id)), RESEND_COOLDOWN_SECONDS, "1")
     code, token = _issue(redis_client, int(user.id))
     body = (
-        _("欢迎注册 PRINTFILM。您的邮箱验证码是：")
+        _("欢迎注册 Prismreel。您的邮箱验证码是：")
         + f"\n\n    {code}\n\n"
         + _("也可以在 30 分钟内打开以下链接完成验证：")
         + f"\n{build_verify_link(token)}\n\n"
         + _("如非本人操作，请忽略本邮件。")
     )
-    sent = await send_email(to_addrs=[user.email], subject=_("PRINTFILM 邮箱验证"), body=body)
+    sent = await send_email(to_addrs=[user.email], subject=_("Prismreel 邮箱验证"), body=body)
     if not sent:
         logger.warning("verification email not sent user=%s", user.id)
     return {"ok": True, "sent": bool(sent)}

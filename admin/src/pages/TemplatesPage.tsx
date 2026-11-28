@@ -332,7 +332,7 @@ export function TemplatesPage() {
 
       {loading ? (
         <div className="template-grid-loading">
-          <Loader2 className="h-6 w-6 animate-spin text-[#67c23a]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#407723]" />
           <span>{t("templates.loading")}</span>
         </div>
       ) : filteredItems.length === 0 ? (

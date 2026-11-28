@@ -219,7 +219,7 @@ async def test_image_admission_reserves_style_subject_and_previous_slots_without
     db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(scalar_one_or_none=lambda: project)))
     strategy = get_strategy("seedream-5.0-pro").with_reference_limits({"images": reference_cap, "videos": 0, "audios": 0})
     monkeypatch.setattr(planning, "resolve_strategy", lambda *_: strategy)
-    monkeypatch.setattr(planning, "pin_route", lambda *_: {})
+    monkeypatch.setattr(planning, "pin_route", lambda *_, **__: {})
     monkeypatch.setattr(storage, "republish_url", lambda *_args, **_kwargs: pytest.fail("admission must not upload"))
     task = TaskRun(domain="kepu", task_type="project_pipeline", project_id=1, payload={"phase": "assets"})
     if reference_cap == 2:

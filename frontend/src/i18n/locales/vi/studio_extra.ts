@@ -1,4 +1,4 @@
-// Printfilm Studio 画布文案（由 scratchpad/merge_studio_keys.py 生成）
+// Prismreel Studio 画布文案（由 scratchpad/merge_studio_keys.py 生成）
 export const viStudioExtra = {
   "studioCanvas": {
     "common": {
@@ -212,6 +212,9 @@ export const viStudioExtra = {
       "desc6": "Dựng cảnh quay · Tham chiếu đa phương thức",
       "desc7": "Tạo nhanh · Dựng thử phân cảnh",
       "desc8": "Diễn xuất nhân vật · Video chuyển động",
+      "desc9": "Bản tiết kiệm · Nháp & xuất hàng loạt",
+      "desc10": "Ảnh tĩnh chi tiết · 2K / 4K",
+      "desc11": "Ảnh tĩnh thế hệ mới · Biến đổi từ ảnh",
       "loadingModels": "Đang tải model…"
     },
     "workspaceAccessNotice": {
@@ -228,8 +231,8 @@ export const viStudioExtra = {
       "loadFailedMessage": "Tạm thời không đọc được canvas, vui lòng thử lại."
     },
     "canvasAgentButton": {
-      "collapse": "Thu gọn Printfilm Agent",
-      "open": "Mở Printfilm Agent",
+      "collapse": "Thu gọn Prismreel Agent",
+      "open": "Mở Prismreel Agent",
       "running": "Agent đang chạy",
       "creating": "Đang sáng tác",
       "collapseAssistant": "Thu gọn trợ lý sáng tác",
@@ -301,7 +304,7 @@ export const viStudioExtra = {
       "exported": "Đã xuất canvas",
       "linkCopied": "Đã sao chép liên kết không gian làm việc",
       "linkManual": "Liên kết không gian làm việc: hãy sao chép từ thanh địa chỉ",
-      "resetConfirm": "Xóa sạch canvas Printfilm Studio này? Các node và dây nối đã lưu sẽ bị gỡ.",
+      "resetConfirm": "Xóa sạch canvas Prismreel Studio này? Các node và dây nối đã lưu sẽ bị gỡ.",
       "resetDone": "Đã đặt lại canvas",
       "resetFailed": "Đặt lại thất bại",
       "dragCopied": "Đã kéo để sao chép node",
@@ -417,7 +420,7 @@ export const viStudioExtra = {
       "arrangeH": "Xếp ngang",
       "arrangeV": "Xếp dọc",
       "arrangeGrid": "Xếp dạng lưới",
-      "askAgent": "Hỏi cộng sự Printfilm",
+      "askAgent": "Hỏi cộng sự Prismreel",
       "delete": "Xóa",
       "confirmFramesShort": "Hãy xác nhận hai ảnh trong «Đặt khung đầu/khung cuối»",
       "localCompose": "Ghép cục bộ · không tốn phí model",
@@ -765,7 +768,7 @@ export const viStudioExtra = {
       "defaultName": "Quy trình sáng tạo của tôi",
       "saveFailed": "Lưu công thức thất bại",
       "tooLarge": "Tệp công thức không được vượt quá 1MB",
-      "notRecipe": "Không phải tệp công thức Printfilm Studio",
+      "notRecipe": "Không phải tệp công thức Prismreel Studio",
       "readFailed": "Không đọc được tệp",
       "title": "Thư viện công thức",
       "close": "Đóng thư viện công thức",

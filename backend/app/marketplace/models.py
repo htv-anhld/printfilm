@@ -159,7 +159,7 @@ class MediaJob(Record, MarketBase):
 
 
 class Handoff(Record, MarketBase):
-    """PrintFilm 成片转存到市场；同一版本幂等，不改已发布的旧资产。"""
+    """Prismreel 成片转存到市场；同一版本幂等，不改已发布的旧资产。"""
     __tablename__ = "marketplace_handoffs"
     __table_args__ = (UniqueConstraint("owner_id", "idempotency_key"),)
     owner_id: Mapped[int] = mapped_column(Integer, index=True)

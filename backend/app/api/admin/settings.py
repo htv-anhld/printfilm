@@ -264,6 +264,29 @@ async def admin_tokenfree_account_quota(
         raise HTTPException(status_code=502, detail=_("TokenFree 额度查询失败")) from exc
 
 
+class AdminKieCreditRequest(BaseModel):
+    """查询 Kie.ai credit 余额。"""
+
+    channel_id: str | None = Field(default=None, max_length=64, description="Kie 渠道 ID；省略时取第一个已启用且有 Key 的 Kie 渠道。")
+    api_key: str | None = Field(default=None, max_length=512, description="仅本次查询使用的 Key（新建未保存的渠道），不会保存。")
+    base_url: str | None = Field(default=None, max_length=512, description="可选 Base URL，默认 https://api.kie.ai。")
+
+
+@router.post("/settings/kie/credit", summary="查询 Kie.ai 账户剩余 credit")
+async def admin_kie_credit(
+    body: AdminKieCreditRequest,
+    _admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """返回 credits、按 $0.005/credit 折算的美元估值与控制台地址；Key 不回传。"""
+    from app.services.kie_account import kie_credit_summary
+
+    try:
+        return await kie_credit_summary(db, channel_id=body.channel_id, api_key=body.api_key, base_url=body.base_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.post("/settings/storage/test")
 async def test_storage(
     _admin: User = Depends(get_current_admin),

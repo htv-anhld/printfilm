@@ -4,7 +4,7 @@ from sqlalchemy import text
 
 
 async def apply_printfilm_studio_schema_patches(conn) -> None:
-    """Create Printfilm Studio tables without touching legacy canvas data."""
+    """Create Prismreel Studio tables without touching legacy canvas data."""
     # 允许部署脚本独立调用：注册 ORM 外键目标，避免 WorkflowRun 建表时无法推导字段类型。
     import app.models  # noqa: F401
     import app.models_drama  # noqa: F401
@@ -29,7 +29,7 @@ async def apply_printfilm_studio_schema_patches(conn) -> None:
             project_id BIGINT NOT NULL REFERENCES drama_projects(id) ON DELETE CASCADE,
             team_id BIGINT REFERENCES teams(id),
             user_id BIGINT NOT NULL REFERENCES users(id),
-            title VARCHAR(200) NOT NULL DEFAULT 'Printfilm Studio 会话',
+            title VARCHAR(200) NOT NULL DEFAULT 'Prismreel Studio 会话',
             model_id VARCHAR(128),
             status VARCHAR(32) NOT NULL DEFAULT 'idle',
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

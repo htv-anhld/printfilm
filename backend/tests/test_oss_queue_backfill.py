@@ -68,4 +68,4 @@ def test_is_local_static_url_rejects_oss_https():
         is_local_static_url("https://lsj-cc.oss-cn-beijing.aliyuncs.com/kepu/generated/p1/a.png")
         is False
     )
-    assert is_local_static_url("https://www.printfilm.com/static/generated/p1/a.png") is True
+    assert is_local_static_url("https://www.prismreel.com/static/generated/p1/a.png") is True

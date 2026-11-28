@@ -1,19 +1,18 @@
-/** 全站右下角：加微信号入群（展示微信号，可一键复制；可拖动） */
+/** 全站右下角：WhatsApp 客服（展示号码，可一键复制或直接打开 WhatsApp；可拖动） */
 import { useEffect, useRef, useState } from 'react'
-import { Check, Copy, X } from 'lucide-react'
+import { Check, Copy, ExternalLink, X } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { useFabDragPosition } from '../../hooks/useFabDragPosition'
-import { WECHAT_ID } from '../../lib/siteContact'
+import { WHATSAPP_NUMBER, WHATSAPP_URL } from '../../lib/siteContact'
 
-/** 社区加群微信号（不加图片二维码） */
 const POS_STORAGE_KEY = 'pf-wx-group-fab-pos'
 
-/** 简易微信气泡图标 */
-function WeChatIcon({ size = 22 }: { size?: number }) {
+/** 客服聊天图标：对话气泡 + 听筒（通用图形，不使用第三方商标） */
+function ChatPhoneIcon({ size = 22 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden fill="currentColor">
-      <path d="M9.5 4C5.91 4 3 6.46 3 9.5c0 1.72.9 3.26 2.32 4.32L4.7 16.1l2.42-.72c.72.22 1.5.35 2.33.35.18 0 .35 0 .52-.02A4.9 4.9 0 0 1 9.5 14.5c0-2.99 2.8-5.4 6.25-5.4.1 0 .2 0 .3.01C15.4 5.9 12.7 4 9.5 4Zm-2.4 3.4a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Zm4.1 0a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Z" />
-      <path d="M15.75 10.1c-2.9 0-5.25 1.9-5.25 4.25S12.85 18.6 15.75 18.6c.62 0 1.21-.1 1.76-.27l1.95.58-.48-1.55c1.1-.82 1.82-2 1.82-3.31 0-2.35-2.35-4.25-5.05-4.25Zm-1.7 3.1a.7.7 0 1 1 0 1.4.7.7 0 0 1 0-1.4Zm3.4 0a.7.7 0 1 1 0 1.4.7.7 0 0 1 0-1.4Z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 20.5l1.3-3.9A8.5 8.5 0 1 1 8 19.6Z" />
+      <path d="M9.2 8.4c.2-.4.6-.5.9-.3l1 .8c.3.2.3.6.1.9l-.5.6a5.6 5.6 0 0 0 2.9 2.9l.6-.5c.3-.2.7-.2.9.1l.8 1c.2.3.1.7-.3.9-.9.5-2 .6-2.9.2a8 8 0 0 1-3.7-3.7c-.4-.9-.3-2 .2-2.9Z" />
     </svg>
   )
 }
@@ -52,10 +51,10 @@ export default function WeChatGroupFab() {
     }
   }, [open])
 
-  // 复制微信号到剪贴板
-  async function copyWechatId() {
+  // 复制 WhatsApp 号码到剪贴板
+  async function copyNumber() {
     try {
-      await navigator.clipboard.writeText(WECHAT_ID)
+      await navigator.clipboard.writeText(WHATSAPP_NUMBER.replace(/\s+/g, ''))
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
     } catch {
@@ -66,11 +65,11 @@ export default function WeChatGroupFab() {
   return (
     <div className="pf-wx-fab-root is-draggable" ref={rootRef} style={fabStyle}>
       {open ? (
-        <div className="pf-wx-fab-panel" role="dialog" aria-label={t('wechatGroup.title')}>
+        <div className="pf-wx-fab-panel" role="dialog" aria-label={t('supportChat.title')}>
           <header className="pf-wx-fab-head">
             <div>
-              <strong>{t('wechatGroup.title')}</strong>
-              <p>{t('wechatGroup.lead')}</p>
+              <strong>{t('supportChat.title')}</strong>
+              <p>{t('supportChat.lead')}</p>
             </div>
             <button
               type="button"
@@ -82,19 +81,23 @@ export default function WeChatGroupFab() {
             </button>
           </header>
           <div className="pf-wx-fab-id">
-            <span className="pf-wx-fab-id-label">{t('wechatGroup.idLabel')}</span>
-            <code className="pf-wx-fab-id-value">{WECHAT_ID}</code>
+            <span className="pf-wx-fab-id-label">{t('supportChat.idLabel')}</span>
+            <code className="pf-wx-fab-id-value">{WHATSAPP_NUMBER}</code>
             <button
               type="button"
               className="pf-wx-fab-copy"
-              onClick={() => void copyWechatId()}
-              aria-label={copied ? t('wechatGroup.copied') : t('wechatGroup.copy')}
+              onClick={() => void copyNumber()}
+              aria-label={copied ? t('supportChat.copied') : t('supportChat.copy')}
             >
               {copied ? <Check size={14} strokeWidth={2.2} aria-hidden /> : <Copy size={14} strokeWidth={2} aria-hidden />}
-              <span>{copied ? t('wechatGroup.copied') : t('wechatGroup.copy')}</span>
+              <span>{copied ? t('supportChat.copied') : t('supportChat.copy')}</span>
             </button>
           </div>
-          <p className="pf-wx-fab-tip">{t('wechatGroup.tip')}</p>
+          <a className="pf-wx-fab-open" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={14} strokeWidth={2} aria-hidden />
+            <span>{t('supportChat.openApp')}</span>
+          </a>
+          <p className="pf-wx-fab-tip">{t('supportChat.tip')}</p>
         </div>
       ) : null}
       <button
@@ -105,12 +108,12 @@ export default function WeChatGroupFab() {
           setOpen((v) => !v)
         }}
         aria-expanded={open}
-        aria-label={t('wechatGroup.open')}
-        title={t('wechatGroup.openDraggable')}
+        aria-label={t('supportChat.open')}
+        title={t('supportChat.openDraggable')}
         {...bindDrag}
       >
-        <WeChatIcon />
-        <span className="pf-wx-fab-label">{t('wechatGroup.short')}</span>
+        <ChatPhoneIcon />
+        <span className="pf-wx-fab-label">{t('supportChat.short')}</span>
       </button>
     </div>
   )

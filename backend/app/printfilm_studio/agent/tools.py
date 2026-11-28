@@ -1,4 +1,4 @@
-"""第一批 Printfilm Studio Agent 工具声明与画布 Patch 应用。"""
+"""第一批 Prismreel Studio Agent 工具声明与画布 Patch 应用。"""
 
 from __future__ import annotations
 

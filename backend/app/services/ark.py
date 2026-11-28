@@ -75,6 +75,7 @@ from app.services.tokenfree_video import (
 from app.services import storage
 from app.services.remote_source import fresh_remote_source, remember_remote_source
 from app.services import local_media_mock
+from app.services.kie_models import is_kie_route
 from app.services.media_models.runtime import (
     current_snapshot, current_operation, execution_params, operation_for, restore_route, stamp_usage,
 )
@@ -703,7 +704,10 @@ class ArkGateway:
         return f"{base}{path}"
 
     # 按逻辑路由解析 ARK 渠道凭证
-    def _resolve_ark_route(self, capability: str, model_id: str | None) -> ResolvedModelRoute | None:
+    def _resolve_ark_route(
+        self, capability: str, model_id: str | None, *, resolution: str | None = None
+    ) -> ResolvedModelRoute | None:
+        """解析本次调用的路由；视频带 resolution 时挑支持该清晰度的渠道（1080p / 4k → kie）。"""
         operation = current_operation.get()
         snapshot = current_snapshot.get()
         if snapshot and (capability in {"image", "video"} or any(
@@ -716,6 +720,13 @@ class ArkGateway:
         resolve_upstream_model(capability, model_id)
         logical_id = resolve_logical_model_id(capability, model_id)
         route = resolve_logical_model(capability, logical_id)
+        if route is not None and capability == "video" and resolution:
+            from app.services.logical_model_router import resolve_logical_model_candidates
+            from app.services.seedance_resolutions import pick_route_for_resolution
+
+            better = pick_route_for_resolution(resolve_logical_model_candidates(capability, logical_id), resolution)
+            if better is not None:
+                route = better
         if route is None:
             from app.services.model_settings import get_routing_snapshot
             if get_routing_snapshot().channels:
@@ -882,6 +893,50 @@ class ArkGateway:
         if getattr(self.settings, "local_media_mock", False) and not _force_real_image.get():
             return await local_media_mock.simulate_http_request(method, endpoint, **kwargs)
         return await observed_request(client, method, endpoint, **kwargs)
+
+    def _use_kie(self, route: ResolvedModelRoute | None, *, image: bool = False) -> bool:
+        """路由指向 kie 且未开本地媒体模拟（生图在 force_real_image 下仍真实请求）。"""
+        if not is_kie_route(route):
+            return False
+        if getattr(self.settings, "local_media_mock", False):
+            return bool(image and _force_real_image.get())
+        return True
+
+    async def _submit_kie_video(self, route: ResolvedModelRoute, body: dict[str, Any]) -> str:
+        """kie 视频建单（Seedance 2.0 / Fast / Mini），返回带渠道前缀的任务 ID。"""
+        from app.services.kie_media import submit_kie_video
+
+        return await submit_kie_video(route, body)
+
+    async def _kie_image_once(
+        self,
+        route: ResolvedModelRoute,
+        prompt: str,
+        refs: list[str],
+        *,
+        resolution: str,
+        aspect_ratio: str | None,
+        project_id: int | None,
+        shot_no: int | None,
+    ) -> ImageResult:
+        """kie Seedream 生图：参考图转公网 https → 建单同步等结果 → 落盘 + OSS。"""
+        from app.services.kie_media import generate_kie_image, record_usage
+
+        public_refs = [await self._resolve_image_ref(url, prefer_https=True) for url in refs if (url or "").strip()]
+        remote, record = await generate_kie_image(
+            route, prompt=prompt, aspect_ratio=aspect_ratio, resolution=resolution, image_urls=public_refs,
+        )
+        dest = storage.project_dir(project_id or 0) / f"shot_{(shot_no or 0):03d}_{uuid.uuid4().hex[:12]}.png"
+        await storage.download_to(remote, dest)
+        remember_remote_source(dest, remote)
+        usage, cost = record_usage(record)
+        usage.update({"size": resolution, "provider_task_id": record.task_id})
+        return ImageResult(
+            local_url=storage.publish_local(dest, sync=True),
+            remote_url=remote,
+            raw_usage=stamp_usage(usage, delivery=str(dest)),
+            upstream_cost_fen=cost,
+        )
 
     async def download_result_media(self, url: str, dest: Path) -> None:
         """下载生成媒体；每次重试都重新解析 TokenFree 直链，避免沿用已断开的连接。"""
@@ -1314,6 +1369,12 @@ class ArkGateway:
         )
 
         refs = [*subject_refs, *style_refs]
+        if self._use_kie(route, image=True):
+            return await self._kie_image_once(
+                route, full_prompt, refs,
+                resolution=(normalized.get("resolution") if strategy is not None else None) or str(resolved_size or ""),
+                aspect_ratio=aspect_ratio, project_id=project_id, shot_no=shot_no,
+            )
         channel_id = (route.channel_id if route else "") or ""
         base = (route.base_url if route and route.base_url else self.settings.ark_base_url) or ""
         on_tokenfree = uses_tokenfree_image(base_url=base, channel_id=channel_id)
@@ -1349,11 +1410,13 @@ class ArkGateway:
                 structured_refs=True,
             )
         elif "gpt-image" in chosen.lower():
-            # OpenAI 兼容生图（TokenFree gpt-image-2 / OpenAI 官方）：不认 watermark / image 字段，参考图写进提示词
+            # OpenAI 兼容生图（TokenFree gpt-image-2 / OpenAI 官方）：不认 watermark / image 字段。
+            # /images/generations 不能读图，参考图链接写进提示词也看不到，且上游会以
+            # 「The prompt cannot contain URLs」拒单 → 不带参考图，只发文字。
             path = "/images/generations"
             prompt_text = full_prompt
             if refs:
-                prompt_text = f"{prompt_text}\n参考图：{' '.join(refs)}"
+                logger.info("gpt-image /images/generations 不支持参考图，忽略 %s 张", len(refs))
             body = {
                 "model": chosen,
                 "prompt": prompt_text,
@@ -1647,7 +1710,7 @@ class ArkGateway:
         # Seedance needs a publicly reachable https image (data URI often rejected / odd errors)
         image_ref = await self._resolve_image_ref(safe_image_url, prefer_https=True)
         wanted = (model or "").strip() or (strategy.model_id if strategy is not None else "") or self.settings.model_video
-        route = pinned_route or self._resolve_ark_route("video", wanted)
+        route = pinned_route or self._resolve_ark_route("video", wanted, resolution=resolution)
         from app.services.tokenfree_pricing import canonicalize_channel_model_id
 
         video_model = canonicalize_channel_model_id(
@@ -1710,6 +1773,11 @@ class ArkGateway:
         if draft:
             body["draft"] = True
             body["resolution"] = "480p"
+        if self._use_kie(route):
+            if not extra_refs:
+                # kie 首帧模式：动画化分镜图；aspect_ratio 必填，可与首帧共存
+                body["content"][1]["role"] = "first_frame"
+            return await self._submit_kie_video(route, body)
         # Do not send character_consistency — unknown fields have caused BodyFormat failures
         logger.info(
             "Seedance i2v create model=%s duration=%s resolution=%s ratio=%s role=%s generate_audio=%s",
@@ -1845,7 +1913,9 @@ class ArkGateway:
                 **{key: body[key] for key in ("duration", "resolution", "generate_audio", "watermark", "return_last_frame", "content") if key in body},
                 "aspect_ratio": body.get("ratio") or "9:16",
             }, model=str(body.get("model") or ""))
-        route = pinned_route or self._resolve_ark_route("video", str(body.get("model") or ""))
+        route = pinned_route or self._resolve_ark_route(
+            "video", str(body.get("model") or ""), resolution=str(body.get("resolution") or "")
+        )
         if strategy is not None:
             body = {**body, **strategy.build_provider_request(normalized, {"upstream_model": route.upstream_model if route else strategy.model_id})}
         from app.services.media_models.runtime import existing_provider_task
@@ -1878,6 +1948,8 @@ class ArkGateway:
             project_id=project_id,
         )
 
+        if self._use_kie(route):
+            return await self._submit_kie_video(route, payload)
         logger.info(
             "Seedance multimodal create model=%s duration=%s items=%s",
             payload.get("model"),
@@ -1973,6 +2045,14 @@ class ArkGateway:
             return self._mock_video_result(task_id)
 
         task_route, raw_task_id = self._route_for_task(task_id)
+        if is_kie_route(task_route):
+            from app.services.kie_media import poll_kie_task
+
+            return await poll_kie_task(
+                task_route, task_id,
+                timeout_sec=float(self.settings.ark_video_poll_timeout),
+                interval_sec=float(self.settings.ark_video_poll_interval),
+            )
         deadline = time.monotonic() + self.settings.ark_video_poll_timeout
         async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_POLL_READ_SEC, connect=15.0)) as client:
             while time.monotonic() < deadline:
@@ -2035,6 +2115,10 @@ class ArkGateway:
         if self.mock or task_id.startswith("mock-task-"):
             return self._mock_video_result(task_id)
         task_route, raw_task_id = self._route_for_task(task_id)
+        if is_kie_route(task_route):
+            from app.services.kie_media import fetch_kie_task
+
+            return await fetch_kie_task(task_route, task_id)
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_FETCH_READ_SEC, connect=15.0)) as client:
                 poll_route = task_route or self._poll_route()
@@ -2164,7 +2248,7 @@ class ArkGateway:
         model: str | None = None,
         extra_image_urls: list[str] | None = None,
     ) -> tuple[str, TaskResult]:
-        """Create i2v task and wait；开源版只走 TokenFree（不直连 Kie / 火山）。"""
+        """Create i2v task and wait；路由到 kie 渠道时由 gen_video_i2v / poll_task 改走 kie.ai。"""
         if current_snapshot.get():
             current_operation.set(operation_for("video", shot_no=shot_no, model=model))
         last_err: Exception | None = None

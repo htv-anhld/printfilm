@@ -80,6 +80,6 @@ license: MIT
 
 ## 来源与改编
 
-规则提炼自 MIT 许可的 https://github.com/zenstory-ai/drama-skills/tree/main/skills/short-drama-video-prompts ，已改为 Printfilm 自包含的提示词协议；原项目的文件生产、外部脚本和供应商适配器不在本 Skill 内执行。
+规则提炼自 MIT 许可的 https://github.com/zenstory-ai/drama-skills/tree/main/skills/short-drama-video-prompts ，已改为 Prismreel 自包含的提示词协议；原项目的文件生产、外部脚本和供应商适配器不在本 Skill 内执行。
 
 本次参考职责、运镜消歧与动作负荷规则改编自 https://github.com/dexhunter/seedance2-skill/blob/516284d5bab58361bfdfed3cc96cee3e837d4c44/zh/SKILL.md （MIT）。姿态和空间衔接规则参考 https://github.com/scenario-labs/skills/blob/b96506d77c8595a4fe9c66eddb0bf9b5953a1d45/skills/scenario-seedance-storyboard/SKILL.md （MIT）。许可全文见同目录 THIRD_PARTY_NOTICES.md。只采用导演写作规则，不引入其外部服务、执行脚本、供应商参数上限、付费调用或自动分镜流程；模型参数以当前平台能力为准。

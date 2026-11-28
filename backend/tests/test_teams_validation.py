@@ -47,8 +47,8 @@ def test_teams_invite_links_only_use_allowlisted_frontend_origins(monkeypatch):
     from app.config import get_settings
 
     settings = get_settings()
-    monkeypatch.setattr(settings, "public_base_url", "https://www.printfilm.com")
-    monkeypatch.setattr(settings, "cors_origins", "http://127.0.0.1:5173,https://www.printfilm.com")
+    monkeypatch.setattr(settings, "public_base_url", "https://www.prismreel.com")
+    monkeypatch.setattr(settings, "cors_origins", "http://127.0.0.1:5173,https://www.prismreel.com")
     assert invitation_frontend_base("http://127.0.0.1:5173") == "http://127.0.0.1:5173"
     for origin in (None, "https://evil.example", "http://127.0.0.1:5173/teams", "null", "http://127.0.0.1:5173@evil.example", "http://["):
-        assert invitation_frontend_base(origin) == "https://www.printfilm.com"
+        assert invitation_frontend_base(origin) == "https://www.prismreel.com"

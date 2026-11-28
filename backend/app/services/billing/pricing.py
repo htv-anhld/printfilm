@@ -217,6 +217,12 @@ def charge_fen_for_usage(
     生图无 quota 时：按张官方价，避免 8 元/百万 token 低估约十倍。
     """
     s = settings or get_settings()
+    # 上游已给出精确成本（Kie creditsConsumed / 显式 cost_fen）：直接按实际成本结算，
+    # 不再套用 TokenFree 的视频秒价表达式（否则 Kie Mini 19 credit≈$0.10 会被算成 2.0 的 $0.48）
+    if _raw_has_exact_upstream_cost(raw_usage):
+        exact = parse_upstream_cost_fen(raw_usage, settings=s)
+        if exact is not None and exact > 0:
+            return exact, user_charge_fen(exact, s), True
     # 视频：优先官方表达式（常按 tokens）或清晰度×时长；有 New API quota 时走账单额度。
     if not _raw_has_newapi_quota(raw_usage):
         video_fen, video_basis = _video_resolution_duration_fen(
@@ -293,6 +299,18 @@ def _usage_block(raw_usage: dict[str, Any] | None) -> dict[str, Any]:
                 merged["tokens"] = n
                 break
     return merged
+
+
+def _raw_has_exact_upstream_cost(raw_usage: dict[str, Any] | None) -> bool:
+    """用量里是否带有上游给出的精确成本：Kie creditsConsumed 或显式 cost_fen / cost_cents。"""
+    if not isinstance(raw_usage, dict):
+        return False
+    usage = raw_usage.get("usage") if isinstance(raw_usage.get("usage"), dict) else {}
+    for block in (raw_usage, usage):
+        for key in ("creditsConsumed", "cost_fen", "cost_cents"):
+            if block.get(key) is not None:
+                return True
+    return False
 
 
 def _raw_has_newapi_quota(raw_usage: dict[str, Any] | None) -> bool:

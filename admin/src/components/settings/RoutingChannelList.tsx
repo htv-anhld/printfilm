@@ -1,9 +1,14 @@
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import type { AdminRoutingChannel } from "@/api/client";
+import { useState } from "react";
+import { ArrowDown, ArrowUp, Loader2, Plus, Trash2, Wallet } from "lucide-react";
+import { api, type AdminRoutingChannel } from "@/api/client";
 import { LabeledControl } from "@/components/settings/SettingsPanel";
 import { useI18n } from "@/i18n";
 import {
+  isKieChannel,
+  KIE_BASE_URL,
+  KIE_CONSOLE_URL,
   newChannel,
+  newKieChannel,
   TOKENFREE_BASE_URL,
   TOKENFREE_CHANNEL_ID,
   TOKENFREE_CONSOLE_URL,
@@ -43,13 +48,14 @@ export function RoutingChannelTabs({
     if (activeId === id && next[0]) onSelect(next[0].id);
   }
 
-  function add() {
-    const ch = newChannel(channels);
+  function add(kind: "openai" | "kie" = "openai") {
+    const ch = kind === "kie" ? newKieChannel(channels) : newChannel(channels);
     onChange([...channels, ch]);
     onSelect(ch.id);
   }
 
-  const primaryId = channels.find((ch) => ch.enabled && (ch.has_api_key || ch.api_key))?.id;
+  // Kie.ai 不是 OpenAI 兼容网关，后端不会把它当主渠道
+  const primaryId = channels.find((ch) => ch.enabled && (ch.has_api_key || ch.api_key) && !isKieChannel(ch))?.id;
 
   return (
     <div className="flex flex-col gap-2">
@@ -64,20 +70,20 @@ export function RoutingChannelTabs({
             )}
           >
             <button type="button" className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => onSelect(ch.id)}>
-              <span className="w-5 shrink-0 text-xs text-[#909399]">#{index + 1}</span>
+              <span className="w-5 shrink-0 text-xs text-[#6f687a]">#{index + 1}</span>
               <span className="truncate font-medium">{ch.name || ch.id}</span>
-              <span className="truncate font-mono text-xs text-[#909399]">{ch.id}</span>
+              <span className="truncate font-mono text-xs text-[#6f687a]">{ch.id}</span>
               {ch.id === primaryId ? (
-                <em className="rounded bg-[#f0f9eb] px-1.5 text-xs not-italic text-[#67c23a]">
+                <em className="rounded bg-[#f0f9eb] px-1.5 text-xs not-italic text-[#407723]">
                   {t("settings.routing.channel.primary")}
                 </em>
               ) : null}
               {!ch.enabled ? (
-                <em className="rounded bg-[#f4f4f5] px-1.5 text-xs not-italic text-[#909399]">
+                <em className="rounded bg-[#f4f4f5] px-1.5 text-xs not-italic text-[#6f687a]">
                   {t("settings.routing.channel.disabled")}
                 </em>
               ) : null}
-              <span className="ml-auto shrink-0 text-xs text-[#909399]">
+              <span className="ml-auto shrink-0 text-xs text-[#6f687a]">
                 {t("settings.routing.channel.modelCount", { n: ch.models.length })}
               </span>
             </button>
@@ -117,11 +123,15 @@ export function RoutingChannelTabs({
       </ul>
       {!locked ? (
         <div className="flex items-center gap-3">
-          <button type="button" className="admin-btn admin-btn-secondary settings-mini-btn" onClick={add}>
+          <button type="button" className="admin-btn admin-btn-secondary settings-mini-btn" onClick={() => add()}>
             <Plus className="h-3.5 w-3.5" />
             {t("settings.routing.channel.add")}
           </button>
-          <span className="text-xs text-[#909399]">{t("settings.routing.channel.failoverHint")}</span>
+          <button type="button" className="admin-btn admin-btn-secondary settings-mini-btn" onClick={() => add("kie")}>
+            <Plus className="h-3.5 w-3.5" />
+            {t("settings.routing.kie.add")}
+          </button>
+          <span className="text-xs text-[#6f687a]">{t("settings.routing.channel.failoverHint")}</span>
         </div>
       ) : null}
     </div>
@@ -146,7 +156,17 @@ export function RoutingChannelFields({
 }) {
   const { t } = useI18n();
   const isTokenfree = channel.id === TOKENFREE_CHANNEL_ID;
+  const isKie = isKieChannel(channel);
   const hasSavedKey = Boolean(channel.has_api_key);
+
+  // 切到 kie 协议时补默认 Base URL / 调用格式
+  function changeProtocol(protocol: AdminRoutingChannel["protocol"]) {
+    if (protocol === "kie") {
+      onChange({ protocol, api_format: "kie", base_url: channel.base_url || KIE_BASE_URL });
+      return;
+    }
+    onChange({ protocol, api_format: channel.api_format === "kie" ? "openai" : channel.api_format });
+  }
 
   return (
     <>
@@ -168,7 +188,7 @@ export function RoutingChannelFields({
               className="settings-select"
               value={channel.protocol}
               disabled={isTokenfree}
-              onChange={(e) => onChange({ protocol: e.target.value as AdminRoutingChannel["protocol"] })}
+              onChange={(e) => changeProtocol(e.target.value as AdminRoutingChannel["protocol"])}
             >
               <option value="auto">auto</option>
               <option value="openai">OpenAI</option>
@@ -190,13 +210,21 @@ export function RoutingChannelFields({
           className="settings-input"
           value={isTokenfree ? TOKENFREE_BASE_URL : channel.base_url}
           readOnly={isTokenfree || locked}
-          placeholder="https://api.example.com/v1"
+          placeholder={isKie ? KIE_BASE_URL : "https://api.example.com/v1"}
           onChange={(e) => onChange({ base_url: e.target.value })}
         />
+        {isKie ? (
+          <p className="mt-1 text-xs text-[#6f687a]">
+            {t("settings.routing.kie.hint")}
+            <a className="ml-1 text-[#0068d4] hover:underline" href={KIE_CONSOLE_URL} target="_blank" rel="noreferrer">
+              {KIE_CONSOLE_URL}
+            </a>
+          </p>
+        ) : null}
         {isTokenfree ? (
-          <p className="mt-1 text-xs text-[#909399]">
+          <p className="mt-1 text-xs text-[#6f687a]">
             {t("settings.routing.console")}
-            <a className="ml-1 text-[#409eff] hover:underline" href={TOKENFREE_CONSOLE_URL} target="_blank" rel="noreferrer">
+            <a className="ml-1 text-[#0068d4] hover:underline" href={TOKENFREE_CONSOLE_URL} target="_blank" rel="noreferrer">
               {TOKENFREE_CONSOLE_URL}
             </a>
           </p>
@@ -222,6 +250,52 @@ export function RoutingChannelFields({
           ) : null}
         </div>
       </LabeledControl>
+      {isKie ? <KieCreditBox channel={channel} isNew={isNew} keyInput={keyInput} /> : null}
     </>
+  );
+}
+
+/** Kie.ai credit 余额查询（类似 TokenFree 额度面板）；新建未保存的渠道用表单里的 Key 查 */
+function KieCreditBox({ channel, isNew, keyInput }: { channel: AdminRoutingChannel; isNew: boolean; keyInput: string }) {
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const [info, setInfo] = useState("");
+  const canQuery = Boolean(keyInput.trim()) || (!isNew && channel.has_api_key);
+
+  async function query() {
+    setBusy(true);
+    setInfo("");
+    try {
+      const res = await api<{ credits: number; usd_estimate: number }>("/api/admin/settings/kie/credit", {
+        method: "POST",
+        body: JSON.stringify({
+          channel_id: isNew ? undefined : channel.id,
+          api_key: keyInput.trim() || undefined,
+          base_url: channel.base_url || undefined,
+        }),
+      });
+      setInfo(t("settings.routing.kie.creditInfo", { credits: res.credits, usd: res.usd_estimate.toFixed(2) }));
+    } catch (err) {
+      setInfo(err instanceof Error ? err.message : t("settings.routing.kie.creditFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <LabeledControl label={t("settings.routing.kie.credit")} className="settings-field-span-full">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className="admin-btn admin-btn-secondary settings-mini-btn"
+          disabled={busy || !canQuery}
+          onClick={() => void query()}
+        >
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wallet className="h-3.5 w-3.5" />}
+          {t("settings.routing.kie.queryCredit")}
+        </button>
+        {info ? <span className="text-xs text-[#606266]">{info}</span> : null}
+      </div>
+    </LabeledControl>
   );
 }

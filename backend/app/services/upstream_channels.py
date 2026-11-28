@@ -118,11 +118,17 @@ def demote_cooling(items: list, key) -> list:
 
 
 def primary_channel(channels: list[SystemModelChannel]) -> SystemModelChannel | None:
-    """主渠道：已启用且有 Key 的渠道里 sort_order 最小者（扁平配置 base/key 取它）。"""
+    """主渠道：已启用且有 Key 的非 kie 渠道里 sort_order 最小者（扁平配置 base/key 取它）。"""
+    from app.services.kie_models import is_kie_route
+
+    # kie 不是 OpenAI 兼容网关，不能当主渠道（扁平 base/key 供 LLM、兜底轮询使用）
     usable = [
         ch
         for ch in channels
-        if ch.enabled and ((ch.api_key or "").strip() or ch.has_api_key) and (ch.base_url or "").strip()
+        if ch.enabled
+        and ((ch.api_key or "").strip() or ch.has_api_key)
+        and (ch.base_url or "").strip()
+        and not is_kie_route(ch)
     ]
     if not usable:
         return None

@@ -2,8 +2,8 @@
 
 export const zhShell = {
   meta: {
-    title: 'PRINTFILM · AI短视频平台',
-    description: 'PRINTFILM：AI 漫剧从剧本到分集成片，AI短视频从卖点到分镜成片。',
+    title: 'Prismreel · AI短视频平台',
+    description: 'Prismreel：AI 漫剧从剧本到分集成片，AI短视频从卖点到分镜成片。',
   },
   common: {
     comingSoon: '即将推出',
@@ -106,6 +106,7 @@ export const zhShell = {
     dramaStudio: '短剧工作室',
     studio3d: '3D 工作室',
     library: '素材库',
+    marketplace: '作品广场',
     partners: '创作者合作',
     mcp: 'AI 智能体 (MCP)',
     settings: '设置',
@@ -202,16 +203,17 @@ export const zhShell = {
     phone: '客服电话',
     wechat: '微信',
   },
-  wechatGroup: {
-    openDraggable: '加入微信用户群（可拖动）',
-    short: '加群',
-    open: '加入微信用户群',
-    title: 'printfilm 用户群',
-    lead: '学习短剧 · 部署答疑 · 模板交流',
-    idLabel: '微信号',
+  supportChat: {
+    openDraggable: 'WhatsApp 联系客服（可拖动）',
+    short: '客服',
+    open: 'WhatsApp 联系客服',
+    title: 'Prismreel 客服',
+    lead: '使用指导 · 充值 · 问题反馈',
+    idLabel: 'WhatsApp',
     copy: '复制',
     copied: '已复制',
-    tip: '添加微信号 gitpp88，备注「入群」即可拉你进用户群。',
+    openApp: '打开 WhatsApp',
+    tip: '通过 WhatsApp 发送消息并附上账号邮箱，可更快获得帮助。',
   },
   auth: {
     or: '或',
@@ -233,7 +235,7 @@ export const zhShell = {
     registerTitle: '创建创作者账号',
     forgotTitle: '找回密码',
     resetTitle: '设置新密码',
-    lede: 'PRINTFILM · AI 漫剧与 AI短视频创作平台',
+    lede: 'Prismreel · AI 漫剧与 AI短视频创作平台',
     nickname: '昵称',
     email: '邮箱',
     password: '密码',

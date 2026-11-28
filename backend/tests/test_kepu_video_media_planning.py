@@ -43,7 +43,7 @@ def offline(monkeypatch):
     monkeypatch.setattr(settings, "seedance_duration_max", 30)
     monkeypatch.setattr(settings, "kepu_seedance_native_audio", True)
     monkeypatch.setattr(settings, "kepu_seedance_sfx_audio", False)
-    monkeypatch.setattr(planning, "pin_route", lambda capability, model: {
+    monkeypatch.setattr(planning, "pin_route", lambda capability, model, **_kw: {
         "capability": capability, "logical_model_id": model, "upstream_model": model,
         "channel_id": "__runtime__", "channel_name": "Runtime", "base_url": settings.ark_base_url,
         "protocol": "openai", "api_format": "openai",

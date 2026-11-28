@@ -44,13 +44,13 @@
 .pf-canvas-agent-mark { width:32px; height:32px; overflow:visible; transition:transform .18s ease; }
 .pf-canvas-agent-mark > path { stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .pf-canvas-agent-mark > .pf-canvas-agent-play { fill:#e6d4f7; stroke:none; }
-.pf-canvas-agent-mark > .pf-canvas-agent-spark { fill:#dbefab; stroke:none; }
+.pf-canvas-agent-mark > .pf-canvas-agent-spark { fill:#c7abef; stroke:none; }
 .pf-studio-shell .pf-canvas-agent:hover { background:#513c69; border-color:#ad8dcb; box-shadow:inset 0 1px 0 #ffffff30,0 5px 18px #35244730; }
 .pf-canvas-agent:hover .pf-canvas-agent-mark { transform:translateY(-1px) rotate(-5deg); }
 .pf-studio-shell .pf-canvas-agent.is-open { background:#684c85; border-color:#d1b6e7; box-shadow:0 0 0 3px #9773b825,0 4px 12px #35244724; }
 .pf-studio-shell .pf-canvas-agent:focus-visible { outline:3px solid #ac8cc7; outline-offset:4px; }
 .pf-studio-shell .pf-canvas-agent:active .pf-canvas-agent-mark { transform:scale(.94); }
-.pf-canvas-agent-status { position:absolute; right:3px; top:3px; width:8px; height:8px; border-radius:50%; background:#dbefab; border:2px solid #3d2d50; }
+.pf-canvas-agent-status { position:absolute; right:3px; top:3px; width:8px; height:8px; border-radius:50%; background:#c7abef; border:2px solid #3d2d50; }
 .pf-canvas-agent-tooltip {
   position:absolute; left:50%; bottom:calc(100% + 12px); transform:translate(-50%,4px);
   display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:9px;

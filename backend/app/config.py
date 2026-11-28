@@ -28,7 +28,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "PRINTFILM"
+    app_name: str = "Prismreel"
     debug: bool = True
     # 是否打印 SQLAlchemy 原始 SQL（默认关，避免刷屏；需要排查 SQL 时设 SQL_ECHO=true）
     sql_echo: bool = False
@@ -165,6 +165,10 @@ class Settings(BaseSettings):
     billing_tts_per_m: float = 2.0
     # Kie：1 credit 折合人民币分（约 $0.005 ≈ ¥0.035 → 3.5）
     billing_kie_fen_per_credit: float = 3.5
+    # Kie 完成回调：公网可达的完整地址（如 https://example.com/api/kie/callback）；空 = 只轮询
+    kie_callback_url: str = ""
+    # Kie 回调 HMAC 密钥（kie 控制台 Webhook HMAC Key）；配置后不带合法签名的回调一律拒绝
+    kie_webhook_hmac_key: str = ""
     # TokenFree / New API：quota→USD→人民币（500000 quota = 1 USD）
     # 与 TokenFree / New API 控制台一致（价目表达式里常见 /7.3 折美元）
     billing_usd_cny: float = 7.3
@@ -270,7 +274,7 @@ class Settings(BaseSettings):
     marketplace_share_android_sha256_fingerprints: str = ""
     # 完整视频最长秒数。环境变量 MARKETPLACE_MAX_DURATION_SECONDS；管理端保存后以数据库为准。
     marketplace_max_duration_seconds: int = 1800
-    # Printfilm Studio 新工作台；默认关闭，便于灰度发布。
+    # Prismreel Studio 新工作台；默认关闭，便于灰度发布。
     printfilm_studio_enabled: bool = False
 
     tos_endpoint: str = ""

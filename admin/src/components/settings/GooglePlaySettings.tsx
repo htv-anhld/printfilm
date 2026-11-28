@@ -77,7 +77,7 @@ export function GooglePlaySettings() {
         <label className="block">Pub/Sub OIDC audience<input className="admin-input block w-full" value={form.rtdn_audience} onChange={e => setForm({ ...form, rtdn_audience: e.target.value })} /></label>
         <label className="block">{tz("Pub/Sub 推送身份服务账号邮箱")}<input className="admin-input block w-full" value={form.rtdn_service_account} onChange={e => setForm({ ...form, rtdn_service_account: e.target.value })} /></label>
         <label className="block">{tz("许可测试用户 ID（逗号分隔）")}<input className="admin-input block w-full" value={testIds} onChange={e => setTestIds(e.target.value)} /></label>
-        <p>{tz("填写 PrintFilm 用户 ID。Google 确认的许可测试付款进入独立沙箱积分账本，正式付款进入正式钱包。客户端价格使用 Google formattedPrice。")}</p>
+        <p>{tz("填写 Prismreel 用户 ID。Google 确认的许可测试付款进入独立沙箱积分账本，正式付款进入正式钱包。客户端价格使用 Google formattedPrice。")}</p>
         <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr><th>{tz("共同套餐")}</th><th>{tz("Google 商品 ID")}</th><th>{tz("英文名称")}</th><th>{tz("冻结积分")}</th><th>{tz("新购")}</th></tr></thead><tbody>
           {form.products.map((p, i) => <tr key={i}>
             <td><input className="admin-input" value={p.sku_id} disabled={!!p.credit_fen} onChange={e => product(i, { sku_id: e.target.value })} /></td>

@@ -75,7 +75,7 @@ export function PaginationBar({
         </button>
         {items.map((n, idx) =>
           n === -1 ? (
-            <span key={`e-${idx}`} className="px-1.5 text-[#c0c4cc]">
+            <span key={`e-${idx}`} className="px-1.5 text-[#c5bfcd]">
               …
             </span>
           ) : (

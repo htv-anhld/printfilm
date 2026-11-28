@@ -159,6 +159,8 @@ app.include_router(tasks.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
 from app.api.android_epay import router as android_epay_router
 app.include_router(android_epay_router)
+from app.api.kie_callback import router as kie_callback_router
+app.include_router(kie_callback_router, prefix="/api")
 app.include_router(tools.router, prefix="/api")
 app.include_router(drama_router, prefix="/api")
 app.include_router(user_api_keys.router, prefix="/api")

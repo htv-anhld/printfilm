@@ -25,8 +25,30 @@ def _public_route(route: dict) -> dict:
     return route
 
 
-def pin_route(capability: str, model_id: str) -> dict:
-    """为新任务固定一条可用路由；模型停用或没有渠道时抛 ValueError（不自动换模型）。"""
+def _resolve_for_resolution(capability: str, model_id: str, resolution: str | None) -> ResolvedModelRoute | None:
+    """视频按清晰度挑渠道（如 1080p / 4k 只有 kie 支持时跳过 TokenFree）；其它能力取首选路由。
+
+    有候选但没有一条支持该清晰度时抛 ValueError，避免静默降档后仍按高档计费。
+    """
+    if capability != "video" or not (resolution or "").strip():
+        return resolve_logical_model(capability, model_id)
+    from app.services.logical_model_router import resolve_logical_model_candidates
+    from app.services.seedance_resolutions import pick_route_for_resolution
+
+    candidates = resolve_logical_model_candidates(capability, model_id)
+    if not candidates:
+        return None
+    route = pick_route_for_resolution(candidates, resolution)
+    if route is None:
+        raise ValueError("resolution: " + _("{model} 当前没有支持 {resolution} 的渠道，请换一个清晰度", model=model_id, resolution=resolution))
+    return route
+
+
+def pin_route(capability: str, model_id: str, *, resolution: str | None = None) -> dict:
+    """为新任务固定一条可用路由；模型停用或没有渠道时抛 ValueError（不自动换模型）。
+
+    resolution：视频清晰度，用于在 failover 候选中挑选支持该档的渠道。
+    """
     settings = get_settings()
     snapshot = get_routing_snapshot()
     models = getattr(snapshot, "logical_models", [])
@@ -34,9 +56,9 @@ def pin_route(capability: str, model_id: str) -> dict:
         raise ValueError("model: " + _("{model} 已停用", model=model_id))
     strategy = resolve_strategy(model_id)
     logical = next((model for model in getattr(snapshot, "logical_models", []) if model.id.lower() == model_id.lower()), None)
-    route = resolve_logical_model(capability, model_id)
+    route = _resolve_for_resolution(capability, model_id, resolution)
     if route is None and logical is None and model_id != strategy.model_id:
-        route = resolve_logical_model(capability, strategy.model_id)
+        route = _resolve_for_resolution(capability, strategy.model_id, resolution)
     if route:
         if get_strategy(route.upstream_model).model_id != strategy.model_id:
             raise ValueError("route: 上游绑定与所选模型策略不匹配")

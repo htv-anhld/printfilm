@@ -13,6 +13,7 @@ import {
   HelpCircle,
   House,
   Library,
+  ListChecks,
   LogOut,
   Menu,
   Moon,
@@ -20,8 +21,10 @@ import {
   Plus,
   Settings,
   Sparkles,
+  Store,
   Sun,
   Wallet,
+  Workflow,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
@@ -105,11 +108,14 @@ export default function AppSidebar({ active }: Props) {
   const [moreOpen, setMoreOpen] = useState(false)
   const [theme, setThemeState] = useState<Theme>(getTheme)
   const [createOpen, setCreateOpen] = useState(false)
+  /* marketplaceOn：数字资产市场是否已在后台启用（读 /api/marketplace/capabilities） */
+  const [marketplaceOn, setMarketplaceOn] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
 
   const createItems: NavItem[] = [
     { key: 'home', to: '/', label: t('appNav.home'), icon: House },
     { key: 'creative', to: '/creative', label: t('appNav.creativeStudio'), icon: Sparkles },
+    { key: 'canvas', to: '/canvas', label: t('nav.canvas'), icon: Workflow },
     { key: 'drama', to: '/drama', label: t('appNav.dramaStudio'), icon: Clapperboard, tag: 'new' },
     {
       key: 'kepu',
@@ -127,8 +133,13 @@ export default function AppSidebar({ active }: Props) {
     { key: 'studio3d', to: '/studio3d', label: t('appNav.studio3d'), icon: Box },
     { key: 'assets', to: '/assets', label: t('nav.assets'), icon: FolderOpen, match: ['/assets', '/drama/assets'] },
     { key: 'library', to: '/library', label: t('appNav.library'), icon: Library },
+    // 数字资产市场：后台启用后才对普通用户展示；管理员始终可见以便检查启用状态
+    ...(marketplaceOn || user?.role === 'admin'
+      ? [{ key: 'marketplace', to: '/marketplace', label: t('appNav.marketplace'), icon: Store }]
+      : []),
   ]
   const accountItems: NavItem[] = [
+    { key: 'tasks', to: '/tasks', label: t('nav.tasks'), icon: ListChecks },
     { key: 'pricing', to: '/pricing', label: t('nav.pricing'), icon: CreditCard },
     { key: 'partners', to: '/partners', label: t('appNav.partners'), icon: Handshake },
     { key: 'mcp', to: '/settings?tab=api', label: t('appNav.mcp'), icon: Bot, tag: 'beta' },
@@ -136,6 +147,13 @@ export default function AppSidebar({ active }: Props) {
   ]
   const allItems = [...createItems, ...accountItems]
   const current = activeKeyFromPath(allItems, location.pathname, location.search) ?? legacyActiveKey(active)
+
+  // 市场开关是公开信息：访客也按后台开关显示入口
+  useEffect(() => {
+    let alive = true
+    api.marketplaceCapabilities().then((c) => { if (alive) setMarketplaceOn(Boolean(c.enabled)) }).catch(() => {})
+    return () => { alive = false }
+  }, [])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) return
@@ -243,7 +261,7 @@ export default function AppSidebar({ active }: Props) {
         </button>
         <Link to="/" className="pf-side-brand">
           <img src="/logo.svg" alt="" width={26} height={26} />
-          <span>PRINTFILM</span>
+          <span>Prismreel</span>
         </Link>
         <button type="button" className="pf-btn pf-btn-lime pf-btn-sm" onClick={goCreate}>
           <Plus size={16} aria-hidden />
@@ -256,9 +274,9 @@ export default function AppSidebar({ active }: Props) {
         aria-label={t('nav.main')}
       >
         <div className="pf-side-head">
-          <Link to="/" className="pf-side-brand" title="PRINTFILM">
+          <Link to="/" className="pf-side-brand" title="Prismreel">
             <img src="/logo.svg" alt="" width={28} height={28} />
-            <span className="pf-side-text">PRINTFILM</span>
+            <span className="pf-side-text">Prismreel</span>
           </Link>
           <button
             type="button"

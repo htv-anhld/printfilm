@@ -31,10 +31,25 @@ def previous_usable_shot(shots: list[Any], shot_no: int) -> Any | None:
     return prev
 
 
+# 上游生成结果的临时直链（数小时到 24 小时失效）：已有本地落盘时不得再拿来当参考
+_EPHEMERAL_MEDIA_HOSTS = ("tempfile.aiquickdraw.com", "tempfile.redpandaai.co")
+
+
+def is_ephemeral_media_url(raw: str | None) -> bool:
+    """是否上游临时直链（GPT Image / kie 文件中转）；任务重试时可能已失效。"""
+    from urllib.parse import urlsplit
+
+    try:
+        host = (urlsplit(str(raw or "").strip()).hostname or "").lower()
+    except ValueError:
+        return False
+    return any(host == item or host.endswith("." + item) for item in _EPHEMERAL_MEDIA_HOSTS)
+
+
 def _usable_seedream_url(raw: str | None, *, allow_republish: bool = False) -> str | None:
-    """只返回 Seedream 能拉的公网地址；TokenFree 产物地址不可作参考。"""
+    """只返回 Seedream 能拉的公网地址；TokenFree 产物地址、临时直链不可作参考。"""
     url = str(raw or "").strip()
-    if not url:
+    if not url or is_ephemeral_media_url(url):
         return None
     from app.services.tokenfree_image import is_tokenfree_image_url
 
@@ -99,7 +114,7 @@ def _usable_video_ref(raw: str | None) -> str | None:
     from app.services.tokenfree_image import is_tokenfree_image_url
     from app.services.tokenfree_video import is_tokenfree_content_url
 
-    if is_tokenfree_image_url(url) or is_tokenfree_content_url(url):
+    if is_tokenfree_image_url(url) or is_tokenfree_content_url(url) or is_ephemeral_media_url(url):
         return None
     return url
 

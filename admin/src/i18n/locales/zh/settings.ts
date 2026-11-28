@@ -57,6 +57,14 @@ export const zhSettings = {
     selected: "已选 {n}",
     upstreamCount: " / 上游 {n}",
     currentList: " · 当前列表 {n}",
+    kie: {
+      add: "添加 Kie.ai 渠道",
+      hint: "Kie.ai 固定使用 https://api.kie.ai，协议 kie；在控制台创建 API Key：",
+      credit: "Kie.ai 余额",
+      queryCredit: "查询 credit 余额",
+      creditInfo: "剩余 {credits} credit（约 ${usd}，按 $0.005/credit）",
+      creditFailed: "Kie.ai 余额查询失败",
+    },
     channel: {
       title: "上游渠道",
       editDesc: "连接信息与该渠道提供的模型",
@@ -272,7 +280,7 @@ export const zhSettings = {
     panel1Title: "1. 公网地址",
     panel1Desc: "支付回调、分享链接与 OSS 回填",
     baseUrl: "后端公网基址",
-    baseUrlHint: "例：https://www.printfilm.com",
+    baseUrlHint: "例：https://www.prismreel.com",
     infraNote: "数据库、Redis、SECRET_KEY 等基础设施仍通过服务器环境变量配置，不在此页修改。",
     panel2Title: "2. 媒体工具",
     panel2Desc: "合成与抽帧依赖本机 ffmpeg / ffprobe",

@@ -9,7 +9,7 @@ from app.services.media_models import get_strategy, strategies
     ("seedream-5.0-pro", ["1K", "2K"], None),
     ("gpt-image-2.5", ["1K", "2K", "4K"], None),
     ("seedance-2.5", ["480p", "720p", "1080p"], 30),
-    ("seedance-2.0", ["480p", "720p"], 15),
+    ("seedance-2.0", ["480p", "720p", "1080p", "4k"], 15),
     ("MiniMax-H3", ["480p", "768p"], 15),
 ])
 def test_model_contract(model, resolutions, maximum):
@@ -19,7 +19,9 @@ def test_model_contract(model, resolutions, maximum):
 
 
 def test_alias_and_registry():
-    assert len(strategies()) == 9
+    # 9 个 TokenFree 策略 + kie 新增 seedance-2.0-mini / seedream-4.5 / seedream-5.5
+    assert len(strategies()) == 12
+    assert get_strategy("bytedance/seedance-2-mini").model_id == "seedance-2.0-mini"
     assert get_strategy("seedance-2-5").model_id == "seedance-2.5"
     assert get_strategy("doubao-seedance-2-0-260128").model_id == "seedance-2.0"
     with pytest.raises(ValueError, match="model"):
@@ -27,7 +29,7 @@ def test_alias_and_registry():
 
 
 @pytest.mark.parametrize("params,field", [
-    ({"resolution": "1080p"}, "resolution"),
+    ({"resolution": "2k"}, "resolution"),
     ({"duration": 30}, "duration"),
     ({"duration": 4.5}, "duration"),
     ({"duration": True}, "duration"),

@@ -424,7 +424,7 @@ async def test_replacing_imported_printfilm_video_detaches_source_and_reuses_acc
     content.item.playback_status, content.item.playback_manifest_key = "done", "marketplace/hls/old/index.m3u8"
     await ctx.db.flush()
     response = await ctx.client.patch(f"/api/marketplace/series/{content.series.id}/episodes/{content.item.id}", json={
-        "episode_no": 1, "title": "替换后的PrintFilm视频", "version": 1, "source": "printfilm",
+        "episode_no": 1, "title": "替换后的Prismreel视频", "version": 1, "source": "printfilm",
         "asset_id": new_video.id, "cover_asset_id": cover.id, "unlock_price_fen": 999})
     assert response.status_code == 200, response.text
     assert content.item.source_type == "upload" and content.item.source_snapshot == {}

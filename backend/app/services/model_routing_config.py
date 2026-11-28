@@ -136,9 +136,15 @@ def synchronize_logical_models_with_channels(
                     {"channel": channel, "channel_index": channel_index, "upstream_model": raw}
                 )
 
+    from app.services.kie_models import kie_logical_id
+
     used_existing_ids: set[str] = set()
     used_model_ids: set[str] = set()
     result: list[LogicalModel] = []
+    # 已产出的逻辑模型（小写 id → 下标）：不同上游名可并进同一逻辑模型（如 TokenFree seedance-2.0 + kie bytedance/seedance-2）
+    result_index: dict[str, int] = {}
+    # 由 kie 友好 id 产生 / 认领的逻辑模型：同名上游（TokenFree seedance-2.0）可并入
+    friendly_ids: set[str] = set()
     for model_key, catalog_model in sorted(catalog.items(), key=lambda item: item[0]):
         matching = [
             model
@@ -148,6 +154,7 @@ def synchronize_logical_models_with_channels(
                 for binding in model.bindings
             )
         ]
+        friendly = kie_logical_id(catalog_model["upstream_model"])
         existing = next(
             (
                 model
@@ -156,35 +163,46 @@ def synchronize_logical_models_with_channels(
             ),
             None,
         ) or next((model for model in matching if model.id.lower() not in used_existing_ids), None)
+        if existing is None and not matching and friendly:
+            # kie 新上游：默认并到友好逻辑 id（seedance-2.0-fast 等），而不是 bytedance/… 原名
+            existing = next(
+                (model for model in existing_models
+                 if model.id.lower() == friendly.lower() and model.id.lower() not in used_existing_ids),
+                None,
+            )
+        bindings = _catalog_bindings(existing_models, catalog_model)
+        merge_target = None
+        if existing is None:
+            merge_ids = [model.id.lower() for model in matching] + ([friendly.lower()] if friendly and not matching else [])
+            if not matching and catalog_model["upstream_model"].lower() in friendly_ids:
+                merge_ids.append(catalog_model["upstream_model"].lower())
+            merge_target = next((result_index[key] for key in merge_ids if key in result_index), None)
+        if merge_target is not None:
+            merged = result[merge_target]
+            known = {(b.channel_id, normalize_model_name(b.upstream_model)) for b in merged.bindings}
+            extra = [b for b in bindings if (b.channel_id, normalize_model_name(b.upstream_model)) not in known]
+            result[merge_target] = merged.model_copy(
+                update={"bindings": sorted([*merged.bindings, *extra], key=lambda b: (b.priority, b.id))}
+            )
+            continue
         if existing:
             used_existing_ids.add(existing.id.lower())
-        logical_id = _unique_logical_model_id(existing.id if existing else catalog_model["upstream_model"], used_model_ids)
-        bindings: list[LogicalModelBinding] = []
-        for item in catalog_model["bindings"]:
-            channel: SystemModelChannel = item["channel"]
-            upstream = item["upstream_model"]
-            stored = _find_stored_binding(existing_models, channel.id, upstream)
-            bindings.append(
-                LogicalModelBinding(
-                    id=(stored.id if stored else f"{channel.id}:{upstream}"),
-                    channel_id=channel.id,
-                    upstream_model=upstream,
-                    enabled=stored.enabled if stored else True,
-                    priority=stored.priority if stored else int(item["channel_index"]) + 1,
-                    weight=stored.weight if stored else None,
-                )
-            )
-        bindings.sort(key=lambda binding: (binding.priority, binding.id))
+        base_id = existing.id if existing else (friendly or catalog_model["upstream_model"])
+        logical_id = _unique_logical_model_id(base_id, used_model_ids)
         catalog_cap = catalog_model["capability"]
         # 价目已给出图/视频/音频时，纠正历史上误标成 text 的逻辑模型
         if existing and existing.capability == "text" and catalog_cap in {"image", "video", "audio"}:
             synced_cap = catalog_cap
         else:
             synced_cap = existing.capability if existing else catalog_cap
+        default_name = friendly or catalog_model["upstream_model"]
+        result_index[logical_id.lower()] = len(result)
+        if friendly:
+            friendly_ids.add(logical_id.lower())
         result.append(
             LogicalModel(
                 id=logical_id,
-                name=(existing.name if existing and existing.name else catalog_model["upstream_model"]),
+                name=(existing.name if existing and existing.name else default_name),
                 capability=synced_cap,
                 strategy_id=existing.strategy_id if existing else None,
                 enabled=existing.enabled if existing else True,
@@ -192,6 +210,27 @@ def synchronize_logical_models_with_channels(
             )
         )
     return result
+
+
+def _catalog_bindings(existing_models: list[LogicalModel], catalog_model: dict) -> list[LogicalModelBinding]:
+    """某上游模型在各渠道上的绑定；沿用已存绑定的启停 / 优先级 / 权重。"""
+    bindings: list[LogicalModelBinding] = []
+    for item in catalog_model["bindings"]:
+        channel: SystemModelChannel = item["channel"]
+        upstream = item["upstream_model"]
+        stored = _find_stored_binding(existing_models, channel.id, upstream)
+        bindings.append(
+            LogicalModelBinding(
+                id=(stored.id if stored else f"{channel.id}:{upstream}"),
+                channel_id=channel.id,
+                upstream_model=upstream,
+                enabled=stored.enabled if stored else True,
+                priority=stored.priority if stored else int(item["channel_index"]) + 1,
+                weight=stored.weight if stored else None,
+            )
+        )
+    bindings.sort(key=lambda binding: (binding.priority, binding.id))
+    return bindings
 
 
 # 规范化默认模型 ID

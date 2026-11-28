@@ -57,6 +57,14 @@ export const viSettings = {
     selected: "Đã chọn {n}",
     upstreamCount: " / thượng nguồn {n}",
     currentList: " · đang hiển thị {n}",
+    kie: {
+      add: "Thêm kênh Kie.ai",
+      hint: "Kie.ai luôn dùng https://api.kie.ai với giao thức kie. Tạo API Key trong trang quản trị:",
+      credit: "Số dư Kie.ai",
+      queryCredit: "Kiểm tra số dư credit",
+      creditInfo: "Còn {credits} credit (khoảng ${usd}, theo giá $0,005/credit)",
+      creditFailed: "Không kiểm tra được số dư Kie.ai",
+    },
     channel: {
       title: "Kênh thượng nguồn",
       editDesc: "Thông tin kết nối và các mô hình kênh này cung cấp",
@@ -272,7 +280,7 @@ export const viSettings = {
     panel1Title: "1. Địa chỉ công khai",
     panel1Desc: "Callback thanh toán, liên kết chia sẻ và điền lại OSS",
     baseUrl: "Địa chỉ công khai của backend",
-    baseUrlHint: "Ví dụ: https://www.printfilm.com",
+    baseUrlHint: "Ví dụ: https://www.prismreel.com",
     infraNote: "Cơ sở dữ liệu, Redis, SECRET_KEY… vẫn cấu hình qua biến môi trường máy chủ, không sửa ở trang này.",
     panel2Title: "2. Công cụ media",
     panel2Desc: "Ghép video và trích khung hình cần ffmpeg / ffprobe trên máy",

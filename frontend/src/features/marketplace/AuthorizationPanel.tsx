@@ -98,7 +98,7 @@ export default function AuthorizationPanel({ onSigned }: { onSigned?: () => void
     } catch (e) { setError((e as Error).message) }
     finally { setBusy(false) }
   }
-  return <section className="pf-market-authorization"><h2>{mt("PRINTFILM 作品授权函")}</h2><p>{mt("按现行条款签署一次，本账号后续 PRINTFILM 作品可引用。本函是许可使用，不是著作权转让。")}</p>
+  return <section className="pf-market-authorization"><h2>{mt("Prismreel 作品授权函")}</h2><p>{mt("按现行条款签署一次，本账号后续 Prismreel 作品可引用。本函是许可使用，不是著作权转让。")}</p>
     {status && <>
       <h3>{locale !== 'zh' && status.reading_reference ? status.reading_reference.title : status.template.title}</h3>
       <p>{mt("版本")} {status.template.version}</p>
@@ -110,7 +110,7 @@ export default function AuthorizationPanel({ onSigned }: { onSigned?: () => void
         <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title={mt("授权函预览")} size="xl" className="pf-market-letter-modal">
           <div className="pf-market-letter-modal-summary">
             <div className="pf-market-letter-modal-summary-top">
-              <span className="pf-market-letter-modal-eyebrow"><ShieldCheck size={14} />  {mt("PRINTFILM · 数字资产市场")}</span>
+              <span className="pf-market-letter-modal-eyebrow"><ShieldCheck size={14} />  {mt("Prismreel · 数字资产市场")}</span>
               <span className="pf-market-letter-modal-status"><FileCheck2 size={13} />  {mt("已签署")}</span>
             </div>
             <strong>{mt("账号授权函")}</strong>

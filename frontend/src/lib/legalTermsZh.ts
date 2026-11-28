@@ -5,7 +5,7 @@ export const TERMS_ZH: LegalDocument = {
   title: '用户协议',
   updatedAt: '2026年11月12日',
   intro: [
-    '本用户协议（以下简称“本协议”）是您与深圳德沛开源数据科技有限公司（以下简称“PRINTFILM”或“我们”）之间订立的合同，规范您对 PRINTFILM 移动应用、[https://www.printfilm.com](https://www.printfilm.com) 网站以及相关生成、播放和账户服务（以下合称“本服务”）的访问和使用。',
+    '本用户协议（以下简称“本协议”）是您与Prismreel（以下简称“我们”）之间订立的合同，规范您对 Prismreel 移动应用、[https://www.prismreel.com](https://www.prismreel.com) 网站以及相关生成、播放和账户服务（以下合称“本服务”）的访问和使用。',
     '通过创建账户、点击“同意”、购买积分或 Studio 使用权限，或以其他方式使用本服务，即表示您同意本协议及我们的[隐私政策](/privacy)。如您不同意，请勿使用本服务。',
   ],
   sections: [
@@ -14,7 +14,7 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: 'PRINTFILM 支持您观看短片，并根据提示词创建图像和视频。视具体功能而定，本服务包括：',
+          text: 'Prismreel 支持您观看短片，并根据提示词创建图像和视频。视具体功能而定，本服务包括：',
         },
         {
           type: 'bullets',
@@ -22,7 +22,7 @@ export const TERMS_ZH: LegalDocument = {
             'Watch 短视频信息流，包括免费、可预览以及需使用积分解锁的影片；',
             '根据您提交的文本以及您选择上传的照片，在云端生成图像和视频；',
             '另行一次性购买后可使用的设备端 Studio 工具，包括 Assistant、Voice 和 Music；',
-            'PRINTFILM 账户、积分余额、使用记录和已购视频库；',
+            'Prismreel 账户、积分余额、使用记录和已购视频库；',
             '评论、点赞、分享及我们启用的其他社区功能。',
           ],
         },
@@ -37,7 +37,7 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '您必须年满 13 周岁，或达到您居住地要求的更高最低年龄，方可使用 PRINTFILM。未满 18 周岁的用户仅可在父母或法定监护人同意的情况下使用本服务，且该父母或法定监护人应对您的使用行为负责。本服务不面向 13 周岁以下儿童。',
+          text: '您必须年满 13 周岁，或达到您居住地要求的更高最低年龄，方可使用 Prismreel。未满 18 周岁的用户仅可在父母或法定监护人同意的情况下使用本服务，且该父母或法定监护人应对您的使用行为负责。本服务不面向 13 周岁以下儿童。',
         },
       ],
     },
@@ -46,11 +46,11 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '您需使用电子邮箱地址和密码注册，并选择显示名称。您还可以选择添加电话号码和头像。您有责任对登录凭据保密，并对您账户下发生的活动负责。如果您认为账户存在安全风险，请立即通过 [kefu@gitcc.com](mailto:kefu@gitcc.com) 告知我们。',
+          text: '您需使用电子邮箱地址和密码注册，并选择显示名称。您还可以选择添加电话号码和头像。您有责任对登录凭据保密，并对您账户下发生的活动负责。如果您认为账户存在安全风险，请立即通过 [support@prismreel.com](mailto:support@prismreel.com) 告知我们。',
         },
         {
           type: 'paragraph',
-          text: '您可作为访客浏览 Watch 的部分有限内容。访客使用不会创建积分余额或已购视频库。积分、生成记录和解锁权益均归属于获取它们的 PRINTFILM 账户。',
+          text: '您可作为访客浏览 Watch 的部分有限内容。访客使用不会创建积分余额或已购视频库。积分、生成记录和解锁权益均归属于获取它们的 Prismreel 账户。',
         },
         {
           type: 'paragraph',
@@ -63,17 +63,17 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '如果您从 Apple 的 App Store 下载了 PRINTFILM，则以下附加条款适用：',
+          text: '如果您从 Apple 的 App Store 下载了 Prismreel，则以下附加条款适用：',
         },
         {
           type: 'bullets',
           items: [
-            '本协议仅由您与 PRINTFILM 订立，而非您与 Apple Inc.（以下简称“Apple”）订立。Apple 不对本服务或其内容负责。',
+            '本协议仅由您与 Prismreel 订立，而非您与 Apple Inc.（以下简称“Apple”）订立。Apple 不对本服务或其内容负责。',
             '您使用本应用时，还须遵守 App Store 条款以及 Apple 媒体服务条款中的使用规则。',
-            'Apple 没有义务为本应用提供维护或支持。支持请求请发送至 [kefu@gitcc.com](mailto:kefu@gitcc.com)。',
-            '如果本应用不符合任何适用的保证，您可以通知 Apple，Apple 可退还本应用本身的购买价款（如有）。在法律允许的最大范围内，Apple 对本应用不承担任何其他保证义务。与本应用有关的任何其他索赔、损失或责任，在符合本协议约定的前提下，由 PRINTFILM 承担。',
+            'Apple 没有义务为本应用提供维护或支持。支持请求请发送至 [support@prismreel.com](mailto:support@prismreel.com)。',
+            '如果本应用不符合任何适用的保证，您可以通知 Apple，Apple 可退还本应用本身的购买价款（如有）。在法律允许的最大范围内，Apple 对本应用不承担任何其他保证义务。与本应用有关的任何其他索赔、损失或责任，在符合本协议约定的前提下，由 Prismreel 承担。',
             'Apple 不对与本应用或您持有、使用本应用有关的索赔负责，包括产品责任索赔、有关本应用不符合法律要求的索赔，以及消费者保护或隐私索赔。',
-            '如果第三方声称本应用或您对本应用的使用侵犯其知识产权，则在 Apple 条款要求的范围内，由 PRINTFILM 而非 Apple 负责该索赔的调查、抗辩、和解及解决。',
+            '如果第三方声称本应用或您对本应用的使用侵犯其知识产权，则在 Apple 条款要求的范围内，由 Prismreel 而非 Apple 负责该索赔的调查、抗辩、和解及解决。',
             '您声明，您不位于受美国政府禁运或被美国政府指定为“支持恐怖主义”的国家，且您未被列入美国政府的任何禁止或限制交易方名单。',
             'Apple 及其子公司是本节条款的第三方受益人，并有权向您强制执行本节条款。',
           ],
@@ -89,19 +89,19 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '云端生成和 Watch 付费影片需使用您账户中的 PRINTFILM 积分。',
+          text: '云端生成和 Watch 付费影片需使用您账户中的 Prismreel 积分。',
         },
         {
           type: 'bullets',
           items: [
             '积分包属于消耗型应用内购买项目。价格以相应商店在结账时显示的价格为准。',
-            '国际版 Android 通过 Google Play Billing 购买一次性消耗型积分包，支付币种和价格由 Google Play 展示。我们通过 Google 服务端校验购买凭证，将积分计入购买时绑定的同一 PRINTFILM 账户；待付款不发放积分，补单或重复验单不会重复发放。Android 本地 Studio 工具不因这次积分充值新增收费。',
+            '国际版 Android 通过 Google Play Billing 购买一次性消耗型积分包，支付币种和价格由 Google Play 展示。我们通过 Google 服务端校验购买凭证，将积分计入购买时绑定的同一 Prismreel 账户；待付款不发放积分，补单或重复验单不会重复发放。Android 本地 Studio 工具不因这次积分充值新增收费。',
             'Google Play 购买的取消、退款及撤销由商店确认后按原资金来源处理：收回未用额度，必要时撤销关联观看权益；实际已发生的生成消费可能形成待补齐欠费。购买或退款问题可通过 Google Play 及本平台客服处理。',
             '积分不会过期，也不具有现金价值。积分不是银行余额、存款或电子货币，不得兑换现金或转让给他人，但我们明确书面同意的情形除外，例如通过客服申请的企业合作安排。',
-            '已完成的积分购买会计入结账时已登录的 PRINTFILM 账户。请登录同一账户查看余额和购买记录。使用“恢复购买”功能不会再次发放这些积分。',
+            '已完成的积分购买会计入结账时已登录的 Prismreel 账户。请登录同一账户查看余额和购买记录。使用“恢复购买”功能不会再次发放这些积分。',
             '生成开始时，我们可能会根据预估金额冻结相应积分，然后根据实际用量（包括为该请求处理的 Token 数量）结算费用。图像生成和视频生成的费用可能不同。用量页面显示我们系统中您账户的相关记录。',
             '如果 Apple 批准退款，我们可能会扣回该次购买中尚未使用的积分，并调整相关使用权限。已用于完成生成或解锁的积分不予恢复，除非我们必须这样做。',
-            '同一账户余额可在 PRINTFILM 网站上使用（如适用）。在提供此类购买方式时，您在 iOS 应用外购买的积分可在应用内使用。在 iOS 应用内，您只能通过 Apple 购买积分。',
+            '同一账户余额可在 Prismreel 网站上使用（如适用）。在提供此类购买方式时，您在 iOS 应用外购买的积分可在应用内使用。在 iOS 应用内，您只能通过 Apple 购买积分。',
           ],
         },
         {
@@ -128,7 +128,7 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '部分 Watch 影片可先预览，再使用积分解锁。应用会在您确认前显示所需积分价格。解锁针对您购买的已发布版本，并与您的 PRINTFILM 账户绑定，不构成影片著作权的转让。如果某部影片被移除、受到限制或无法再播放，我们可按照播放规则为该已购版本提供允许的访问方式，或提供法律要求的救济。解锁会消耗积分，且不同于购买积分包。',
+          text: '部分 Watch 影片可先预览，再使用积分解锁。应用会在您确认前显示所需积分价格。解锁针对您购买的已发布版本，并与您的 Prismreel 账户绑定，不构成影片著作权的转让。如果某部影片被移除、受到限制或无法再播放，我们可按照播放规则为该已购版本提供允许的访问方式，或提供法律要求的救济。解锁会消耗积分，且不同于购买积分包。',
         },
       ],
     },
@@ -163,7 +163,7 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '在不影响他人对您提交的材料已享有权利的前提下，您保留对所提交的提示词、照片、评论和其他材料（以下简称“您的内容”）的所有权。您授予 PRINTFILM 一项全球范围内的非独占许可，允许我们仅为运营、保障安全、审核和改进本服务，以及在 Watch 或评论中展示您选择发布的内容之所需，托管、复制、处理、展示和分发您的内容及由其生成的输出。',
+          text: '在不影响他人对您提交的材料已享有权利的前提下，您保留对所提交的提示词、照片、评论和其他材料（以下简称“您的内容”）的所有权。您授予 Prismreel 一项全球范围内的非独占许可，允许我们仅为运营、保障安全、审核和改进本服务，以及在 Watch 或评论中展示您选择发布的内容之所需，托管、复制、处理、展示和分发您的内容及由其生成的输出。',
         },
         {
           type: 'paragraph',
@@ -188,7 +188,7 @@ export const TERMS_ZH: LegalDocument = {
         },
         {
           type: 'paragraph',
-          text: '当我们收到违反本协议的内容举报后，如果举报提供了足以识别该内容的信息，我们将在 24 小时内采取措施，包括移除内容并限制发布该内容的用户账户。您也可以发送电子邮件至 [kefu@gitcc.com](mailto:kefu@gitcc.com)。',
+          text: '当我们收到违反本协议的内容举报后，如果举报提供了足以识别该内容的信息，我们将在 24 小时内采取措施，包括移除内容并限制发布该内容的用户账户。您也可以发送电子邮件至 [support@prismreel.com](mailto:support@prismreel.com)。',
         },
       ],
     },
@@ -197,11 +197,11 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: 'PRINTFILM、本应用、本网站、我们的名称和标识，以及本服务的软件和设计，均归我们或我们的许可方所有。除为如实标识本服务外，本协议不授予您使用我们品牌的任何权利。您不得复制本服务或绕过技术限制。',
+          text: 'Prismreel、本应用、本网站、我们的名称和标识，以及本服务的软件和设计，均归我们或我们的许可方所有。除为如实标识本服务外，本协议不授予您使用我们品牌的任何权利。您不得复制本服务或绕过技术限制。',
         },
         {
           type: 'paragraph',
-          text: '如果您认为本服务中的内容侵犯您的著作权，请发送电子邮件至 [kefu@gitcc.com](mailto:kefu@gitcc.com)，并提供：您的姓名和联系方式；对作品的描述；相关材料的 URL 或应用内位置；关于您善意认为该使用未经授权的声明；以及在适用情况下，愿意承担伪证责任的声明，声明所提供信息准确，且您是权利所有人或其代理人。我们可能会移除相关材料，并在适当情况下通知账户持有人。',
+          text: '如果您认为本服务中的内容侵犯您的著作权，请发送电子邮件至 [support@prismreel.com](mailto:support@prismreel.com)，并提供：您的姓名和联系方式；对作品的描述；相关材料的 URL 或应用内位置；关于您善意认为该使用未经授权的声明；以及在适用情况下，愿意承担伪证责任的声明，声明所提供信息准确，且您是权利所有人或其代理人。我们可能会移除相关材料，并在适当情况下通知账户持有人。',
         },
       ],
     },
@@ -232,7 +232,7 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '在法律允许的最大范围内，PRINTFILM 及其董事、员工和供应商不对因本服务或本协议引起的间接、附带、特殊、后果性或惩罚性损害，或利润、数据、商誉或内容损失承担责任。',
+          text: '在法律允许的最大范围内，Prismreel 及其董事、员工和供应商不对因本服务或本协议引起的间接、附带、特殊、后果性或惩罚性损害，或利润、数据、商誉或内容损失承担责任。',
         },
         {
           type: 'paragraph',
@@ -249,7 +249,7 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '对于因您的内容、您对输出内容的使用或您违反本协议而引起的索赔、损害赔偿及合理律师费，您应向 PRINTFILM 作出赔偿并使其免受损害，但因我们自身违约或违法行为造成的部分，以及法律不允许此类赔偿的情形除外。',
+          text: '对于因您的内容、您对输出内容的使用或您违反本协议而引起的索赔、损害赔偿及合理律师费，您应向 Prismreel 作出赔偿并使其免受损害，但因我们自身违约或违法行为造成的部分，以及法律不允许此类赔偿的情形除外。',
         },
       ],
     },
@@ -298,7 +298,7 @@ export const TERMS_ZH: LegalDocument = {
       blocks: [
         {
           type: 'paragraph',
-          text: '深圳德沛开源数据科技有限公司\n电子邮箱：[kefu@gitcc.com](mailto:kefu@gitcc.com)\n客服电话：[0755-27337894](tel:+8675527337894)\n微信：gitcc188\n网站：[https://www.printfilm.com](https://www.printfilm.com)\n客服入口：[联系我们](/contact)',
+          text: 'Prismreel\n电子邮箱：[support@prismreel.com](mailto:support@prismreel.com)\n客服电话：[0392.797.809](tel:+84392797809)\nWhatsApp：[0987 353 726](https://wa.me/84987353726)\n网站：[https://www.prismreel.com](https://www.prismreel.com)\n客服入口：[联系我们](/contact)',
         },
       ],
     },

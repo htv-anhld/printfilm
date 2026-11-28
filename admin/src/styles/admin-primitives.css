@@ -1,4 +1,4 @@
-/* PRINTFILM control surfaces: shared by routed pages and portalled dialogs. */
+/* Prismreel control surfaces: shared by routed pages and portalled dialogs. */
 .admin-ui-button {
   cursor: pointer;
   letter-spacing: 0.005em;
@@ -30,13 +30,13 @@
 }
 
 .admin-control.admin-ui-input::placeholder {
-  color: #9aa397;
+  color: #6e6678;
 }
 
 .admin-control.admin-ui-input:disabled {
   cursor: not-allowed;
-  background: #f2f4ef;
-  color: #939b8e;
+  background: #f1eff4;
+  color: #6f687a;
   opacity: 0.7;
 }
 
@@ -104,7 +104,7 @@
   gap: 10px;
   padding: 16px 24px;
   border-top: 1px solid var(--admin-border);
-  background: #f8f9f5;
+  background: #f7f5f9;
 }
 
 .admin-ui-modal > .admin-dialog-close {
@@ -126,7 +126,7 @@
   width: 38px;
   height: 38px;
   place-items: center;
-  border: 1px solid #d5e6d1;
+  border: 1px solid #d9cfe8;
   border-radius: 11px;
   background: var(--admin-accent-soft);
   color: var(--admin-forest);
@@ -149,7 +149,7 @@
   border-bottom: 1px solid var(--admin-border);
   background: var(--admin-table-head);
   font-size: 12px;
-  color: #697565;
+  color: #6c6476;
 }
 
 .admin-ui-table td {
@@ -185,7 +185,7 @@
   width: 6px;
   height: 6px;
   border-radius: 2px;
-  background: #bdd5ad;
+  background: #beadd5;
 }
 
 .admin-ui-list-stats .admin-list-stat-label {
@@ -260,9 +260,9 @@
   right: 20px;
   width: 36px;
   height: 36px;
-  border: 1px solid #deead5;
+  border: 1px solid #ddd3ec;
   border-radius: 10px;
-  background: #f0f5e9;
+  background: #eee8f6;
 }
 
 .admin-ui-stat-card .admin-stat-label {
@@ -335,10 +335,10 @@
   height: 52px;
   margin: 0 0 8px;
   place-items: center;
-  border: 1px solid #e1e8d9;
+  border: 1px solid #dfd8e9;
   border-radius: 15px;
-  background: #f3f6ee;
-  color: #74866a;
+  background: #f1edf7;
+  color: #716580;
 }
 
 .admin-ui-empty .admin-empty-title {
@@ -388,7 +388,7 @@
 }
 
 .admin-ui-pagination-pages .admin-page-btn:hover:not(:disabled) {
-  border-color: #d4e2cb;
+  border-color: #d5cbe2;
   background: var(--admin-accent-soft);
   color: var(--admin-forest);
   box-shadow: none;

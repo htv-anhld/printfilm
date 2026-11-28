@@ -108,7 +108,7 @@ async def test_public_capabilities_exposes_voice_switch_without_authentication_o
     from app.main import app
 
     monkeypatch.setitem(get_settings().__dict__, "drama_voice_generation_enabled", enabled)
-    # conftest 默认开启 Printfilm Studio（会多返回 printfilm_studio_enabled）；本用例只验证旧响应形状
+    # conftest 默认开启 Prismreel Studio（会多返回 printfilm_studio_enabled）；本用例只验证旧响应形状
     monkeypatch.setitem(get_settings().__dict__, "printfilm_studio_enabled", False)
     database = Mock(side_effect=AssertionError("public capabilities must not open a database session"))
     monkeypatch.setitem(app.dependency_overrides, get_db, database)

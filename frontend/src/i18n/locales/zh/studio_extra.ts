@@ -1,4 +1,4 @@
-// Printfilm Studio 画布文案（由 scratchpad/merge_studio_keys.py 生成）
+// Prismreel Studio 画布文案（由 scratchpad/merge_studio_keys.py 生成）
 export const zhStudioExtra = {
   "studioCanvas": {
     "common": {
@@ -212,6 +212,9 @@ export const zhStudioExtra = {
       "desc6": "镜头创作 · 多模态参考",
       "desc7": "快速创作 · 分镜预演",
       "desc8": "人物表演 · 动态视频",
+      "desc9": "经济档 · 草稿与批量出片",
+      "desc10": "精细静帧 · 2K / 4K",
+      "desc11": "新一代静帧 · 参考图改图",
       "loadingModels": "加载模型…"
     },
     "workspaceAccessNotice": {
@@ -228,8 +231,8 @@ export const zhStudioExtra = {
       "loadFailedMessage": "暂时无法读取画布，请重试。"
     },
     "canvasAgentButton": {
-      "collapse": "收起 Printfilm Agent",
-      "open": "打开 Printfilm Agent",
+      "collapse": "收起 Prismreel Agent",
+      "open": "打开 Prismreel Agent",
       "running": "Agent 执行中",
       "creating": "正在创作中",
       "collapseAssistant": "收起创作助手",
@@ -301,7 +304,7 @@ export const zhStudioExtra = {
       "exported": "画布已导出",
       "linkCopied": "工作区链接已复制",
       "linkManual": "工作区链接：请从地址栏复制",
-      "resetConfirm": "清空当前 Printfilm Studio 画布？已保存的节点和连线会被移除。",
+      "resetConfirm": "清空当前 Prismreel Studio 画布？已保存的节点和连线会被移除。",
       "resetDone": "画布已重置",
       "resetFailed": "重置失败",
       "dragCopied": "已拖动复制节点",
@@ -417,7 +420,7 @@ export const zhStudioExtra = {
       "arrangeH": "水平排列",
       "arrangeV": "垂直排列",
       "arrangeGrid": "宫格排列",
-      "askAgent": "询问 Printfilm 拍档",
+      "askAgent": "询问 Prismreel 拍档",
       "delete": "删除",
       "confirmFramesShort": "请在「设置首尾帧」中分别确认两张图片",
       "localCompose": "本地合成 · 无模型费用",
@@ -765,7 +768,7 @@ export const zhStudioExtra = {
       "defaultName": "我的创作流程",
       "saveFailed": "配方保存失败",
       "tooLarge": "配方文件不能超过 1MB",
-      "notRecipe": "不是 Printfilm Studio 配方文件",
+      "notRecipe": "不是 Prismreel Studio 配方文件",
       "readFailed": "文件无法读取",
       "title": "配方库",
       "close": "关闭配方库",

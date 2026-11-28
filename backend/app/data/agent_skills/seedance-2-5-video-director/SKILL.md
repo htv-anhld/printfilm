@@ -57,4 +57,4 @@ license: MIT
 
 ## 来源与改编
 
-规则提炼自 MIT 许可的 https://github.com/liyue-aigc/seedance-2-5-video-director ，并结合 Printfilm 当前 Seedance 2.5 参数边界改为自包含版本；原项目的外部 references、平台专有长模式和执行脚本不在本 Skill 内使用。
+规则提炼自 MIT 许可的 https://github.com/liyue-aigc/seedance-2-5-video-director ，并结合 Prismreel 当前 Seedance 2.5 参数边界改为自包含版本；原项目的外部 references、平台专有长模式和执行脚本不在本 Skill 内使用。

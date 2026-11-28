@@ -1,4 +1,4 @@
-"""Printfilm Studio additive schema 回归测试。"""
+"""Prismreel Studio additive schema 回归测试。"""
 
 from types import SimpleNamespace
 

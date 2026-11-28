@@ -4,6 +4,8 @@ from datetime import datetime
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import selectinload
 
+from app.i18n import _
+
 from app.models import Shot, ToolRun
 from app.models_drama import DramaEpisode, DramaEpisodeFragment
 from app.models_tasks import TaskRun
@@ -83,7 +85,7 @@ async def video_items(db, user_id, team_id, dramas, shorts, *, include_unassigne
             .where(DramaEpisode.project_id.in_(dramas)))).all()
         for fragment, episode in rows:
             fields = project_fields(dramas[episode.project_id], "drama")
-            name = f"{episode.name} · 分镜 {fragment.sort_order + 1}"
+            name = _("{name} · 分镜 {n}", name=episode.name, n=fragment.sort_order + 1)
             params = fragment.params if isinstance(fragment.params, dict) else {}
             row = video_item(key=f"drama_fragment:{fragment.id}", source_kind="drama_fragment", source_id=fragment.id,
                 name=name, url=fragment.video, cover=fragment.cover,
@@ -101,14 +103,14 @@ async def video_items(db, user_id, team_id, dramas, shorts, *, include_unassigne
                 except ValueError:
                     stamp = fragment.updated_at
                 row = video_item(key=f"drama_fragment:{fragment.id}:version:{index}", source_kind="drama_fragment",
-                    source_id=fragment.id, name=f"{name} · 历史版本 {index + 1}", url=version.get("video"),
+                    source_id=fragment.id, name=_("{name} · 历史版本 {n}", name=name, n=index + 1), url=version.get("video"),
                     cover=version.get("cover"), updated_at=stamp, lineage=("fragment", fragment.id), **fields)
                 if row:
                     items.append(row)
     if shorts:
         for project in shorts.values():
             row = video_item(key=f"short_video:project:{project.id}", source_kind="short_video", source_id=project.id,
-                name=f"{project.title} · 成片", url=project.final_video_url, cover=project.cover_url,
+                name=_("{name} · 成片", name=project.title), url=project.final_video_url, cover=project.cover_url,
                 updated_at=project.updated_at, lineage=("project", project.id), **project_fields(project, "short_video"))
             if row:
                 items.append(row)
@@ -116,7 +118,7 @@ async def video_items(db, user_id, team_id, dramas, shorts, *, include_unassigne
         for shot in shots:
             project = shorts[shot.project_id]
             row = video_item(key=f"short_video:shot:{shot.id}", source_kind="short_video", source_id=shot.id,
-                name=f"{project.title} · 镜头 {shot.shot_no}", url=shot.video_url, cover=shot.image_url,
+                name=_("{name} · 镜头 {n}", name=project.title, n=shot.shot_no), url=shot.video_url, cover=shot.image_url,
                 updated_at=project.updated_at,
                 lineage=("shot", shot.id), **project_fields(project, "short_video"))
             if row:
@@ -155,7 +157,7 @@ async def video_items(db, user_id, team_id, dramas, shorts, *, include_unassigne
         references = [ref.model_dump(exclude_none=True) for ref in record.references]
         urls = list(dict.fromkeys([*record.urls, *(url for run in linked for value in (run.urls or [])
                                                  if (url := _safe_url(value)))]))
-        label = "分集合成" if task.task_type == "episode_compose" else "视频生成"
+        label = _("分集合成") if task.task_type == "episode_compose" else _("视频生成")
         name = f"{fields['project_title']} · {label}" if fields else label
         stamp = task.finished_at or task.updated_at or task.created_at
         lineage = (("asset", task.asset_id) if task.asset_id else ("fragment", task.fragment_id)

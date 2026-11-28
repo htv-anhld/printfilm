@@ -1,5 +1,5 @@
 export const enCommon = {
-  meta: { title: "PRINTFILM Admin" },
+  meta: { title: "Prismreel Admin" },
   common: {
     loadFailed: "Failed to load",
     loadDetailFailed: "Failed to load details",

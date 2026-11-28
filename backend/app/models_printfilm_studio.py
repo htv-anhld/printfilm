@@ -1,4 +1,4 @@
-"""Printfilm Studio persistence models."""
+"""Prismreel Studio persistence models."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ class PrintfilmStudioAgentSession(Base):
     project_id: Mapped[int] = mapped_column(ForeignKey("drama_projects.id", ondelete="CASCADE"), index=True)
     team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id"), nullable=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    title: Mapped[str] = mapped_column(String(200), default="Printfilm Studio 会话")
+    title: Mapped[str] = mapped_column(String(200), default="Prismreel Studio 会话")
     model_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="idle", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

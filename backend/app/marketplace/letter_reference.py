@@ -1,27 +1,27 @@
 """按签署版本固定的英文阅读对照，不参与中文原件生成或哈希计算。"""
 REFERENCE_VERSION = "printfilm-marketplace-2026-10-v3"
-TITLE = "PRINTFILM Digital Asset Marketplace — License Agreement for PrintFilm-generated Works"
+TITLE = "Prismreel Digital Asset Marketplace — License Agreement for Prismreel-generated Works"
 NOTICES = [
     "This is a standard-form agreement. Read it in full. Articles 7, 8, 10, 11, 13 and 15 increase your obligations or limit your rights and require separate confirmation before signing.",
     "An on-screen handwritten signature is an electronic signature and data message, but is not a reliable electronic signature backed by a digital certificate under China's Electronic Signature Law. Both parties agree that it constitutes writing and has contractual effect.",
-    "This agreement covers only works you declare to be generated with PrintFilm and submit to the marketplace, not works from other platforms.",
-    "Updated terms require a new signature before you can submit new PrintFilm works for review.",
+    "This agreement covers only works you declare to be generated with Prismreel and submit to the marketplace, not works from other platforms.",
+    "Updated terms require a new signature before you can submit new Prismreel works for review.",
 ]
 BODY = """Important notice: This agreement was prepared in advance by the platform and constitutes standard terms under the Civil Code of the People's Republic of China. The platform draws your attention, through separate notices and confirmations, to provisions that exclude or reduce its liability, increase your liability or restrict your principal rights. Checking the confirmations and signing by hand indicates that you have read, understood and accepted all provisions.
 
 Article 1 — Parties and formation
-1.1 The licensor (you) is a registered, signed-in PRINTFILM user. Enter your real name as shown on valid identification. You confirm that you are at least 18 and have full civil capacity. If acting for an organization, you confirm that you are duly authorized.
-1.2 The licensee (the platform) is the operator of the PRINTFILM Digital Asset Marketplace, including its affiliates and the technical, storage, review and support partners necessary to perform this agreement.
+1.1 The licensor (you) is a registered, signed-in Prismreel user. Enter your real name as shown on valid identification. You confirm that you are at least 18 and have full civil capacity. If acting for an organization, you confirm that you are duly authorized.
+1.2 The licensee (the platform) is the operator of the Prismreel Digital Asset Marketplace, including its affiliates and the technical, storage, review and support partners necessary to perform this agreement.
 1.3 The parties enter into this agreement by data message under the Civil Code and Electronic Signature Law of the People's Republic of China. Reading, confirming and signing under your account expresses your genuine intent. This agreement, signing records, signature, account information, IP address and user agent may serve as evidence of the parties' rights and obligations.
 1.4 You understand that the on-screen signature is not a reliable electronic signature issued by an electronic certification provider. The parties nevertheless acknowledge its contractual effect. You may not dispute formation or binding effect solely because no paper contract was signed in person or no digital certificate was used.
 
 Article 2 — Definitions
-2.1 PrintFilm works are videos you declare to be generated with PrintFilm and submit to the marketplace, together with their titles, descriptions, covers, subtitles, audio and related materials.
+2.1 Prismreel works are videos you declare to be generated with Prismreel and submit to the marketplace, together with their titles, descriptions, covers, subtitles, audio and related materials.
 2.2 Works from other platforms require separate rights evidence under platform requirements and are outside this license.
 2.3 Use includes storage, transcoding, copying, excerpts, adding identifiers, display, playback, caching, backup and technical processing necessary for review, security and performance of this agreement.
 
 Article 3 — Covered works
-3.1 This agreement covers all PrintFilm works you submit during its validity. After signing once for your account, subsequent works of the same kind may reference the archived agreement without a separate paper authorization for each work.
+3.1 This agreement covers all Prismreel works you submit during its validity. After signing once for your account, subsequent works of the same kind may reference the archived agreement without a separate paper authorization for each work.
 3.2 At submission for review, the platform freezes the then-valid agreement version as the authorization basis for each work. Later signing does not affect authorizations already frozen for existing works, unless law or a separate written agreement provides otherwise.
 3.3 Works from other platforms and files not successfully submitted are excluded.
 
@@ -74,7 +74,7 @@ Article 12 — Electronic evidence
 
 Article 13 — Effect, changes and termination (key terms)
 13.1 This agreement takes effect when you confirm and complete your handwritten signature.
-13.2 Updated agreements receive a new version number. Once effective, you must sign the new version before submitting new PrintFilm works. Not signing again does not affect authorizations already frozen for existing works.
+13.2 Updated agreements receive a new version number. Once effective, you must sign the new version before submitting new Prismreel works. Not signing again does not affect authorizations already frozen for existing works.
 13.3 You may stop submitting and unlist your works. Unlisting stops new public display but does not retrospectively remove signing records lawfully retained.
 13.4 The platform may terminate for material breach, unlawful content or lawful service discontinuation. Articles 7, 8, 10, 11, 12, 15 and 16 survive termination.
 
@@ -92,7 +92,7 @@ Article 16 — Governing law and disputes
 16.3 Invalidity of one provision does not invalidate the others.
 
 Article 17 — Other provisions
-17.1 This is the entire agreement on licensing PrintFilm works. If inconsistent with the user agreement or privacy policy, this agreement controls the license scope and the privacy policy controls personal-information processing.
+17.1 This is the entire agreement on licensing Prismreel works. If inconsistent with the user agreement or privacy policy, this agreement controls the license scope and the privacy policy controls personal-information processing.
 17.2 Delay in exercising a right is not a waiver.
 17.3 You may not transfer obligations under this agreement without written platform consent.
 17.4 Headings are for convenience and do not affect interpretation. The Chinese text prevails.

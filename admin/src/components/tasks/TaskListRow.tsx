@@ -71,7 +71,7 @@ function BillingCell({ billing }: { billing: ReturnType<typeof taskBilling> }) {
   const frozen = !charged && (billing.frozenFen ?? 0) > 0;
   return (
     <>
-      <div className={cn("task-cell-main tabular-nums", frozen && "text-[#b45309]", !charged && !frozen && "!font-normal text-[var(--admin-muted)]")}>
+      <div className={cn("task-cell-main tabular-nums", frozen && "text-[#aa4f09]", !charged && !frozen && "!font-normal text-[var(--admin-muted)]")}>
         {charged ? money(billing.chargedFen) : frozen ? tr("tasks.obs.frozenAmount", { amount: money(billing.frozenFen) }) : tr("tasks.obs.notCharged")}
       </div>
       <div className="task-cell-sub tabular-nums" title={taskBillingText(billing.status)}>
@@ -115,7 +115,7 @@ export function TaskListRow({ task, upstream, billing, now, cancelling, onOpen, 
         </div>
         {showProgress ? <div className="task-progress"><span style={{ width: `${task.progress_percent}%` }} /></div> : null}
         {error ? (
-          <div className="task-cell-sub max-w-[220px] truncate !text-[#dc2626]" title={error}>{error}</div>
+          <div className="task-cell-sub max-w-[220px] truncate !text-[#cd2121]" title={error}>{error}</div>
         ) : (
           <div className="task-cell-sub font-mono">{task.current_step_key || tr("tasks.obs.stepNotRecorded")}{task.current_step_status ? ` · ${task.current_step_status}` : ""}</div>
         )}
@@ -124,7 +124,7 @@ export function TaskListRow({ task, upstream, billing, now, cancelling, onOpen, 
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={latest?.phase === "failed" ? "destructive" : upstream.records.length ? "info" : "secondary"}>{upstreamSummaryText(upstream)}</Badge>
           {latest?.httpStatus || latest?.elapsedMs != null ? (
-            <span className={cn("text-[11px] tabular-nums", (latest?.httpStatus ?? 0) >= 400 ? "text-[#dc2626]" : "text-[var(--admin-muted)]")}>
+            <span className={cn("text-[11px] tabular-nums", (latest?.httpStatus ?? 0) >= 400 ? "text-[#cd2121]" : "text-[var(--admin-muted)]")}>
               {latest?.httpStatus ? `HTTP ${latest.httpStatus}` : ""}
               {latest?.httpStatus && latest?.elapsedMs != null ? " · " : ""}
               {latest?.elapsedMs != null ? `${Math.round(latest.elapsedMs)}ms` : ""}

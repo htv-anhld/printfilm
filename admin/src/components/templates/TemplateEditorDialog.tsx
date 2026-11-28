@@ -155,7 +155,7 @@ export function TemplateEditorDialog({
               <img src={previewSrc} alt={t("templates.editor.coverPreview")} className="template-editor-preview-img" />
             ) : (
               <div className="template-editor-preview-empty">
-                <ImageOff className="h-10 w-10 text-[#c0c4cc]" />
+                <ImageOff className="h-10 w-10 text-[#c5bfcd]" />
                 <span>{t("templates.editor.coverPreview")}</span>
               </div>
             )}

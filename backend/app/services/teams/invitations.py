@@ -117,7 +117,7 @@ async def invitation_result(team: Team, invite: TeamInvitation, token: str, *, f
     """提交签发事务之后尝试 SMTP，失败时仍允许复制有效邀请链接。"""
     base = frontend_base or str(get_settings().public_base_url).rstrip("/")
     link = f"{base}/teams/join?token={quote(token, safe='')}"
-    sent = await send_email(to_addrs=[invite.email], subject=f"PRINTFILM 团队邀请：{team.name}", body=f"您受邀加入「{team.name}」。请使用 {invite.email} 登录，并在七天内打开以下链接：\n\n{link}\n\n如非本人操作，请忽略本邮件。")
+    sent = await send_email(to_addrs=[invite.email], subject=f"Prismreel 团队邀请：{team.name}", body=f"您受邀加入「{team.name}」。请使用 {invite.email} 登录，并在七天内打开以下链接：\n\n{link}\n\n如非本人操作，请忽略本邮件。")
     return TeamInvitationCreated(invitation=invitation_out(invite), token=token, accept_url=link, email_sent=sent)
 
 

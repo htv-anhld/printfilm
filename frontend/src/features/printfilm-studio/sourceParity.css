@@ -1,4 +1,4 @@
-/* nodeScaffold / floatingAgent structure, with Printfilm's light palette. */
+/* nodeScaffold / floatingAgent structure, with Prismreel's light palette. */
 .pf-studio-shell.is-light { --bg:#f8fafc; --panel:#fff; --line:#dde3eb; --text:#354153; --muted:#8792a2; }
 .pf-studio-shell .pf-skel { display:flex; flex-direction:column; box-sizing:border-box; color:var(--text); }
 .pf-studio-shell .pf-skel.has-composer { width:220px; }

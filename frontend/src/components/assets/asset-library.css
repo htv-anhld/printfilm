@@ -37,15 +37,15 @@ button.pf-library-cover { cursor: pointer; }
 .pf-library-cover:focus-visible, .pf-library-pill:focus-visible { outline: 3px solid var(--pf-accent-strong); outline-offset: -3px; }
 .pf-library-cover > img { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; display: block; transition: transform .35s; }
 .pf-library-card:hover .pf-library-cover > img { transform: scale(1.035); }
-.pf-library-art { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; width: 100%; height: 100%; aspect-ratio: 1; background: radial-gradient(ellipse at 50% 35%, #526646, #273627 80%); color: #c7e79c; border-radius: inherit; }
+.pf-library-art { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; width: 100%; height: 100%; aspect-ratio: 1; background: radial-gradient(ellipse at 50% 35%, #526646, #273627 80%); color: #bb9ce7; border-radius: inherit; }
 .pf-library-art small { font-size: 10px; letter-spacing: .15em; color: #b9cba7; }
 .pf-library-shade { position: absolute; inset: 0; background: linear-gradient(180deg, #151a1b14 0%, #12181700 28%, #111713e8 100%); pointer-events: none; }
-.pf-library-type { position: absolute; top: 11px; left: 11px; padding: 4px 7px; border: 1px solid #ffffff48; border-radius: 4px; font-size: 10px; color: #fff; background: #13241445; backdrop-filter: blur(7px); }
+.pf-library-type { position: absolute; top: 11px; left: 11px; padding: 4px 7px; border: 1px solid #ffffff48; border-radius: 4px; font-size: 10px; color: #fff; background: #0b0912b8; backdrop-filter: blur(7px); }
 .pf-library-name { position: absolute; display: grid; gap: 6px; left: 14px; right: 28px; bottom: 16px; color: #fff; }
 .pf-library-name strong { font-size: 16px; font-weight: 550; line-height: 1.4; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .pf-library-name small { font-size: 10px; color: #d8e3ce; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
 .pf-library-open { position: absolute; bottom: 16px; right: 10px; color: #e6eedc; }
-.pf-library-status { position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; gap: 4px; max-width: calc(100% - 68px); padding: 4px 6px; border-radius: 5px; color: #f4ffe1; background: #344d27e8; font-size: 10px; }
+.pf-library-status { position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; gap: 4px; max-width: calc(100% - 68px); padding: 4px 6px; border-radius: 5px; color: #eee2fe; background: #2a1f45e8; font-size: 10px; }
 .pf-library-card-foot { display: flex; gap: 8px; justify-content: space-between; padding: 12px 13px; font-size: 10px; color: var(--pf-muted); }
 .pf-library-card-foot > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .pf-library-card-foot time { flex-shrink: 0; }

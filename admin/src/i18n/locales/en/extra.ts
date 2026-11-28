@@ -117,7 +117,7 @@ export const enExtra = {
         "sharing": "Enable work sharing",
         "sharingDesc": "Allows sharing links to single videos and the current episode. Requires a valid public HTTPS domain, not localhost or a LAN address.",
         "shareBase": "Public share base URL",
-        "shareBaseHint": "E.g. https://www.printfilm.com; the domain must forward /s/, /.well-known/apple-app-site-association and /.well-known/assetlinks.json to the backend, other pages go to the web app.",
+        "shareBaseHint": "E.g. https://www.prismreel.com; the domain must forward /s/, /.well-known/apple-app-site-association and /.well-known/assetlinks.json to the backend, other pages go to the web app.",
         "teamIdHint": "Team ID from the Apple Developer account, used for Universal Links.",
         "androidPkg": "Android package name",
         "androidPkgHint": "Must match the Android applicationId; fill in together with the certificate fingerprint. Android sharing works without Apple configuration.",

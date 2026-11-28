@@ -57,7 +57,7 @@ export function StudioChrome({ title, statusText, lockError, writable, loading, 
       <div className="pf-studio-menu">
         <Link to="/canvas" aria-label={tr('studioCanvas.studioChrome.backList')}>{tr('studioCanvas.studioChrome.back')}</Link>
         <div>
-          <strong>{title || 'Printfilm Studio'}</strong>
+          <strong>{title || 'Prismreel Studio'}</strong>
           <span>{statusText}</span>
         </div>
       </div>
